@@ -438,7 +438,7 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
         rule = argv[1]
       }
       if len(rule) == 0 {
-      } else {
+      else
       }
     } else if se if (mode == "depth" {
       if argc > 1 {

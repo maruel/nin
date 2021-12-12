@@ -64,13 +64,12 @@ func DirName(path string) string {
 
   string::size_type slash_pos = path.find_last_of(kPathSeparators)
   if slash_pos == string::npos {
-  }
   while (slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos - 1]) != kEnd)
+  }
     --slash_pos
   return path.substr(0, slash_pos)
 }
 
-  // Create a directory, returning false on failure.
 func MakeDir(path string) int {
   return mkdir(path, 0777)
 }
@@ -178,8 +177,8 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
     return -1
   }
   if !use_cache_ {
-  }
 
+  }
   dir := DirName(path)
   string base(path.substr(dir.size() ? dir.size() + 1 : 0))
   if base == ".." {

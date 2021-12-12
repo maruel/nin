@@ -25,7 +25,6 @@ class MissingDependencyPrinter : public MissingDependencyScannerDelegate {
 }
 
 type MissingDependencyScanner struct {
-  MissingDependencyScanner(MissingDependencyScannerDelegate* delegate, DepsLog* deps_log, State* state, DiskInterface* disk_interface)
   bool HadMissingDeps() { return !nodes_missing_deps_.empty(); }
 
   MissingDependencyScannerDelegate* delegate_

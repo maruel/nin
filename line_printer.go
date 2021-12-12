@@ -20,7 +20,6 @@ package ginja
 // Prints lines of text, possibly overprinting previously printed lines
 // if the terminal supports it.
 type LinePrinter struct {
-  LinePrinter()
 
   bool is_smart_terminal() const { return smart_terminal_; }
   void set_smart_terminal(bool smart) { smart_terminal_ = smart; }

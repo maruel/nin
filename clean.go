@@ -18,8 +18,6 @@ package ginja
 
 
 type Cleaner struct {
-  // Build a cleaner object with the given @a disk_interface
-  Cleaner(State* state, const BuildConfig& config, DiskInterface* disk_interface)
 
   // @return the number of file cleaned.
   func cleaned_files_count() int {

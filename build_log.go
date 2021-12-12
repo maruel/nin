@@ -29,7 +29,6 @@ type BuildLogUser struct {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-  BuildLog()
   ~BuildLog()
 
   bool RecordCommand(Edge* edge, int start_time, int end_time, TimeStamp mtime = 0)

@@ -66,8 +66,6 @@ type State struct {
   static Pool kConsolePool
   static const Rule kPhonyRule
 
-  State()
-
   Node* GetNode(StringPiece path, uint64_t slash_bits)
 
   void AddIn(Edge* edge, StringPiece path, uint64_t slash_bits)

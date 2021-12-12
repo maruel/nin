@@ -45,7 +45,6 @@ void RegisterTest(testing::Test* (*)(), string)
 // A base test fixture that includes a State object with a
 // builtin "cat" rule.
 type StateTestWithBuiltinRules struct {
-  StateTestWithBuiltinRules()
 
   State state_
 }

@@ -78,7 +78,6 @@ type Lexer struct {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Helper ctor useful for tests.
 func (l *Lexer) Error(message string, err *string) bool {
   // Compute line/column.
   line := 1
@@ -123,7 +122,6 @@ Lexer::Lexer(string input) {
   Start("input", input)
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) Start(filename StringPiece, input StringPiece) {
   filename_ = filename
   input_ = input
@@ -131,7 +129,6 @@ func (l *Lexer) Start(filename StringPiece, input StringPiece) {
   last_token_ = nil
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) TokenName(t Token) string {
   switch (t) {
   case ERROR:    return "lexing error"
@@ -153,7 +150,6 @@ func (l *Lexer) TokenName(t Token) string {
   return nil  // not reached
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) TokenErrorHint(expected Token) string {
   switch (expected) {
   case COLON:
@@ -163,7 +159,6 @@ func (l *Lexer) TokenErrorHint(expected Token) string {
   }
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) DescribeLastError() string {
   if last_token_ {
     switch (last_token_[0]) {
@@ -174,7 +169,6 @@ func (l *Lexer) DescribeLastError() string {
   return "lexing error"
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) UnreadToken() {
   ofs_ = last_token_
 }
@@ -573,7 +567,6 @@ yy70:
   return token
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) PeekToken(token Token) bool {
   t := ReadToken()
   if t == token {
@@ -583,7 +576,6 @@ func (l *Lexer) PeekToken(token Token) bool {
   return false
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) EatWhitespace() {
   p := ofs_
   string q
@@ -672,7 +664,6 @@ yy87:
   }
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) ReadIdent(out *string) bool {
   p := ofs_
   string start
@@ -742,7 +733,6 @@ yy93:
   return true
 }
 
-// Helper ctor useful for tests.
 func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
   p := ofs_
   string q

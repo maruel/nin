@@ -20,7 +20,6 @@ package ginja
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
-  Plan(Builder* builder = nil)
 
   // Returns true if there's more work to be done.
   bool more_to_do() const { return wanted_edges_ > 0 && command_edges_ > 0; }
@@ -130,8 +129,6 @@ type Builder struct {
   DiskInterface* disk_interface_
   DependencyScan scan_
 
-  // Unimplemented copy ctor and operator= ensure we don't copy the auto_ptr.
-  Builder(const Builder &other)        // DO NOT IMPLEMENT
   void operator=(const Builder &other) // DO NOT IMPLEMENT
 }
 

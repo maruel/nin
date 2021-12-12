@@ -20,8 +20,6 @@ package ginja
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
 type IncludesNormalize struct {
-  // Normalize path relative to |relative_to|.
-  IncludesNormalize(string relative_to)
 
   // Internal utilities made available for testing, maybe useful otherwise.
   static string AbsPath(StringPiece s, string* err)

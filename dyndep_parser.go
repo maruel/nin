@@ -19,7 +19,6 @@ package ginja
 
 // Parses dyndep files.
 type DyndepParser struct {
-  DyndepParser(State* state, FileReader* file_reader, DyndepFile* dyndep_file)
 
   // Parse a text string of input.  Used by tests.
   func ParseTest(input string, err *string) bool {
