@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Log a fatal message and exit.

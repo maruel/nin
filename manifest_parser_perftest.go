@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Tests manifest parser performance.  Expects to be run in ninja's root

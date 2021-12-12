@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 Subprocess::Subprocess(bool use_console) : child_(nil) , overlapped_(),

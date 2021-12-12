@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Can answer questions about the manifest for the BuildLog.

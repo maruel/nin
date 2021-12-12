@@ -1,1 +1,1 @@
-package ginga
+package ginja

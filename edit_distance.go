@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 int EditDistance(const StringPiece& s1, const StringPiece& s2, bool allow_replacements = true, int max_edit_distance = 0)

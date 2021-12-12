@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Runs the process of creating GraphViz .dot file output.

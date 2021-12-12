@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Prints lines of text, possibly overprinting previously printed lines

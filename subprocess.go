@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ginga
+package ginja
 
 // Subprocess wraps a single async subprocess.  It is entirely
 // passive: it expects the caller to notify it when its fds are ready

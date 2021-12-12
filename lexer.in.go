@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 func (l *Lexer) Error(message string, err *string) bool {

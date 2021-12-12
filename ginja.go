@@ -1,4 +1,4 @@
-package ginga
+package ginja
 
 import (
   "fmt"

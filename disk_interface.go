@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Interface for reading files from disk.  See DiskInterface for details.

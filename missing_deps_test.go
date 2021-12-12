@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 const char kTestDepsLogFilename[] = "MissingDepTest-tempdepslog"

@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // The Metrics module is used for the debug mode that dumps timing stats of

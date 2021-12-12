@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // Visual Studio's cl.exe requires some massaging to work with Ninja;

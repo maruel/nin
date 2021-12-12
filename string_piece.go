@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // StringPiece represents a slice of a string whose memory is managed

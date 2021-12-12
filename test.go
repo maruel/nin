@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // A tiny testing framework inspired by googletest, but much simpler and

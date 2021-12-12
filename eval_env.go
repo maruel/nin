@@ -14,7 +14,7 @@
 
 //go:build nobuild
 
-package ginga
+package ginja
 
 
 // An interface for a scope for variable (e.g. "$foo") lookups.
