@@ -19,15 +19,22 @@ package ginga
 // for reading, as well as call Finish() to reap the child once done()
 // is true.
 type Subprocess struct {
-	buf_            string
-	child_          HANDLE
-	pipe_           HANDLE
-	overlapped_     OVERLAPPED
-	overlapped_buf_ [4 << 10]byte
-	is_reading_     bool
-	fd_             int
-	pid_            uint
-	use_console_    bool
+	buf_ string
+
+	/*
+		// Windows
+		child_          HANDLE
+		pipe_           HANDLE
+		overlapped_     OVERLAPPED
+		overlapped_buf_ [4 << 10]byte
+		is_reading_     bool
+	*/
+
+	// POSIX
+	fd_  int
+	pid_ uint
+
+	use_console_ bool
 }
 
 // SubprocessSet runs a ppoll/pselect() loop around a set of Subprocesses.
@@ -37,7 +44,10 @@ type SubprocessSet struct {
 	running_  []*Subprocess
 	finished_ []*Subprocess // queue<Subprocess*>
 
+	// Windows
 	//static HANDLE ioport_
+
+	// POSIX
 	// Store the signal number that causes the interruption.
 	// 0 if not interruption.
 	//static int interrupted_
