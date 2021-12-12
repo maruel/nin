@@ -12,132 +12,122 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
-
 // An interface for a scope for variable (e.g. "$foo") lookups.
-type Env struct {
-  virtual ~Env() {}
+type Env interface {
+	LookupVariable(v string) string
 }
+
+type TokenType int
+
+const (
+	RAW TokenType = iota
+	SPECIAL
+)
+
+type TokenListItem struct {
+	first  string
+	second TokenType
+}
+
+type TokenList []TokenListItem
 
 // A tokenized string that contains variable references.
 // Can be evaluated relative to an Env.
 type EvalString struct {
-
-  void Clear() { parsed_.clear(); }
-  bool empty() const { return parsed_.empty(); }
-
-  enum TokenType { RAW, SPECIAL }
-  typedef vector<pair<string, TokenType> > TokenList
-  TokenList parsed_
+	parsed_ TokenList
 }
+
+func (e *EvalString) Clear()      { e.parsed_ = nil }
+func (e *EvalString) empty() bool { return len(e.parsed_) == 0 }
+
+type Bindings map[string]*EvalString
 
 // An invocable build command and associated metadata (description, etc.).
 type Rule struct {
-  explicit Rule(string name) : name_(name) {}
+	name_     string
+	bindings_ Bindings
+}
 
-  string name() const { return name_; }
-
-  static bool IsReservedBinding(string var)
-
-  const EvalString* GetBinding(string key) const
-
-  // Allow the parsers to reach into this object and fill out its fields.
-  friend struct ManifestParser
-
-  string name_
-  typedef map<string, EvalString> Bindings
-  Bindings bindings_
+func NewRule(name string) Rule {
+	return Rule{name_: name}
 }
 
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
 type BindingEnv struct {
-  BindingEnv() : parent_(nil) {}
-  explicit BindingEnv(BindingEnv* parent) : parent_(parent) {}
-
-  virtual ~BindingEnv() {}
-
-  const Rule* LookupRule(string rule_name)
-  const Rule* LookupRuleCurrentScope(string rule_name)
-  const map<string, const Rule*>& GetRules() const
-
-  map<string, string> bindings_
-  map<string, const Rule*> rules_
-  BindingEnv* parent_
+	bindings_ map[string]string
+	rules_    map[string]*Rule
+	parent_   *BindingEnv
 }
 
+func NewBindingEnv(parent *BindingEnv) BindingEnv {
+	return BindingEnv{
+		bindings_: map[string]string{},
+		rules_:    map[string]*Rule{},
+		parent_:   parent,
+	}
+}
 
-func (b *BindingEnv) LookupVariable(var string) string {
-  map<string, string>::iterator i = bindings_.find(var)
-  if i != bindings_.end() {
-    return i.second
-  }
-  if parent_ {
-    return parent_.LookupVariable(var)
-  }
-  return ""
+func (b *BindingEnv) LookupVariable(v string) string {
+	if i, ok := b.bindings_[v]; ok {
+		return i
+	}
+	if b.parent_ != nil {
+		return b.parent_.LookupVariable(v)
+	}
+	return ""
 }
 
 func (b *BindingEnv) AddBinding(key string, val string) {
-  bindings_[key] = val
+	b.bindings_[key] = val
 }
 
-func (b *BindingEnv) AddRule(rule *const Rule) {
-  assert(LookupRuleCurrentScope(rule.name()) == nil)
-  rules_[rule.name()] = rule
+func (b *BindingEnv) AddRule(rule *Rule) {
+	assert(b.LookupRuleCurrentScope(rule.name_) == nil)
+	b.rules_[rule.name_] = rule
 }
 
-const Rule* BindingEnv::LookupRuleCurrentScope(string rule_name) {
-  map<string, const Rule*>::iterator i = rules_.find(rule_name)
-  if i == rules_.end() {
-    return nil
-  }
-  return i.second
+func (b *BindingEnv) LookupRuleCurrentScope(rule_name string) *Rule {
+	return b.rules_[rule_name]
 }
 
-const Rule* BindingEnv::LookupRule(string rule_name) {
-  map<string, const Rule*>::iterator i = rules_.find(rule_name)
-  if i != rules_.end() {
-    return i.second
-  }
-  if parent_ {
-    return parent_.LookupRule(rule_name)
-  }
-  return nil
+func (b *BindingEnv) LookupRule(rule_name string) *Rule {
+	i := b.rules_[rule_name]
+	if i != nil {
+		return i
+	}
+	if b.parent_ != nil {
+		return b.parent_.LookupRule(rule_name)
+	}
+	return nil
 }
 
 func (r *Rule) AddBinding(key string, val *EvalString) {
-  bindings_[key] = val
+	r.bindings_[key] = val
 }
 
-const EvalString* Rule::GetBinding(string key) {
-  Bindings::const_iterator i = bindings_.find(key)
-  if i == bindings_.end() {
-    return nil
-  }
-  return &i.second
+func (r *Rule) GetBinding(key string) *EvalString {
+	return r.bindings_[key]
 }
 
-// static
-func (r *Rule) IsReservedBinding(var string) bool {
-  return var == "command" ||
-      var == "depfile" ||
-      var == "dyndep" ||
-      var == "description" ||
-      var == "deps" ||
-      var == "generator" ||
-      var == "pool" ||
-      var == "restat" ||
-      var == "rspfile" ||
-      var == "rspfile_content" ||
-      var == "msvc_deps_prefix"
+func IsReservedBinding(v string) bool {
+	return v == "command" ||
+		v == "depfile" ||
+		v == "dyndep" ||
+		v == "description" ||
+		v == "deps" ||
+		v == "generator" ||
+		v == "pool" ||
+		v == "restat" ||
+		v == "rspfile" ||
+		v == "rspfile_content" ||
+		v == "msvc_deps_prefix"
 }
 
-const map<string, const Rule*>& BindingEnv::GetRules() {
-  return rules_
+func (b *BindingEnv) GetRules() map[string]*Rule {
+	return b.rules_
 }
 
 // This is tricky.  Edges want lookup scope to go in this order:
@@ -145,77 +135,76 @@ const map<string, const Rule*>& BindingEnv::GetRules() {
 // 2) value set on rule, with expansion in the edge's scope
 // 3) value set on enclosing scope of edge (edge_->env_->parent_)
 // This function takes as parameters the necessary info to do (2).
-func (b *BindingEnv) LookupWithFallback(var string, eval *const EvalString, env *Env) string {
-  map<string, string>::iterator i = bindings_.find(var)
-  if i != bindings_.end() {
-    return i.second
-  }
+func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) string {
+	if i, ok := b.bindings_[v]; ok {
+		return i
+	}
 
-  if eval != nil {
-    return eval.Evaluate(env)
-  }
+	if eval != nil {
+		return eval.Evaluate(env)
+	}
 
-  if parent_ {
-    return parent_.LookupVariable(var)
-  }
+	if b.parent_ != nil {
+		return b.parent_.LookupVariable(v)
+	}
 
-  return ""
+	return ""
 }
 
 // @return The evaluated string with variable expanded using value found in
 //         environment @a env.
-func (e *EvalString) Evaluate(env *Env) string {
-  string result
-  for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {
-    if i.second == RAW {
-      result.append(i.first)
-    } else {
-      result.append(env.LookupVariable(i.first))
-    }
-  }
-  return result
+func (e *EvalString) Evaluate(env Env) string {
+	result := ""
+	for _, i := range e.parsed_ {
+		if i.second == RAW {
+			result += i.first
+		} else {
+			result += env.LookupVariable(i.first)
+		}
+	}
+	return result
 }
 
-func (e *EvalString) AddText(text StringPiece) {
-  // Add it to the end of an existing RAW token if possible.
-  if !parsed_.empty() && parsed_.back().second == RAW {
-    parsed_.back().first.append(text.str_, text.len_)
-  } else {
-    parsed_.push_back(make_pair(text.AsString(), RAW))
-  }
+func (e *EvalString) AddText(text string) {
+	// Add it to the end of an existing RAW token if possible.
+	if len(e.parsed_) != 0 && e.parsed_[len(e.parsed_)-1].second == RAW {
+		e.parsed_[len(e.parsed_)-1].first = e.parsed_[len(e.parsed_)-1].first + text
+	} else {
+		e.parsed_ = append(e.parsed_, TokenListItem{text, RAW})
+	}
 }
-func (e *EvalString) AddSpecial(text StringPiece) {
-  parsed_.push_back(make_pair(text.AsString(), SPECIAL))
+
+func (e *EvalString) AddSpecial(text string) {
+	e.parsed_ = append(e.parsed_, TokenListItem{text, SPECIAL})
 }
 
 // Construct a human-readable representation of the parsed state,
 // for use in tests.
 func (e *EvalString) Serialize() string {
-  string result
-  for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {
-    result.append("[")
-    if i.second == SPECIAL {
-      result.append("$")
-    }
-    result.append(i.first)
-    result.append("]")
-  }
-  return result
+	result := ""
+	for _, i := range e.parsed_ {
+		result += "["
+		if i.second == SPECIAL {
+			result += "$"
+		}
+		result += i.first
+		result += "]"
+	}
+	return result
 }
 
 // @return The string with variables not expanded.
 func (e *EvalString) Unparse() string {
-  string result
-  for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {
-    special := (i.second == SPECIAL)
-    if special != nil {
-      result.append("${")
-    }
-    result.append(i.first)
-    if special != nil {
-      result.append("}")
-    }
-  }
-  return result
+	result := ""
+	for _, i := range e.parsed_ {
+		special := (i.second == SPECIAL)
+		if special {
+			result += "${"
+		}
+		result += i.first
+		if special {
+			result += "}"
+		}
+	}
+	return result
 }
-
