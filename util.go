@@ -208,9 +208,13 @@ static inline bool IsKnownShellSafeCharacter(char ch) {
   if 'A' <= ch && ch <= 'Z' {
   	return true
   }
+  if 'a' <= ch && ch <= 'z' {
+  	return true
+  }
   if '0' <= ch && ch <= '9' {
   	return true
   }
+
   switch (ch) {
     case '_':
     case '+':
@@ -238,6 +242,7 @@ static inline bool StringNeedsShellEscaping(string input) {
     if !IsKnownShellSafeCharacter(input[i]) {
     	return true
     }
+  }
   return false
 }
 
@@ -246,6 +251,7 @@ static inline bool StringNeedsWin32Escaping(string input) {
     if !IsKnownWin32SafeCharacter(input[i]) {
     	return true
     }
+  }
   return false
 }
 
@@ -456,6 +462,9 @@ func StripAnsiEscapeCodes(in string) string {
     // Only strip CSIs for now.
     if i + 1 >= in.size() {
     	break
+    }
+    if in[i + 1] != '[' {  // Not a CSI.
+    	continue
     }
     i += 2
 

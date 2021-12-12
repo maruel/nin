@@ -139,8 +139,12 @@ func (d *DepfileParser) Parse(content *string, err *string) bool {
           if yych >= 0x01 {
           	goto yy4
           }
+        } else {
           if yych <= '\n' {
           	goto yy6
+          }
+          if yych <= '\f' {
+          	goto yy4
           }
           goto yy8
         }
@@ -149,9 +153,13 @@ func (d *DepfileParser) Parse(content *string, err *string) bool {
           if yych <= '#' {
           	goto yy4
           }
+          goto yy12
         } else {
           if yych <= '?' {
           	goto yy4
+          }
+          if yych <= '\\' {
+          	goto yy13
           }
           goto yy4
         }
@@ -180,6 +188,7 @@ yy8:
       if yych == '\n' {
       	goto yy6
       }
+      goto yy5
 yy9:
       yych = *++in
       if yybm[0+yych] & 128 {
@@ -201,6 +210,7 @@ yy12:
       if yych == '$' {
       	goto yy14
       }
+      goto yy5
 yy13:
       yych = *(yymarker = ++in)
       if yych <= ' ' {
@@ -208,10 +218,16 @@ yy13:
           if yych <= 0x00 {
           	goto yy5
           }
+          if yych <= '\t' {
+          	goto yy16
+          }
           goto yy17
         } else {
           if yych == '\r' {
           	goto yy19
+          }
+          if yych <= 0x1F {
+          	goto yy16
           }
           goto yy21
         }
@@ -220,9 +236,13 @@ yy13:
           if yych == '#' {
           	goto yy23
           }
+          goto yy16
         } else {
           if yych <= ':' {
           	goto yy25
+          }
+          if yych == '\\' {
+          	goto yy27
           }
           goto yy16
         }
@@ -248,6 +268,7 @@ yy19:
       if yych == '\n' {
       	goto yy17
       }
+      in = yymarker
       goto yy5
 yy21:
       ++in
@@ -280,10 +301,17 @@ yy25:
         if yych <= 0x00 {
         	goto yy28
         }
+        if yych <= 0x08 {
+        	goto yy26
+        }
         if yych <= '\n' {
         	goto yy28
         }
+      } else {
         if yych <= '\r' {
+        	goto yy28
+        }
+        if yych == ' ' {
         	goto yy28
         }
       }
@@ -307,10 +335,16 @@ yy27:
           if yych <= 0x00 {
           	goto yy11
           }
+          if yych <= '\t' {
+          	goto yy16
+          }
           goto yy11
         } else {
           if yych == '\r' {
           	goto yy11
+          }
+          if yych <= 0x1F {
+          	goto yy16
           }
           goto yy30
         }
@@ -319,9 +353,13 @@ yy27:
           if yych == '#' {
           	goto yy23
           }
+          goto yy16
         } else {
           if yych <= ':' {
           	goto yy25
+          }
+          if yych == '\\' {
+          	goto yy32
           }
           goto yy16
         }
@@ -360,10 +398,16 @@ yy32:
           if yych <= 0x00 {
           	goto yy11
           }
+          if yych <= '\t' {
+          	goto yy16
+          }
           goto yy11
         } else {
           if yych == '\r' {
           	goto yy11
+          }
+          if yych <= 0x1F {
+          	goto yy16
           }
           goto yy21
         }
@@ -372,9 +416,13 @@ yy32:
           if yych == '#' {
           	goto yy23
           }
+          goto yy16
         } else {
           if yych <= ':' {
           	goto yy25
+          }
+          if yych == '\\' {
+          	goto yy27
           }
           goto yy16
         }

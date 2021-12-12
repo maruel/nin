@@ -123,6 +123,7 @@ func main(argc int, argv **char) int {
     if !tests[i].should_run {
     	continue
     }
+
     ++tests_started
     test := tests[i].factory()
     printer.Print( StringPrintf("[%d/%d] %s", tests_started, nactivetests, tests[i].name), LinePrinter::ELIDE)

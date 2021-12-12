@@ -300,6 +300,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       if buf[path_size - 1] == '\0' {
       	--path_size
       }
+      if buf[path_size - 1] == '\0' {
+      	--path_size
+      }
       // It is not necessary to pass in a correct slash_bits here. It will
       // either be a Node that's in the manifest (in which case it will already
       // have a correct slash_bits that GetNode will look up), or it is an
@@ -408,6 +411,7 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
     if deps == nil {  // If nodes_[old_id] is a leaf, it has no deps.
     	continue
     }
+
     if !IsDepsEntryLiveFor(nodes_[old_id]) {
       continue
     }
