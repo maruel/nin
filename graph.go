@@ -19,7 +19,7 @@ package ginja
 
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
-struct Node {
+type Node struct {
   Node(string path, uint64_t slash_bits)
       : path_(path),
         slash_bits_(slash_bits),
@@ -130,7 +130,7 @@ struct Node {
 }
 
 // An edge in the dependency graph; links between Nodes using Rules.
-struct Edge {
+type Edge struct {
   enum VisitMark {
     VisitNone,
     VisitInStack,
@@ -193,7 +193,7 @@ struct Edge {
 
 }
 
-struct EdgeCmp {
+type EdgeCmp struct {
   bool operator()(const Edge* a, const Edge* b) {
     return a.id_ < b.id_
   }
@@ -203,7 +203,7 @@ typedef set<Edge*, EdgeCmp> EdgeSet
 
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
-struct ImplicitDepLoader {
+type ImplicitDepLoader struct {
   ImplicitDepLoader(State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
       : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
         depfile_parser_options_(depfile_parser_options) {}
@@ -224,7 +224,7 @@ struct ImplicitDepLoader {
 
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
-struct DependencyScan {
+type DependencyScan struct {
   DependencyScan(State* state, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
       : build_log_(build_log),
         disk_interface_(disk_interface),
@@ -557,7 +557,7 @@ func (e *Edge) AllInputsReady() bool {
 }
 
 // An Env for an Edge, providing $in and $out.
-struct EdgeEnv {
+type EdgeEnv struct {
   enum EscapeKind { kShellEscape, kDoNotEscape }
 
   EdgeEnv(const Edge* const edge, const EscapeKind escape)

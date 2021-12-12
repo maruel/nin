@@ -25,7 +25,7 @@ package ginja
 // allowing the Plan to schedule it. The Pool will relinquish queued Edges when
 // the total scheduled weight diminishes enough (i.e. when a scheduled edge
 // completes).
-struct Pool {
+type Pool struct {
   Pool(string name, int depth)
     : name_(name), current_use_(0), depth_(depth), delayed_() {}
 
@@ -45,7 +45,7 @@ struct Pool {
   int current_use_
   int depth_
 
-  struct WeightedEdgeCmp {
+  type WeightedEdgeCmp struct {
     bool operator()(const Edge* a, const Edge* b) {
       if a == nil return b; {
       if b == nil return false; {
@@ -61,7 +61,7 @@ struct Pool {
 }
 
 // Global state (file status) for a single run.
-struct State {
+type State struct {
   static Pool kDefaultPool
   static Pool kConsolePool
   static const Rule kPhonyRule

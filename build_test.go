@@ -17,7 +17,7 @@
 package ginja
 
 
-struct CompareEdgesByOutput {
+type CompareEdgesByOutput struct {
   static bool cmp(const Edge* a, const Edge* b) {
     return a.outputs_[0].path() < b.outputs_[0].path()
   }
@@ -26,7 +26,7 @@ struct CompareEdgesByOutput {
 // Fixture for tests involving Plan.
 // Though Plan doesn't use State, it's useful to have one around
 // to create Nodes and Edges.
-struct PlanTest {
+type PlanTest struct {
   Plan plan_
 
   // Because FindWork does not return Edges in any sort of predictable order,
@@ -394,7 +394,7 @@ TEST_F(PlanTest, PoolWithFailingEdge) {
 }
 
 // Fake implementation of CommandRunner, useful for tests.
-struct FakeCommandRunner {
+type FakeCommandRunner struct {
   explicit FakeCommandRunner(VirtualFileSystem* fs) :
       max_active_edges_(1), fs_(fs) {}
 
@@ -404,7 +404,7 @@ struct FakeCommandRunner {
   VirtualFileSystem* fs_
 }
 
-struct BuildTest {
+type BuildTest struct {
   BuildTest() : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
                 builder_(&state_, config_, nil, nil, &fs_, &status_, 0) {
   }
@@ -1231,7 +1231,7 @@ TEST_F(BuildTest, PoolEdgesReadyButNotWanted) {
   EXPECT_GE(save_state.LookupPool("some_pool").current_use(), 0)
 }
 
-struct BuildWithLogTest {
+type BuildWithLogTest struct {
   BuildWithLogTest() {
     builder_.SetBuildLog(&build_log_)
   }
@@ -1559,7 +1559,7 @@ TEST_F(BuildWithLogTest, GeneratedPlainDepfileMtime) {
   EXPECT_TRUE(builder_.AlreadyUpToDate())
 }
 
-struct BuildDryRun {
+type BuildDryRun struct {
   BuildDryRun() {
     config_.dry_run = true
   }
@@ -1798,7 +1798,7 @@ TEST_F(BuildTest, FailedDepsParse) {
   EXPECT_EQ("subcommand failed", err)
 }
 
-struct BuildWithQueryDepsLogTest {
+type BuildWithQueryDepsLogTest struct {
   BuildWithQueryDepsLogTest() : BuildTest(&log_) {
   }
 
@@ -1980,7 +1980,7 @@ TEST_F(BuildWithQueryDepsLogTest, TwoOutputsDepFileGCCOnlySecondaryOutput) {
 // multiple builds.  We reuse methods on BuildTest but not the
 // builder_ it sets up, because we want pristine objects for
 // each build.
-struct BuildWithDepsLogTest {
+type BuildWithDepsLogTest struct {
   BuildWithDepsLogTest() {}
 
   func SetUp() {

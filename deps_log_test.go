@@ -21,7 +21,7 @@ namespace {
 
 const char kTestFilename[] = "DepsLogTest-tempfile"
 
-struct DepsLogTest : public testing::Test {
+type DepsLogTest struct {
   func SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)

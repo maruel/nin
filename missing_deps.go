@@ -24,7 +24,7 @@ class MissingDependencyScannerDelegate {
 class MissingDependencyPrinter : public MissingDependencyScannerDelegate {
 }
 
-struct MissingDependencyScanner {
+type MissingDependencyScanner struct {
   MissingDependencyScanner(MissingDependencyScannerDelegate* delegate, DepsLog* deps_log, State* state, DiskInterface* disk_interface)
   bool HadMissingDeps() { return !nodes_missing_deps_.empty(); }
 
@@ -50,7 +50,7 @@ namespace {
 
 // ImplicitDepLoader variant that stores dep nodes into the given output
 // without updating graph deps like the base loader does.
-struct NodeStoringImplicitDepLoader {
+type NodeStoringImplicitDepLoader struct {
   NodeStoringImplicitDepLoader( State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options, vector<Node*>* dep_nodes_output)
       : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
         dep_nodes_output_(dep_nodes_output) {}

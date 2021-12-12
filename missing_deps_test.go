@@ -23,7 +23,7 @@ class MissingDependencyTestDelegate : public MissingDependencyScannerDelegate {
   func OnMissingDep(node *Node, path string, generator *Rule) {}
 }
 
-struct MissingDependencyScannerTest : public testing::Test {
+type MissingDependencyScannerTest struct {
   MissingDependencyScannerTest()
       : generator_rule_("generator_rule"), compile_rule_("compile_rule"),
         scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {

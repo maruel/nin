@@ -19,7 +19,7 @@ package ginja
 
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
-struct Plan {
+type Plan struct {
   Plan(Builder* builder = nil)
 
   // Returns true if there's more work to be done.
@@ -66,11 +66,11 @@ struct Plan {
 // CommandRunner is an interface that wraps running the build
 // subcommands.  This allows tests to abstract out running commands.
 // RealCommandRunner is an implementation that actually runs commands.
-struct CommandRunner {
+type CommandRunner struct {
   virtual ~CommandRunner() {}
 
   // The result of waiting for a command.
-  struct Result {
+  type Result struct {
     Result() : edge(nil) {}
     Edge* edge
     ExitStatus status
@@ -83,7 +83,7 @@ struct CommandRunner {
 }
 
 // Options (e.g. verbosity, parallelism) passed to a build.
-struct BuildConfig {
+type BuildConfig struct {
   BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
                   failures_allowed(1), max_load_average(-0.0f) {}
 
@@ -104,7 +104,7 @@ struct BuildConfig {
 }
 
 // Builder wraps the build process: starting commands, updating status.
-struct Builder {
+type Builder struct {
   Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
   ~Builder()
 
@@ -139,7 +139,7 @@ struct Builder {
 namespace {
 
 // A CommandRunner that doesn't actually run the commands.
-struct DryRunCommandRunner {
+type DryRunCommandRunner struct {
   virtual ~DryRunCommandRunner() {}
 
   queue<Edge*> finished_
@@ -536,7 +536,7 @@ func (p *Plan) Dump() {
   printf("ready: %d\n", (int)ready_.size())
 }
 
-struct RealCommandRunner {
+type RealCommandRunner struct {
   explicit RealCommandRunner(const BuildConfig& config) : config_(config) {}
   virtual ~RealCommandRunner() {}
 

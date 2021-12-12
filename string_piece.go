@@ -20,7 +20,7 @@ package ginja
 // StringPiece represents a slice of a string whose memory is managed
 // externally.  It is useful for reducing the number of std::strings
 // we need to allocate.
-struct StringPiece {
+type StringPiece struct {
   typedef string const_iterator
 
   StringPiece() : str_(nil), len_(0) {}

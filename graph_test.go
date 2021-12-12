@@ -17,7 +17,7 @@
 package ginja
 
 
-struct GraphTest {
+type GraphTest struct {
   GraphTest() : scan_(&state_, nil, nil, &fs_, nil) {}
 
   VirtualFileSystem fs_

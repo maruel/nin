@@ -18,7 +18,7 @@ package ginja
 
 
 // Store dynamically-discovered dependency information for one edge.
-struct Dyndeps {
+type Dyndeps struct {
   Dyndeps() : used_(false), restat_(false) {}
   bool used_
   bool restat_
@@ -34,7 +34,7 @@ struct DyndepFile: public map<Edge*, Dyndeps> {}
 
 // DyndepLoader loads dynamically discovered dependencies, as
 // referenced via the "dyndep" attribute in build files.
-struct DyndepLoader {
+type DyndepLoader struct {
   DyndepLoader(State* state, DiskInterface* disk_interface)
       : state_(state), disk_interface_(disk_interface) {}
 

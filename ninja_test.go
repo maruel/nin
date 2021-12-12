@@ -17,7 +17,7 @@
 package ginja
 
 
-struct RegisteredTest {
+type RegisteredTest struct {
   testing::Test* (*factory)()
   stringname
   bool should_run

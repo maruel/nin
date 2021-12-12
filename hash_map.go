@@ -52,7 +52,7 @@ unsigned int MurmurHash2(const void* key, size_t len) {
 
 namespace std {
 template<>
-struct hash<StringPiece> {
+type hash struct {
   typedef StringPiece argument_type
   typedef size_t result_type
 
@@ -65,7 +65,7 @@ struct hash<StringPiece> {
 using stdext::hash_map
 using stdext::hash_compare
 
-struct StringPieceCmp : public hash_compare<StringPiece> {
+type StringPieceCmp struct {
   size_t operator()(const StringPiece& key) {
     return MurmurHash2(key.str_, key.len_)
   }
@@ -85,7 +85,7 @@ using __gnu_cxx::hash_map
 
 namespace __gnu_cxx {
 template<>
-struct hash<StringPiece> {
+type hash struct {
   size_t operator()(StringPiece key) {
     return MurmurHash2(key.str_, key.len_)
   }
@@ -97,7 +97,7 @@ struct hash<StringPiece> {
 // ExternalStringHash<Foo*>::Type foos; to make foos into a hash
 // mapping StringPiece => Foo*.
 template<typename V>
-struct ExternalStringHashMap {
+type ExternalStringHashMap struct {
   typedef unordered_map<StringPiece, V> Type
   typedef hash_map<StringPiece, V, StringPieceCmp> Type
   typedef hash_map<StringPiece, V> Type

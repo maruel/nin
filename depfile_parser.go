@@ -17,12 +17,12 @@
 package ginja
 
 
-struct DepfileParserOptions {
+type DepfileParserOptions struct {
   DepfileParserOptions() {}
 }
 
 // Parser for the dependency information emitted by gcc's -M flags.
-struct DepfileParser {
+type DepfileParser struct {
   explicit DepfileParser(DepfileParserOptions options = DepfileParserOptions())
 
   vector<StringPiece> outs_

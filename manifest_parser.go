@@ -27,7 +27,7 @@ enum PhonyCycleAction {
   kPhonyCycleActionError,
 }
 
-struct ManifestParserOptions {
+type ManifestParserOptions struct {
   ManifestParserOptions()
       : dupe_edge_action_(kDupeEdgeActionWarn),
         phony_cycle_action_(kPhonyCycleActionWarn) {}
@@ -36,7 +36,7 @@ struct ManifestParserOptions {
 }
 
 // Parses .ninja files.
-struct ManifestParser {
+type ManifestParser struct {
   ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options = ManifestParserOptions())
 
   // Parse a text string of input.  Used by tests.

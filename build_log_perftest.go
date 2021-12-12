@@ -19,7 +19,7 @@ package ginja
 
 const char kTestFilename[] = "BuildLogPerfTest-tempfile"
 
-struct NoDeadPaths {
+type NoDeadPaths struct {
   virtual bool IsPathDead(StringPiece) const { return false; }
 }
 

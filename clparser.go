@@ -21,7 +21,7 @@ package ginja
 // for example, it emits include information on stderr in a funny
 // format when building with /showIncludes.  This class parses this
 // output.
-struct CLParser {
+type CLParser struct {
   // Parse a line of cl.exe output and extract /showIncludes info.
   // If a dependency is extracted, returns a nonempty string.
   // Exposed for testing.

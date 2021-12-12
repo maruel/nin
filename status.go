@@ -19,7 +19,7 @@ package ginja
 
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
-struct Status {
+type Status struct {
   virtual void BuildEdgeStarted(const Edge* edge, int64_t start_time_millis) = 0
   virtual void BuildEdgeFinished(Edge* edge, int64_t end_time_millis, bool success, string output) = 0
 
@@ -32,7 +32,7 @@ struct Status {
 
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
-struct StatusPrinter {
+type StatusPrinter struct {
   virtual void BuildEdgeStarted(const Edge* edge, int64_t start_time_millis)
   virtual void BuildEdgeFinished(Edge* edge, int64_t end_time_millis, bool success, string output)
 
@@ -71,7 +71,7 @@ struct StatusPrinter {
     }
   }
 
-  struct SlidingRateInfo {
+  type SlidingRateInfo struct {
     SlidingRateInfo(int n) : rate_(-1), N(n), last_update_(-1) {}
 
     double rate() { return rate_; }

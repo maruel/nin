@@ -21,7 +21,7 @@ namespace {
 
 const char kTestFilename[] = "CleanTest-tempfile"
 
-struct CleanTest {
+type CleanTest struct {
   VirtualFileSystem fs_
   BuildConfig config_
   func SetUp() {
@@ -351,7 +351,7 @@ TEST_F(CleanTest, CleanDepFileAndRspFileWithSpaces) {
   EXPECT_EQ(0, fs_.Stat("out 2.rsp", &err))
 }
 
-struct CleanDeadTest {
+type CleanDeadTest struct {
   func SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)

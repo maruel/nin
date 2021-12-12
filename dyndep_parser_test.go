@@ -17,7 +17,7 @@
 package ginja
 
 
-struct DyndepParserTest : public testing::Test {
+type DyndepParserTest struct {
   func AssertParse(input string) {
     string err
     EXPECT_TRUE(parser.ParseTest(input, &err))

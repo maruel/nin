@@ -18,7 +18,7 @@ package ginja
 
 
 // Can answer questions about the manifest for the BuildLog.
-struct BuildLogUser {
+type BuildLogUser struct {
 }
 
 // Store a log of every command ran for every build.
@@ -28,13 +28,13 @@ struct BuildLogUser {
 //    when we need to rebuild due to the command changing
 // 2) timing information, perhaps for generating reports
 // 3) restat information
-struct BuildLog {
+type BuildLog struct {
   BuildLog()
   ~BuildLog()
 
   bool RecordCommand(Edge* edge, int start_time, int end_time, TimeStamp mtime = 0)
 
-  struct LogEntry {
+  type LogEntry struct {
     string output
     uint64_t command_hash
     int start_time
@@ -222,7 +222,7 @@ func (b *BuildLog) OpenForWriteIfNeeded() bool {
   return true
 }
 
-struct LineReader {
+type LineReader struct {
   explicit LineReader(FILE* file)
     : file_(file), buf_end_(buf_), line_start_(buf_), line_end_(nil) {
       memset(buf_, 0, sizeof(buf_))

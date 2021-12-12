@@ -21,7 +21,7 @@ namespace {
 
 const char kTestFilename[] = "BuildLogTest-tempfile"
 
-struct BuildLogTest {
+type BuildLogTest struct {
   func SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
@@ -205,7 +205,7 @@ TEST_F(BuildLogTest, DuplicateVersionHeader) {
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
-struct TestDiskInterface {
+type TestDiskInterface struct {
   func Stat(path string, err *string) TimeStamp {
     return 4
   }
@@ -299,7 +299,7 @@ TEST_F(BuildLogTest, MultiTargetEdge) {
   ASSERT_EQ(22, e2.end_time)
 }
 
-struct BuildLogRecompactTest {
+type BuildLogRecompactTest struct {
   virtual bool IsPathDead(StringPiece s) const { return s == "out2"; }
 }
 

@@ -56,12 +56,12 @@ package ginja
 // If two records reference the same output the latter one in the file
 // wins, allowing updates to just be appended to the file.  A separate
 // repacking step can run occasionally to remove dead records.
-struct DepsLog {
+type DepsLog struct {
   DepsLog() : needs_recompaction_(false), file_(nil) {}
   ~DepsLog()
 
   // Reading (startup-time) interface.
-  struct Deps {
+  type Deps struct {
     Deps(int64_t mtime, int node_count)
         : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
     ~Deps() { delete [] nodes; }

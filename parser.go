@@ -18,7 +18,7 @@ package ginja
 
 
 // Base class for parsers.
-struct Parser {
+type Parser struct {
   Parser(State* state, FileReader* file_reader)
       : state_(state), file_reader_(file_reader) {}
 

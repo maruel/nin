@@ -24,7 +24,7 @@ namespace {
 kSimpleCommand := "cmd /c dir \\"
 kSimpleCommand := "ls /"
 
-struct SubprocessTest : public testing::Test {
+type SubprocessTest struct {
   SubprocessSet subprocs_
 }
 

@@ -21,7 +21,7 @@ package ginja
 // various actions.  To use, see METRIC_RECORD below.
 
 // A single metrics we're tracking, like "depfile load time".
-struct Metric {
+type Metric struct {
   string name
   // Number of times we've hit the code path.
   int count
@@ -31,7 +31,7 @@ struct Metric {
 
 // A scoped object for recording a metric across the body of a function.
 // Used by the METRIC_RECORD macro.
-struct ScopedMetric {
+type ScopedMetric struct {
   ~ScopedMetric()
 
   Metric* metric_
@@ -41,7 +41,7 @@ struct ScopedMetric {
 }
 
 // The singleton that stores metrics and prints the report.
-struct Metrics {
+type Metrics struct {
 
   vector<Metric*> metrics_
 }
@@ -52,7 +52,7 @@ int64_t GetTimeMillis()
 
 // A simple stopwatch which returns the time
 // in seconds since Restart() was called.
-struct Stopwatch {
+type Stopwatch struct {
   Stopwatch() : started_(0) {}
 
   // Seconds since Restart() call.

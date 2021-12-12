@@ -20,7 +20,7 @@ package ginja
 namespace {
 
 // Command-line options.
-struct Options {
+type Options struct {
   // Build file to load.
   string input_file
 
@@ -39,7 +39,7 @@ struct Options {
 
 // The Ninja main() loads up a series of data structures; various tools need
 // to poke into these, so store them as fields on an object.
-struct NinjaMain {
+type NinjaMain struct {
   NinjaMain(string ninja_command, const BuildConfig& config) :
       ninja_command_(ninja_command), config_(config),
       start_time_millis_(GetTimeMillis()) {}
@@ -91,7 +91,7 @@ struct NinjaMain {
 }
 
 // Subtools, accessible via "-t foo".
-struct Tool {
+type Tool struct {
   // Short name of the tool.
   string name
 

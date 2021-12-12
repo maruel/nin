@@ -19,7 +19,7 @@ package ginja
 
 // Windows may #define ERROR.
 
-struct Lexer {
+type Lexer struct {
   Lexer() {}
 
   enum Token {

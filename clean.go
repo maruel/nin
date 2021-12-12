@@ -17,7 +17,7 @@
 package ginja
 
 
-struct Cleaner {
+type Cleaner struct {
   // Build a cleaner object with the given @a disk_interface
   Cleaner(State* state, const BuildConfig& config, DiskInterface* disk_interface)
 

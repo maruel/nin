@@ -18,7 +18,7 @@ package ginja
 
 
 // Runs the process of creating GraphViz .dot file output.
-struct GraphViz {
+type GraphViz struct {
   GraphViz(State* state, DiskInterface* disk_interface)
       : dyndep_loader_(state, disk_interface) {}
 

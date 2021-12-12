@@ -46,7 +46,7 @@ void RegisterTest(testing::Test* (*)(), string)
 
 // A base test fixture that includes a State object with a
 // builtin "cat" rule.
-struct StateTestWithBuiltinRules : public testing::Test {
+type StateTestWithBuiltinRules struct {
   StateTestWithBuiltinRules()
 
   State state_
@@ -58,7 +58,7 @@ void AssertHash(string expected, uint64_t actual)
 // An implementation of DiskInterface that uses an in-memory representation
 // of disk state.  It also logs file accesses and directory creations
 // so it can be used by tests to verify disk access patterns.
-struct VirtualFileSystem {
+type VirtualFileSystem struct {
   VirtualFileSystem() : now_(1) {}
 
   // Tick "time" forwards; subsequent file operations will be newer than
@@ -68,7 +68,7 @@ struct VirtualFileSystem {
   }
 
   // An entry for a single in-memory file.
-  struct Entry {
+  type Entry struct {
     int mtime
     string stat_error  // If mtime is -1.
     string contents
@@ -85,7 +85,7 @@ struct VirtualFileSystem {
   int now_
 }
 
-struct ScopedTempDir {
+type ScopedTempDir struct {
 
   // The temp directory containing our dir.
   string start_dir_

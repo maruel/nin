@@ -18,13 +18,13 @@ package ginja
 
 
 // An interface for a scope for variable (e.g. "$foo") lookups.
-struct Env {
+type Env struct {
   virtual ~Env() {}
 }
 
 // A tokenized string that contains variable references.
 // Can be evaluated relative to an Env.
-struct EvalString {
+type EvalString struct {
 
   void Clear() { parsed_.clear(); }
   bool empty() const { return parsed_.empty(); }
@@ -35,7 +35,7 @@ struct EvalString {
 }
 
 // An invocable build command and associated metadata (description, etc.).
-struct Rule {
+type Rule struct {
   explicit Rule(string name) : name_(name) {}
 
   string name() const { return name_; }
@@ -54,7 +54,7 @@ struct Rule {
 
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
-struct BindingEnv {
+type BindingEnv struct {
   BindingEnv() : parent_(nil) {}
   explicit BindingEnv(BindingEnv* parent) : parent_(parent) {}
 

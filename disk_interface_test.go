@@ -19,7 +19,7 @@ package ginja
 
 namespace {
 
-struct DiskInterfaceTest : public testing::Test {
+type DiskInterfaceTest struct {
   func SetUp() {
     // These tests do real disk accesses, so create a temp dir.
     temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
@@ -201,8 +201,7 @@ TEST_F(DiskInterfaceTest, RemoveDirectory) {
   EXPECT_EQ(1, disk_.RemoveFile("does not exist"))
 }
 
-struct StatTest : public StateTestWithBuiltinRules,
-                  public DiskInterface {
+type StatTest struct {
   StatTest() : scan_(&state_, nil, nil, this, nil) {}
 
   func WriteFile(path string, contents string) bool {

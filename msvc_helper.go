@@ -18,7 +18,7 @@ package ginja
 
 
 // Wraps a synchronous execution of a CL subprocess.
-struct CLWrapper {
+type CLWrapper struct {
   CLWrapper() : env_block_(nil) {}
 
   // Set the environment block (as suitable for CreateProcess) to be used

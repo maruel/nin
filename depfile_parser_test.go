@@ -17,7 +17,7 @@
 package ginja
 
 
-struct DepfileParserTest : public testing::Test {
+type DepfileParserTest struct {
 
   DepfileParser parser_
   string input_
