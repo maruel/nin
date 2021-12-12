@@ -216,7 +216,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) Node* {
         "unknown target '" + Node::PathDecanonicalized(path, slash_bits) + "'"
     if path == "clean" {
       *err += ", did you mean 'ninja -t clean'?"
-    } else if se if (path == "help" {
+    } else if path == "help" {
       *err += ", did you mean 'ninja -h'?"
     } else {
       suggestion := state_.SpellcheckNode(path)
@@ -288,7 +288,7 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
         label := ""
         if edge.is_implicit(in) {
           label = "| "
-        } else if se if (edge.is_order_only(in) {
+        } else if edge.is_order_only(in) {
           label = "|| "
         }
         printf("    %s%s\n", label, edge.inputs_[in].path())
@@ -447,11 +447,11 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
       if len(rule) == 0 {
       else
       }
-    } else if se if (mode == "depth" {
+    } else if mode == "depth" {
       if argc > 1 {
         depth = atoi(argv[1])
       }
-    } else if se if (mode == "all" {
+    } else if mode == "all" {
     } else {
       string suggestion =
           SpellcheckString(mode, "rule", "depth", "all", nil)
@@ -908,19 +908,19 @@ func DebugEnable(name string) bool {
   if name == "list" {
     printf("debugging modes:\n" "  stats        print operation counts/timing info\n" "  explain      explain what caused a command to execute\n" "  keepdepfile  don't delete depfiles after they're read by ninja\n" "  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
     return false
-  } else if se if (name == "stats" {
+  } else if name == "stats" {
     g_metrics = new Metrics
     return true
-  } else if se if (name == "explain" {
+  } else if name == "explain" {
     g_explaining = true
     return true
-  } else if se if (name == "keepdepfile" {
+  } else if name == "keepdepfile" {
     g_keep_depfile = true
     return true
-  } else if se if (name == "keeprsp" {
+  } else if name == "keeprsp" {
     g_keep_rsp = true
     return true
-  } else if se if (name == "nostatcache" {
+  } else if name == "nostatcache" {
     g_experimental_statcache = false
     return true
   } else {
@@ -941,19 +941,19 @@ func WarningEnable(name string, options *Options) bool {
   if name == "list" {
     printf("warning flags:\n" "  phonycycle={err,warn}  phony build statement references itself\n" )
     return false
-  } else if se if (name == "dupbuild=err" {
+  } else if name == "dupbuild=err" {
     options.dupe_edges_should_err = true
     return true
-  } else if se if (name == "dupbuild=warn" {
+  } else if name == "dupbuild=warn" {
     options.dupe_edges_should_err = false
     return true
-  } else if se if (name == "phonycycle=err" {
+  } else if name == "phonycycle=err" {
     options.phony_cycle_should_err = true
     return true
-  } else if se if (name == "phonycycle=warn" {
+  } else if name == "phonycycle=warn" {
     options.phony_cycle_should_err = false
     return true
-  } else if se if (name == "depfilemulti=err" || name == "depfilemulti=warn" {
+  } else if name == "depfilemulti=err" || name == "depfilemulti=warn" {
     Warning("deprecated warning 'depfilemulti'")
     return true
   } else {
@@ -1323,7 +1323,7 @@ NORETURN void real_main(int argc, char** argv) {
       }
       // Start the build over with the new manifest.
       continue
-    } else if se if (!err.empty() {
+    } else if len(err) != 0 {
       status.Error("rebuilding '%s': %s", options.input_file, err)
       exit(1)
     }

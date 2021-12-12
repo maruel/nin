@@ -120,8 +120,8 @@ func main(argc int, argv **char) int {
 
   passed := true
   for (int i = 0; i < ntests; i++) {
-    if !tests[i].should_run continue; {
-
+    if !tests[i].should_run {
+    	continue
     }
     ++tests_started
     test := tests[i].factory()

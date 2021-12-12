@@ -230,69 +230,62 @@ Lexer::Token Lexer::ReadToken() {
 	if yych <= '^' {
 		if yych <= ',' {
 			if yych <= '\f' {
-				if yych <= 0x00 goto yy2; {
-				if yych == '\n' goto yy6; {
+				if yych <= 0x00 {
+					goto yy2
 				}
 				goto yy4
-				}
 			} else {
-				if yych <= '\r' goto yy8; {
-				if yych == '#' goto yy12; {
+				if yych <= '\r' {
+					goto yy8
 				}
 				goto yy4
-				}
 			}
 		} else {
 			if yych <= ':' {
-				if yych == '/' goto yy4; {
-				if yych <= '9' goto yy13; {
+				if yych == '/' {
+					goto yy4
 				}
 				goto yy16
-				}
 			} else {
 				if yych <= '=' {
-					if yych <= '<' goto yy4; {
-					goto yy18
+					if yych <= '<' {
+						goto yy4
 					}
 				} else {
-					if yych <= '@' goto yy4; {
-					if yych <= 'Z' goto yy13; {
+					if yych <= '@' {
+						goto yy4
 					}
 					goto yy4
-					}
 				}
 			}
 		}
 	} else {
 		if yych <= 'i' {
 			if yych <= 'b' {
-				if yych == '`' goto yy4; {
-				if yych <= 'a' goto yy13; {
+				if yych == '`' {
+					goto yy4
 				}
 				goto yy20
-				}
 			} else {
-				if yych == 'd' goto yy21; {
-				if yych <= 'h' goto yy13; {
+				if yych == 'd' {
+					goto yy21
 				}
 				goto yy22
-				}
 			}
 		} else {
 			if yych <= 'r' {
-				if yych == 'p' goto yy23; {
-				if yych <= 'q' goto yy13; {
+				if yych == 'p' {
+					goto yy23
 				}
 				goto yy24
-				}
 			} else {
 				if yych <= 'z' {
-					if yych <= 's' goto yy25; {
-					goto yy13
+					if yych <= 's' {
+						goto yy25
 					}
 				} else {
-					if yych == '|' goto yy26; {
-					goto yy4
+					if yych == '|' {
+						goto yy26
 					}
 				}
 			}
@@ -310,8 +303,8 @@ yy6:
 	{ token = NEWLINE;  break; }
 yy8:
 	yych = *++p
-	if yych == '\n' goto yy28; {
-	goto yy5
+	if yych == '\n' {
+		goto yy28
 	}
 yy9:
 	yyaccept = 0
@@ -320,21 +313,20 @@ yy9:
 		goto yy9
 	}
 	if yych <= '\f' {
-		if yych == '\n' goto yy6; {
-	} else {
+		if yych == '\n' {
+			goto yy6
 		}
-		if yych <= '\r' goto yy30; {
-		if yych == '#' goto yy32; {
+		if yych <= '\r' {
+			goto yy30
 		}
 	}
-		}
 yy11:
 	{ token = INDENT;   break; }
 yy12:
 	yyaccept = 1
 	yych = *(q = ++p)
-	if yych <= 0x00 goto yy5; {
-	goto yy33
+	if yych <= 0x00 {
+		goto yy5
 	}
 yy13:
 	yych = *++p
@@ -351,46 +343,46 @@ yy18:
 	{ token = EQUALS;   break; }
 yy20:
 	yych = *++p
-	if yych == 'u' goto yy36; {
-	goto yy14
+	if yych == 'u' {
+		goto yy36
 	}
 yy21:
 	yych = *++p
-	if yych == 'e' goto yy37; {
-	goto yy14
+	if yych == 'e' {
+		goto yy37
 	}
 yy22:
 	yych = *++p
-	if yych == 'n' goto yy38; {
-	goto yy14
+	if yych == 'n' {
+		goto yy38
 	}
 yy23:
 	yych = *++p
-	if yych == 'o' goto yy39; {
-	goto yy14
+	if yych == 'o' {
+		goto yy39
 	}
 yy24:
 	yych = *++p
-	if yych == 'u' goto yy40; {
-	goto yy14
+	if yych == 'u' {
+		goto yy40
 	}
 yy25:
 	yych = *++p
-	if yych == 'u' goto yy41; {
-	goto yy14
+	if yych == 'u' {
+		goto yy41
 	}
 yy26:
 	yych = *++p
-	if yych == '|' goto yy42; {
-	{ token = PIPE;     break; }
+	if yych == '|' {
+		goto yy42
 	}
 yy28:
 	++p
 	{ token = NEWLINE;  break; }
 yy30:
 	yych = *++p
-	if yych == '\n' goto yy28; {
-yy31:
+	if yych == '\n' {
+		goto yy28
 	}
 	p = q
 	if yyaccept == 0 {
@@ -404,87 +396,87 @@ yy33:
 	if yybm[0+yych] & 128 {
 		goto yy32
 	}
-	if yych <= 0x00 goto yy31; {
-	++p
+	if yych <= 0x00 {
+		goto yy31
 	}
 	{ continue; }
 yy36:
 	yych = *++p
-	if yych == 'i' goto yy44; {
-	goto yy14
+	if yych == 'i' {
+		goto yy44
 	}
 yy37:
 	yych = *++p
-	if yych == 'f' goto yy45; {
-	goto yy14
+	if yych == 'f' {
+		goto yy45
 	}
 yy38:
 	yych = *++p
-	if yych == 'c' goto yy46; {
-	goto yy14
+	if yych == 'c' {
+		goto yy46
 	}
 yy39:
 	yych = *++p
-	if yych == 'o' goto yy47; {
-	goto yy14
+	if yych == 'o' {
+		goto yy47
 	}
 yy40:
 	yych = *++p
-	if yych == 'l' goto yy48; {
-	goto yy14
+	if yych == 'l' {
+		goto yy48
 	}
 yy41:
 	yych = *++p
-	if yych == 'b' goto yy49; {
-	goto yy14
+	if yych == 'b' {
+		goto yy49
 	}
 yy42:
 	++p
 	{ token = PIPE2;    break; }
 yy44:
 	yych = *++p
-	if yych == 'l' goto yy50; {
-	goto yy14
+	if yych == 'l' {
+		goto yy50
 	}
 yy45:
 	yych = *++p
-	if yych == 'a' goto yy51; {
-	goto yy14
+	if yych == 'a' {
+		goto yy51
 	}
 yy46:
 	yych = *++p
-	if yych == 'l' goto yy52; {
-	goto yy14
+	if yych == 'l' {
+		goto yy52
 	}
 yy47:
 	yych = *++p
-	if yych == 'l' goto yy53; {
-	goto yy14
+	if yych == 'l' {
+		goto yy53
 	}
 yy48:
 	yych = *++p
-	if yych == 'e' goto yy55; {
-	goto yy14
+	if yych == 'e' {
+		goto yy55
 	}
 yy49:
 	yych = *++p
-	if yych == 'n' goto yy57; {
-	goto yy14
+	if yych == 'n' {
+		goto yy57
 	}
 yy50:
 	yych = *++p
-	if yych == 'd' goto yy58; {
-	goto yy14
+	if yych == 'd' {
+		goto yy58
 	}
 yy51:
 	yych = *++p
-	if yych == 'u' goto yy60; {
-	goto yy14
+	if yych == 'u' {
+		goto yy60
 	}
 yy52:
 	yych = *++p
-	if yych == 'u' goto yy61; {
-	goto yy14
+	if yych == 'u' {
+		goto yy61
 	}
 yy53:
 	yych = *++p
@@ -500,8 +492,8 @@ yy55:
 	{ token = RULE;     break; }
 yy57:
 	yych = *++p
-	if yych == 'i' goto yy62; {
-	goto yy14
+	if yych == 'i' {
+		goto yy62
 	}
 yy58:
 	yych = *++p
@@ -511,33 +503,33 @@ yy58:
 	{ token = BUILD;    break; }
 yy60:
 	yych = *++p
-	if yych == 'l' goto yy63; {
-	goto yy14
+	if yych == 'l' {
+		goto yy63
 	}
 yy61:
 	yych = *++p
-	if yych == 'd' goto yy64; {
-	goto yy14
+	if yych == 'd' {
+		goto yy64
 	}
 yy62:
 	yych = *++p
-	if yych == 'n' goto yy65; {
-	goto yy14
+	if yych == 'n' {
+		goto yy65
 	}
 yy63:
 	yych = *++p
-	if yych == 't' goto yy66; {
-	goto yy14
+	if yych == 't' {
+		goto yy66
 	}
 yy64:
 	yych = *++p
-	if yych == 'e' goto yy68; {
-	goto yy14
+	if yych == 'e' {
+		goto yy68
 	}
 yy65:
 	yych = *++p
-	if yych == 'j' goto yy70; {
-	goto yy14
+	if yych == 'j' {
+		goto yy70
 	}
 yy66:
 	yych = *++p
@@ -553,8 +545,8 @@ yy68:
 	{ token = INCLUDE;  break; }
 yy70:
 	yych = *++p
-	if yych != 'a' goto yy14; {
-	yych = *++p
+	if yych != 'a' {
+		goto yy14
 	}
 	if yybm[0+yych] & 64 {
 		goto yy13
@@ -629,11 +621,10 @@ func (l *Lexer) EatWhitespace() {
 	if yybm[0+yych] & 128 {
 		goto yy79
 	}
-	if yych <= 0x00 goto yy75; {
-	if yych == '$' goto yy82; {
+	if yych <= 0x00 {
+		goto yy75
 	}
 	goto yy77
-	}
 yy75:
 	++p
 	{ break; }
@@ -649,18 +640,17 @@ yy79:
 	{ continue; }
 yy82:
 	yych = *(q = ++p)
-	if yych == '\n' goto yy83; {
-	if yych == '\r' goto yy85; {
+	if yych == '\n' {
+		goto yy83
 	}
 	goto yy78
-	}
 yy83:
 	++p
 	{ continue; }
 yy85:
 	yych = *++p
-	if yych == '\n' goto yy87; {
-	p = q
+	if yych == '\n' {
+		goto yy87
 	}
 	goto yy78
 yy87:
@@ -791,17 +781,15 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 		goto yy100
 	}
 	if yych <= '\r' {
-		if yych <= 0x00 goto yy98; {
-		if yych <= '\n' goto yy103; {
+		if yych <= 0x00 {
+			goto yy98
 		}
 		goto yy105
-		}
 	} else {
-		if yych <= ' ' goto yy103; {
-		if yych <= '$' goto yy107; {
+		if yych <= ' ' {
+			goto yy103
 		}
 		goto yy103
-		}
 	}
 yy98:
 	++p
@@ -834,8 +822,8 @@ yy103:
     }
 yy105:
 	yych = *++p
-	if yych == '\n' goto yy108; {
-	{
+	if yych == '\n' {
+		goto yy108
 	}
       last_token_ = start
       return Error(DescribeLastError(), err)
@@ -847,28 +835,26 @@ yy107:
 	}
 	if yych <= ' ' {
 		if yych <= '\f' {
-			if yych == '\n' goto yy112; {
-			goto yy110
+			if yych == '\n' {
+				goto yy112
 			}
 		} else {
-			if yych <= '\r' goto yy115; {
-			if yych <= 0x1F goto yy110; {
+			if yych <= '\r' {
+				goto yy115
 			}
 			goto yy116
-			}
 		}
 	} else {
 		if yych <= '/' {
-			if yych == '$' goto yy118; {
-			goto yy110
+			if yych == '$' {
+				goto yy118
 			}
 		} else {
-			if yych <= ':' goto yy123; {
-			if yych <= '`' goto yy110; {
+			if yych <= ':' {
+				goto yy123
 			}
-			if yych <= '{' goto yy125; {
-			}
-			goto yy110
+			if yych <= '{' {
+				goto yy125
 			}
 		}
 	}
@@ -897,8 +883,8 @@ yy112:
     }
 yy115:
 	yych = *++p
-	if yych == '\n' goto yy126; {
-	goto yy111
+	if yych == '\n' {
+		goto yy126
 	}
 yy116:
 	++p
@@ -935,8 +921,8 @@ yy125:
 	goto yy111
 yy126:
 	yych = *++p
-	if yych == ' ' goto yy126; {
-	{
+	if yych == ' ' {
+		goto yy126
 	}
       continue
     }
@@ -945,8 +931,8 @@ yy129:
 	if yybm[0+yych] & 128 {
 		goto yy129
 	}
-	if yych == '}' goto yy132; {
-	p = q
+	if yych == '}' {
+		goto yy132
 	}
 	goto yy111
 yy132:

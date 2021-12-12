@@ -60,7 +60,7 @@ type LinePrinter struct {
 LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
   term := getenv("TERM")
   smart_terminal_ = isatty(1) && term && string(term) != "dumb"
-  if term && string(term) == "dumb" {
+  if (term && string(term) == "dumb") {
     smart_terminal_ = false
   } else {
     console_ = GetStdHandle(STD_OUTPUT_HANDLE)
@@ -68,15 +68,15 @@ LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
     smart_terminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
   }
   supports_color_ = smart_terminal_
-  if !supports_color_ {
+  if (!supports_color_) {
     clicolor_force := getenv("CLICOLOR_FORCE")
     supports_color_ = clicolor_force && string(clicolor_force) != "0"
   }
   // Try enabling ANSI escape sequence support on Windows 10 terminals.
-  if supports_color_ {
+  if (supports_color_) {
     DWORD mode
-    if GetConsoleMode(console_, &mode) {
-      if !SetConsoleMode(console_, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+    if (GetConsoleMode(console_, &mode)) {
+      if (!SetConsoleMode(console_, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
         supports_color_ = false
       }
     }

@@ -64,11 +64,10 @@ type StatusPrinter struct {
 
   template<size_t S>
   void SnprintfRate(double rate, char(&buf)[S], string format) {
-    if rate == -1 {
+    if (rate == -1)
       snprintf(buf, S, "?")
-    } else {
+    else
       snprintf(buf, S, format, rate)
-    }
   }
 
   type SlidingRateInfo struct {
@@ -77,18 +76,15 @@ type StatusPrinter struct {
     double rate() { return rate_; }
 
     void UpdateRate(int update_hint, int64_t time_millis_) {
-      if update_hint == last_update_ {
+      if (update_hint == last_update_)
         return
-      }
       last_update_ = update_hint
 
-      if times_.size() == N {
+      if (times_.size() == N)
         times_.pop()
-      }
       times_.push(time_millis_)
-      if times_.back() != times_.front() {
+      if (times_.back() != times_.front())
         rate_ = times_.size() / ((times_.back() - times_.front()) / 1e3)
-      }
     }
 
     double rate_
@@ -108,14 +104,12 @@ StatusPrinter::StatusPrinter(const BuildConfig& config)
       current_rate_(config.parallelism) {
 
   // Don't do anything fancy in verbose mode.
-  if config_.verbosity != BuildConfig::NORMAL {
+  if (config_.verbosity != BuildConfig::NORMAL)
     printer_.set_smart_terminal(false)
-  }
 
   progress_status_format_ = getenv("NINJA_STATUS")
-  if !progress_status_format_ {
+  if (!progress_status_format_)
     progress_status_format_ = "[%f/%t] "
-  }
 }
 
 func (s *StatusPrinter) PlanHasTotalEdges(total int) {

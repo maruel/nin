@@ -24,13 +24,11 @@ Subprocess::Subprocess(bool use_console) : fd_(-1), pid_(-1),
 }
 
 Subprocess::~Subprocess() {
-  if fd_ >= 0 {
+  if (fd_ >= 0)
     close(fd_)
-  }
   // Reap child if forgotten.
-  if pid_ != -1 {
+  if (pid_ != -1)
     Finish()
-  }
 }
 
 func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
@@ -161,7 +159,7 @@ func (s *Subprocess) Finish() ExitStatus {
     if exit == 0 {
       return ExitSuccess
     }
-  } else if se if (WIFSIGNALED(status) {
+  } else if WIFSIGNALED(status) {
     if WTERMSIG(status) == SIGINT || WTERMSIG(status) == SIGTERM || WTERMSIG(status) == SIGHUP {
       return ExitInterrupted
     }
@@ -192,9 +190,9 @@ func (s *SubprocessSet) HandlePendingInterruption() {
   }
   if sigismember(&pending, SIGINT) {
     interrupted_ = SIGINT
-  } else if se if (sigismember(&pending, SIGTERM) {
+  } else if sigismember(&pending, SIGTERM) {
     interrupted_ = SIGTERM
-  } else if se if (sigismember(&pending, SIGHUP) {
+  } else if sigismember(&pending, SIGHUP) {
     interrupted_ = SIGHUP
   }
 }

@@ -112,7 +112,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
       if !IsSystemInclude(normalized) {
         includes_.insert(normalized)
       }
-    } else if se if (!seen_show_includes && FilterInputFilename(line) {
+    } else if !seen_show_includes && FilterInputFilename(line) {
       // Drop it.
       // TODO: if we support compiling multiple output files in a single
       // cl.exe invocation, we should stash the filename.

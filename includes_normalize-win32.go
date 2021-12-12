@@ -23,7 +23,7 @@ func InternalGetFullPathName(file_name *StringPiece, buffer *char, buffer_length
     *err = "GetFullPathNameA(" + file_name.AsString() + "): " +
         GetLastErrorString()
     return false
-  } else if se if (result_size > buffer_length {
+  } else if result_size > buffer_length {
     *err = "path too long"
     return false
   }

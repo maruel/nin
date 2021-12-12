@@ -47,11 +47,9 @@ type Pool struct {
 
   type WeightedEdgeCmp struct {
     bool operator()(const Edge* a, const Edge* b) {
-      if a == nil return b; {
-      if b == nil return false; {
-      }
+      if (!a) return b
+      if (!b) return false
       weight_diff := a.weight() - b.weight()
-      }
       return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
     }
   }

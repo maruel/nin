@@ -125,7 +125,7 @@ func main() int {
     total += times[i]
     if times[i] < min {
       min = times[i]
-    } else if se if (times[i] > max {
+    } else if times[i] > max {
       max = times[i]
     }
   }

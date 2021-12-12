@@ -69,9 +69,9 @@ type StringPieceCmp struct {
   }
   bool operator()(const StringPiece& a, const StringPiece& b) {
     cmp := memcmp(a.str_, b.str_, min(a.len_, b.len_))
-    if cmp < 0 {
+    if (cmp < 0) {
       return true
-    } else if se if (cmp > 0 {
+    } else if (cmp > 0) {
       return false
     } else {
       return a.len_ < b.len_

@@ -781,7 +781,7 @@ func (b *Builder) Build(err *string) bool {
       } else {
         *err = "subcommand failed"
       }
-    } else if se if (failures_allowed < config_.failures_allowed {
+    } else if failures_allowed < config_.failures_allowed {
       *err = "cannot make progress due to previous errors"
     } else {
       *err = "stuck [this is a bug]"
@@ -977,7 +977,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
       // complexity in IncludesNormalize::Relativize.
       deps_nodes.push_back(state_.GetNode(*i, ~0u))
     }
-  } else if se if (deps_type == "gcc" {
+  } else if deps_type == "gcc" {
     depfile := result.edge.GetUnescapedDepfile()
     if len(depfile) == 0 {
       *err = string("edge with deps=gcc but no depfile makes no sense")

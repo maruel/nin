@@ -229,7 +229,7 @@ func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
     return false
   }
 
-  if fwrite(contents.data(), 1, contents.length(), fp) < contents.length()  {
+  if fwrite(contents.data(), 1, contents.length(), fp) < contents.length() {
     Error("WriteFile(%s): Unable to write to the file. %s", path, strerror(errno))
     fclose(fp)
     return false
@@ -269,7 +269,7 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
     if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
       return 1
     }
-  } else if se if (attributes & FILE_ATTRIBUTE_READONLY {
+  } else if attributes & FILE_ATTRIBUTE_READONLY {
     // On non-Windows systems, remove() will happily delete read-only files.
     // On Windows Ninja should behave the same:
     //   https://github.com/ninja-build/ninja/issues/1886

@@ -136,26 +136,24 @@ func (d *DepfileParser) Parse(content *string, err *string) bool {
       }
       if yych <= '\r' {
         if yych <= '\t' {
-          if yych >= 0x01 goto yy4; {
-        } else {
+          if yych >= 0x01 {
+          	goto yy4
           }
-          if yych <= '\n' goto yy6; {
-          if yych <= '\f' goto yy4; {
+          if yych <= '\n' {
+          	goto yy6
           }
           goto yy8
-          }
         }
       } else {
         if yych <= '$' {
-          if yych <= '#' goto yy4; {
-          goto yy12
+          if yych <= '#' {
+          	goto yy4
           }
         } else {
-          if yych <= '?' goto yy4; {
-          if yych <= '\\' goto yy13; {
+          if yych <= '?' {
+          	goto yy4
           }
           goto yy4
-          }
         }
       }
       ++in
@@ -179,8 +177,8 @@ yy6:
       }
 yy8:
       yych = *++in
-      if yych == '\n' goto yy6; {
-      goto yy5
+      if yych == '\n' {
+      	goto yy6
       }
 yy9:
       yych = *++in
@@ -200,36 +198,33 @@ yy11:
       }
 yy12:
       yych = *++in
-      if yych == '$' goto yy14; {
-      goto yy5
+      if yych == '$' {
+      	goto yy14
       }
 yy13:
       yych = *(yymarker = ++in)
       if yych <= ' ' {
         if yych <= '\n' {
-          if yych <= 0x00 goto yy5; {
-          if yych <= '\t' goto yy16; {
+          if yych <= 0x00 {
+          	goto yy5
           }
           goto yy17
-          }
         } else {
-          if yych == '\r' goto yy19; {
-          if yych <= 0x1F goto yy16; {
+          if yych == '\r' {
+          	goto yy19
           }
           goto yy21
-          }
         }
       } else {
         if yych <= '9' {
-          if yych == '#' goto yy23; {
-          goto yy16
+          if yych == '#' {
+          	goto yy23
           }
         } else {
-          if yych <= ':' goto yy25; {
-          if yych == '\\' goto yy27; {
+          if yych <= ':' {
+          	goto yy25
           }
           goto yy16
-          }
         }
       }
 yy14:
@@ -250,8 +245,8 @@ yy17:
       }
 yy19:
       yych = *++in
-      if yych == '\n' goto yy17; {
-      in = yymarker
+      if yych == '\n' {
+      	goto yy17
       }
       goto yy5
 yy21:
@@ -282,18 +277,16 @@ yy23:
 yy25:
       yych = *++in
       if yych <= '\f' {
-        if yych <= 0x00 goto yy28; {
-        if yych <= 0x08 goto yy26; {
+        if yych <= 0x00 {
+        	goto yy28
         }
-        if yych <= '\n' goto yy28; {
+        if yych <= '\n' {
+        	goto yy28
         }
-      } else {
-        }
-        if yych <= '\r' goto yy28; {
-        if yych == ' ' goto yy28; {
+        if yych <= '\r' {
+        	goto yy28
         }
       }
-        }
 yy26:
       {
         // De-escape colon sign, but preserve other leading backslashes.
@@ -311,29 +304,26 @@ yy27:
       yych = *++in
       if yych <= ' ' {
         if yych <= '\n' {
-          if yych <= 0x00 goto yy11; {
-          if yych <= '\t' goto yy16; {
+          if yych <= 0x00 {
+          	goto yy11
           }
           goto yy11
-          }
         } else {
-          if yych == '\r' goto yy11; {
-          if yych <= 0x1F goto yy16; {
+          if yych == '\r' {
+          	goto yy11
           }
           goto yy30
-          }
         }
       } else {
         if yych <= '9' {
-          if yych == '#' goto yy23; {
-          goto yy16
+          if yych == '#' {
+          	goto yy23
           }
         } else {
-          if yych <= ':' goto yy25; {
-          if yych == '\\' goto yy32; {
+          if yych <= ':' {
+          	goto yy25
           }
           goto yy16
-          }
         }
       }
 yy28:
@@ -367,29 +357,26 @@ yy32:
       yych = *++in
       if yych <= ' ' {
         if yych <= '\n' {
-          if yych <= 0x00 goto yy11; {
-          if yych <= '\t' goto yy16; {
+          if yych <= 0x00 {
+          	goto yy11
           }
           goto yy11
-          }
         } else {
-          if yych == '\r' goto yy11; {
-          if yych <= 0x1F goto yy16; {
+          if yych == '\r' {
+          	goto yy11
           }
           goto yy21
-          }
         }
       } else {
         if yych <= '9' {
-          if yych == '#' goto yy23; {
-          goto yy16
+          if yych == '#' {
+          	goto yy23
           }
         } else {
-          if yych <= ':' goto yy25; {
-          if yych == '\\' goto yy27; {
+          if yych <= ':' {
+          	goto yy25
           }
           goto yy16
-          }
         }
       }
     }
@@ -422,7 +409,7 @@ yy32:
             outs_.push_back(piece)
           }
         }
-      } else if se if (!is_dependency {
+      } else if !is_dependency {
         // We've passed an input on the left side; reject new inputs.
         poisoned_input = true
       }

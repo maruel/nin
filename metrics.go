@@ -77,9 +77,8 @@ Metrics* g_metrics = nil
 // Compute a platform-specific high-res timer value that fits into an int64.
 int64_t HighResTimer() {
   timeval tv
-  if gettimeofday(&tv, nil) < 0 {
+  if (gettimeofday(&tv, nil) < 0)
     Fatal("gettimeofday: %s", strerror(errno))
-  }
   return (int64_t)tv.tv_sec * 1000*1000 + tv.tv_usec
 }
 
@@ -94,18 +93,16 @@ int64_t LargeIntegerToInt64(const LARGE_INTEGER& i) {
 
 int64_t HighResTimer() {
   LARGE_INTEGER counter
-  if !QueryPerformanceCounter(&counter) {
+  if (!QueryPerformanceCounter(&counter))
     Fatal("QueryPerformanceCounter: %s", GetLastErrorString())
-  }
 }
 
 int64_t TimerToMicros(int64_t dt) {
   static int64_t ticks_per_sec = 0
-  if !ticks_per_sec {
+  if (!ticks_per_sec) {
     LARGE_INTEGER freq
-    if !QueryPerformanceFrequency(&freq) {
+    if (!QueryPerformanceFrequency(&freq))
       Fatal("QueryPerformanceFrequency: %s", GetLastErrorString())
-    }
     ticks_per_sec = LargeIntegerToInt64(freq)
   }
 
@@ -115,15 +112,13 @@ int64_t TimerToMicros(int64_t dt) {
 
 ScopedMetric::ScopedMetric(Metric* metric) {
   metric_ = metric
-  if !metric_ {
+  if (!metric_)
     return
-  }
   start_ = HighResTimer()
 }
 ScopedMetric::~ScopedMetric() {
-  if !metric_ {
+  if (!metric_)
     return
-  }
   metric_.count++
   int64_t dt = TimerToMicros(HighResTimer() - start_)
   metric_.sum += dt

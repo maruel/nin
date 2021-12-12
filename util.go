@@ -149,7 +149,7 @@ void CanonicalizePath(char* path, size_t* len, uint64_t* slash_bits) {
         // '.' component; eliminate.
         src += 2
         continue
-      } else if se if (src[1] == '.' && (src + 2 == end || IsPathSeparator(src[2])) {
+      } else if src[1] == '.' && (src + 2 == end || IsPathSeparator(src[2])) {
         // '..' component.  Back up if possible.
         if component_count > 0 {
           dst = components[component_count - 1]
@@ -205,12 +205,11 @@ void CanonicalizePath(char* path, size_t* len, uint64_t* slash_bits) {
 }
 
 static inline bool IsKnownShellSafeCharacter(char ch) {
-  if 'A' <= ch && ch <= 'Z' return true; {
-  if 'a' <= ch && ch <= 'z' return true; {
+  if 'A' <= ch && ch <= 'Z' {
+  	return true
   }
-  if '0' <= ch && ch <= '9' return true; {
-  }
-
+  if '0' <= ch && ch <= '9' {
+  	return true
   }
   switch (ch) {
     case '_':
@@ -236,16 +235,16 @@ static inline bool IsKnownWin32SafeCharacter(char ch) {
 
 static inline bool StringNeedsShellEscaping(string input) {
   for (size_t i = 0; i < input.size(); ++i) {
-    if !IsKnownShellSafeCharacter(input[i]) return true; {
-  }
+    if !IsKnownShellSafeCharacter(input[i]) {
+    	return true
     }
   return false
 }
 
 static inline bool StringNeedsWin32Escaping(string input) {
   for (size_t i = 0; i < input.size(); ++i) {
-    if !IsKnownWin32SafeCharacter(input[i]) return true; {
-  }
+    if !IsKnownWin32SafeCharacter(input[i]) {
+    	return true
     }
   return false
 }
@@ -455,11 +454,10 @@ func StripAnsiEscapeCodes(in string) string {
     }
 
     // Only strip CSIs for now.
-    if i + 1 >= in.size() break; {
-    if in[i + 1] != '[' continue; {  // Not a CSI.
+    if i + 1 >= in.size() {
+    	break
     }
     i += 2
-    }
 
     // Skip everything up to and including the next [a-zA-Z].
     while (i < in.size() && !islatinalpha(in[i]))

@@ -193,7 +193,7 @@ func (d *DepfileParser) Parse(content *string, err *string) bool {
             outs_.push_back(piece)
           }
         }
-      } else if se if (!is_dependency {
+      } else if !is_dependency {
         // We've passed an input on the left side; reject new inputs.
         poisoned_input = true
       }

@@ -495,9 +495,9 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
     for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
       fs_.Create((*out).path(), "")
     }
-  } else if se if (edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
+  } else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
     // Don't do anything.
-  } else if se if (edge.rule().name() == "cp" {
+  } else if edge.rule().name() == "cp" {
     assert(!edge.inputs_.empty())
     assert(edge.outputs_.size() == 1)
     string content
@@ -505,21 +505,21 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
     if fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == DiskInterface::Okay {
       fs_.WriteFile(edge.outputs_[0].path(), content)
     }
-  } else if se if (edge.rule().name() == "touch-implicit-dep-out" {
+  } else if edge.rule().name() == "touch-implicit-dep-out" {
     dep := edge.GetBinding("test_dependency")
     fs_.Create(dep, "")
     fs_.Tick()
     for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
       fs_.Create((*out).path(), "")
     }
-  } else if se if (edge.rule().name() == "touch-out-implicit-dep" {
+  } else if edge.rule().name() == "touch-out-implicit-dep" {
     dep := edge.GetBinding("test_dependency")
     for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
       fs_.Create((*out).path(), "")
     }
     fs_.Tick()
     fs_.Create(dep, "")
-  } else if se if (edge.rule().name() == "generate-depfile" {
+  } else if edge.rule().name() == "generate-depfile" {
     dep := edge.GetBinding("test_dependency")
     depfile := edge.GetUnescapedDepfile()
     string contents

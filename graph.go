@@ -396,8 +396,8 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   // date outputs, etc.  Visit all outputs and determine whether they're dirty.
   if dirty == nil {
     if !RecomputeOutputsDirty(edge, most_recent_input, &dirty, err) {
-    }
       return false
+    }
   }
 
   // Finally, visit each output and update their dirty state if necessary.

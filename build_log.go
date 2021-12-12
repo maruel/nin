@@ -384,7 +384,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   kCompactionRatio := 3
   if log_version < kCurrentVersion {
     needs_recompaction_ = true
-  } else if se if (total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
+  } else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
     needs_recompaction_ = true
   }
 

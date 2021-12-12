@@ -23,15 +23,13 @@ Subprocess::Subprocess(bool use_console) : child_(nil) , overlapped_(),
 }
 
 Subprocess::~Subprocess() {
-  if pipe_ {
-    if !CloseHandle(pipe_) {
+  if (pipe_) {
+    if (!CloseHandle(pipe_))
       Win32Fatal("CloseHandle")
-    }
   }
   // Reap child if forgotten.
-  if child_ {
+  if (child_)
     Finish()
-  }
 }
 
 func (s *Subprocess) SetupPipe(ioport HANDLE) HANDLE {

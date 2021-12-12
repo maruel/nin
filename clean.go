@@ -84,7 +84,7 @@ func (c *Cleaner) Remove(path string) {
       ret := RemoveFile(path)
       if ret == 0 {
         Report(path)
-      } else if se if (ret == -1 {
+      } else if ret == -1 {
         status_ = 1
       }
     }
