@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 func InternalGetFullPathName(file_name *StringPiece, buffer *char, buffer_length size_t, err *string) bool {
   result_size := GetFullPathNameA(file_name.AsString(), buffer_length, buffer, nil)
   if result_size == 0 {
@@ -107,8 +105,6 @@ func IsFullPathName(s StringPiece) bool {
 
   return true
 }
-
-}  // anonymous namespace
 
 IncludesNormalize::IncludesNormalize(string relative_to) {
   string err

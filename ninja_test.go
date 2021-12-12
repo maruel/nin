@@ -36,7 +36,6 @@ void RegisterTest(testing::Test* (*factory)(), string name) {
   tests[ntests++].name = name
 }
 
-namespace {
 string StringPrintf(string format, ...) {
   const int N = 1024
   char buf[N]
@@ -96,8 +95,6 @@ func ReadFlags(argc *int, argv ***char, test_filter *string) bool {
   *argc -= optind
   return true
 }
-
-}  // namespace
 
 bool testing::Test::Check(bool condition, string file, int line, string error) {
   if condition == nil {

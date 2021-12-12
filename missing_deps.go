@@ -46,8 +46,6 @@ type MissingDependencyScanner struct {
 }
 
 
-namespace {
-
 // ImplicitDepLoader variant that stores dep nodes into the given output
 // without updating graph deps like the base loader does.
 type NodeStoringImplicitDepLoader struct {
@@ -67,8 +65,6 @@ func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_in
   }
   return true
 }
-
-}  // namespace
 
 MissingDependencyScannerDelegate::~MissingDependencyScannerDelegate() {}
 

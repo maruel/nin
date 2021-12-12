@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 func Replace(input string, find string, replace string) string {
   result := input
   size_t start_pos = 0
@@ -28,8 +26,6 @@ func Replace(input string, find string, replace string) string {
   }
   return result
 }
-
-}  // anonymous namespace
 
 func EscapeForDepfile(path string) string {
   // Depfiles don't escape single \.

@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 const char kTestFilename[] = "DepsLogTest-tempfile"
 
 type DepsLogTest struct {
@@ -492,6 +490,4 @@ TEST_F(DepsLogTest, ReverseDepsNodes) {
   rev_deps = log.GetFirstReverseDepsNode(state.GetNode("bar.h", 0))
   EXPECT_TRUE(rev_deps == state.GetNode("out.o", 0))
 }
-
-}  // anonymous namespace
 

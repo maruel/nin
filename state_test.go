@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 TEST(State, Basic) {
   State state
 
@@ -43,6 +41,4 @@ TEST(State, Basic) {
   EXPECT_FALSE(state.GetNode("in2", 0).dirty())
   EXPECT_FALSE(state.GetNode("out", 0).dirty())
 }
-
-}  // namespace
 

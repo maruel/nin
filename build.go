@@ -136,8 +136,6 @@ type Builder struct {
 }
 
 
-namespace {
-
 // A CommandRunner that doesn't actually run the commands.
 type DryRunCommandRunner struct {
   virtual ~DryRunCommandRunner() {}
@@ -164,8 +162,6 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
    finished_.pop()
    return true
 }
-
-}  // namespace
 
 Plan::Plan(Builder* builder)
   : builder_(builder)

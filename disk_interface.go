@@ -57,8 +57,6 @@ type RealDiskInterface struct {
 }
 
 
-namespace {
-
 func DirName(path string) string {
   static const char kPathSeparators[] = "\\/"
   static const char kPathSeparators[] = "/"
@@ -141,8 +139,6 @@ func StatAllFilesInDir(dir string, stamps *map<string, TimeStamp>, err *string) 
   FindClose(find_handle)
   return true
 }
-
-}  // namespace
 
 // DiskInterface ---------------------------------------------------------------
 

@@ -17,14 +17,10 @@
 package ginja
 
 
-namespace {
-
 func CanonicalizePath(path *string) {
   uint64_t unused
   ::CanonicalizePath(path, &unused)
 }
-
-}  // namespace
 
 TEST(CanonicalizePath, PathSamples) {
   string path

@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 // Command-line options.
 type Options struct {
   // Build file to load.
@@ -1324,8 +1322,6 @@ NORETURN void real_main(int argc, char** argv) {
   status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
   exit(1)
 }
-
-}  // anonymous namespace
 
 func main(argc int, argv **char) int {
   // Set a handler to catch crashes not caught by the __try..__except

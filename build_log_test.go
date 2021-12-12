@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 const char kTestFilename[] = "BuildLogTest-tempfile"
 
 type BuildLogTest struct {
@@ -336,6 +334,4 @@ TEST_F(BuildLogRecompactTest, Recompact) {
   ASSERT_TRUE(log2.LookupByOutput("out"))
   ASSERT_FALSE(log2.LookupByOutput("out2"))
 }
-
-}  // anonymous namespace
 

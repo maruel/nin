@@ -19,16 +19,12 @@ package ginja
 
 // SetWithLots need setrlimit.
 
-namespace {
-
-kSimpleCommand := "cmd /c dir \\"
-kSimpleCommand := "ls /"
+string kSimpleCommand = "cmd /c dir \\"
+string kSimpleCommand = "ls /"
 
 type SubprocessTest struct {
   SubprocessSet subprocs_
 }
-
-}  // anonymous namespace
 
 // Run a command that fails and emits to stderr.
 TEST_F(SubprocessTest, BadCommandStderr) {

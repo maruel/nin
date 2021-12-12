@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 type DiskInterfaceTest struct {
   func SetUp() {
     // These tests do real disk accesses, so create a temp dir.
@@ -298,6 +296,4 @@ TEST_F(StatTest, Middle) {
   ASSERT_TRUE(GetNode("mid").dirty())
   ASSERT_TRUE(GetNode("out").dirty())
 }
-
-}  // namespace
 

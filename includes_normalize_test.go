@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 func GetCurDir() string {
   char buf[_MAX_PATH]
   _getcwd(buf, sizeof(buf))
@@ -40,8 +38,6 @@ func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
   EXPECT_EQ("", err)
   return result
 }
-
-}  // namespace
 
 TEST(IncludesNormalize, Simple) {
   EXPECT_EQ("b", NormalizeAndCheckNoError("a\\..\\b"))

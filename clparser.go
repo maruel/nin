@@ -41,14 +41,10 @@ type CLParser struct {
 }
 
 
-namespace {
-
 // Return true if \a input ends with \a needle.
 func EndsWith(input string, needle string) bool {
   return (input.size() >= needle.size() && input.substr(input.size() - needle.size()) == needle)
 }
-
-}  // anonymous namespace
 
 // static
 func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {

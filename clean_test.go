@@ -17,8 +17,6 @@
 package ginja
 
 
-namespace {
-
 const char kTestFilename[] = "CleanTest-tempfile"
 
 type CleanTest struct {
@@ -461,5 +459,4 @@ TEST_F(CleanDeadTest, CleanDeadPreservesInputs) {
   EXPECT_NE(0, fs_.Stat("out2", &err))
   log2.Close()
 }
-}  // anonymous namespace
 

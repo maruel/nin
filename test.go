@@ -23,7 +23,6 @@ package ginja
 // streaming notes to them with operator<<, and for failing tests the lhs and
 // rhs are not printed. That's so that this header does not have to include
 // sstream, which slows down building ninja_test almost 20%.
-namespace testing {
 class Test {
   bool failed_
   int assertion_failures_
@@ -35,7 +34,6 @@ class Test {
   bool Failed() const { return failed_; }
   int AssertionFailures() const { return assertion_failures_; }
   void AddAssertionFailure() { assertion_failures_++; }
-}
 }
 
 void RegisterTest(testing::Test* (*)(), string)

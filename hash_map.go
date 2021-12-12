@@ -50,7 +50,6 @@ unsigned int MurmurHash2(const void* key, size_t len) {
   return h
 }
 
-namespace std {
 template<>
 type hash struct {
   typedef StringPiece argument_type
@@ -59,7 +58,6 @@ type hash struct {
   size_t operator()(StringPiece key) {
     return MurmurHash2(key.str_, key.len_)
   }
-}
 }
 
 using stdext::hash_map
@@ -83,13 +81,11 @@ type StringPieceCmp struct {
 
 using __gnu_cxx::hash_map
 
-namespace __gnu_cxx {
 template<>
 type hash struct {
   size_t operator()(StringPiece key) {
     return MurmurHash2(key.str_, key.len_)
   }
-}
 }
 
 // A template for hash_maps keyed by a StringPiece whose string is

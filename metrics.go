@@ -74,8 +74,6 @@ type Stopwatch struct {
 
 Metrics* g_metrics = nil
 
-namespace {
-
 // Compute a platform-specific high-res timer value that fits into an int64.
 int64_t HighResTimer() {
   timeval tv
@@ -114,8 +112,6 @@ int64_t TimerToMicros(int64_t dt) {
   // dt is in ticks.  We want microseconds.
   return (dt * 1000000) / ticks_per_sec
 }
-
-}  // anonymous namespace
 
 ScopedMetric::ScopedMetric(Metric* metric) {
   metric_ = metric
