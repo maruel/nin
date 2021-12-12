@@ -12,45 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
 
+import (
+	"log"
+	"strconv"
+	"strings"
+)
 
 // The version number of the current Ninja release.  This will always
 // be "git" on trunk.
-//extern string kNinjaVersion
-
-
-string kNinjaVersion = "1.10.2.git"
+const kNinjaVersion = "1.10.2.git"
 
 // Parse the major/minor components of a version string.
-func ParseVersion(version string, major *int, minor *int) {
-  size_t end = version.find('.')
-  *major = atoi(version.substr(0, end))
-  *minor = 0
-  if end != string::npos {
-    size_t start = end + 1
-    end = version.find('.', start)
-    *minor = atoi(version.substr(start, end))
-  }
+func ParseVersion(version string) (int, int) {
+	end := strings.Index(version, ".")
+	if end == -1 {
+		end = len(version)
+	}
+	major, _ := strconv.Atoi(version[:end])
+	minor := 0
+	if end != len(version) {
+		start := end + 1
+		end = strings.Index(version[start:], ".")
+		minor, _ = strconv.Atoi(version[start:end])
+	}
+	return major, minor
 }
 
-// Check whether \a version is compatible with the current Ninja version,
+// Check whether a version is compatible with the current Ninja version,
 // aborting if not.
 func CheckNinjaVersion(version string) {
-  int bin_major, bin_minor
-  ParseVersion(kNinjaVersion, &bin_major, &bin_minor)
-  int file_major, file_minor
-  ParseVersion(version, &file_major, &file_minor)
-
-  if bin_major > file_major {
-    Warning("ninja executable version (%s) greater than build file " "ninja_required_version (%s); versions may be incompatible.", kNinjaVersion, version)
-    return
-  }
-
-  if (bin_major == file_major && bin_minor < file_minor) || bin_major < file_major {
-    Fatal("ninja version (%s) incompatible with build file " "ninja_required_version version (%s).", kNinjaVersion, version)
-  }
+	bin_major, bin_minor := ParseVersion(kNinjaVersion)
+	file_major, file_minor := ParseVersion(version)
+	if bin_major > file_major {
+		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", kNinjaVersion, version)
+	} else if (bin_major == file_major && bin_minor < file_minor) || bin_major < file_major {
+		log.Fatalf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", kNinjaVersion, version)
+	}
 }
-

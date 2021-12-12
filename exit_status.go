@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
 
+type ExitStatus int32
 
-enum ExitStatus {
-  ExitSuccess,
-  ExitFailure,
-  ExitInterrupted
-}
-
+const (
+	ExitSuccess ExitStatus = iota
+	ExitFailure
+	ExitInterrupted
+)

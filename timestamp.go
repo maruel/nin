@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
-
 
 // When considering file modification times we only care to compare
 // them against one another -- we never convert them to an absolute
 // real time.  On POSIX we use timespec (seconds&nanoseconds since epoch)
 // and on Windows we use a different value.  Both fit in an int64.
-typedef int64_t TimeStamp
-
+type TimeStamp int64

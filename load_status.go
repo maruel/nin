@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
 
+type LoadStatus int32
 
-enum LoadStatus {
-  LOAD_ERROR,
-  LOAD_SUCCESS,
-  LOAD_NOT_FOUND,
-}
-
+const (
+	LOAD_ERROR LoadStatus = iota
+	LOAD_SUCCESS
+	LOAD_NOT_FOUND
+)

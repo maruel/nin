@@ -12,25 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
 
-
-//extern bool g_explaining
-
-//extern bool g_keep_depfile
-
-//extern bool g_keep_rsp
-
-//extern bool g_experimental_statcache
-
-
-bool g_explaining = false
-
-bool g_keep_depfile = false
-
-bool g_keep_rsp = false
-
-bool g_experimental_statcache = true
-
+var (
+	g_explaining             = false
+	g_keep_depfile           = false
+	g_keep_rsp               = false
+	g_experimental_statcache = true
+)

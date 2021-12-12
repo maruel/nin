@@ -12,16 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginga
-
-
-typedef signed short int16_t
-typedef unsigned short uint16_t
-// A 64-bit integer type
-typedef signed long long int64_t
-typedef unsigned long long uint64_t
-
-// printf format specifier for uint64_t, from C99.
-
