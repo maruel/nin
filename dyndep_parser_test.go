@@ -18,13 +18,13 @@ package ginja
 
 
 type DyndepParserTest struct {
-  func AssertParse(input string) {
+  func (d *DyndepParserTest) AssertParse(input string) {
     string err
     EXPECT_TRUE(parser.ParseTest(input, &err))
     ASSERT_EQ("", err)
   }
 
-  func SetUp() {
+  func (d *DyndepParserTest) SetUp() {
     ::AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
   }
 

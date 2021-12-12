@@ -103,6 +103,7 @@ DepsLog::~DepsLog() {
   Close()
 }
 
+// Writing (build-time) interface.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
   if needs_recompaction_ {
     if !Recompact(path, err) {
@@ -380,6 +381,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) Node* {
   return nil
 }
 
+// Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
   METRIC_RECORD(".ninja_deps recompact")
 
@@ -435,6 +437,12 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
   return true
 }
 
+// Returns if the deps entry for a node is still reachable from the manifest.
+//
+// The deps log can contain deps entries for files that were built in the
+// past but are no longer part of the manifest.  This function returns if
+// this is the case for a given node.  This function is slow, don't call
+// it from code that runs on every build.
 func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
   // Skip entries that don't have in-edges or whose edges don't have a
   // "deps" attribute. They were in the deps log from previous builds, but
@@ -445,6 +453,8 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
   return node.in_edge() && !node.in_edge().GetBinding("deps").empty()
 }
 
+// Updates the in-memory representation.  Takes ownership of |deps|.
+// Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
   if out_id >= (int)deps_.size() {
     deps_.resize(out_id + 1)
@@ -458,6 +468,7 @@ func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
   return delete_old
 }
 
+// Write a node name record, assigning it an id.
 func (d *DepsLog) RecordId(node *Node) bool {
   path_size := node.path().size()
   padding := (4 - path_size % 4) % 4  // Pad path to 4 byte boundary.
@@ -496,6 +507,8 @@ func (d *DepsLog) RecordId(node *Node) bool {
   return true
 }
 
+// Should be called before using file_. When false is returned, errno will
+// be set.
 func (d *DepsLog) OpenForWriteIfNeeded() bool {
   if file_path_.empty() {
     return true

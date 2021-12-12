@@ -31,38 +31,38 @@ type Node struct {
         id_(-1) {}
 
   // Return false on error.
-  func StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
+  func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
     if status_known() {
       return true
     }
   }
 
   // Mark as not-yet-stat()ed and not dirty.
-  func ResetState() {
+  func (n *Node) ResetState() {
     mtime_ = -1
     exists_ = ExistenceStatusUnknown
     dirty_ = false
   }
 
   // Mark the Node as already-stat()ed and missing.
-  func MarkMissing() {
+  func (n *Node) MarkMissing() {
     if mtime_ == -1 {
       mtime_ = 0
     }
     exists_ = ExistenceStatusMissing
   }
 
-  func exists() bool {
+  func (n *Node) exists() bool {
     return exists_ == ExistenceStatusExists
   }
 
-  func status_known() bool {
+  func (n *Node) status_known() bool {
     return exists_ != ExistenceStatusUnknown
   }
 
   string path() const { return path_; }
   // Get |path()| but use slash_bits to convert back to original slash styles.
-  func PathDecanonicalized() string {
+  func (n *Node) PathDecanonicalized() string {
   }
   static string PathDecanonicalized(string path, uint64_t slash_bits)
   uint64_t slash_bits() const { return slash_bits_; }
@@ -173,11 +173,11 @@ type Edge struct {
   // #2 and #3 when we need to access the various subsets.
   int implicit_deps_
   int order_only_deps_
-  func is_implicit(index size_t) bool {
+  func (e *Edge) is_implicit(index size_t) bool {
     return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
         !is_order_only(index)
   }
-  func is_order_only(index size_t) bool {
+  func (e *Edge) is_order_only(index size_t) bool {
     return index >= inputs_.size() - order_only_deps_
   }
 
@@ -187,7 +187,7 @@ type Edge struct {
   // These are stored in outputs_ in that order, and we keep a count of
   // #2 to use when we need to access the various subsets.
   int implicit_outs_
-  func is_implicit_out(index size_t) bool {
+  func (e *Edge) is_implicit_out(index size_t) bool {
     return index >= outputs_.size() - implicit_outs_
   }
 
@@ -208,7 +208,7 @@ type ImplicitDepLoader struct {
       : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
         depfile_parser_options_(depfile_parser_options) {}
 
-  func deps_log() DepsLog* {
+  func (i *ImplicitDepLoader) deps_log() DepsLog* {
     return deps_log_
   }
 
@@ -231,14 +231,14 @@ type DependencyScan struct {
         dep_loader_(state, deps_log, disk_interface, depfile_parser_options),
         dyndep_loader_(state, disk_interface) {}
 
-  func build_log() BuildLog* {
+  func (d *DependencyScan) build_log() BuildLog* {
     return build_log_
   }
-  func set_build_log(log *BuildLog) {
+  func (d *DependencyScan) set_build_log(log *BuildLog) {
     build_log_ = log
   }
 
-  func deps_log() DepsLog* {
+  func (d *DependencyScan) deps_log() DepsLog* {
     return dep_loader_.deps_log()
   }
 
@@ -249,6 +249,7 @@ type DependencyScan struct {
 }
 
 
+// Return false on error.
 func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
   METRIC_RECORD("node stat")
   mtime_ = disk_interface.Stat(path_, err)
@@ -259,16 +260,27 @@ func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
   return true
 }
 
+// If the file doesn't exist, set the mtime_ from its dependencies
 func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
   if !exists() {
     mtime_ = max(mtime_, mtime)
   }
 }
 
+// Update the |dirty_| state of the given node by inspecting its input edge.
+// Examine inputs, outputs, and command lines to judge whether an edge
+// needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
+// state accordingly.
+// Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
   vector<Node*> stack
 }
 
+// Update the |dirty_| state of the given node by inspecting its input edge.
+// Examine inputs, outputs, and command lines to judge whether an edge
+// needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
+// state accordingly.
+// Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *string) bool {
   edge := node.in_edge()
   if edge == nil {
@@ -453,6 +465,8 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string
   return false
 }
 
+// Recompute whether any output of the edge is dirty, if so sets |*dirty|.
+// Returns false on failure.
 func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
   command := edge.EvaluateCommand(/*incl_rsp_file=*/true)
   for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
@@ -464,6 +478,8 @@ func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *No
   return true
 }
 
+// Recompute whether a given single output should be marked dirty.
+// Returns true if so.
 func (d *DependencyScan) RecomputeOutputDirty(edge *const Edge, most_recent_input *const Node, command string, output *Node) bool {
   if edge.is_phony() {
     // Phony edges don't write any output.  Outputs are only dirty if
@@ -539,14 +555,23 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *const Edge, most_recent_inpu
   return false
 }
 
+// Load a dyndep file from the given node's path and update the
+// build graph with the new information.  One overload accepts
+// a caller-owned 'DyndepFile' object in which to store the
+// information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, err *string) bool {
   return dyndep_loader_.LoadDyndeps(node, err)
 }
 
+// Load a dyndep file from the given node's path and update the
+// build graph with the new information.  One overload accepts
+// a caller-owned 'DyndepFile' object in which to store the
+// information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) bool {
   return dyndep_loader_.LoadDyndeps(node, ddf, err)
 }
 
+// Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
   for (vector<Node*>::const_iterator i = inputs_.begin(); i != inputs_.end(); ++i) {
     if (*i).in_edge() && !(*i).in_edge().outputs_ready() {

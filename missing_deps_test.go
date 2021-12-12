@@ -34,12 +34,12 @@ type MissingDependencyScannerTest struct {
 
   MissingDependencyScanner& scanner() { return scanner_; }
 
-  func RecordDepsLogDep(from string, to string) {
+  func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
     Node* node_deps[] = { state_.LookupNode(to) }
     deps_log_.RecordDeps(state_.LookupNode(from), 0, 1, node_deps)
   }
 
-  func ProcessAllNodes() {
+  func (m *MissingDependencyScannerTest) ProcessAllNodes() {
     string err
     nodes := state_.RootNodes(&err)
     EXPECT_EQ("", err)
@@ -48,7 +48,7 @@ type MissingDependencyScannerTest struct {
     }
   }
 
-  func CreateInitialState() {
+  func (m *MissingDependencyScannerTest) CreateInitialState() {
     EvalString deps_type
     deps_type.AddText("gcc")
     compile_rule_.AddBinding("deps", deps_type)
@@ -59,13 +59,13 @@ type MissingDependencyScannerTest struct {
     state_.AddOut(compile_edge, "compiled_object", 0)
   }
 
-  func CreateGraphDependencyBetween(from string, to string) {
+  func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
     from_node := state_.LookupNode(from)
     from_edge := from_node.in_edge()
     state_.AddIn(from_edge, to, 0)
   }
 
-  func AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
+  func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
     flaky_node := state_.LookupNode(flaky)
     ASSERT_EQ(1u, scanner().nodes_missing_deps_.count(flaky_node))
     generated_node := state_.LookupNode(generated)

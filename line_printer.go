@@ -83,6 +83,8 @@ LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
   }
 }
 
+// Overprints the current line. If type is ELIDE, elides to_print to fit on
+// one line.
 func (l *LinePrinter) Print(to_print string, type LineType) {
   if console_locked_ {
     line_buffer_ = to_print
@@ -137,6 +139,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
   }
 }
 
+// Print the given data to the console, or buffer it if it is locked.
 func (l *LinePrinter) PrintOrBuffer(data string, size size_t) {
   if console_locked_ {
     output_buffer_.append(data, size)
@@ -147,6 +150,7 @@ func (l *LinePrinter) PrintOrBuffer(data string, size size_t) {
   }
 }
 
+// Prints a string on a new line, not overprinting previous output.
 func (l *LinePrinter) PrintOnNewLine(to_print string) {
   if console_locked_ && !line_buffer_.empty() {
     output_buffer_.append(line_buffer_)
@@ -162,6 +166,8 @@ func (l *LinePrinter) PrintOnNewLine(to_print string) {
   have_blank_line_ = to_print.empty() || *to_print.rbegin() == '\n'
 }
 
+// Lock or unlock the console.  Any output sent to the LinePrinter while the
+// console is locked will not be printed until it is unlocked.
 func (l *LinePrinter) SetConsoleLocked(locked bool) {
   if locked == console_locked_ {
     return

@@ -40,7 +40,7 @@ type ManifestParser struct {
   ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options = ManifestParserOptions())
 
   // Parse a text string of input.  Used by tests.
-  func ParseTest(input string, err *string) bool {
+  func (m *ManifestParser) ParseTest(input string, err *string) bool {
     quiet_ = true
     return Parse("input", input, err)
   }
@@ -57,6 +57,7 @@ ManifestParser::ManifestParser(State* state, FileReader* file_reader, ManifestPa
   env_ = &state.bindings_
 }
 
+// Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input string, err *string) bool {
   lexer_.Start(filename, input)
 
@@ -123,6 +124,7 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
   return false  // not reached
 }
 
+// Parse various statement types.
 func (m *ManifestParser) ParsePool(err *string) bool {
   string name
   if !lexer_.ReadIdent(&name) {
@@ -456,6 +458,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   return true
 }
 
+// Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
   EvalString eval
   if !lexer_.ReadPath(&eval, err) {

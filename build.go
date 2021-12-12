@@ -78,7 +78,7 @@ type CommandRunner struct {
   }
 
   virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
-  func Abort() {}
+  func (c *CommandRunner) Abort() {}
 }
 
 // Options (e.g. verbosity, parallelism) passed to a build.
@@ -108,7 +108,7 @@ type Builder struct {
   ~Builder()
 
   // Used for tests.
-  func SetBuildLog(log *BuildLog) {
+  func (b *Builder) SetBuildLog(log *BuildLog) {
     scan_.set_build_log(log)
   }
 
@@ -140,6 +140,7 @@ type DryRunCommandRunner struct {
   queue<Edge*> finished_
 }
 
+// Overridden from CommandRunner:
 func (d *DryRunCommandRunner) CanRunMore() bool {
   return true
 }
@@ -166,6 +167,7 @@ Plan::Plan(Builder* builder)
   , wanted_edges_(0)
 {}
 
+// Reset state.  Clears want and ready sets.
 func (p *Plan) Reset() {
   command_edges_ = 0
   wanted_edges_ = 0
@@ -173,6 +175,9 @@ func (p *Plan) Reset() {
   want_ = nil
 }
 
+// Add a target to our plan (including all its dependencies).
+// Returns false if we don't need to build this target; may
+// fill in |err| with an error message if there's a problem.
 func (p *Plan) AddTarget(target *const Node, err *string) bool {
 }
 
@@ -238,6 +243,8 @@ func (p *Plan) EdgeWanted(edge *const Edge) {
   }
 }
 
+// Pop a ready edge off the queue of edges to build.
+// Returns NULL if there's no work to do.
 func (p *Plan) FindWork() Edge* {
   if ready_.empty() {
     return nil
@@ -248,6 +255,9 @@ func (p *Plan) FindWork() Edge* {
   return edge
 }
 
+// Submits a ready edge as a candidate for execution.
+// The edge may be delayed from running, for example if it's a member of a
+// currently-full pool.
 func (p *Plan) ScheduleWork(want_e map<Edge*, Want>::iterator) {
   if want_e.second == kWantToFinish {
     // This edge has already been scheduled.  We can get here again if an edge
@@ -270,6 +280,10 @@ func (p *Plan) ScheduleWork(want_e map<Edge*, Want>::iterator) {
   }
 }
 
+// Mark an edge as done building (whether it succeeded or failed).
+// If any of the edge's outputs are dyndep bindings of their dependents,
+// this loads dynamic dependencies from the nodes' paths.
+// Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
   map<Edge*, Want>::iterator e = want_.find(edge)
   assert(e != want_.end())
@@ -301,6 +315,10 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
   return true
 }
 
+// Update plan with knowledge that the given node is up to date.
+// If the node is a dyndep binding on any of its dependents, this
+// loads dynamic dependencies from the node's path.
+// Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) NodeFinished(node *Node, err *string) bool {
   // If this node provides dyndep info, load it now.
   if node.dyndep_pending() {
@@ -341,6 +359,8 @@ func (p *Plan) EdgeMaybeReady(want_e map<Edge*, Want>::iterator, err *string) bo
   return true
 }
 
+// Clean the given node during the build.
+// Return false on error.
 func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
   node.set_dirty(false)
 
@@ -395,6 +415,8 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
   return true
 }
 
+// Update the build plan to account for modifications made to the graph
+// by information loaded from a dyndep file.
 func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *DyndepFile, err *string) bool {
   // Recompute the dirty state of all our direct and indirect dependents now
   // that our dyndep information has been loaded.
@@ -518,6 +540,7 @@ func (p *Plan) UnmarkDependents(node *const Node, dependents *set<Node*>) {
   }
 }
 
+// Dumps the current state of the plan.
 func (p *Plan) Dump() {
   printf("pending: %d\n", (int)want_.size())
   for (map<Edge*, Want>::const_iterator e = want_.begin(); e != want_.end(); ++e) {
@@ -597,6 +620,7 @@ Builder::~Builder() {
   Cleanup()
 }
 
+// Clean up after interrupted commands by deleting output files.
 func (b *Builder) Cleanup() {
   if command_runner_.get() {
     active_edges := command_runner_.GetActiveEdges()
@@ -628,6 +652,8 @@ func (b *Builder) Cleanup() {
   }
 }
 
+// Add a target to the build, scanning dependencies.
+// @return false on error.
 func (b *Builder) AddTarget(name string, err *string) Node* {
   node := state_.LookupNode(name)
   if node == nil {
@@ -640,6 +666,8 @@ func (b *Builder) AddTarget(name string, err *string) Node* {
   return node
 }
 
+// Add a target to the build, scanning dependencies.
+// @return false on error.
 func (b *Builder) AddTarget(target *Node, err *string) bool {
   if !scan_.RecomputeDirty(target, err) {
     return false
@@ -658,10 +686,13 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
   return true
 }
 
+// Returns true if the build targets are already up to date.
 func (b *Builder) AlreadyUpToDate() bool {
   return !plan_.more_to_do()
 }
 
+// Run the build.  Returns false on error.
+// It is an error to call this function when AlreadyUpToDate() is true.
 func (b *Builder) Build(err *string) bool {
   assert(!AlreadyUpToDate())
 
@@ -801,6 +832,8 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
   return true
 }
 
+// Update status ninja logs following a command termination.
+// @return false if the build can not proceed further due to a fatal error.
 func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool {
   METRIC_RECORD("FinishCommand")
 
@@ -992,6 +1025,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
   return true
 }
 
+// Load the dyndep information provided by the given node.
 func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
   status_.BuildLoadDyndeps()
 

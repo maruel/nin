@@ -70,6 +70,9 @@ DepfileParser::DepfileParser(DepfileParserOptions options)
 //
 // If anyone actually has depfiles that rely on the more complicated
 // behavior we can adjust this.
+// Parse an input file.  Input must be NUL-terminated.
+// Warning: may mutate the content in-place and parsed StringPieces are
+// pointers within it.
 func (d *DepfileParser) Parse(content *string, err *string) bool {
   // in: current parser input point.
   // end: end of input.

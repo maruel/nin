@@ -63,7 +63,7 @@ type NinjaMain struct {
   // The type of functions that are the entry points to tools (subcommands).
   typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 
-  func IsPathDead(s StringPiece) bool {
+  func (n *NinjaMain) IsPathDead(s StringPiece) bool {
     n := state_.LookupNode(s)
     if n && n.in_edge() {
       return false
@@ -133,6 +133,9 @@ func GuessParallelism() int {
 
 // Rebuild the build manifest, if necessary.
 // Returns true if the manifest was rebuilt.
+// Rebuild the manifest, if necessary.
+// Fills in \a err on error.
+// @return true if the manifest was rebuilt.
 func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Status) bool {
   path := input_file
   if len(path) == 0 {
@@ -170,6 +173,8 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
   return true
 }
 
+// Get the Node for a given command-line path, handling features like
+// spell correction.
 func (n *NinjaMain) CollectTarget(cpath string, err *string) Node* {
   path := cpath
   if len(path) == 0 {
@@ -223,6 +228,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) Node* {
   }
 }
 
+// CollectTarget for all command-line arguments, filling in \a targets.
 func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vector<Node*>, err *string) bool {
   if argc == 0 {
     *targets = state_.DefaultNodes(err)
@@ -239,6 +245,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
   return true
 }
 
+// The various subcommands, run via "-t XXX".
 func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) int {
   vector<Node*> nodes
   string err
@@ -961,6 +968,8 @@ func WarningEnable(name string, options *Options) bool {
   }
 }
 
+// Open the build log.
+// @return false on error.
 func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
   log_path := ".ninja_log"
   if !build_dir_.empty() {
@@ -1002,6 +1011,8 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 
 // Open the deps log: load it, then open for writing.
 // @return false on error.
+// Open the deps log: load it, then open for writing.
+// @return false on error.
 func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
   path := ".ninja_deps"
   if !build_dir_.empty() {
@@ -1041,6 +1052,7 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
   return true
 }
 
+// Dump the output requested by '-d stats'.
 func (n *NinjaMain) DumpMetrics() {
   g_metrics.Report()
 
@@ -1050,6 +1062,8 @@ func (n *NinjaMain) DumpMetrics() {
   printf("path.node hash load %.2f (%d entries / %d buckets)\n", count / (double) buckets, count, buckets)
 }
 
+// Ensure the build directory exists, creating it if necessary.
+// @return false on error.
 func (n *NinjaMain) EnsureBuildDirExists() bool {
   build_dir_ = state_.bindings_.LookupVariable("builddir")
   if !build_dir_.empty() && !config_.dry_run {
@@ -1061,6 +1075,8 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
   return true
 }
 
+// Build the targets listed on the command line.
+// @return an exit code.
 func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
   string err
   vector<Node*> targets

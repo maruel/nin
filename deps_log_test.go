@@ -20,11 +20,11 @@ package ginja
 const char kTestFilename[] = "DepsLogTest-tempfile"
 
 type DepsLogTest struct {
-  func SetUp() {
+  func (d *DepsLogTest) SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
   }
-  func TearDown() {
+  func (d *DepsLogTest) TearDown() {
     unlink(kTestFilename)
   }
 }

@@ -138,6 +138,8 @@ BuildLog::~BuildLog() {
   Close()
 }
 
+// Prepares writing to the log file without actually opening it - that will
+// happen when/if it's needed
 func (b *BuildLog) OpenForWrite(path string, user *BuildLogUser, err *string) bool {
   if needs_recompaction_ {
     if !Recompact(path, user, err) {
@@ -192,6 +194,8 @@ func (b *BuildLog) Close() {
   log_file_ = nil
 }
 
+// Should be called before using log_file_. When false is returned, errno
+// will be set.
 func (b *BuildLog) OpenForWriteIfNeeded() bool {
   if log_file_ || log_file_path_.empty() {
     return true
@@ -227,7 +231,7 @@ type LineReader struct {
   // On return, *line_start points to the beginning of the next line, and
   // *line_end points to the \n at the end of the line. If no newline is seen
   // in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
-  func ReadLine(line_start **char, line_end **char) bool {
+  func (l *LineReader) ReadLine(line_start **char, line_end **char) bool {
     if line_start_ >= buf_end_ || !line_end_ {
       // Buffer empty, refill.
       size_t size_read = fread(buf_, 1, sizeof(buf_), file_)
@@ -268,6 +272,7 @@ type LineReader struct {
   char* line_end_
 }
 
+// Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
   METRIC_RECORD(".ninja_log load")
   file := fopen(path, "r")
@@ -394,10 +399,12 @@ BuildLog::LogEntry* BuildLog::LookupByOutput(string path) {
   return nil
 }
 
+// Serialize an entry into a log file.
 func (b *BuildLog) WriteEntry(f *FILE, entry *LogEntry) bool {
   return fprintf(f, "%d\t%d\t%" PRId64 "\t%s\t%" PRIx64 "\n", entry.start_time, entry.end_time, entry.mtime, entry.output, entry.command_hash) > 0
 }
 
+// Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool {
   METRIC_RECORD(".ninja_log recompact")
 
@@ -446,6 +453,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
   return true
 }
 
+// Restat all outputs in the log
 func (b *BuildLog) Restat(path StringPiece, disk_interface *DiskInterface, output_count int, outputs **char, err string* const) bool {
   METRIC_RECORD(".ninja_log restat")
 

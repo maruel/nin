@@ -32,7 +32,7 @@ type PlanTest struct {
   // Because FindWork does not return Edges in any sort of predictable order,
   // provide a means to get available Edges in order and in a format which is
   // easy to write tests around.
-  func FindWorkSorted(ret *deque<Edge*>, count int) {
+  func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
     for (int i = 0; i < count; ++i) {
       ASSERT_TRUE(plan_.more_to_do())
       edge := plan_.FindWork()
@@ -413,7 +413,7 @@ type BuildTest struct {
       : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
         builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
 
-  func SetUp() {
+  func (b *BuildTest) SetUp() {
     StateTestWithBuiltinRules::SetUp()
 
     builder_.command_runner_.reset(&command_runner_)
@@ -429,7 +429,7 @@ type BuildTest struct {
 
   virtual bool IsPathDead(StringPiece s) const { return false; }
 
-  func MakeConfig() BuildConfig {
+  func (b *BuildTest) MakeConfig() BuildConfig {
     BuildConfig config
     config.verbosity = BuildConfig::QUIET
     return config
@@ -442,6 +442,9 @@ type BuildTest struct {
   Builder builder_
 }
 
+// Rebuild target in the 'working tree' (fs_).
+// State of command_runner_ and logs contents (if specified) ARE MODIFIED.
+// Handy to check for NOOP builds, and higher-level rebuild tests.
 func (b *BuildTest) RebuildTarget(target string, manifest string, log_path string, deps_path string, state *State) {
   State local_state, *pstate = &local_state
   if state != nil {
@@ -479,6 +482,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
   builder.command_runner_.release()
 }
 
+// CommandRunner impl
 func (f *FakeCommandRunner) CanRunMore() bool {
   return active_edges_.size() < max_active_edges_
 }
@@ -604,6 +608,7 @@ func (f *FakeCommandRunner) Abort() {
   active_edges_ = nil
 }
 
+// Mark a path dirty.
 func (b *BuildTest) Dirty(path string) {
   node := GetNode(path)
   node.MarkDirty()
@@ -1806,7 +1811,7 @@ type BuildWithQueryDepsLogTest struct {
     log_.Close()
   }
 
-  func SetUp() {
+  func (b *BuildWithQueryDepsLogTest) SetUp() {
     BuildTest::SetUp()
 
     temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
@@ -1983,13 +1988,13 @@ TEST_F(BuildWithQueryDepsLogTest, TwoOutputsDepFileGCCOnlySecondaryOutput) {
 type BuildWithDepsLogTest struct {
   BuildWithDepsLogTest() {}
 
-  func SetUp() {
+  func (b *BuildWithDepsLogTest) SetUp() {
     BuildTest::SetUp()
 
     temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
   }
 
-  func TearDown() {
+  func (b *BuildWithDepsLogTest) TearDown() {
     temp_dir_.Cleanup()
   }
 

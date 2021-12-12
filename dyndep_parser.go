@@ -21,7 +21,7 @@ package ginja
 type DyndepParser struct {
 
   // Parse a text string of input.  Used by tests.
-  func ParseTest(input string, err *string) bool {
+  func (d *DyndepParser) ParseTest(input string, err *string) bool {
     return Parse("input", input, err)
   }
 
@@ -35,6 +35,7 @@ DyndepParser::DyndepParser(State* state, FileReader* file_reader, DyndepFile* dy
     , dyndep_file_(dyndep_file) {
 }
 
+// Parse a file, given its contents as a string.
 func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
   lexer_.Start(filename, input)
 

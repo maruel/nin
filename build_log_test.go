@@ -20,11 +20,11 @@ package ginja
 const char kTestFilename[] = "BuildLogTest-tempfile"
 
 type BuildLogTest struct {
-  func SetUp() {
+  func (b *BuildLogTest) SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
   }
-  func TearDown() {
+  func (b *BuildLogTest) TearDown() {
     unlink(kTestFilename)
   }
   virtual bool IsPathDead(StringPiece s) const { return false; }
@@ -204,22 +204,22 @@ TEST_F(BuildLogTest, DuplicateVersionHeader) {
 }
 
 type TestDiskInterface struct {
-  func Stat(path string, err *string) TimeStamp {
+  func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
     return 4
   }
-  func WriteFile(path string, contents string) bool {
+  func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
     assert(false)
     return true
   }
-  func MakeDir(path string) bool {
+  func (t *TestDiskInterface) MakeDir(path string) bool {
     assert(false)
     return false
   }
-  func ReadFile(path string, contents *string, err *string) Status {
+  func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) Status {
     assert(false)
     return NotFound
   }
-  func RemoveFile(path string) int {
+  func (t *TestDiskInterface) RemoveFile(path string) int {
     assert(false)
     return 0
   }

@@ -18,7 +18,7 @@ package ginja
 
 
 type ParserTest struct {
-  func AssertParse(input string) {
+  func (p *ParserTest) AssertParse(input string) {
     string err
     EXPECT_TRUE(parser.ParseTest(input, &err))
     ASSERT_EQ("", err)

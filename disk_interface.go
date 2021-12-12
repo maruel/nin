@@ -141,6 +141,8 @@ func StatAllFilesInDir(dir string, stamps *map<string, TimeStamp>, err *string) 
 
 // DiskInterface ---------------------------------------------------------------
 
+// Create all the parent directories for path; like mkdir -p
+// `basename path`.
 func (d *DiskInterface) MakeDirs(path string) bool {
   dir := DirName(path)
   if len(dir) == 0 {
@@ -312,6 +314,7 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
   return 0
 }
 
+// Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
   use_cache_ = allow
   if !use_cache_ {

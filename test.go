@@ -60,7 +60,7 @@ type VirtualFileSystem struct {
 
   // Tick "time" forwards; subsequent file operations will be newer than
   // previous ones.
-  func Tick() int {
+  func (v *VirtualFileSystem) Tick() int {
     return ++now_
   }
 
@@ -132,16 +132,19 @@ StateTestWithBuiltinRules::StateTestWithBuiltinRules() {
   AddCatRule(&state_)
 }
 
+// Add a "cat" rule to \a state.  Used by some tests; it's
+// otherwise done by the ctor to state_.
 func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
   AssertParse(state, "rule cat\n" "  command = cat $in > $out\n")
 }
 
+// Short way to get a Node by its path from state_.
 func (s *StateTestWithBuiltinRules) GetNode(path string) Node* {
   EXPECT_FALSE(strpbrk(path, "/\\"))
   return state_.GetNode(path, 0)
 }
 
-func AssertParse(state *State, input string, opts ManifestParserOptions) {
+func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
   string err
   EXPECT_TRUE(parser.ParseTest(input, &err))
   ASSERT_EQ("", err)
@@ -152,7 +155,7 @@ void AssertHash(string expected, uint64_t actual) {
   ASSERT_EQ(BuildLog::LogEntry::HashCommand(expected), actual)
 }
 
-func VerifyGraph(state *State) {
+func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
   for (vector<Edge*>::const_iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
     // All edges need at least one output.
     EXPECT_FALSE((*e).outputs_.empty())
@@ -180,12 +183,14 @@ func VerifyGraph(state *State) {
   EXPECT_EQ(node_edge_set, edge_set)
 }
 
+// "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {
   files_[path].mtime = now_
   files_[path].contents = contents
   files_created_.insert(path)
 }
 
+// DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
   FileMap::const_iterator i = files_.find(path)
   if i != files_.end() {
@@ -230,6 +235,7 @@ func (v *VirtualFileSystem) RemoveFile(path string) int {
   }
 }
 
+// Create a temporary directory and chdir into it.
 func (s *ScopedTempDir) CreateAndEnter(name string) {
   // First change into the system temp dir and save it for cleanup.
   start_dir_ = GetSystemTempDir()
@@ -256,6 +262,7 @@ func (s *ScopedTempDir) CreateAndEnter(name string) {
   }
 }
 
+// Clean up the temporary directory.
 func (s *ScopedTempDir) Cleanup() {
   if temp_dir_name_.empty() {
     return  // Something went wrong earlier.

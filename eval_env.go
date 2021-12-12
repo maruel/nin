@@ -140,6 +140,11 @@ const map<string, const Rule*>& BindingEnv::GetRules() {
   return rules_
 }
 
+// This is tricky.  Edges want lookup scope to go in this order:
+// 1) value set on edge itself (edge_->env_)
+// 2) value set on rule, with expansion in the edge's scope
+// 3) value set on enclosing scope of edge (edge_->env_->parent_)
+// This function takes as parameters the necessary info to do (2).
 func (b *BindingEnv) LookupWithFallback(var string, eval *const EvalString, env *Env) string {
   map<string, string>::iterator i = bindings_.find(var)
   if i != bindings_.end() {
@@ -157,6 +162,8 @@ func (b *BindingEnv) LookupWithFallback(var string, eval *const EvalString, env 
   return ""
 }
 
+// @return The evaluated string with variable expanded using value found in
+//         environment @a env.
 func (e *EvalString) Evaluate(env *Env) string {
   string result
   for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {
@@ -181,6 +188,8 @@ func (e *EvalString) AddSpecial(text StringPiece) {
   parsed_.push_back(make_pair(text.AsString(), SPECIAL))
 }
 
+// Construct a human-readable representation of the parsed state,
+// for use in tests.
 func (e *EvalString) Serialize() string {
   string result
   for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {
@@ -194,6 +203,7 @@ func (e *EvalString) Serialize() string {
   return result
 }
 
+// @return The string with variables not expanded.
 func (e *EvalString) Unparse() string {
   string result
   for (TokenList::const_iterator i = parsed_.begin(); i != parsed_.end(); ++i) {

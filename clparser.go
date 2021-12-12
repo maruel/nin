@@ -79,6 +79,9 @@ func (c *CLParser) FilterInputFilename(line string) bool {
 }
 
 // static
+// Parse the full output of cl, filling filtered_output with the text that
+// should be printed (if any). Returns true on success, or false with err
+// filled. output must not be the same object as filtered_object.
 func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *string, err *string) bool {
   METRIC_RECORD("CLParser::Parse")
 

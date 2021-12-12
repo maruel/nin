@@ -22,7 +22,7 @@ const char kTestFilename[] = "CleanTest-tempfile"
 type CleanTest struct {
   VirtualFileSystem fs_
   BuildConfig config_
-  func SetUp() {
+  func (c *CleanTest) SetUp() {
     config_.verbosity = BuildConfig::QUIET
   }
 }
@@ -350,12 +350,12 @@ TEST_F(CleanTest, CleanDepFileAndRspFileWithSpaces) {
 }
 
 type CleanDeadTest struct {
-  func SetUp() {
+  func (c *CleanDeadTest) SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
     CleanTest::SetUp()
   }
-  func TearDown() {
+  func (c *CleanDeadTest) TearDown() {
     unlink(kTestFilename)
   }
   virtual bool IsPathDead(StringPiece) const { return false; }

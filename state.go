@@ -86,23 +86,29 @@ type State struct {
 }
 
 
+// informs this Pool that the given edge is committed to be run.
+// Pool will count this edge as using resources from this pool.
 func (p *Pool) EdgeScheduled(edge *Edge) {
   if depth_ != 0 {
     current_use_ += edge.weight()
   }
 }
 
+// informs this Pool that the given edge is no longer runnable, and should
+// relinquish its resources back to the pool
 func (p *Pool) EdgeFinished(edge *Edge) {
   if depth_ != 0 {
     current_use_ -= edge.weight()
   }
 }
 
+// adds the given edge to this Pool to be delayed.
 func (p *Pool) DelayEdge(edge *Edge) {
   assert(depth_ != 0)
   delayed_.insert(edge)
 }
 
+// Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
   it := delayed_.begin()
   while (it != delayed_.end()) {
@@ -117,6 +123,7 @@ func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
   delayed_.erase(delayed_.begin(), it)
 }
 
+// Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
   printf("%s (%d/%d) .\n", name_, current_use_, depth_)
   for (DelayedEdges::const_iterator it = delayed_.begin(); it != delayed_.end(); ++it)
@@ -219,6 +226,8 @@ func (s *State) AddDefault(path StringPiece, err *string) bool {
   return true
 }
 
+// @return the root node(s) of the graph. (Root nodes have no output edges).
+// @param error where to write the error message if somethings went wrong.
 func (s *State) RootNodes(err *string) vector<Node*> {
   vector<Node*> root_nodes
   // Search for nodes with no output.
@@ -241,6 +250,8 @@ func (s *State) DefaultNodes(err *string) vector<Node*> {
   return defaults_.empty() ? RootNodes(err) : defaults_
 }
 
+// Reset state.  Keeps all nodes and edges, but restores them to the
+// state where we haven't yet examined the disk for dirty state.
 func (s *State) Reset() {
   for (Paths::iterator i = paths_.begin(); i != paths_.end(); ++i)
     i.second.ResetState()
@@ -251,6 +262,7 @@ func (s *State) Reset() {
   }
 }
 
+// Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
   for (Paths::iterator i = paths_.begin(); i != paths_.end(); ++i) {
     node := i.second

@@ -20,12 +20,12 @@ package ginja
 type Cleaner struct {
 
   // @return the number of file cleaned.
-  func cleaned_files_count() int {
+  func (c *Cleaner) cleaned_files_count() int {
     return cleaned_files_count_
   }
 
   // @return whether the cleaner is in verbose mode.
-  func IsVerbose() bool {
+  func (c *Cleaner) IsVerbose() bool {
     return (config_.verbosity != BuildConfig::QUIET && (config_.verbosity == BuildConfig::VERBOSE || config_.dry_run))
   }
 
@@ -49,10 +49,13 @@ Cleaner::Cleaner(State* state, const BuildConfig& config, DiskInterface* disk_in
     status_(0) {
 }
 
+// Remove the file @a path.
+// @return whether the file has been removed.
 func (c *Cleaner) RemoveFile(path string) int {
   return disk_interface_.RemoveFile(path)
 }
 
+// @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
   string err
   mtime := disk_interface_.Stat(path, &err)
@@ -69,6 +72,7 @@ func (c *Cleaner) Report(path string) {
   }
 }
 
+// Remove the given @a path file only if it has not been already removed.
 func (c *Cleaner) Remove(path string) {
   if !IsAlreadyRemoved(path) {
     removed_.insert(path)
@@ -87,11 +91,13 @@ func (c *Cleaner) Remove(path string) {
   }
 }
 
+// @return whether the given @a path has already been removed.
 func (c *Cleaner) IsAlreadyRemoved(path string) bool {
   i := removed_.find(path)
   return (i != removed_.end())
 }
 
+// Remove the depfile and rspfile for an Edge.
 func (c *Cleaner) RemoveEdgeFiles(edge *Edge) {
   depfile := edge.GetUnescapedDepfile()
   if len(depfile) != 0 {
@@ -124,6 +130,9 @@ func (c *Cleaner) PrintFooter() {
   printf("%d files.\n", cleaned_files_count_)
 }
 
+// Clean all built files, except for files created by generator rules.
+// @param generator If set, also clean files created by generator rules.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanAll(generator bool) int {
   Reset()
   PrintHeader()
@@ -147,6 +156,9 @@ func (c *Cleaner) CleanAll(generator bool) int {
   return status_
 }
 
+// Clean the files produced by previous builds that are no longer in the
+// manifest.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanDead(entries *BuildLog::Entries) int {
   Reset()
   PrintHeader()
@@ -169,6 +181,7 @@ func (c *Cleaner) CleanDead(entries *BuildLog::Entries) int {
   return status_
 }
 
+// Helper recursive method for CleanTarget().
 func (c *Cleaner) DoCleanTarget(target *Node) {
   if Edge* e = target.in_edge() {
     // Do not try to remove phony targets
@@ -189,6 +202,10 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
   cleaned_.insert(target)
 }
 
+// Clean the given target @a target.
+// @return non-zero if an error occurs.
+// Clean the given @a target and all the file built for it.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanTarget(target *Node) int {
   assert(target)
 
@@ -200,6 +217,10 @@ func (c *Cleaner) CleanTarget(target *Node) int {
   return status_
 }
 
+// Clean the given target @a target.
+// @return non-zero if an error occurs.
+// Clean the given @a target and all the file built for it.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanTarget(target string) int {
   assert(target)
 
@@ -214,6 +235,8 @@ func (c *Cleaner) CleanTarget(target string) int {
   return status_
 }
 
+// Clean the given target @a targets.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
   Reset()
   PrintHeader()
@@ -255,6 +278,10 @@ func (c *Cleaner) DoCleanRule(rule *const Rule) {
   }
 }
 
+// Clean the file produced by the given @a rule.
+// @return non-zero if an error occurs.
+// Clean all the file built with the given rule @a rule.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanRule(rule *const Rule) int {
   assert(rule)
 
@@ -266,6 +293,10 @@ func (c *Cleaner) CleanRule(rule *const Rule) int {
   return status_
 }
 
+// Clean the file produced by the given @a rule.
+// @return non-zero if an error occurs.
+// Clean all the file built with the given rule @a rule.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanRule(rule string) int {
   assert(rule)
 
@@ -280,6 +311,8 @@ func (c *Cleaner) CleanRule(rule string) int {
   return status_
 }
 
+// Clean the file produced by the given @a rules.
+// @return non-zero if an error occurs.
 func (c *Cleaner) CleanRules(rule_count int, rules []*char) int {
   assert(rules)
 
@@ -310,6 +343,7 @@ func (c *Cleaner) Reset() {
   cleaned_ = nil
 }
 
+// Load dependencies from dyndep bindings.
 func (c *Cleaner) LoadDyndeps() {
   // Load dyndep files that exist, before they are cleaned.
   for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {

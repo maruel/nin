@@ -49,12 +49,12 @@ type Lexer struct {
   // Read a path (complete with $escapes).
   // Returns false only on error, returned path may be empty if a delimiter
   // (space, newline) is hit.
-  func ReadPath(path *EvalString, err *string) bool {
+  func (l *Lexer) ReadPath(path *EvalString, err *string) bool {
   }
 
   // Read the value side of a var = value line (complete with $escapes).
   // Returns false only on error.
-  func ReadVarValue(value *EvalString, err *string) bool {
+  func (l *Lexer) ReadVarValue(value *EvalString, err *string) bool {
   }
 
   StringPiece filename_
@@ -78,6 +78,7 @@ type Lexer struct {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Construct an error message with context.
 func (l *Lexer) Error(message string, err *string) bool {
   // Compute line/column.
   line := 1
@@ -122,6 +123,7 @@ Lexer::Lexer(string input) {
   Start("input", input)
 }
 
+// Start parsing some input.
 func (l *Lexer) Start(filename StringPiece, input StringPiece) {
   filename_ = filename
   input_ = input
@@ -159,6 +161,8 @@ func (l *Lexer) TokenErrorHint(expected Token) string {
   }
 }
 
+// If the last token read was an ERROR token, provide more info
+// or the empty string.
 func (l *Lexer) DescribeLastError() string {
   if last_token_ {
     switch (last_token_[0]) {
@@ -169,6 +173,7 @@ func (l *Lexer) DescribeLastError() string {
   return "lexing error"
 }
 
+// Rewind to the last read Token.
 func (l *Lexer) UnreadToken() {
   ofs_ = last_token_
 }
@@ -567,6 +572,7 @@ yy70:
   return token
 }
 
+// If the next token is \a token, read it and return true.
 func (l *Lexer) PeekToken(token Token) bool {
   t := ReadToken()
   if t == token {
@@ -576,6 +582,7 @@ func (l *Lexer) PeekToken(token Token) bool {
   return false
 }
 
+// Skip past whitespace (called after each read token/ident/etc.).
 func (l *Lexer) EatWhitespace() {
   p := ofs_
   string q
@@ -664,6 +671,8 @@ yy87:
   }
 }
 
+// Read a simple identifier (a rule or variable name).
+// Returns false if a name can't be read.
 func (l *Lexer) ReadIdent(out *string) bool {
   p := ofs_
   string start
@@ -733,6 +742,7 @@ yy93:
   return true
 }
 
+// Read a $-escaped string.
 func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
   p := ofs_
   string q

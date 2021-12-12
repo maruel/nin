@@ -43,10 +43,18 @@ type DyndepLoader struct {
 }
 
 
+// Load a dyndep file from the given node's path and update the
+// build graph with the new information.  One overload accepts
+// a caller-owned 'DyndepFile' object in which to store the
+// information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
   DyndepFile ddf
 }
 
+// Load a dyndep file from the given node's path and update the
+// build graph with the new information.  One overload accepts
+// a caller-owned 'DyndepFile' object in which to store the
+// information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) bool {
   // We are loading the dyndep file now so it is no longer pending.
   node.set_dyndep_pending(false)

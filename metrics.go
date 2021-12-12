@@ -56,7 +56,7 @@ type Stopwatch struct {
   Stopwatch() : started_(0) {}
 
   // Seconds since Restart() call.
-  func Elapsed() double {
+  func (s *Stopwatch) Elapsed() double {
     return 1e-6 * static_cast<double>(Now() - started_)
   }
 
@@ -138,6 +138,7 @@ func (m *Metrics) NewMetric(name string) Metric* {
   return metric
 }
 
+// Print a summary report to stdout.
 func (m *Metrics) Report() {
   width := 0
   for (vector<Metric*>::iterator i = metrics_.begin(); i != metrics_.end(); ++i) {

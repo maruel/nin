@@ -29,6 +29,7 @@ type Parser struct {
 }
 
 
+// Load and parse a file.
 func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
   METRIC_RECORD(".ninja parse")
   string contents
@@ -50,6 +51,8 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 
 }
 
+// If the next token is not \a expected, produce an error string
+// saying "expected foo, got bar".
 func (p *Parser) ExpectToken(expected Lexer::Token, err *string) bool {
   token := lexer_.ReadToken()
   if token != expected {
