@@ -14,6 +14,14 @@
 
 //go:build nobuild
 
+// Get sources from https://github.com/skvadrik/re2c/releases
+// tax xvf the file
+// cd re2c
+// mkdir out
+// cd out
+// cmake ..
+// cmake --buid .
+
 //go:generate re2go lexer.in.go -o lexer.go -i
 
 package ginja
@@ -193,16 +201,19 @@ func (l *Lexer) ReadToken() Token {
 	for {
 		start = p
 		/*!re2c
-		    re2c:define:YYCTYPE = "byte"
-		    re2c:define:YYCURSOR = "l.input_[p]"
-				re2c:define:YYSKIP = "p++"
-		    re2c:define:YYMARKER = q
-		    re2c:yyfill:enable = 0
-				re2c:flags:nested-ifs = 1
+		    re2c:define:YYCTYPE = "byte";
+		    re2c:define:YYCURSOR = "l.input_[p]";
+				re2c:define:YYSKIP = "p++";
+		    re2c:define:YYMARKER = q;
+		    re2c:yyfill:enable = 0;
+				re2c:flags:nested-ifs = 1;
+		    re2c:define:YYPEEK = "l.input_[p]";
+				re2c:define:YYBACKUP = "q = p";
+				re2c:define:YYRESTORE = "p = q";
 
-		    nul = "\000"
-		    simple_varname = [a-zA-Z0-9_-]+
-		    varname = [a-zA-Z0-9_.-]+
+		    nul = "\000";
+		    simple_varname = [a-zA-Z0-9_-]+;
+		    varname = [a-zA-Z0-9_.-]+;
 
 		    [ ]*"#"[^\000\n]*"\n" { continue; }
 		    [ ]*"\r\n" { token = NEWLINE;  break; }
@@ -267,11 +278,11 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		start = p
 		/*!re2c
 		  varname {
-		    out.assign(start, p - start)
+				*out = l.input_[start:p]
 		    break
 		  }
 		  [^] {
-		    last_token_ = start
+		    l.last_token_ = start
 		    return false
 		  }
 		*/
@@ -291,33 +302,33 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 		start = p
 		/*!re2c
 		  [^$ :\r\n|\000]+ {
-		    eval.AddText(StringPiece(start, p - start))
+				eval.AddText(l.input_[start: p])
 		    continue
 		  }
 		  "\r\n" {
-		    if path != nil {
+		    if path {
 		      p = start
 		    }
 		    break
 		  }
 		  [ :|\n] {
-		    if path != nil {
+		    if path {
 		      p = start
 		      break
 		    } else {
-		      if *start == '\n' {
+		      if l.input_[start] == '\n' {
 		        break
 		      }
-		      eval.AddText(StringPiece(start, 1))
+					eval.AddText(l.input_[start:start+1])
 		      continue
 		    }
 		  }
 		  "$$" {
-		    eval.AddText(StringPiece("$", 1))
+		    eval.AddText("$")
 		    continue
 		  }
 		  "$ " {
-		    eval.AddText(StringPiece(" ", 1))
+		    eval.AddText(" ")
 		    continue
 		  }
 		  "$\r\n"[ ]* {
@@ -327,28 +338,28 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "${"varname"}" {
-		    eval.AddSpecial(StringPiece(start + 2, p - start - 3))
+				eval.AddSpecial(l.input_[start + 2: p - 3])
 		    continue
 		  }
 		  "$"simple_varname {
-		    eval.AddSpecial(StringPiece(start + 1, p - start - 1))
+				eval.AddSpecial(l.input_[start + 1: p - 1])
 		    continue
 		  }
 		  "$:" {
-		    eval.AddText(StringPiece(":", 1))
+		    eval.AddText(":")
 		    continue
 		  }
 		  "$". {
-		    last_token_ = start
-		    return Error("bad $-escape (literal $ must be written as $$)", err)
+		    l.last_token_ = start
+		    return l.Error("bad $-escape (literal $ must be written as $$)", err)
 		  }
 		  nul {
-		    last_token_ = start
-		    return Error("unexpected EOF", err)
+		    l.last_token_ = start
+		    return l.Error("unexpected EOF", err)
 		  }
 		  [^] {
-		    last_token_ = start
-		    return Error(DescribeLastError(), err)
+		    l.last_token_ = start
+		    return l.Error(l.DescribeLastError(), err)
 		  }
 		*/
 	}
