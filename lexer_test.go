@@ -12,20 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "testing"
 
-TEST(Lexer, ReadVarValue) {
-  Lexer lexer("plain text $var $VaR ${x}\n")
-  EvalString eval
-  string err
-  EXPECT_TRUE(lexer.ReadVarValue(&eval, &err))
-  EXPECT_EQ("", err)
-  EXPECT_EQ("[plain text ][$var][ ][$VaR][ ][$x]", eval.Serialize())
+func TestLexer_ReadVarValue(t *testing.T) {
+	lexer := NewLexer("plain text $var $VaR ${x}\n")
+	eval := EvalString{}
+	err := ""
+	if lexer.ReadVarValue(&eval, &err) {
+		t.Fatal("ReadVarValue")
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+	if got := eval.Serialize(); got != "[plain text ][$var][ ][$VaR][ ][$x]" {
+		t.Fatal(got)
+	}
 }
 
+/*
 TEST(Lexer, ReadEvalStringEscapes) {
   Lexer lexer("$ $$ab c$: $\ncde\n")
   EvalString eval
@@ -88,4 +94,4 @@ TEST(Lexer, Tabs) {
   EXPECT_EQ(Lexer::ERROR, token)
   EXPECT_EQ("tabs are not allowed, use spaces", lexer.DescribeLastError())
 }
-
+*/

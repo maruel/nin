@@ -42,8 +42,12 @@ const (
 )
 
 type Lexer struct {
-	filename_   string
-	input_      string
+	filename_ string
+	input_    string
+	// In the original C++ code, these two are char pointers and are used to do
+	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
+	// indexes. ofs_ starts at 0. last_token_ is initially -1 to mark that it is
+	// not yet set.
 	ofs_        int
 	last_token_ int
 }
@@ -73,7 +77,7 @@ func (l *Lexer) Error(message string, err *string) bool {
 		}
 	}
 	col := 0
-	if l.last_token_ != 0 {
+	if l.last_token_ != -1 {
 		col = l.last_token_ - line_start
 	}
 
@@ -112,7 +116,7 @@ func (l *Lexer) Start(filename, input string) {
 	l.filename_ = filename
 	l.input_ = input
 	l.ofs_ = 0
-	l.last_token_ = 0
+	l.last_token_ = -1
 }
 
 // Return a human-readable form of a token, used in error messages.
@@ -165,7 +169,7 @@ func TokenErrorHint(expected Token) string {
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
 func (l *Lexer) DescribeLastError() string {
-	if l.last_token_ != 0 {
+	if l.last_token_ != -1 {
 		switch l.input_[l.last_token_] {
 		case '\t':
 			return "tabs are not allowed, use spaces"
