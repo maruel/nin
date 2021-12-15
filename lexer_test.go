@@ -20,8 +20,8 @@ func TestLexer_ReadVarValue(t *testing.T) {
 	lexer := NewLexer("plain text $var $VaR ${x}\n")
 	eval := EvalString{}
 	err := ""
-	if lexer.ReadVarValue(&eval, &err) {
-		t.Fatal("ReadVarValue")
+	if !lexer.ReadVarValue(&eval, &err) {
+		t.Fatalf("ReadVarValue = %v; %s", eval, err)
 	}
 	if err != "" {
 		t.Fatal(err)
@@ -31,67 +31,108 @@ func TestLexer_ReadVarValue(t *testing.T) {
 	}
 }
 
-/*
-TEST(Lexer, ReadEvalStringEscapes) {
-  Lexer lexer("$ $$ab c$: $\ncde\n")
-  EvalString eval
-  string err
-  EXPECT_TRUE(lexer.ReadVarValue(&eval, &err))
-  EXPECT_EQ("", err)
-  EXPECT_EQ("[ $ab c: cde]", eval.Serialize())
+func TestLexer_ReadEvalStringEscapes(t *testing.T) {
+	lexer := NewLexer("$ $$ab c$: $\ncde\n")
+	var eval EvalString
+	err := ""
+	if !lexer.ReadVarValue(&eval, &err) {
+		t.Fatalf("ReadVarValue = %v; %s", eval, err)
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+	if got := eval.Serialize(); got != "[ $ab c: cde]" {
+		t.Fatal(got)
+	}
 }
 
-TEST(Lexer, ReadIdent) {
-  Lexer lexer("foo baR baz_123 foo-bar")
-  string ident
-  EXPECT_TRUE(lexer.ReadIdent(&ident))
-  EXPECT_EQ("foo", ident)
-  EXPECT_TRUE(lexer.ReadIdent(&ident))
-  EXPECT_EQ("baR", ident)
-  EXPECT_TRUE(lexer.ReadIdent(&ident))
-  EXPECT_EQ("baz_123", ident)
-  EXPECT_TRUE(lexer.ReadIdent(&ident))
-  EXPECT_EQ("foo-bar", ident)
+func TestLexer_ReadIdent(t *testing.T) {
+	lexer := NewLexer("foo baR baz_123 foo-bar")
+	ident := ""
+	if !lexer.ReadIdent(&ident) {
+		t.Fatal()
+	}
+	if ident != "foo" {
+		t.Fatal()
+	}
+	if !lexer.ReadIdent(&ident) {
+		t.Fatal()
+	}
+	if "baR" != ident {
+		t.Fatal()
+	}
+	if !lexer.ReadIdent(&ident) {
+		t.Fatal()
+	}
+	if "baz_123" != ident {
+		t.Fatal()
+	}
+	if !lexer.ReadIdent(&ident) {
+		t.Fatal()
+	}
+	if "foo-bar" != ident {
+		t.Fatal()
+	}
 }
 
-TEST(Lexer, ReadIdentCurlies) {
-  // Verify that ReadIdent includes dots in the name,
-  // but in an expansion $bar.dots stops at the dot.
-  Lexer lexer("foo.dots $bar.dots ${bar.dots}\n")
-  string ident
-  EXPECT_TRUE(lexer.ReadIdent(&ident))
-  EXPECT_EQ("foo.dots", ident)
-
-  EvalString eval
-  string err
-  EXPECT_TRUE(lexer.ReadVarValue(&eval, &err))
-  EXPECT_EQ("", err)
-  EXPECT_EQ("[$bar][.dots ][$bar.dots]", eval.Serialize())
+func TestLexer_ReadIdentCurlies(t *testing.T) {
+	// Verify that ReadIdent includes dots in the name,
+	// but in an expansion $bar.dots stops at the dot.
+	lexer := NewLexer("foo.dots $bar.dots ${bar.dots}\n")
+	ident := ""
+	if !lexer.ReadIdent(&ident) {
+		t.Fatal()
+	}
+	if ident != "foo.dots" {
+		t.Fatal(ident)
+	}
+	eval := EvalString{}
+	err := ""
+	if !lexer.ReadVarValue(&eval, &err) {
+		t.Fatal()
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+	if got := eval.Serialize(); got != "[$bar][.dots ][$bar.dots]" {
+		t.Fatal(got)
+	}
 }
 
-TEST(Lexer, Error) {
-  Lexer lexer("foo$\nbad $")
-  EvalString eval
-  string err
-  ASSERT_FALSE(lexer.ReadVarValue(&eval, &err))
-  EXPECT_EQ("input:2: bad $-escape (literal $ must be written as $$)\n" "bad $\n" "    ^ near here" , err)
+func TestLexer_Error(t *testing.T) {
+	lexer := NewLexer("foo$\nbad $")
+	eval := EvalString{}
+	err := ""
+	if lexer.ReadVarValue(&eval, &err) {
+		t.Fatal()
+	}
+	if "input:2: bad $-escape (literal $ must be written as $$)\nbad $\n    ^ near here" != err {
+		t.Fatal(err)
+	}
 }
 
-TEST(Lexer, CommentEOF) {
-  // Verify we don't run off the end of the string when the EOF is
-  // mid-comment.
-  Lexer lexer("# foo")
-  token := lexer.ReadToken()
-  EXPECT_EQ(Lexer::ERROR, token)
+func TestLexer_CommentEOF(t *testing.T) {
+	// Verify we don't run off the end of the string when the EOF is
+	// mid-comment.
+	lexer := NewLexer("# foo")
+	token := lexer.ReadToken()
+	if ERROR != token {
+		t.Fatal(token)
+	}
 }
 
-TEST(Lexer, Tabs) {
-  // Verify we print a useful error on a disallowed character.
-  Lexer lexer("   \tfoobar")
-  token := lexer.ReadToken()
-  EXPECT_EQ(Lexer::INDENT, token)
-  token = lexer.ReadToken()
-  EXPECT_EQ(Lexer::ERROR, token)
-  EXPECT_EQ("tabs are not allowed, use spaces", lexer.DescribeLastError())
+func TestLexer_Tabs(t *testing.T) {
+	// Verify we print a useful error on a disallowed character.
+	lexer := NewLexer("   \tfoobar")
+	token := lexer.ReadToken()
+	if INDENT != token {
+		t.Fatal()
+	}
+	token = lexer.ReadToken()
+	if ERROR != token {
+		t.Fatal()
+	}
+	if got := lexer.DescribeLastError(); got != "tabs are not allowed, use spaces" {
+		t.Fatal()
+	}
 }
-*/

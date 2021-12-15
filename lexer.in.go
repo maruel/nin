@@ -22,7 +22,9 @@
 // cmake ..
 // cmake --buid .
 
-//go:generate re2go lexer.in.go -o lexer.go -i
+//go:generate re2go lexer.in.go -o lexer.go -i --no-generation-date
+
+// TODO(maruel): Measure impact and usefulness of -8.
 
 package ginja
 
@@ -124,7 +126,10 @@ func NewLexer(input string) Lexer {
 // Start parsing some input.
 func (l *Lexer) Start(filename, input string) {
 	l.filename_ = filename
-	l.input_ = input
+	// TODO(maruel): Figure out a way to not need this, since this is fairly
+	// expensive. This requires a change to the re2c flags documented at
+	// https://re2c.org/manual/manual_go.html
+	l.input_ = input + "\u0000"
 	l.ofs_ = 0
 	l.last_token_ = -1
 }
@@ -338,11 +343,11 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "${"varname"}" {
-				eval.AddSpecial(l.input_[start + 2: p - 3])
+				eval.AddSpecial(l.input_[start + 2: p - 1])
 		    continue
 		  }
 		  "$"simple_varname {
-				eval.AddSpecial(l.input_[start + 1: p - 1])
+				eval.AddSpecial(l.input_[start + 1: p])
 		    continue
 		  }
 		  "$:" {
