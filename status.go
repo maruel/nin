@@ -16,305 +16,293 @@
 
 package ginja
 
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
 
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
-type Status struct {
-  virtual void BuildEdgeStarted(const Edge* edge, int64_t start_time_millis) = 0
-  virtual void BuildEdgeFinished(Edge* edge, int64_t end_time_millis, bool success, string output) = 0
-
-  virtual void Info(string msg, ...) = 0
-  virtual void Warning(string msg, ...) = 0
-  virtual void Error(string msg, ...) = 0
-
-  virtual ~Status() { }
+type Status interface {
 }
 
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
 type StatusPrinter struct {
-  virtual void BuildEdgeStarted(const Edge* edge, int64_t start_time_millis)
-  virtual void BuildEdgeFinished(Edge* edge, int64_t end_time_millis, bool success, string output)
+	config_ *BuildConfig
 
-  virtual void Info(string msg, ...)
-  virtual void Warning(string msg, ...)
-  virtual void Error(string msg, ...)
+	started_edges_, finished_edges_, total_edges_, running_edges_ int
+	time_millis_                                                  int64
 
-  virtual ~StatusPrinter() { }
+	// Prints progress output.
+	printer_ LinePrinter
 
-  // Format the progress status string by replacing the placeholders.
-  // See the user manual for more information about the available
-  // placeholders.
-  // @param progress_status_format The format of the progress status.
-  // @param status The status of the edge.
-  string FormatProgressStatus(string progress_status_format, int64_t time_millis) const
-
-  void PrintStatus(const Edge* edge, int64_t time_millis)
-
-  const BuildConfig& config_
-
-  int started_edges_, finished_edges_, total_edges_, running_edges_
-  int64_t time_millis_
-
-  // Prints progress output.
-  LinePrinter printer_
-
-  // The custom progress status format to use.
-  string progress_status_format_
-
-  template<size_t S>
-  void SnprintfRate(double rate, char(&buf)[S], string format) {
-    if (rate == -1)
-      snprintf(buf, S, "?")
-    else
-      snprintf(buf, S, format, rate)
-  }
-
-  type SlidingRateInfo struct {
-    SlidingRateInfo(int n) : rate_(-1), N(n), last_update_(-1) {}
-
-    double rate() { return rate_; }
-
-    void UpdateRate(int update_hint, int64_t time_millis_) {
-      if (update_hint == last_update_)
-        return
-      last_update_ = update_hint
-
-      if (times_.size() == N)
-        times_.pop()
-      times_.push(time_millis_)
-      if (times_.back() != times_.front())
-        rate_ = times_.size() / ((times_.back() - times_.front()) / 1e3)
-    }
-
-    double rate_
-    const size_t N
-    queue<double> times_
-    int last_update_
-  }
-
-  mutable SlidingRateInfo current_rate_
+	// The custom progress status format to use.
+	progress_status_format_ string
+	current_rate_           slidingRateInfo
 }
 
+type slidingRateInfo struct {
+	rate_        float64
+	N            int
+	times_       []float64
+	last_update_ int
+}
 
-StatusPrinter::StatusPrinter(const BuildConfig& config)
-    : config_(config),
-      started_edges_(0), finished_edges_(0), total_edges_(0), running_edges_(0),
-      time_millis_(0), progress_status_format_(nil),
-      current_rate_(config.parallelism) {
+func (s *slidingRateInfo) updateRate(update_hint int, time_millis int64) {
+	if update_hint == s.last_update_ {
+		return
+	}
+	s.last_update_ = update_hint
 
-  // Don't do anything fancy in verbose mode.
-  if (config_.verbosity != BuildConfig::NORMAL)
-    printer_.set_smart_terminal(false)
+	if len(s.times_) == s.N {
+		s.times_ = s.times_[:len(s.times_)-1]
+	}
+	s.times_ = append(s.times_, float64(time_millis))
+	back := s.times_[0]
+	front := s.times_[len(s.times_)-1]
+	if back != front {
+		s.rate_ = float64(len(s.times_)) / ((back - front) / 1e3)
+	}
+}
 
-  progress_status_format_ = getenv("NINJA_STATUS")
-  if (!progress_status_format_)
-    progress_status_format_ = "[%f/%t] "
+func NewStatusPrinter(config *BuildConfig) StatusPrinter {
+	s := StatusPrinter{
+		config_: config,
+		current_rate_: slidingRateInfo{
+			rate_:        -1,
+			N:            config.parallelism,
+			last_update_: -1,
+		},
+	}
+	// Don't do anything fancy in verbose mode.
+	if s.config_.verbosity != NORMAL {
+		s.printer_.set_smart_terminal(false)
+	}
+
+	s.progress_status_format_ = os.Getenv("NINJA_STATUS")
+	if s.progress_status_format_ == "" {
+		s.progress_status_format_ = "[%f/%t] "
+	}
+	return s
 }
 
 func (s *StatusPrinter) PlanHasTotalEdges(total int) {
-  total_edges_ = total
+	s.total_edges_ = total
 }
 
-void StatusPrinter::BuildEdgeStarted(const Edge* edge, int64_t start_time_millis) {
-  ++started_edges_
-  ++running_edges_
-  time_millis_ = start_time_millis
+func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int64) {
+	s.started_edges_++
+	s.running_edges_++
+	s.time_millis_ = start_time_millis
+	if edge.use_console() || s.printer_.is_smart_terminal() {
+		s.PrintStatus(edge, start_time_millis)
+	}
 
-  if edge.use_console() || printer_.is_smart_terminal() {
-    PrintStatus(edge, start_time_millis)
-  }
-
-  if edge.use_console() {
-    printer_.SetConsoleLocked(true)
-  }
+	if edge.use_console() {
+		s.printer_.SetConsoleLocked(true)
+	}
 }
 
-void StatusPrinter::BuildEdgeFinished(Edge* edge, int64_t end_time_millis, bool success, string output) {
-  time_millis_ = end_time_millis
-  ++finished_edges_
+func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string) {
+	s.time_millis_ = end_time_millis
+	s.finished_edges_++
 
-  if edge.use_console() {
-    printer_.SetConsoleLocked(false)
-  }
+	if edge.use_console() {
+		s.printer_.SetConsoleLocked(false)
+	}
 
-  if config_.verbosity == BuildConfig::QUIET {
-    return
-  }
+	if s.config_.verbosity == QUIET {
+		return
+	}
 
-  if !edge.use_console() {
-    PrintStatus(edge, end_time_millis)
-  }
+	if !edge.use_console() {
+		s.PrintStatus(edge, end_time_millis)
+	}
 
-  --running_edges_
+	s.running_edges_--
 
-  // Print the command that is spewing before printing its output.
-  if success == nil {
-    string outputs
-    for (vector<Node*>::const_iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o)
-      outputs += (*o).path() + " "
+	// Print the command that is spewing before printing its output.
+	if !success {
+		outputs := ""
+		for _, o := range edge {
+			outputs += o.path() + " "
+		}
+		if s.printer_.supports_color() {
+			s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
+		} else {
+			s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
+		}
+		s.printer_.PrintOnNewLine(edge.EvaluateCommand() + "\n")
+	}
 
-    if printer_.supports_color() {
-        printer_.PrintOnNewLine("\x1B[31m" "FAILED: " "\x1B[0m" + outputs + "\n")
-    } else {
-        printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
-    }
-    printer_.PrintOnNewLine(edge.EvaluateCommand() + "\n")
-  }
+	if len(output) != 0 {
+		// ninja sets stdout and stderr of subprocesses to a pipe, to be able to
+		// check if the output is empty. Some compilers, e.g. clang, check
+		// isatty(stderr) to decide if they should print colored output.
+		// To make it possible to use colored output with ninja, subprocesses should
+		// be run with a flag that forces them to always print color escape codes.
+		// To make sure these escape codes don't show up in a file if ninja's output
+		// is piped to a file, ninja strips ansi escape codes again if it's not
+		// writing to a |smart_terminal_|.
+		// (Launching subprocesses in pseudo ttys doesn't work because there are
+		// only a few hundred available on some systems, and ninja can launch
+		// thousands of parallel compile commands.)
+		final_output := ""
+		if !s.printer_.supports_color() {
+			final_output = StripAnsiEscapeCodes(output)
+		} else {
+			final_output = output
+		}
 
-  if len(output) != 0 {
-    // ninja sets stdout and stderr of subprocesses to a pipe, to be able to
-    // check if the output is empty. Some compilers, e.g. clang, check
-    // isatty(stderr) to decide if they should print colored output.
-    // To make it possible to use colored output with ninja, subprocesses should
-    // be run with a flag that forces them to always print color escape codes.
-    // To make sure these escape codes don't show up in a file if ninja's output
-    // is piped to a file, ninja strips ansi escape codes again if it's not
-    // writing to a |smart_terminal_|.
-    // (Launching subprocesses in pseudo ttys doesn't work because there are
-    // only a few hundred available on some systems, and ninja can launch
-    // thousands of parallel compile commands.)
-    string final_output
-    if !printer_.supports_color() {
-      final_output = StripAnsiEscapeCodes(output)
-    } else {
-      final_output = output
-    }
+		// TODO(maruel): Use an existing Go package.
 
-    // Fix extra CR being added on Windows, writing out CR CR LF (#773)
-    _setmode(_fileno(stdout), _O_BINARY)  // Begin Windows extra CR fix
+		// Fix extra CR being added on Windows, writing out CR CR LF (#773)
+		_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
 
-    printer_.PrintOnNewLine(final_output)
+		s.printer_.PrintOnNewLine(final_output)
 
-    _setmode(_fileno(stdout), _O_TEXT)  // End Windows extra CR fix
-  }
+		_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
+	}
 }
 
 func (s *StatusPrinter) BuildLoadDyndeps() {
-  // The DependencyScan calls EXPLAIN() to print lines explaining why
-  // it considers a portion of the graph to be out of date.  Normally
-  // this is done before the build starts, but our caller is about to
-  // load a dyndep file during the build.  Doing so may generate more
-  // explanation lines (via fprintf directly to stderr), but in an
-  // interactive console the cursor is currently at the end of a status
-  // line.  Start a new line so that the first explanation does not
-  // append to the status line.  After the explanations are done a
-  // new build status line will appear.
-  if g_explaining {
-    printer_.PrintOnNewLine("")
-  }
+	// The DependencyScan calls EXPLAIN() to print lines explaining why
+	// it considers a portion of the graph to be out of date.  Normally
+	// this is done before the build starts, but our caller is about to
+	// load a dyndep file during the build.  Doing so may generate more
+	// explanation lines (via fprintf directly to stderr), but in an
+	// interactive console the cursor is currently at the end of a status
+	// line.  Start a new line so that the first explanation does not
+	// append to the status line.  After the explanations are done a
+	// new build status line will appear.
+	if g_explaining {
+		s.printer_.PrintOnNewLine("")
+	}
 }
 
 func (s *StatusPrinter) BuildStarted() {
-  started_edges_ = 0
-  finished_edges_ = 0
-  running_edges_ = 0
+	s.started_edges_ = 0
+	s.finished_edges_ = 0
+	s.running_edges_ = 0
 }
 
 func (s *StatusPrinter) BuildFinished() {
-  printer_.SetConsoleLocked(false)
-  printer_.PrintOnNewLine("")
+	s.printer_.SetConsoleLocked(false)
+	s.printer_.PrintOnNewLine("")
 }
 
-string StatusPrinter::FormatProgressStatus(string progress_status_format, int64_t time_millis) {
-  string out
-  char buf[32]
-  for (string s = progress_status_format; *s != '\0'; ++s) {
-    if *s == '%' {
-      ++s
-      switch (*s) {
-      case '%':
-        out.push_back('%')
-        break
+// Format the progress status string by replacing the placeholders.
+// See the user manual for more information about the available
+// placeholders.
+// @param progress_status_format The format of the progress status.
+// @param status The status of the edge.
+func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time_millis int64) string {
+	out := ""
+	// TODO(maruel): Benchmark to optimize memory usage and performance
+	// especially when GC is disabled.
+	for s := 0; s < len(progress_status_format); s++ {
+		c := progress_status_format[s]
+		if c == '%' {
+			s++
+			c := progress_status_format[s]
+			switch c {
+			case '%':
+				out += "%"
+				break
 
-        // Started edges.
-      case 's':
-        snprintf(buf, sizeof(buf), "%d", started_edges_)
-        out += buf
-        break
+				// Started edges.
+			case 's':
+				out += strconv.Itoa(s.started_edges_)
+				break
 
-        // Total edges.
-      case 't':
-        snprintf(buf, sizeof(buf), "%d", total_edges_)
-        out += buf
-        break
+				// Total edges.
+			case 't':
+				out += strconv.Itoa(s.total_edges_)
+				break
 
-        // Running edges.
-      case 'r': {
-        snprintf(buf, sizeof(buf), "%d", running_edges_)
-        out += buf
-        break
-      }
+				// Running edges.
+			case 'r':
+				{
+					out += strconv.Itoa(s.running_edges_)
+					break
+				}
 
-        // Unstarted edges.
-      case 'u':
-        snprintf(buf, sizeof(buf), "%d", total_edges_ - started_edges_)
-        out += buf
-        break
+				// Unstarted edges.
+			case 'u':
+				out += strconv.Itoa(s.total_edges_ - s.started_edges_)
+				break
 
-        // Finished edges.
-      case 'f':
-        snprintf(buf, sizeof(buf), "%d", finished_edges_)
-        out += buf
-        break
+				// Finished edges.
+			case 'f':
+				out += strconv.Itoa(s.finished_edges_)
+				break
 
-        // Overall finished edges per second.
-      case 'o':
-        SnprintfRate(finished_edges_ / (time_millis_ / 1e3), buf, "%.1f")
-        out += buf
-        break
+				// Overall finished edges per second.
+			case 'o':
+				rate := s.finished_edges_ / (s.time_millis_ / 1e3)
+				if rate == -1 {
+					out += "?"
+				} else {
+					out += fmt.Sprintf("%.1f", rate)
+				}
+				break
 
-        // Current rate, average over the last '-j' jobs.
-      case 'c':
-        current_rate_.UpdateRate(finished_edges_, time_millis_)
-        SnprintfRate(current_rate_.rate(), buf, "%.1f")
-        out += buf
-        break
+				// Current rate, average over the last '-j' jobs.
+			case 'c':
+				s.current_rate_.updateRate(s.finished_edges_, s.time_millis_)
+				rate := s.current_rate_.rate_
+				if rate == -1 {
+					out += "?"
+				} else {
+					out += fmt.Sprintf("%.1f", rate)
+				}
+				break
 
-        // Percentage
-      case 'p': {
-        percent := (100 * finished_edges_) / total_edges_
-        snprintf(buf, sizeof(buf), "%3i%%", percent)
-        out += buf
-        break
-      }
+				// Percentage
+			case 'p':
+				percent := (100 * s.finished_edges_) / s.total_edges_
+				out += fmt.Sprintf("%3i%%", percent)
+				break
 
-      case 'e': {
-        snprintf(buf, sizeof(buf), "%.3f", time_millis_ / 1e3)
-        out += buf
-        break
-      }
+			case 'e':
+				out += fmt.Sprintf("%.3f", s.time_millis_/1e3)
+				break
 
-      default:
-        Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", *s)
-        return ""
-      }
-    } else {
-      out.push_back(*s)
-    }
-  }
-
-  return out
+			default:
+				Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", *s)
+				return ""
+			}
+		} else {
+			out += c
+		}
+	}
+	return out
 }
 
-void StatusPrinter::PrintStatus(const Edge* edge, int64_t time_millis) {
-  if config_.verbosity == BuildConfig::QUIET || config_.verbosity == BuildConfig::NO_STATUS_UPDATE {
-    return
-  }
+func (s *StatusPrinter) PrintStatus(edge *Edge, time_millis int64) {
+	if s.config_.verbosity == QUIET || s.config_.verbosity == NO_STATUS_UPDATE {
+		return
+	}
 
-  force_full_command := config_.verbosity == BuildConfig::VERBOSE
+	force_full_command := s.config_.verbosity == VERBOSE
 
-  to_print := edge.GetBinding("description")
-  if to_print.empty() || force_full_command {
-    to_print = edge.GetBinding("command")
-  }
+	to_print := edge.GetBinding("description")
+	if to_print == "" || force_full_command {
+		to_print = edge.GetBinding("command")
+	}
 
-  to_print = FormatProgressStatus(progress_status_format_, time_millis)
-      + to_print
+	to_print = s.FormatProgressStatus(s.progress_status_format_, time_millis) + to_print
 
-  printer_.Print(to_print, force_full_command ? LinePrinter::FULL : LinePrinter::ELIDE)
+	l := FULL
+	if force_full_command {
+		l = ELIDE
+	}
+	s.printer_.Print(to_print, l)
 }
 
+/*
 void StatusPrinter::Warning(string msg, ...) {
   va_list ap
   va_start(ap, msg)
@@ -335,4 +323,4 @@ void StatusPrinter::Info(string msg, ...) {
   ::Info(msg, ap)
   va_end(ap)
 }
-
+*/

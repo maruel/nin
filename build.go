@@ -16,7 +16,7 @@
 
 package ginja
 
-
+/*
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
@@ -80,28 +80,41 @@ type CommandRunner struct {
   virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
   func (c *CommandRunner) Abort() {}
 }
+*/
+type Verbosity int
+
+const (
+	// No output -- used when testing.
+	QUIET Verbosity = iota
+	// just regular output but suppress status update
+	NO_STATUS_UPDATE
+	// regular output and status update
+	NORMAL
+	VERBOSE
+)
 
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
-  BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
-                  failures_allowed(1), max_load_average(-0.0f) {}
-
-  enum Verbosity {
-    QUIET,  // No output -- used when testing.
-    NO_STATUS_UPDATE,  // just regular output but suppress status update
-    NORMAL,  // regular output and status update
-    VERBOSE
-  }
-  Verbosity verbosity
-  bool dry_run
-  int parallelism
-  int failures_allowed
-  // The maximum load average we must not exceed. A negative value
-  // means that we do not have any limit.
-  double max_load_average
-  DepfileParserOptions depfile_parser_options
+	verbosity        Verbosity
+	dry_run          bool
+	parallelism      int
+	failures_allowed int
+	// The maximum load average we must not exceed. A negative value
+	// means that we do not have any limit.
+	max_load_average       float64
+	depfile_parser_options DepfileParserOptions
 }
 
+func NewBuildConfig() BuildConfig {
+	return BuildConfig{
+		verbosity:        NORMAL,
+		parallelism:      1,
+		failures_allowed: 1,
+		max_load_average: -0.,
+	}
+}
+
+/*
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
   Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
@@ -1045,4 +1058,4 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 
   return true
 }
-
+*/

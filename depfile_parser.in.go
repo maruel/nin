@@ -14,12 +14,25 @@
 
 //go:build nobuild
 
+//go:generate ./regen.sh
+
 package ginja
 
+type DepfileParserOptions struct {
+}
 
-DepfileParser::DepfileParser(DepfileParserOptions options)
-  : options_(options)
-{
+// Parser for the dependency information emitted by gcc's -M flags.
+type DepfileParser struct {
+	outs_ []string
+	ins_  []string
+
+	options_ DepfileParserOptions
+}
+
+func NewDepfileParser(options DepfileParserOptions) DepfileParser {
+	return DepfileParser{
+		options_: options,
+	}
 }
 
 // A note on backslashes in Makefiles, from reading the docs:
@@ -42,173 +55,198 @@ DepfileParser::DepfileParser(DepfileParserOptions options)
 //
 // If anyone actually has depfiles that rely on the more complicated
 // behavior we can adjust this.
-func (d *DepfileParser) Parse(content *string, err *string) bool {
-  // in: current parser input point.
-  // end: end of input.
-  // parsing_targets: whether we are parsing targets or dependencies.
-  in := &(*content)[0]
-  end := in + content.size()
-  have_target := false
-  parsing_targets := true
-  poisoned_input := false
-  while (in < end) {
-    have_newline := false
-    // out: current output point (typically same as in, but can fall behind
-    // as we de-escape backslashes).
-    out := in
-    // filename: start of the current parsed filename.
-    filename := out
-    for (;;) {
-      // start: beginning of the current parsed span.
-      start := in
-      yymarker := nil
-      /*!re2c
-      re2c:define:YYCTYPE = "unsigned char"
-      re2c:define:YYCURSOR = in
-      re2c:define:YYLIMIT = end
-      re2c:define:YYMARKER = yymarker
+func (d *DepfileParser) Parse(content string, err *string) bool {
+	// in: current parser input point.
+	// end: end of input.
+	// parsing_targets: whether we are parsing targets or dependencies.
+	in := 0
+	end := len(content)
+	have_target := false
+	parsing_targets := true
+	poisoned_input := false
+	for in < end {
+		have_newline := false
+		// out: current output point (typically same as in, but can fall behind
+		// as we de-escape backslashes).
+		out := in
+		// filename: start of the current parsed filename.
+		filename := out
+		for {
+			// start: beginning of the current parsed span.
+			start := in
+			yymarker := nil
+			/*
+			   re2c:define:YYCTYPE = "byte";
+			   re2c:define:YYCURSOR = "l.input_[p]";
+			   re2c:define:YYSKIP = "p++";
+			   re2c:define:YYMARKER = q;
+			   re2c:yyfill:enable = 0;
+			   re2c:flags:nested-ifs = 1;
+			   re2c:define:YYPEEK = "l.input_[p]";
+			   re2c:define:YYBACKUP = "q = p";
+			   re2c:define:YYRESTORE = "p = q";
+			*/
 
-      re2c:yyfill:enable = 0
+			/*!re2c
+			  re2c:define:YYCTYPE = "byte";
+			  re2c:define:YYCURSOR = content[in];
+			  re2c:define:YYLIMIT = end;
+			  re2c:define:YYMARKER = yymarker;
 
-      re2c:indent:top = 2
-      re2c:indent:string = "  "
+			  re2c:yyfill:enable = 0;
 
-      nul = "\000"
-      newline = '\r'?'\n'
+			  re2c:indent:top = 2;
+			  re2c:indent:string = "  ";
 
-      '\\\\'* '\\ ' {
-        // 2N+1 backslashes plus space -> N backslashes plus space.
-        len := (int)(in - start)
-        n := len / 2 - 1
-        if out < start {
-          memset(out, '\\', n)
-        }
-        out += n
-        *out++ = ' '
-        continue
-      }
-      '\\\\'+ ' ' {
-        // 2N backslashes plus space -> 2N backslashes, end of filename.
-        len := (int)(in - start)
-        if out < start {
-          memset(out, '\\', len - 1)
-        }
-        out += len - 1
-        break
-      }
-      '\\'+ '#' {
-        // De-escape hash sign, but preserve other leading backslashes.
-        len := (int)(in - start)
-        if len > 2 && out < start {
-          memset(out, '\\', len - 2)
-        }
-        out += len - 2
-        *out++ = '#'
-        continue
-      }
-      '\\'+ ':' [\x00\x20\r\n\t] {
-        // Backslash followed by : and whitespace.
-        // It is therefore normal text and not an escaped colon
-        len := (int)(in - start - 1)
-        // Need to shift it over if we're overwriting backslashes.
-        if out < start {
-          memmove(out, start, len)
-        }
-        out += len
-        if *(in - 1) == '\n' {
-          have_newline = true
-        }
-        break
-      }
-      '\\'+ ':' {
-        // De-escape colon sign, but preserve other leading backslashes.
-        // Regular expression uses lookahead to make sure that no whitespace
-        // nor EOF follows. In that case it'd be the : at the end of a target
-        len := (int)(in - start)
-        if len > 2 && out < start {
-          memset(out, '\\', len - 2)
-        }
-        out += len - 2
-        *out++ = ':'
-        continue
-      }
-      '$$' {
-        // De-escape dollar character.
-        *out++ = '$'
-        continue
-      }
-      '\\'+ [^\000\r\n] | [a-zA-Z0-9+,/_:.~()}{%=@\x5B\x5D!\x80-\xFF-]+ {
-        // Got a span of plain text.
-        len := (int)(in - start)
-        // Need to shift it over if we're overwriting backslashes.
-        if out < start {
-          memmove(out, start, len)
-        }
-        out += len
-        continue
-      }
-      nul {
-        break
-      }
-      '\\' newline {
-        // A line continuation ends the current file name.
-        break
-      }
-      newline {
-        // A newline ends the current file name and the current rule.
-        have_newline = true
-        break
-      }
-      [^] {
-        // For any other character (e.g. whitespace), swallow it here,
-        // allowing the outer logic to loop around again.
-        break
-      }
-      */
-    }
+			  nul = "\000";
+			  newline = '\r'?'\n';
 
-    len := (int)(out - filename)
-    const bool is_dependency = !parsing_targets
-    if len > 0 && filename[len - 1] == ':' {
-      len--  // Strip off trailing colon, if any.
-      parsing_targets = false
-      have_target = true
-    }
+			  '\\\\'* '\\ ' {
+			    // 2N+1 backslashes plus space -> N backslashes plus space.
+			    l := in - start
+			    n := l / 2 - 1
+			    if out < start {
+			      memset(out, '\\', n)
+			    }
+			    out += n
+			    *out++ = ' '
+			    continue
+			  }
+			  '\\\\'+ ' ' {
+			    // 2N backslashes plus space -> 2N backslashes, end of filename.
+			    l := in - start
+			    if out < start {
+			      memset(out, '\\', l - 1)
+			    }
+			    out += l - 1
+			    break
+			  }
+			  '\\'+ '#' {
+			    // De-escape hash sign, but preserve other leading backslashes.
+			    l := in - start
+			    if l > 2 && out < start {
+			      memset(out, '\\', l - 2)
+			    }
+			    out += l - 2
+			    *out++ = '#'
+			    continue
+			  }
+			  '\\'+ ':' [\x00\x20\r\n\t] {
+			    // Backslash followed by : and whitespace.
+			    // It is therefore normal text and not an escaped colon
+			    l := in - start - 1
+			    // Need to shift it over if we're overwriting backslashes.
+			    if out < start {
+			      memmove(out, start, l)
+			    }
+			    out += l
+			    if *(in - 1) == '\n' {
+			      have_newline = true
+			    }
+			    break
+			  }
+			  '\\'+ ':' {
+			    // De-escape colon sign, but preserve other leading backslashes.
+			    // Regular expression uses lookahead to make sure that no whitespace
+			    // nor EOF follows. In that case it'd be the : at the end of a target
+			    l := in - start
+			    if l > 2 && out < start {
+			      memset(out, '\\', l - 2)
+			    }
+			    out += l - 2
+			    *out++ = ':'
+			    continue
+			  }
+			  '$$' {
+			    // De-escape dollar character.
+			    *out++ = '$'
+			    continue
+			  }
+			  '\\'+ [^\000\r\n] | [a-zA-Z0-9+,/_:.~()}{%=@\x5B\x5D!\x80-\xFF-]+ {
+			    // Got a span of plain text.
+			    l := in - start
+			    // Need to shift it over if we're overwriting backslashes.
+			    if out < start {
+			      memmove(out, start, l)
+			    }
+			    out += l
+			    continue
+			  }
+			  nul {
+			    break
+			  }
+			  '\\' newline {
+			    // A line continuation ends the current file name.
+			    break
+			  }
+			  newline {
+			    // A newline ends the current file name and the current rule.
+			    have_newline = true
+			    break
+			  }
+			  [^] {
+			    // For any other character (e.g. whitespace), swallow it here,
+			    // allowing the outer logic to loop around again.
+			    break
+			  }
+			*/
+		}
 
-    if len > 0 {
-      piece := StringPiece(filename, len)
-      // If we've seen this as an input before, skip it.
-      pos := find(ins_.begin(), ins_.end(), piece)
-      if pos == ins_.end() {
-        if is_dependency {
-          if poisoned_input {
-            *err = "inputs may not also have inputs"
-            return false
-          }
-          // New input.
-          ins_.push_back(piece)
-        } else {
-          // Check for a new output.
-          if find(outs_.begin(), outs_.end(), piece) == outs_.end() {
-            outs_.push_back(piece)
-          }
-        }
-      } else if !is_dependency {
-        // We've passed an input on the left side; reject new inputs.
-        poisoned_input = true
-      }
-    }
+		l := out - filename
+		is_dependency := !d.parsing_targets
+		if l > 0 && content[filename-l-1] == ':' {
+			l-- // Strip off trailing colon, if any.
+			parsing_targets = false
+			have_target = true
+		}
 
-    if have_newline {
-      // A newline ends a rule so the next filename will be a new target.
-      parsing_targets = true
-      poisoned_input = false
-    }
-  }
-  if !have_target {
-    *err = "expected ':' in depfile"
-    return false
-  }
-  return true
+		if l > 0 {
+			piece := content[filename : filename+l]
+			// If we've seen this as an input before, skip it.
+			// TODO(maruel): Use a map[string]struct{} while constructing.
+			pos := -1
+			for i, v := range d.ins_ {
+				if piece == v {
+					pos = i
+					break
+				}
+			}
+			if pos == -1 {
+				if is_dependency {
+					if poisoned_input {
+						*err = "inputs may not also have inputs"
+						return false
+					}
+					// New input.
+					d.ins_ = append(d.ins_, piece)
+				} else {
+					// Check for a new output.
+					pos = -1
+					for i, v := range d.out_ {
+						if piece == v {
+							pos = i
+							break
+						}
+					}
+					if pos == -1 {
+						d.outs_ = append(d.outs_, piece)
+					}
+				}
+			} else if !is_dependency {
+				// We've passed an input on the left side; reject new inputs.
+				poisoned_input = true
+			}
+		}
+
+		if have_newline {
+			// A newline ends a rule so the next filename will be a new target.
+			parsing_targets = true
+			poisoned_input = false
+		}
+	}
+	if !have_target {
+		*err = "expected ':' in depfile"
+		return false
+	}
+	return true
 }
-

@@ -14,18 +14,6 @@
 
 //go:build nobuild
 
-// Get sources from https://github.com/skvadrik/re2c/releases
-// tax xvf the file
-// cd re2c
-// mkdir out
-// cd out
-// cmake ..
-// cmake --buid .
-
-//go:generate re2go lexer.in.go -o lexer.go -i --no-generation-date
-
-// TODO(maruel): Measure impact and usefulness of -8.
-
 package ginja
 
 import (
