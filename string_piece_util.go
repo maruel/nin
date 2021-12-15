@@ -12,71 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "strings"
 
-inline char ToLowerASCII(char c) {
-  return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c
+func ToLowerASCII(c byte) byte {
+	if c >= 'A' && c <= 'Z' {
+		return c + ('a' - 'A')
+	}
+	return c
 }
 
-
-func SplitStringPiece(input StringPiece, sep char) vector<StringPiece> {
-  vector<StringPiece> elems
-  elems.reserve(count(input.begin(), input.end(), sep) + 1)
-
-  StringPiece::const_iterator pos = input.begin()
-
-  for (;;) {
-    next_pos := find(pos, input.end(), sep)
-    if next_pos == input.end() {
-      elems.push_back(StringPiece(pos, input.end() - pos))
-      break
-    }
-    elems.push_back(StringPiece(pos, next_pos - pos))
-    pos = next_pos + 1
-  }
-
-  return elems
+func SplitStringPiece(input string, sep byte) []string {
+	return strings.Split(input, string(sep))
 }
 
-func JoinStringPiece(list *vector<StringPiece>, sep char) string {
-  if len(list) == 0 {
-    return ""
-  }
-
-  string ret
-
-  {
-    size_t cap = list.size() - 1
-    for (size_t i = 0; i < list.size(); ++i) {
-      cap += list[i].len_
-    }
-    ret.reserve(cap)
-  }
-
-  for (size_t i = 0; i < list.size(); ++i) {
-    if i != 0 {
-      ret += sep
-    }
-    ret.append(list[i].str_, list[i].len_)
-  }
-
-  return ret
+func JoinStringPiece(list []string, sep byte) string {
+	return strings.Join(list, string(sep))
 }
 
-func EqualsCaseInsensitiveASCII(a StringPiece, b StringPiece) bool {
-  if a.len_ != b.len_ {
-    return false
-  }
-
-  for (size_t i = 0; i < a.len_; ++i) {
-    if ToLowerASCII(a.str_[i]) != ToLowerASCII(b.str_[i]) {
-      return false
-    }
-  }
-
-  return true
+func EqualsCaseInsensitiveASCII(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 {
+		return true
+	}
+	// TODO(maruel): Benchmark if it is a performance optimization or useless.
+	_ = b[len(a)-1]
+	for i := range a {
+		if ToLowerASCII(a[i]) != ToLowerASCII(b[i]) {
+			return false
+		}
+	}
+	return true
 }
-

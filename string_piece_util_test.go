@@ -12,120 +12,148 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"testing"
 
-TEST(StringPieceUtilTest, SplitStringPiece) {
-  {
-    string input("a:b:c")
-    list := SplitStringPiece(input, ':')
+	"github.com/google/go-cmp/cmp"
+)
 
-    EXPECT_EQ(list.size(), 3)
-
-    EXPECT_EQ(list[0], "a")
-    EXPECT_EQ(list[1], "b")
-    EXPECT_EQ(list[2], "c")
-  }
-
-  {
-    string empty
-    list := SplitStringPiece(empty, ':')
-
-    EXPECT_EQ(list.size(), 1)
-
-    EXPECT_EQ(list[0], "")
-  }
-
-  {
-    string one("a")
-    list := SplitStringPiece(one, ':')
-
-    EXPECT_EQ(list.size(), 1)
-
-    EXPECT_EQ(list[0], "a")
-  }
-
-  {
-    string sep_only(":")
-    list := SplitStringPiece(sep_only, ':')
-
-    EXPECT_EQ(list.size(), 2)
-
-    EXPECT_EQ(list[0], "")
-    EXPECT_EQ(list[1], "")
-  }
-
-  {
-    string sep(":a:b:c:")
-    list := SplitStringPiece(sep, ':')
-
-    EXPECT_EQ(list.size(), 5)
-
-    EXPECT_EQ(list[0], "")
-    EXPECT_EQ(list[1], "a")
-    EXPECT_EQ(list[2], "b")
-    EXPECT_EQ(list[3], "c")
-    EXPECT_EQ(list[4], "")
-  }
+func TestStringPieceUtilTest_SplitStringPiece(t *testing.T) {
+	data := []struct {
+		in   string
+		want []string
+	}{
+		{
+			"a:b:c",
+			[]string{"a", "b", "c"},
+		},
+		{
+			"",
+			[]string{""},
+		},
+		{
+			"a",
+			[]string{"a"},
+		},
+		{
+			":",
+			[]string{"", ""},
+		},
+		{
+			":a:b:c:",
+			[]string{"", "a", "b", "c", ""},
+		},
+	}
+	for _, l := range data {
+		got := SplitStringPiece(l.in, ':')
+		if diff := cmp.Diff(l.want, got); diff != "" {
+			t.Fatalf("mismatch (-want +got):\n%s", diff)
+		}
+	}
 }
 
-TEST(StringPieceUtilTest, JoinStringPiece) {
-  {
-    string input("a:b:c")
-    list := SplitStringPiece(input, ':')
-
-    EXPECT_EQ("a:b:c", JoinStringPiece(list, ':'))
-    EXPECT_EQ("a/b/c", JoinStringPiece(list, '/'))
-  }
-
-  {
-    string empty
-    list := SplitStringPiece(empty, ':')
-
-    EXPECT_EQ("", JoinStringPiece(list, ':'))
-  }
-
-  {
-    vector<StringPiece> empty_list
-
-    EXPECT_EQ("", JoinStringPiece(empty_list, ':'))
-  }
-
-  {
-    string one("a")
-    single_list := SplitStringPiece(one, ':')
-
-    EXPECT_EQ("a", JoinStringPiece(single_list, ':'))
-  }
-
-  {
-    string sep(":a:b:c:")
-    list := SplitStringPiece(sep, ':')
-
-    EXPECT_EQ(":a:b:c:", JoinStringPiece(list, ':'))
-  }
+func TestStringPieceUtilTest_JoinStringPiece(t *testing.T) {
+	data := []struct {
+		in   []string
+		want string
+	}{
+		{
+			[]string{"a", "b", "c"},
+			"a:b:c",
+		},
+		{
+			[]string{""},
+			"",
+		},
+		{
+			[]string{},
+			"",
+		},
+		{
+			[]string{"a"},
+			"a",
+		},
+		{
+			[]string{"", "a", "b", "c", ""},
+			":a:b:c:",
+		},
+	}
+	for _, l := range data {
+		got := JoinStringPiece(l.in, ':')
+		if diff := cmp.Diff(l.want, got); diff != "" {
+			t.Fatalf("mismatch (-want +got):\n%s", diff)
+		}
+	}
 }
 
-TEST(StringPieceUtilTest, ToLowerASCII) {
-  EXPECT_EQ('a', ToLowerASCII('A'))
-  EXPECT_EQ('z', ToLowerASCII('Z'))
-  EXPECT_EQ('a', ToLowerASCII('a'))
-  EXPECT_EQ('z', ToLowerASCII('z'))
-  EXPECT_EQ('/', ToLowerASCII('/'))
-  EXPECT_EQ('1', ToLowerASCII('1'))
+func TestStringPieceUtilTest_ToLowerASCII(t *testing.T) {
+	data := []struct {
+		in   byte
+		want byte
+	}{
+		{'A', 'a'},
+		{'Z', 'z'},
+		{'a', 'a'},
+		{'z', 'z'},
+		{'/', '/'},
+		{'1', '1'},
+	}
+	for _, l := range data {
+		got := ToLowerASCII(l.in)
+		if diff := cmp.Diff(l.want, got); diff != "" {
+			t.Fatalf("mismatch (-want +got):\n%s", diff)
+		}
+	}
 }
 
-TEST(StringPieceUtilTest, EqualsCaseInsensitiveASCII) {
-  EXPECT_TRUE(EqualsCaseInsensitiveASCII("abc", "abc"))
-  EXPECT_TRUE(EqualsCaseInsensitiveASCII("abc", "ABC"))
-  EXPECT_TRUE(EqualsCaseInsensitiveASCII("abc", "aBc"))
-  EXPECT_TRUE(EqualsCaseInsensitiveASCII("AbC", "aBc"))
-  EXPECT_TRUE(EqualsCaseInsensitiveASCII("", ""))
-
-  EXPECT_FALSE(EqualsCaseInsensitiveASCII("a", "ac"))
-  EXPECT_FALSE(EqualsCaseInsensitiveASCII("/", "\\"))
-  EXPECT_FALSE(EqualsCaseInsensitiveASCII("1", "10"))
+func TestStringPieceUtilTest_EqualsCaseInsensitiveASCII(t *testing.T) {
+	data := []struct {
+		lhs  string
+		rhs  string
+		want bool
+	}{
+		{
+			"abc",
+			"abc",
+			true,
+		},
+		{
+			"abc",
+			"ABC",
+			true,
+		},
+		{
+			"abc",
+			"aBc",
+			true,
+		},
+		{
+			"",
+			"",
+			true,
+		},
+		{
+			"a",
+			"ac",
+			false,
+		},
+		{
+			"/",
+			"\\",
+			false,
+		},
+		{
+			"1",
+			"10",
+			false,
+		},
+	}
+	for _, l := range data {
+		got := EqualsCaseInsensitiveASCII(l.lhs, l.rhs)
+		if diff := cmp.Diff(l.want, got); diff != "" {
+			t.Fatalf("mismatch (-want +got):\n%s", diff)
+		}
+	}
 }
-
