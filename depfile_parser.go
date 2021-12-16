@@ -15,8 +15,7 @@
 
 //go:build nobuild
 
-//go:generate re2go depfile_parser.in.go -o depfile_parser.go -i --no-generation-date
-//go:generate gofmt -s -w depfile_parser.go
+//go:generate ./regen.sh
 
 package ginja
 
@@ -57,7 +56,7 @@ func NewDepfileParser(options DepfileParserOptions) DepfileParser {
 //
 // If anyone actually has depfiles that rely on the more complicated
 // behavior we can adjust this.
-func (d *DepfileParser) Parse(content string, err *string) bool {
+func (d *DepfileParser) Parse(content []byte, err *string) bool {
 	// in: current parser input point.
 	// end: end of input.
 	// parsing_targets: whether we are parsing targets or dependencies.
@@ -78,448 +77,458 @@ func (d *DepfileParser) Parse(content string, err *string) bool {
 			start := in
 			yymarker := nil
 			/*
-			   re2c:define:YYCTYPE = "byte";
-			   re2c:define:YYCURSOR = "l.input_[p]";
-			   re2c:define:YYSKIP = "p++";
-			   re2c:define:YYMARKER = q;
-			   re2c:yyfill:enable = 0;
-			   re2c:flags:nested-ifs = 1;
-			   re2c:define:YYPEEK = "l.input_[p]";
-			   re2c:define:YYBACKUP = "q = p";
-			   re2c:define:YYRESTORE = "p = q";
+			 re2c:define:YYCTYPE = "byte";
+			 re2c:define:YYCURSOR = "l.input_[p]";
+			 re2c:define:YYSKIP = "p++";
+			 re2c:define:YYMARKER = q;
+			 re2c:yyfill:enable = 0;
+			 re2c:flags:nested-ifs = 1;
+			 re2c:define:YYPEEK = "l.input_[p]";
+			 re2c:define:YYBACKUP = "q = p";
+			 re2c:define:YYRESTORE = "p = q";
 			*/
 
-			
-    {
-      var yych byte
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        goto yy2
-      case 0x01:
-        fallthrough
-      case 0x02:
-        fallthrough
-      case 0x03:
-        fallthrough
-      case 0x04:
-        fallthrough
-      case 0x05:
-        fallthrough
-      case 0x06:
-        fallthrough
-      case 0x07:
-        fallthrough
-      case 0x08:
-        fallthrough
-      case '\t':
-        fallthrough
-      case '\v':
-        fallthrough
-      case '\f':
-        fallthrough
-      case 0x0E:
-        fallthrough
-      case 0x0F:
-        fallthrough
-      case 0x10:
-        fallthrough
-      case 0x11:
-        fallthrough
-      case 0x12:
-        fallthrough
-      case 0x13:
-        fallthrough
-      case 0x14:
-        fallthrough
-      case 0x15:
-        fallthrough
-      case 0x16:
-        fallthrough
-      case 0x17:
-        fallthrough
-      case 0x18:
-        fallthrough
-      case 0x19:
-        fallthrough
-      case 0x1A:
-        fallthrough
-      case 0x1B:
-        fallthrough
-      case 0x1C:
-        fallthrough
-      case 0x1D:
-        fallthrough
-      case 0x1E:
-        fallthrough
-      case 0x1F:
-        fallthrough
-      case ' ':
-        fallthrough
-      case '"':
-        fallthrough
-      case '#':
-        fallthrough
-      case '&':
-        fallthrough
-      case '\'':
-        fallthrough
-      case '*':
-        fallthrough
-      case ';':
-        fallthrough
-      case '<':
-        fallthrough
-      case '>':
-        fallthrough
-      case '?':
-        fallthrough
-      case '^':
-        fallthrough
-      case '`':
-        fallthrough
-      case '|':
-        fallthrough
-      case 0x7F:
-        goto yy4
-      case '\n':
-        goto yy6
-      case '\r':
-        goto yy8
-      case '$':
-        goto yy12
-      case '\\':
-        goto yy13
-      default:
-        goto yy9
-      }
-yy2:
-      YYSKIP
-      {
-			    break
-			  }
-yy4:
-      YYSKIP
-yy5:
-      {
-			    // For any other character (e.g. whitespace), swallow it here,
-			    // allowing the outer logic to loop around again.
-			    break
-			  }
-yy6:
-      YYSKIP
-      {
-			    // A newline ends the current file name and the current rule.
-			    have_newline = true
-			    break
-			  }
-yy8:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case '\n':
-        goto yy6
-      default:
-        goto yy5
-      }
-yy9:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        fallthrough
-      case 0x01:
-        fallthrough
-      case 0x02:
-        fallthrough
-      case 0x03:
-        fallthrough
-      case 0x04:
-        fallthrough
-      case 0x05:
-        fallthrough
-      case 0x06:
-        fallthrough
-      case 0x07:
-        fallthrough
-      case 0x08:
-        fallthrough
-      case '\t':
-        fallthrough
-      case '\n':
-        fallthrough
-      case '\v':
-        fallthrough
-      case '\f':
-        fallthrough
-      case '\r':
-        fallthrough
-      case 0x0E:
-        fallthrough
-      case 0x0F:
-        fallthrough
-      case 0x10:
-        fallthrough
-      case 0x11:
-        fallthrough
-      case 0x12:
-        fallthrough
-      case 0x13:
-        fallthrough
-      case 0x14:
-        fallthrough
-      case 0x15:
-        fallthrough
-      case 0x16:
-        fallthrough
-      case 0x17:
-        fallthrough
-      case 0x18:
-        fallthrough
-      case 0x19:
-        fallthrough
-      case 0x1A:
-        fallthrough
-      case 0x1B:
-        fallthrough
-      case 0x1C:
-        fallthrough
-      case 0x1D:
-        fallthrough
-      case 0x1E:
-        fallthrough
-      case 0x1F:
-        fallthrough
-      case ' ':
-        fallthrough
-      case '"':
-        fallthrough
-      case '#':
-        fallthrough
-      case '$':
-        fallthrough
-      case '&':
-        fallthrough
-      case '\'':
-        fallthrough
-      case '*':
-        fallthrough
-      case ';':
-        fallthrough
-      case '<':
-        fallthrough
-      case '>':
-        fallthrough
-      case '?':
-        fallthrough
-      case '\\':
-        fallthrough
-      case '^':
-        fallthrough
-      case '`':
-        fallthrough
-      case '|':
-        fallthrough
-      case 0x7F:
-        goto yy11
-      default:
-        goto yy9
-      }
-yy11:
-      {
-			    // Got a span of plain text.
-			    l := in - start
-			    // Need to shift it over if we're overwriting backslashes.
-			    if out < start {
-			      memmove(out, start, l)
-			    }
-			    out += l
-			    continue
-			  }
-yy12:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case '$':
-        goto yy14
-      default:
-        goto yy5
-      }
-yy13:
-      YYSKIP
-      YYBACKUP
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        goto yy5
-      case '\n':
-        goto yy17
-      case '\r':
-        goto yy19
-      case ' ':
-        goto yy21
-      case '#':
-        goto yy23
-      case ':':
-        goto yy25
-      case '\\':
-        goto yy27
-      default:
-        goto yy16
-      }
-yy14:
-      YYSKIP
-      {
-			    // De-escape dollar character.
-			    *out++ = '$'
-			    continue
-			  }
-yy16:
-      YYSKIP
-      goto yy11
-yy17:
-      YYSKIP
-      {
-			    // A line continuation ends the current file name.
-			    break
-			  }
-yy19:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case '\n':
-        goto yy17
-      default:
-        goto yy20
-      }
-yy20:
-      YYRESTORE
-      goto yy5
-yy21:
-      YYSKIP
-      {
-			    // 2N+1 backslashes plus space -> N backslashes plus space.
-			    l := in - start
-			    n := l / 2 - 1
-			    if out < start {
-			      memset(out, '\\', n)
-			    }
-			    out += n
-			    *out++ = ' '
-			    continue
-			  }
-yy23:
-      YYSKIP
-      {
-			    // De-escape hash sign, but preserve other leading backslashes.
-			    l := in - start
-			    if l > 2 && out < start {
-			      memset(out, '\\', l - 2)
-			    }
-			    out += l - 2
-			    *out++ = '#'
-			    continue
-			  }
-yy25:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        fallthrough
-      case '\t':
-        fallthrough
-      case '\n':
-        fallthrough
-      case '\r':
-        fallthrough
-      case ' ':
-        goto yy28
-      default:
-        goto yy26
-      }
-yy26:
-      {
-			    // De-escape colon sign, but preserve other leading backslashes.
-			    // Regular expression uses lookahead to make sure that no whitespace
-			    // nor EOF follows. In that case it'd be the : at the end of a target
-			    l := in - start
-			    if l > 2 && out < start {
-			      memset(out, '\\', l - 2)
-			    }
-			    out += l - 2
-			    *out++ = ':'
-			    continue
-			  }
-yy27:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        fallthrough
-      case '\n':
-        fallthrough
-      case '\r':
-        goto yy11
-      case ' ':
-        goto yy30
-      case '#':
-        goto yy23
-      case ':':
-        goto yy25
-      case '\\':
-        goto yy32
-      default:
-        goto yy16
-      }
-yy28:
-      YYSKIP
-      {
-			    // Backslash followed by : and whitespace.
-			    // It is therefore normal text and not an escaped colon
-			    l := in - start - 1
-			    // Need to shift it over if we're overwriting backslashes.
-			    if out < start {
-			      memmove(out, start, l)
-			    }
-			    out += l
-			    if *(in - 1) == '\n' {
-			      have_newline = true
-			    }
-			    break
-			  }
-yy30:
-      YYSKIP
-      {
-			    // 2N backslashes plus space -> 2N backslashes, end of filename.
-			    l := in - start
-			    if out < start {
-			      memset(out, '\\', l - 1)
-			    }
-			    out += l - 1
-			    break
-			  }
-yy32:
-      YYSKIP
-      yych = YYPEEK
-      switch (yych) {
-      case 0x00:
-        fallthrough
-      case '\n':
-        fallthrough
-      case '\r':
-        goto yy11
-      case ' ':
-        goto yy21
-      case '#':
-        goto yy23
-      case ':':
-        goto yy25
-      case '\\':
-        goto yy27
-      default:
-        goto yy16
-      }
-    }
+			{
+				var yych byte
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					goto yy2
+				case 0x01:
+					fallthrough
+				case 0x02:
+					fallthrough
+				case 0x03:
+					fallthrough
+				case 0x04:
+					fallthrough
+				case 0x05:
+					fallthrough
+				case 0x06:
+					fallthrough
+				case 0x07:
+					fallthrough
+				case 0x08:
+					fallthrough
+				case '\t':
+					fallthrough
+				case '\v':
+					fallthrough
+				case '\f':
+					fallthrough
+				case 0x0E:
+					fallthrough
+				case 0x0F:
+					fallthrough
+				case 0x10:
+					fallthrough
+				case 0x11:
+					fallthrough
+				case 0x12:
+					fallthrough
+				case 0x13:
+					fallthrough
+				case 0x14:
+					fallthrough
+				case 0x15:
+					fallthrough
+				case 0x16:
+					fallthrough
+				case 0x17:
+					fallthrough
+				case 0x18:
+					fallthrough
+				case 0x19:
+					fallthrough
+				case 0x1A:
+					fallthrough
+				case 0x1B:
+					fallthrough
+				case 0x1C:
+					fallthrough
+				case 0x1D:
+					fallthrough
+				case 0x1E:
+					fallthrough
+				case 0x1F:
+					fallthrough
+				case ' ':
+					fallthrough
+				case '"':
+					fallthrough
+				case '#':
+					fallthrough
+				case '&':
+					fallthrough
+				case '\'':
+					fallthrough
+				case '*':
+					fallthrough
+				case ';':
+					fallthrough
+				case '<':
+					fallthrough
+				case '>':
+					fallthrough
+				case '?':
+					fallthrough
+				case '^':
+					fallthrough
+				case '`':
+					fallthrough
+				case '|':
+					fallthrough
+				case 0x7F:
+					goto yy4
+				case '\n':
+					goto yy6
+				case '\r':
+					goto yy8
+				case '$':
+					goto yy12
+				case '\\':
+					goto yy13
+				default:
+					goto yy9
+				}
+			yy2:
+				YYSKIP
+				{
+					break
+				}
+			yy4:
+				YYSKIP
+			yy5:
+				{
+					// For any other character (e.g. whitespace), swallow it here,
+					// allowing the outer logic to loop around again.
+					break
+				}
+			yy6:
+				YYSKIP
+				{
+					// A newline ends the current file name and the current rule.
+					have_newline = true
+					break
+				}
+			yy8:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case '\n':
+					goto yy6
+				default:
+					goto yy5
+				}
+			yy9:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					fallthrough
+				case 0x01:
+					fallthrough
+				case 0x02:
+					fallthrough
+				case 0x03:
+					fallthrough
+				case 0x04:
+					fallthrough
+				case 0x05:
+					fallthrough
+				case 0x06:
+					fallthrough
+				case 0x07:
+					fallthrough
+				case 0x08:
+					fallthrough
+				case '\t':
+					fallthrough
+				case '\n':
+					fallthrough
+				case '\v':
+					fallthrough
+				case '\f':
+					fallthrough
+				case '\r':
+					fallthrough
+				case 0x0E:
+					fallthrough
+				case 0x0F:
+					fallthrough
+				case 0x10:
+					fallthrough
+				case 0x11:
+					fallthrough
+				case 0x12:
+					fallthrough
+				case 0x13:
+					fallthrough
+				case 0x14:
+					fallthrough
+				case 0x15:
+					fallthrough
+				case 0x16:
+					fallthrough
+				case 0x17:
+					fallthrough
+				case 0x18:
+					fallthrough
+				case 0x19:
+					fallthrough
+				case 0x1A:
+					fallthrough
+				case 0x1B:
+					fallthrough
+				case 0x1C:
+					fallthrough
+				case 0x1D:
+					fallthrough
+				case 0x1E:
+					fallthrough
+				case 0x1F:
+					fallthrough
+				case ' ':
+					fallthrough
+				case '"':
+					fallthrough
+				case '#':
+					fallthrough
+				case '$':
+					fallthrough
+				case '&':
+					fallthrough
+				case '\'':
+					fallthrough
+				case '*':
+					fallthrough
+				case ';':
+					fallthrough
+				case '<':
+					fallthrough
+				case '>':
+					fallthrough
+				case '?':
+					fallthrough
+				case '\\':
+					fallthrough
+				case '^':
+					fallthrough
+				case '`':
+					fallthrough
+				case '|':
+					fallthrough
+				case 0x7F:
+					goto yy11
+				default:
+					goto yy9
+				}
+			yy11:
+				{
+					// Got a span of plain text.
+					l := in - start
+					// Need to shift it over if we're overwriting backslashes.
+					if out < start {
+						memmove(out, start, l)
+					}
+					out += l
+					continue
+				}
+			yy12:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case '$':
+					goto yy14
+				default:
+					goto yy5
+				}
+			yy13:
+				YYSKIP
+				YYBACKUP
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					goto yy5
+				case '\n':
+					goto yy17
+				case '\r':
+					goto yy19
+				case ' ':
+					goto yy21
+				case '#':
+					goto yy23
+				case ':':
+					goto yy25
+				case '\\':
+					goto yy27
+				default:
+					goto yy16
+				}
+			yy14:
+				YYSKIP
+				{
+					// De-escape dollar character.
+					content[out] = '$'
+					continue
+				}
+			yy16:
+				YYSKIP
+				goto yy11
+			yy17:
+				YYSKIP
+				{
+					// A line continuation ends the current file name.
+					break
+				}
+			yy19:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case '\n':
+					goto yy17
+				default:
+					goto yy20
+				}
+			yy20:
+				YYRESTORE
+				goto yy5
+			yy21:
+				YYSKIP
+				{
+					// 2N+1 backslashes plus space -> N backslashes plus space.
+					l := in - start
+					n := l/2 - 1
+					if out < start {
+						for i := 0; i < n; i++ {
+							content[out+i] = '\\'
+						}
+					}
+					out += n
+					content[out] = ' '
+					out++
+					continue
+				}
+			yy23:
+				YYSKIP
+				{
+					// De-escape hash sign, but preserve other leading backslashes.
+					l := in - start
+					if l > 2 && out < start {
+						for i := 0; i < l-2; i++ {
+							content[out+i] = '\\'
+						}
+					}
+					out += l - 2
+					content[out] = '#'
+					out++
+					continue
+				}
+			yy25:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					fallthrough
+				case '\t':
+					fallthrough
+				case '\n':
+					fallthrough
+				case '\r':
+					fallthrough
+				case ' ':
+					goto yy28
+				default:
+					goto yy26
+				}
+			yy26:
+				{
+					// De-escape colon sign, but preserve other leading backslashes.
+					// Regular expression uses lookahead to make sure that no whitespace
+					// nor EOF follows. In that case it'd be the : at the end of a target
+					l := in - start
+					if l > 2 && out < start {
+						for i := 0; i < l-2; i++ {
+							content[out+i] = '\\'
+						}
+					}
+					out += l - 2
+					content[out] = ':'
+					out++
+					continue
+				}
+			yy27:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					fallthrough
+				case '\n':
+					fallthrough
+				case '\r':
+					goto yy11
+				case ' ':
+					goto yy30
+				case '#':
+					goto yy23
+				case ':':
+					goto yy25
+				case '\\':
+					goto yy32
+				default:
+					goto yy16
+				}
+			yy28:
+				YYSKIP
+				{
+					// Backslash followed by : and whitespace.
+					// It is therefore normal text and not an escaped colon
+					l := in - start - 1
+					// Need to shift it over if we're overwriting backslashes.
+					if out < start {
+						memmove(out, start, l)
+					}
+					out += l
+					if content[in-1] == '\n' {
+						have_newline = true
+					}
+					break
+				}
+			yy30:
+				YYSKIP
+				{
+					// 2N backslashes plus space -> 2N backslashes, end of filename.
+					l := in - start
+					if out < start {
+						for i := 0; i < l-1; i++ {
+							content[out+i] = '\\'
+						}
+					}
+					out += l - 1
+					break
+				}
+			yy32:
+				YYSKIP
+				yych = YYPEEK
+				switch yych {
+				case 0x00:
+					fallthrough
+				case '\n':
+					fallthrough
+				case '\r':
+					goto yy11
+				case ' ':
+					goto yy21
+				case '#':
+					goto yy23
+				case ':':
+					goto yy25
+				case '\\':
+					goto yy27
+				default:
+					goto yy16
+				}
+			}
 
 		}
 

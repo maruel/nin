@@ -55,7 +55,7 @@ func NewDepfileParser(options DepfileParserOptions) DepfileParser {
 //
 // If anyone actually has depfiles that rely on the more complicated
 // behavior we can adjust this.
-func (d *DepfileParser) Parse(content string, err *string) bool {
+func (d *DepfileParser) Parse(content []byte, err *string) bool {
 	// in: current parser input point.
 	// end: end of input.
 	// parsing_targets: whether we are parsing targets or dependencies.
@@ -76,119 +76,130 @@ func (d *DepfileParser) Parse(content string, err *string) bool {
 			start := in
 			yymarker := nil
 			/*
-			   re2c:define:YYCTYPE = "byte";
-			   re2c:define:YYCURSOR = "l.input_[p]";
-			   re2c:define:YYSKIP = "p++";
-			   re2c:define:YYMARKER = q;
-			   re2c:yyfill:enable = 0;
-			   re2c:flags:nested-ifs = 1;
-			   re2c:define:YYPEEK = "l.input_[p]";
-			   re2c:define:YYBACKUP = "q = p";
-			   re2c:define:YYRESTORE = "p = q";
+			 re2c:define:YYCTYPE = "byte";
+			 re2c:define:YYCURSOR = "l.input_[p]";
+			 re2c:define:YYSKIP = "p++";
+			 re2c:define:YYMARKER = q;
+			 re2c:yyfill:enable = 0;
+			 re2c:flags:nested-ifs = 1;
+			 re2c:define:YYPEEK = "l.input_[p]";
+			 re2c:define:YYBACKUP = "q = p";
+			 re2c:define:YYRESTORE = "p = q";
 			*/
 
 			/*!re2c
-			  re2c:define:YYCTYPE = "byte";
-			  re2c:define:YYCURSOR = content[in];
-			  re2c:define:YYLIMIT = end;
-			  re2c:define:YYMARKER = yymarker;
+			re2c:define:YYCTYPE = "byte";
+			re2c:define:YYCURSOR = content[in];
+			re2c:define:YYLIMIT = end;
+			re2c:define:YYMARKER = yymarker;
 
-			  re2c:yyfill:enable = 0;
+			re2c:yyfill:enable = 0;
 
-			  re2c:indent:top = 2;
-			  re2c:indent:string = "  ";
+			re2c:indent:top = 2;
+			re2c:indent:string = "  ";
 
-			  nul = "\000";
-			  newline = '\r'?'\n';
+			nul = "\000";
+			newline = '\r'?'\n';
 
-			  '\\\\'* '\\ ' {
-			    // 2N+1 backslashes plus space -> N backslashes plus space.
-			    l := in - start
-			    n := l / 2 - 1
-			    if out < start {
-			      memset(out, '\\', n)
-			    }
-			    out += n
-			    *out++ = ' '
-			    continue
-			  }
-			  '\\\\'+ ' ' {
-			    // 2N backslashes plus space -> 2N backslashes, end of filename.
-			    l := in - start
-			    if out < start {
-			      memset(out, '\\', l - 1)
-			    }
-			    out += l - 1
-			    break
-			  }
-			  '\\'+ '#' {
-			    // De-escape hash sign, but preserve other leading backslashes.
-			    l := in - start
-			    if l > 2 && out < start {
-			      memset(out, '\\', l - 2)
-			    }
-			    out += l - 2
-			    *out++ = '#'
-			    continue
-			  }
-			  '\\'+ ':' [\x00\x20\r\n\t] {
-			    // Backslash followed by : and whitespace.
-			    // It is therefore normal text and not an escaped colon
-			    l := in - start - 1
-			    // Need to shift it over if we're overwriting backslashes.
-			    if out < start {
-			      memmove(out, start, l)
-			    }
-			    out += l
-			    if *(in - 1) == '\n' {
-			      have_newline = true
-			    }
-			    break
-			  }
-			  '\\'+ ':' {
-			    // De-escape colon sign, but preserve other leading backslashes.
-			    // Regular expression uses lookahead to make sure that no whitespace
-			    // nor EOF follows. In that case it'd be the : at the end of a target
-			    l := in - start
-			    if l > 2 && out < start {
-			      memset(out, '\\', l - 2)
-			    }
-			    out += l - 2
-			    *out++ = ':'
-			    continue
-			  }
-			  '$$' {
-			    // De-escape dollar character.
-			    *out++ = '$'
-			    continue
-			  }
-			  '\\'+ [^\000\r\n] | [a-zA-Z0-9+,/_:.~()}{%=@\x5B\x5D!\x80-\xFF-]+ {
-			    // Got a span of plain text.
-			    l := in - start
-			    // Need to shift it over if we're overwriting backslashes.
-			    if out < start {
-			      memmove(out, start, l)
-			    }
-			    out += l
-			    continue
-			  }
-			  nul {
-			    break
-			  }
-			  '\\' newline {
-			    // A line continuation ends the current file name.
-			    break
-			  }
-			  newline {
-			    // A newline ends the current file name and the current rule.
-			    have_newline = true
-			    break
-			  }
-			  [^] {
-			    // For any other character (e.g. whitespace), swallow it here,
-			    // allowing the outer logic to loop around again.
-			    break
-			  }
+			'\\\\'* '\\ ' {
+				// 2N+1 backslashes plus space -> N backslashes plus space.
+				l := in - start
+				n := l / 2 - 1
+				if out < start {
+					for i := 0; i < n; i++ {
+						content[out+i] = '\\'
+					}
+				}
+				out += n
+				content[out] = ' '
+				out++
+				continue
+			}
+			'\\\\'+ ' ' {
+				// 2N backslashes plus space -> 2N backslashes, end of filename.
+				l := in - start
+				if out < start {
+					for i := 0; i < l-1; i++ {
+						content[out+i] = '\\'
+					}
+				}
+				out += l - 1
+				break
+			}
+			'\\'+ '#' {
+				// De-escape hash sign, but preserve other leading backslashes.
+				l := in - start
+				if l > 2 && out < start {
+					for i := 0; i < l-2; i++ {
+						content[out+i] = '\\'
+					}
+				}
+				out += l - 2
+				content[out] = '#'
+				out++
+				continue
+			}
+			'\\'+ ':' [\x00\x20\r\n\t] {
+				// Backslash followed by : and whitespace.
+				// It is therefore normal text and not an escaped colon
+				l := in - start - 1
+				// Need to shift it over if we're overwriting backslashes.
+				if out < start {
+					memmove(out, start, l)
+				}
+				out += l
+				if content[in - 1] == '\n' {
+					have_newline = true
+				}
+				break
+			}
+			'\\'+ ':' {
+				// De-escape colon sign, but preserve other leading backslashes.
+				// Regular expression uses lookahead to make sure that no whitespace
+				// nor EOF follows. In that case it'd be the : at the end of a target
+				l := in - start
+				if l > 2 && out < start {
+					for i := 0; i < l-2; i++ {
+						content[out+i] = '\\'
+					}
+				}
+				out += l - 2
+				content[out] = ':'
+				out++
+				continue
+			}
+			'$$' {
+				// De-escape dollar character.
+				content[out] = '$'
+				continue
+			}
+			'\\'+ [^\000\r\n] | [a-zA-Z0-9+,/_:.~()}{%=@\x5B\x5D!\x80-\xFF-]+ {
+				// Got a span of plain text.
+				l := in - start
+				// Need to shift it over if we're overwriting backslashes.
+				if out < start {
+					memmove(out, start, l)
+				}
+				out += l
+				continue
+			}
+			nul {
+				break
+			}
+			'\\' newline {
+				// A line continuation ends the current file name.
+				break
+			}
+			newline {
+				// A newline ends the current file name and the current rule.
+				have_newline = true
+				break
+			}
+			[^] {
+				// For any other character (e.g. whitespace), swallow it here,
+				// allowing the outer logic to loop around again.
+				break
+			}
 			*/
 		}
 
