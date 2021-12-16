@@ -326,7 +326,7 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
   for (size_t i = 0; i < sizeof(kInvalidHeaders) / sizeof(kInvalidHeaders[0]); ++i) {
     deps_log := fopen(kTestFilename, "wb")
     if deps_log != nil { t.FailNow() }
-    ASSERT_EQ( strlen(kInvalidHeaders[i]), fwrite(kInvalidHeaders[i], 1, strlen(kInvalidHeaders[i]), deps_log))
+    if  strlen(kInvalidHeaders[i]) != fwrite(kInvalidHeaders[i], 1, strlen(kInvalidHeaders[i]), deps_log) { t.FailNow() }
     ASSERT_EQ(0 ,fclose(deps_log))
 
     string err
@@ -485,7 +485,7 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
   log.Close()
 
   rev_deps := log.GetFirstReverseDepsNode(state.GetNode("foo.h", 0))
-  EXPECT_TRUE(rev_deps == state.GetNode("out.o", 0) || rev_deps == state.GetNode("out2.o", 0))
+  if rev_deps == state.GetNode("out.o", 0) || rev_deps == state.GetNode("out2.o", 0) { t.FailNow() }
 
   rev_deps = log.GetFirstReverseDepsNode(state.GetNode("bar.h", 0))
   if rev_deps == state.GetNode("out.o", 0) { t.FailNow() }

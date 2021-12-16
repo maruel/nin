@@ -50,10 +50,10 @@ TEST(IncludesNormalize, WithRelative) {
   string err
   currentdir := GetCurDir()
   if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.FailNow() }
-  EXPECT_EQ("a", NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)))
+  if "a" != NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)) { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_EQ(string("../") + currentdir + string("/a"), NormalizeRelativeAndCheckNoError("a", "../b"))
-  EXPECT_EQ(string("../") + currentdir + string("/a/b"), NormalizeRelativeAndCheckNoError("a/b", "../c"))
+  if string("../") + currentdir + string("/a") != NormalizeRelativeAndCheckNoError("a", "../b") { t.FailNow() }
+  if string("../") + currentdir + string("/a/b") != NormalizeRelativeAndCheckNoError("a/b", "../c") { t.FailNow() }
   if "../../a" != NormalizeRelativeAndCheckNoError("a", "b/c") { t.FailNow() }
   if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.FailNow() }
 }
@@ -68,12 +68,12 @@ TEST(IncludesNormalize, Case) {
 }
 
 TEST(IncludesNormalize, DifferentDrive) {
-  EXPECT_EQ("stuff.h", NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08"))
-  EXPECT_EQ("stuff.h", NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08"))
-  EXPECT_EQ("p:/vs08/stuff.h", NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08"))
-  EXPECT_EQ("P:/vs08/stufF.h", NormalizeRelativeAndCheckNoError( "P:\\vs08\\stufF.h", "D:\\stuff/things"))
-  EXPECT_EQ("P:/vs08/stuff.h", NormalizeRelativeAndCheckNoError( "P:/vs08\\stuff.h", "D:\\stuff/things"))
-  EXPECT_EQ("P:/wee/stuff.h", NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things"))
+  if "stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
+  if "stuff.h" != NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
+  if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08") { t.FailNow() }
+  if "P:/vs08/stufF.h" != NormalizeRelativeAndCheckNoError( "P:\\vs08\\stufF.h", "D:\\stuff/things") { t.FailNow() }
+  if "P:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError( "P:/vs08\\stuff.h", "D:\\stuff/things") { t.FailNow() }
+  if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") { t.FailNow() }
 }
 
 TEST(IncludesNormalize, LongInvalidPath) {
@@ -86,13 +86,13 @@ TEST(IncludesNormalize, LongInvalidPath) {
   // Too long, won't be canonicalized. Ensure doesn't crash.
   string result, err
   IncludesNormalize normalizer(".")
-  EXPECT_FALSE( normalizer.Normalize(kLongInputString, &result, &err))
+  if ! normalizer.Normalize(kLongInputString, &result, &err) { t.FailNow() }
   if "path too long" != err { t.FailNow() }
 
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
   char kExactlyMaxPath[_MAX_PATH + 1]
-  ASSERT_NE(_getcwd(kExactlyMaxPath, sizeof kExactlyMaxPath), nil)
+  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.FailNow() }
 
   cwd_len := strlen(kExactlyMaxPath)
   ASSERT_LE(cwd_len + 3 + 1, _MAX_PATH)
@@ -115,7 +115,7 @@ TEST(IncludesNormalize, LongInvalidPath) {
 
   replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
   // Make sure a path that's exactly _MAX_PATH long is canonicalized.
-  EXPECT_EQ(forward_slashes.substr(cwd_len + 1), NormalizeAndCheckNoError(kExactlyMaxPath))
+  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.FailNow() }
 }
 
 TEST(IncludesNormalize, ShortRelativeButTooLongAbsolutePath) {

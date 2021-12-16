@@ -82,7 +82,7 @@ func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
 "ninja_dyndep_version = 1.0"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:1: unexpected EOF\n" "ninja_dyndep_version = 1.0\n" "                          ^ near here", err)
+  if "input:1: unexpected EOF\n" "ninja_dyndep_version = 1.0\n" "                          ^ near here" != err { t.FailNow() }
 }
 
 TEST_F(DyndepParserTest, UnsupportedVersion0) {
@@ -90,7 +90,7 @@ TEST_F(DyndepParserTest, UnsupportedVersion0) {
 "ninja_dyndep_version = 0\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:1: unsupported 'ninja_dyndep_version = 0'\n" "ninja_dyndep_version = 0\n" "                        ^ near here", err)
+  if "input:1: unsupported 'ninja_dyndep_version = 0'\n" "ninja_dyndep_version = 0\n" "                        ^ near here" != err { t.FailNow() }
 }
 
 TEST_F(DyndepParserTest, UnsupportedVersion1_1) {
@@ -98,7 +98,7 @@ TEST_F(DyndepParserTest, UnsupportedVersion1_1) {
 "ninja_dyndep_version = 1.1\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:1: unsupported 'ninja_dyndep_version = 1.1'\n" "ninja_dyndep_version = 1.1\n" "                          ^ near here", err)
+  if "input:1: unsupported 'ninja_dyndep_version = 1.1'\n" "ninja_dyndep_version = 1.1\n" "                          ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
@@ -115,7 +115,7 @@ func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
 "not_ninja_dyndep_version = 1\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:1: expected 'ninja_dyndep_version = ...'\n" "not_ninja_dyndep_version = 1\n" "                            ^ near here", err)
+  if "input:1: expected 'ninja_dyndep_version = ...'\n" "not_ninja_dyndep_version = 1\n" "                            ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
@@ -149,7 +149,7 @@ func TestDyndepParserTest_OutDuplicate(t *testing.T) {
 "build out: dyndep\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:3: multiple statements for 'out'\n" "build out: dyndep\n" "         ^ near here", err)
+  if "input:3: multiple statements for 'out'\n" "build out: dyndep\n" "         ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
@@ -159,7 +159,7 @@ func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
 "build otherout: dyndep\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:3: multiple statements for 'otherout'\n" "build otherout: dyndep\n" "              ^ near here", err)
+  if "input:3: multiple statements for 'otherout'\n" "build otherout: dyndep\n" "              ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_NoOutEOF(t *testing.T) {
@@ -168,7 +168,7 @@ func TestDyndepParserTest_NoOutEOF(t *testing.T) {
 "build"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: unexpected EOF\n" "build\n" "     ^ near here", err)
+  if "input:2: unexpected EOF\n" "build\n" "     ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_NoOutColon(t *testing.T) {
@@ -177,7 +177,7 @@ func TestDyndepParserTest_NoOutColon(t *testing.T) {
 "build :\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: expected path\n" "build :\n" "      ^ near here", err)
+  if "input:2: expected path\n" "build :\n" "      ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutNoStatement(t *testing.T) {
@@ -186,7 +186,7 @@ func TestDyndepParserTest_OutNoStatement(t *testing.T) {
 "build missing: dyndep\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: no build statement exists for 'missing'\n" "build missing: dyndep\n" "             ^ near here", err)
+  if "input:2: no build statement exists for 'missing'\n" "build missing: dyndep\n" "             ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutEOF(t *testing.T) {
@@ -195,7 +195,7 @@ func TestDyndepParserTest_OutEOF(t *testing.T) {
 "build out"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: unexpected EOF\n" "build out\n" "         ^ near here", err)
+  if "input:2: unexpected EOF\n" "build out\n" "         ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutNoRule(t *testing.T) {
@@ -204,7 +204,7 @@ func TestDyndepParserTest_OutNoRule(t *testing.T) {
 "build out:"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: expected build command name 'dyndep'\n" "build out:\n" "          ^ near here", err)
+  if "input:2: expected build command name 'dyndep'\n" "build out:\n" "          ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutBadRule(t *testing.T) {
@@ -213,7 +213,7 @@ func TestDyndepParserTest_OutBadRule(t *testing.T) {
 "build out: touch"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: expected build command name 'dyndep'\n" "build out: touch\n" "           ^ near here", err)
+  if "input:2: expected build command name 'dyndep'\n" "build out: touch\n" "           ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_BuildEOF(t *testing.T) {
@@ -222,7 +222,7 @@ func TestDyndepParserTest_BuildEOF(t *testing.T) {
 "build out: dyndep"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: unexpected EOF\n" "build out: dyndep\n" "                 ^ near here", err)
+  if "input:2: unexpected EOF\n" "build out: dyndep\n" "                 ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_ExplicitOut(t *testing.T) {
@@ -231,7 +231,7 @@ func TestDyndepParserTest_ExplicitOut(t *testing.T) {
 "build out exp: dyndep\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: explicit outputs not supported\n" "build out exp: dyndep\n" "             ^ near here", err)
+  if "input:2: explicit outputs not supported\n" "build out exp: dyndep\n" "             ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_ExplicitIn(t *testing.T) {
@@ -240,7 +240,7 @@ func TestDyndepParserTest_ExplicitIn(t *testing.T) {
 "build out: dyndep exp\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: explicit inputs not supported\n" "build out: dyndep exp\n" "                     ^ near here", err)
+  if "input:2: explicit inputs not supported\n" "build out: dyndep exp\n" "                     ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
@@ -249,7 +249,7 @@ func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
 "build out: dyndep ||\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:2: order-only inputs not supported\n" "build out: dyndep ||\n" "                  ^ near here", err)
+  if "input:2: order-only inputs not supported\n" "build out: dyndep ||\n" "                  ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_BadBinding(t *testing.T) {
@@ -259,7 +259,7 @@ func TestDyndepParserTest_BadBinding(t *testing.T) {
 "  not_restat = 1\n"
   string err
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  EXPECT_EQ("input:3: binding is not 'restat'\n" "  not_restat = 1\n" "                ^ near here", err)
+  if "input:3: binding is not 'restat'\n" "  not_restat = 1\n" "                ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_RestatTwice(t *testing.T) {

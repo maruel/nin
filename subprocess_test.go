@@ -29,7 +29,7 @@ type SubprocessTest struct {
 // Run a command that fails and emits to stderr.
 func TestSubprocessTest_BadCommandStderr(t *testing.T) {
   subproc := subprocs_.Add("cmd /c ninja_no_such_command")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     // Pretend we discovered that stderr was ready for writing.
@@ -43,7 +43,7 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 // Run a command that does not exist
 func TestSubprocessTest_NoSuchCommand(t *testing.T) {
   subproc := subprocs_.Add("ninja_no_such_command")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     // Pretend we discovered that stderr was ready for writing.
@@ -52,12 +52,12 @@ func TestSubprocessTest_NoSuchCommand(t *testing.T) {
 
   if ExitFailure != subproc.Finish() { t.FailNow() }
   if "" == subproc.GetOutput() { t.FailNow() }
-  ASSERT_EQ("CreateProcess failed: The system cannot find the file " "specified.\n", subproc.GetOutput())
+  if "CreateProcess failed: The system cannot find the file " "specified.\n" != subproc.GetOutput() { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptChild(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $$")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     subprocs_.DoWork()
@@ -68,7 +68,7 @@ func TestSubprocessTest_InterruptChild(t *testing.T) {
 
 func TestSubprocessTest_InterruptParent(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $PPID ; sleep 1")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     interrupted := subprocs_.DoWork()
@@ -82,7 +82,7 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
 
 func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $$")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     subprocs_.DoWork()
@@ -93,7 +93,7 @@ func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
 
 func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $PPID ; sleep 1")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     interrupted := subprocs_.DoWork()
@@ -107,7 +107,7 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
 
 func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $$")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     subprocs_.DoWork()
@@ -118,7 +118,7 @@ func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
 
 func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $PPID ; sleep 1")
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     interrupted := subprocs_.DoWork()
@@ -135,7 +135,7 @@ func TestSubprocessTest_Console(t *testing.T) {
   if isatty(0) && isatty(1) && isatty(2) {
     Subprocess* subproc =
         subprocs_.Add("test -t 0 -a -t 1 -a -t 2", /*use_console=*/true)
-    ASSERT_NE((Subprocess*)0, subproc)
+    if (Subprocess*)0 == subproc { t.FailNow() }
 
     while (!subproc.Done()) {
       subprocs_.DoWork()
@@ -147,7 +147,7 @@ func TestSubprocessTest_Console(t *testing.T) {
 
 func TestSubprocessTest_SetWithSingle(t *testing.T) {
   subproc := subprocs_.Add(kSimpleCommand)
-  ASSERT_NE((Subprocess *) 0, subproc)
+  if (Subprocess *) 0 == subproc { t.FailNow() }
 
   while (!subproc.Done()) {
     subprocs_.DoWork()
@@ -170,7 +170,7 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 
   for (int i = 0; i < 3; ++i) {
     processes[i] = subprocs_.Add(kCommands[i])
-    ASSERT_NE((Subprocess *) 0, processes[i])
+    if (Subprocess *) 0 == processes[i] { t.FailNow() }
   }
 
   if 3u != subprocs_.running_.size() { t.FailNow() }
@@ -180,7 +180,7 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
   }
 
   while (!processes[0].Done() || !processes[1].Done() || !processes[2].Done()) {
-    ASSERT_GT(subprocs_.running_.size(), 0u)
+    if subprocs_.running_.size() <= 0u { t.FailNow() }
     subprocs_.DoWork()
   }
 
@@ -210,7 +210,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
   vector<Subprocess*> procs
   for (size_t i = 0; i < kNumProcs; ++i) {
     subproc := subprocs_.Add("/bin/echo")
-    ASSERT_NE((Subprocess *) 0, subproc)
+    if (Subprocess *) 0 == subproc { t.FailNow() }
     procs.push_back(subproc)
   }
   while (!subprocs_.running_.empty())

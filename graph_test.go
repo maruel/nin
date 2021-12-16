@@ -192,8 +192,8 @@ func TestGraphTest_VarInOutPathEscaping(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a$ b: cat no'space with$ space$$ no\"space2\n"))
 
   edge := GetNode("a b").in_edge()
-  EXPECT_EQ("cat no'space \"with space$\" \"no\\\"space2\" > \"a b\"", edge.EvaluateCommand())
-  EXPECT_EQ("cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'", edge.EvaluateCommand())
+  if "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\"" != edge.EvaluateCommand() { t.FailNow() }
+  if "cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'" != edge.EvaluateCommand() { t.FailNow() }
 }
 
 // Regression test for https://github.com/ninja-build/ninja/issues/380
@@ -451,7 +451,7 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
   string err
   if GetNode("dd").dyndep_pending() { t.FailNow() }
   if !scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
-  EXPECT_EQ("dyndep file 'dd' mentions output 'out2' whose build statement " "does not have a dyndep binding for the file", err)
+  if "dyndep file 'dd' mentions output 'out2' whose build statement " "does not have a dyndep binding for the file" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules1) {
@@ -678,10 +678,10 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
   fs_.Create("in1", "")
 
   if in1.Stat(&fs_, &err) { t.FailNow() }
-  EXPECT_GT(in1.mtime(), in1Mtime1)
+  if in1.mtime() <= in1Mtime1 { t.FailNow() }
 
   if scan_.RecomputeDirty(out1, &err) { t.FailNow() }
-  EXPECT_GT(in1.mtime(), in1Mtime1)
+  if in1.mtime() <= in1Mtime1 { t.FailNow() }
   if out1.mtime() != out1Mtime1 { t.FailNow() }
   if out1.dirty() { t.FailNow() }
 }

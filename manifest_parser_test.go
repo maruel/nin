@@ -39,7 +39,7 @@ func TestParserTest_Rules(t *testing.T) {
   if 3u != state.bindings_.GetRules().size() { t.FailNow() }
   const Rule* rule = state.bindings_.GetRules().begin().second
   if "cat" != rule.name() { t.FailNow() }
-  EXPECT_EQ("[cat ][$in][ > ][$out]", rule.GetBinding("command").Serialize())
+  if "[cat ][$in][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
 }
 
 func TestParserTest_RuleAttributes(t *testing.T) {
@@ -72,7 +72,7 @@ func TestParserTest_ResponseFiles(t *testing.T) {
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   const Rule* rule = state.bindings_.GetRules().begin().second
   if "cat_rsp" != rule.name() { t.FailNow() }
-  EXPECT_EQ("[cat ][$rspfile][ > ][$out]", rule.GetBinding("command").Serialize())
+  if "[cat ][$rspfile][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
   if "[$rspfile]" != rule.GetBinding("rspfile").Serialize() { t.FailNow() }
   if "[$in]" != rule.GetBinding("rspfile_content").Serialize() { t.FailNow() }
 }
@@ -83,7 +83,7 @@ func TestParserTest_InNewline(t *testing.T) {
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   const Rule* rule = state.bindings_.GetRules().begin().second
   if "cat_rsp" != rule.name() { t.FailNow() }
-  EXPECT_EQ("[cat ][$in_newline][ > ][$out]", rule.GetBinding("command").Serialize())
+  if "[cat ][$in_newline][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
 
   edge := state.edges_[0]
   if "cat in\nin2 > out" != edge.EvaluateCommand() { t.FailNow() }
@@ -94,11 +94,11 @@ func TestParserTest_Variables(t *testing.T) {
 
   if 2u != state.edges_.size() { t.FailNow() }
   edge := state.edges_[0]
-  EXPECT_EQ("ld one-letter-test -pthread -under -o a b c", edge.EvaluateCommand())
+  if "ld one-letter-test -pthread -under -o a b c" != edge.EvaluateCommand() { t.FailNow() }
   if "1/2" != state.bindings_.LookupVariable("nested2") { t.FailNow() }
 
   edge = state.edges_[1]
-  EXPECT_EQ("ld one-letter-test 1/2/3 -under -o supernested x", edge.EvaluateCommand())
+  if "ld one-letter-test 1/2/3 -under -o supernested x" != edge.EvaluateCommand() { t.FailNow() }
 }
 
 func TestParserTest_VariableScope(t *testing.T) {

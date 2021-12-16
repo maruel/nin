@@ -18,7 +18,7 @@ package ginja
 
 
 TEST(EscapeForDepfileTest, SpacesInFilename) {
-  ASSERT_EQ("sub\\some\\ sdk\\foo.h", EscapeForDepfile("sub\\some sdk\\foo.h"))
+  if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") { t.FailNow() }
 }
 
 TEST(MSVCHelperTest, EnvBlock) {

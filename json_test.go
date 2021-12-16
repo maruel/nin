@@ -22,7 +22,7 @@ TEST(JSONTest, RegularAscii) {
 }
 
 TEST(JSONTest, EscapedChars) {
-  EXPECT_EQ(EncodeJSONString("\"\\\b\f\n\r\t"), "\\\"" "\\\\" "\\b\\f\\n\\r\\t")
+  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"" "\\\\" "\\b\\f\\n\\r\\t" { t.FailNow() }
 }
 
 // codepoints between 0 and 0x1f should be escaped

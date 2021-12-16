@@ -30,7 +30,7 @@ func (d *DepfileParserTest) Parse(input string, err *string) bool {
 
 func TestDepfileParserTest_Basic(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( "build/ninja.o: ninja.cc ninja.h eval_env.h manifest_parser.h\n", &err))
+  if Parse( "build/ninja.o: ninja.cc ninja.h eval_env.h manifest_parser.h\n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "build/ninja.o" != parser_.outs_[0].AsString() { t.FailNow() }
@@ -39,13 +39,13 @@ func TestDepfileParserTest_Basic(t *testing.T) {
 
 func TestDepfileParserTest_EarlyNewlineAndWhitespace(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( " \\\n" "  out: in\n", &err))
+  if Parse( " \\\n" "  out: in\n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 }
 
 func TestDepfileParserTest_Continuation(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( "foo.o: \\\n" "  bar.h baz.h\n", &err))
+  if Parse( "foo.o: \\\n" "  bar.h baz.h\n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo.o" != parser_.outs_[0].AsString() { t.FailNow() }
@@ -54,7 +54,7 @@ func TestDepfileParserTest_Continuation(t *testing.T) {
 
 func TestDepfileParserTest_CarriageReturnContinuation(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( "foo.o: \\\r\n" "  bar.h baz.h\r\n", &err))
+  if Parse( "foo.o: \\\r\n" "  bar.h baz.h\r\n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo.o" != parser_.outs_[0].AsString() { t.FailNow() }
@@ -63,23 +63,23 @@ func TestDepfileParserTest_CarriageReturnContinuation(t *testing.T) {
 
 func TestDepfileParserTest_BackSlashes(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( "Project\\Dir\\Build\\Release8\\Foo\\Foo.res : \\\n" "  Dir\\Library\\Foo.rc \\\n" "  Dir\\Library\\Version\\Bar.h \\\n" "  Dir\\Library\\Foo.ico \\\n" "  Project\\Thing\\Bar.tlb \\\n", &err))
+  if Parse( "Project\\Dir\\Build\\Release8\\Foo\\Foo.res : \\\n" "  Dir\\Library\\Foo.rc \\\n" "  Dir\\Library\\Version\\Bar.h \\\n" "  Dir\\Library\\Foo.ico \\\n" "  Project\\Thing\\Bar.tlb \\\n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("Project\\Dir\\Build\\Release8\\Foo\\Foo.res", parser_.outs_[0].AsString())
+  if "Project\\Dir\\Build\\Release8\\Foo\\Foo.res" != parser_.outs_[0].AsString() { t.FailNow() }
   if 4u != parser_.ins_.size() { t.FailNow() }
 }
 
 func TestDepfileParserTest_Spaces(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse( "a\\ bc\\ def:   a\\ b c d", &err))
+  if Parse( "a\\ bc\\ def:   a\\ b c d", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("a bc def", parser_.outs_[0].AsString())
+  if "a bc def" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
-  EXPECT_EQ("a b", parser_.ins_[0].AsString())
-  EXPECT_EQ("c", parser_.ins_[1].AsString())
-  EXPECT_EQ("d", parser_.ins_[2].AsString())
+  if "a b" != parser_.ins_[0].AsString() { t.FailNow() }
+  if "c" != parser_.ins_[1].AsString() { t.FailNow() }
+  if "d" != parser_.ins_[2].AsString() { t.FailNow() }
 }
 
 func TestDepfileParserTest_MultipleBackslashes(t *testing.T) {
@@ -88,24 +88,24 @@ func TestDepfileParserTest_MultipleBackslashes(t *testing.T) {
   // Other backslashes remain untouched (including 2N backslashes followed by
   // space).
   string err
-  EXPECT_TRUE(Parse( "a\\ b\\#c.h: \\\\\\\\\\  \\\\\\\\ \\\\share\\info\\\\#1", &err))
+  if Parse( "a\\ b\\#c.h: \\\\\\\\\\  \\\\\\\\ \\\\share\\info\\\\#1", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("a b#c.h", parser_.outs_[0].AsString())
+  if "a b#c.h" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
-  EXPECT_EQ("\\\\ ", parser_.ins_[0].AsString())
-  EXPECT_EQ("\\\\\\\\", parser_.ins_[1].AsString())
-  EXPECT_EQ("\\\\share\\info\\#1", parser_.ins_[2].AsString())
+  if "\\\\ " != parser_.ins_[0].AsString() { t.FailNow() }
+  if "\\\\\\\\" != parser_.ins_[1].AsString() { t.FailNow() }
+  if "\\\\share\\info\\#1" != parser_.ins_[2].AsString() { t.FailNow() }
 }
 
 func TestDepfileParserTest_Escapes(t *testing.T) {
   // Put backslashes before a variety of characters, see which ones make
   // it through.
   string err
-  EXPECT_TRUE(Parse( "\\!\\@\\#$$\\%\\^\\&\\[\\]\\\\:", &err))
+  if Parse( "\\!\\@\\#$$\\%\\^\\&\\[\\]\\\\:", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("\\!\\@#$\\%\\^\\&\\[\\]\\\\", parser_.outs_[0].AsString())
+  if "\\!\\@#$\\%\\^\\&\\[\\]\\\\" != parser_.outs_[0].AsString() { t.FailNow() }
   if 0u != parser_.ins_.size() { t.FailNow() }
 }
 
@@ -114,18 +114,18 @@ TEST_F(DepfileParserTest, EscapedColons)
   string err
   // Tests for correct parsing of depfiles produced on Windows
   // by both Clang, GCC pre 10 and GCC 10
-  EXPECT_TRUE(Parse( "c\\:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o: \\\n" " c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h \n", &err))
+  if Parse( "c\\:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o: \\\n" " c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h \n", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o", parser_.outs_[0].AsString())
+  if "c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o" != parser_.outs_[0].AsString() { t.FailNow() }
   if 1u != parser_.ins_.size() { t.FailNow() }
-  EXPECT_EQ("c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h", parser_.ins_[0].AsString())
+  if "c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h" != parser_.ins_[0].AsString() { t.FailNow() }
 }
 
 TEST_F(DepfileParserTest, EscapedTargetColon)
 {
   string err
-  EXPECT_TRUE(Parse( "foo1\\: x\n" "foo1\\:\n" "foo1\\:\r\n" "foo1\\:\t\n" "foo1\\:", &err))
+  if Parse( "foo1\\: x\n" "foo1\\:\n" "foo1\\:\r\n" "foo1\\:\t\n" "foo1\\:", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo1\\" != parser_.outs_[0].AsString() { t.FailNow() }
@@ -137,16 +137,16 @@ func TestDepfileParserTest_SpecialChars(t *testing.T) {
   // See filenames like istreambuf.iterator_op!= in
   // https://github.com/google/libcxx/tree/master/test/iterators/stream.iterators/istreambuf.iterator/
   string err
-  EXPECT_TRUE(Parse( "C:/Program\\ Files\\ (x86)/Microsoft\\ crtdefs.h: \\\n" " en@quot.header~ t+t-x!=1 \\\n" " openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif\\\n" " Fu\303\244ball\\\n" " a[1]b@2%c", &err))
+  if Parse( "C:/Program\\ Files\\ (x86)/Microsoft\\ crtdefs.h: \\\n" " en@quot.header~ t+t-x!=1 \\\n" " openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif\\\n" " Fu\303\244ball\\\n" " a[1]b@2%c", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
-  EXPECT_EQ("C:/Program Files (x86)/Microsoft crtdefs.h", parser_.outs_[0].AsString())
+  if "C:/Program Files (x86)/Microsoft crtdefs.h" != parser_.outs_[0].AsString() { t.FailNow() }
   if 5u != parser_.ins_.size() { t.FailNow() }
-  EXPECT_EQ("en@quot.header~", parser_.ins_[0].AsString())
-  EXPECT_EQ("t+t-x!=1", parser_.ins_[1].AsString())
-  EXPECT_EQ("openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif", parser_.ins_[2].AsString())
-  EXPECT_EQ("Fu\303\244ball", parser_.ins_[3].AsString())
-  EXPECT_EQ("a[1]b@2%c", parser_.ins_[4].AsString())
+  if "en@quot.header~" != parser_.ins_[0].AsString() { t.FailNow() }
+  if "t+t-x!=1" != parser_.ins_[1].AsString() { t.FailNow() }
+  if "openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif" != parser_.ins_[2].AsString() { t.FailNow() }
+  if "Fu\303\244ball" != parser_.ins_[3].AsString() { t.FailNow() }
+  if "a[1]b@2%c" != parser_.ins_[4].AsString() { t.FailNow() }
 }
 
 func TestDepfileParserTest_UnifyMultipleOutputs(t *testing.T) {
@@ -176,7 +176,7 @@ func TestDepfileParserTest_MultipleDifferentOutputs(t *testing.T) {
 
 func TestDepfileParserTest_MultipleEmptyRules(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\n" "foo: \n" "foo:\n", &err))
+  if Parse("foo: x\n" "foo: \n" "foo:\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 1u != parser_.ins_.size() { t.FailNow() }
@@ -185,7 +185,7 @@ func TestDepfileParserTest_MultipleEmptyRules(t *testing.T) {
 
 func TestDepfileParserTest_UnifyMultipleRulesLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\n" "foo: y\n" "foo \\\n" "foo: z\n", &err))
+  if Parse("foo: x\n" "foo: y\n" "foo \\\n" "foo: z\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -196,7 +196,7 @@ func TestDepfileParserTest_UnifyMultipleRulesLF(t *testing.T) {
 
 func TestDepfileParserTest_UnifyMultipleRulesCRLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\r\n" "foo: y\r\n" "foo \\\r\n" "foo: z\r\n", &err))
+  if Parse("foo: x\r\n" "foo: y\r\n" "foo \\\r\n" "foo: z\r\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -207,7 +207,7 @@ func TestDepfileParserTest_UnifyMultipleRulesCRLF(t *testing.T) {
 
 func TestDepfileParserTest_UnifyMixedRulesLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\\\n" "     y\n" "foo \\\n" "foo: z\n", &err))
+  if Parse("foo: x\\\n" "     y\n" "foo \\\n" "foo: z\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -218,7 +218,7 @@ func TestDepfileParserTest_UnifyMixedRulesLF(t *testing.T) {
 
 func TestDepfileParserTest_UnifyMixedRulesCRLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\\\r\n" "     y\r\n" "foo \\\r\n" "foo: z\r\n", &err))
+  if Parse("foo: x\\\r\n" "     y\r\n" "foo \\\r\n" "foo: z\r\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -229,7 +229,7 @@ func TestDepfileParserTest_UnifyMixedRulesCRLF(t *testing.T) {
 
 func TestDepfileParserTest_IndentedRulesLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse(" foo: x\n" " foo: y\n" " foo: z\n", &err))
+  if Parse(" foo: x\n" " foo: y\n" " foo: z\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -240,7 +240,7 @@ func TestDepfileParserTest_IndentedRulesLF(t *testing.T) {
 
 func TestDepfileParserTest_IndentedRulesCRLF(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse(" foo: x\r\n" " foo: y\r\n" " foo: z\r\n", &err))
+  if Parse(" foo: x\r\n" " foo: y\r\n" " foo: z\r\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -251,7 +251,7 @@ func TestDepfileParserTest_IndentedRulesCRLF(t *testing.T) {
 
 func TestDepfileParserTest_TolerateMP(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x y z\n" "x:\n" "y:\n" "z:\n", &err))
+  if Parse("foo: x y z\n" "x:\n" "y:\n" "z:\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -262,7 +262,7 @@ func TestDepfileParserTest_TolerateMP(t *testing.T) {
 
 func TestDepfileParserTest_MultipleRulesTolerateMP(t *testing.T) {
   string err
-  EXPECT_TRUE(Parse("foo: x\n" "x:\n" "foo: y\n" "y:\n" "foo: z\n" "z:\n", &err))
+  if Parse("foo: x\n" "x:\n" "foo: y\n" "y:\n" "foo: z\n" "z:\n", &err) { t.FailNow() }
   if 1u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if 3u != parser_.ins_.size() { t.FailNow() }
@@ -275,7 +275,7 @@ func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
   // check that multiple different outputs are accepted by the parser
   // when spread across multiple rules
   string err
-  EXPECT_TRUE(Parse("foo: x y\n" "bar: y z\n", &err))
+  if Parse("foo: x y\n" "bar: y z\n", &err) { t.FailNow() }
   if 2u != parser_.outs_.size() { t.FailNow() }
   if "foo" != parser_.outs_[0].AsString() { t.FailNow() }
   if "bar" != parser_.outs_[1].AsString() { t.FailNow() }
@@ -287,7 +287,7 @@ func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
 
 func TestDepfileParserTest_BuggyMP(t *testing.T) {
   string err
-  EXPECT_FALSE(Parse("foo: x y z\n" "x: alsoin\n" "y:\n" "z:\n", &err))
+  if !Parse("foo: x y z\n" "x: alsoin\n" "y:\n" "z:\n", &err) { t.FailNow() }
   if "inputs may not also have inputs" != err { t.FailNow() }
 }
 

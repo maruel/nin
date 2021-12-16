@@ -662,7 +662,7 @@ func TestBuildTest_TwoStep(t *testing.T) {
   if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
   // Depending on how the pointers work out, we could've ran
   // the first two commands in either order.
-  EXPECT_TRUE((command_runner_.commands_ran_[0] == "cat in1 > cat1" && command_runner_.commands_ran_[1] == "cat in1 in2 > cat2") || (command_runner_.commands_ran_[1] == "cat in1 > cat1" && command_runner_.commands_ran_[0] == "cat in1 in2 > cat2"))
+  if (command_runner_.commands_ran_[0] == "cat in1 > cat1" && command_runner_.commands_ran_[1] == "cat in1 in2 > cat2") || (command_runner_.commands_ran_[1] == "cat in1 > cat1" && command_runner_.commands_ran_[0] == "cat in1 in2 > cat2") { t.FailNow() }
 
   if "cat cat1 cat2 > cat12" != command_runner_.commands_ran_[2] { t.FailNow() }
 
@@ -761,7 +761,7 @@ func TestBuildTest_MissingInput(t *testing.T) {
   string err
   Dirty("in1")
   if !builder_.AddTarget("cat1", &err) { t.FailNow() }
-  EXPECT_EQ("'in1', needed by 'cat1', missing and no known rule to make it", err)
+  if "'in1' != needed by 'cat1', missing and no known rule to make it", err { t.FailNow() }
 }
 
 func TestBuildTest_MissingTarget(t *testing.T) {
@@ -1115,11 +1115,11 @@ func TestPhonyUseCase(t *BuildTest, i int) {
     if !phonyNode.exists() { t.FailNow() }
     if !phonyNode.dirty() { t.FailNow() }
 
-    EXPECT_GT(phonyNode.mtime(), startTime)
+    if phonyNode.mtime() <= startTime { t.FailNow() }
     if phonyNode.mtime() != inputTime { t.FailNow() }
     if testNode.Stat(&fs_, &err) { t.FailNow() }
     if testNode.exists() { t.FailNow() }
-    EXPECT_GT(testNode.mtime(), startTime)
+    if testNode.mtime() <= startTime { t.FailNow() }
   } else {
     // Tests 2 and 5: Expect dependents to always rebuild.
 
@@ -1233,7 +1233,7 @@ func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
 
   State save_state
   RebuildTarget("final.stamp", manifest, nil, nil, &save_state)
-  EXPECT_GE(save_state.LookupPool("some_pool").current_use(), 0)
+  if save_state.LookupPool("some_pool").current_use() < 0 { t.FailNow() }
 }
 
 type BuildWithLogTest struct {
@@ -1715,7 +1715,7 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
   if !builder_.Build(&err) { t.FailNow() }
   if "interrupted by user" != err { t.FailNow() }
   builder_.Cleanup()
-  EXPECT_GT(fs_.Stat("out1", &err), 0)
+  if fs_.Stat("out1" <= &err), 0 { t.FailNow() }
   err = ""
 
   // A touched output of an interrupted command should be deleted.
@@ -1781,11 +1781,11 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 func TestBuildTest_StatusFormatElapsed(t *testing.T) {
   status_.BuildStarted()
   // Before any task is done, the elapsed time must be zero.
-  EXPECT_EQ("[%/e0.000]", status_.FormatProgressStatus("[%%/e%e]", 0))
+  if "[%/e0.000]" != status_.FormatProgressStatus("[%%/e%e]", 0) { t.FailNow() }
 }
 
 func TestBuildTest_StatusFormatReplacePlaceholder(t *testing.T) {
-  EXPECT_EQ("[%/s0/t0/r0/u0/f0]", status_.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0))
+  if "[%/s0/t0/r0/u0/f0]" != status_.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }
 }
 
 func TestBuildTest_FailedDepsParse(t *testing.T) {
@@ -2856,7 +2856,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
   if !builder_.Build(&err) { t.FailNow() }
   // Depending on how the pointers in Plan::ready_ work out, we could have
   // discovered the cycle from either starting point.
-  EXPECT_TRUE(err == "dependency cycle: circ . in . circ" || err == "dependency cycle: in . circ . in")
+  if err == "dependency cycle: circ . in . circ" || err == "dependency cycle: in . circ . in" { t.FailNow() }
 }
 
 func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
@@ -2925,7 +2925,7 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
   if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
   // Depending on how the pointers in Plan::ready_ work out, the first
   // two commands may have run in either order.
-  EXPECT_TRUE((command_runner_.commands_ran_[0] == "touch out1 out1.imp" && command_runner_.commands_ran_[1] == "cp zdd-in zdd") || (command_runner_.commands_ran_[1] == "touch out1 out1.imp" && command_runner_.commands_ran_[0] == "cp zdd-in zdd"))
+  if (command_runner_.commands_ran_[0] == "touch out1 out1.imp" && command_runner_.commands_ran_[1] == "cp zdd-in zdd") || (command_runner_.commands_ran_[1] == "touch out1 out1.imp" && command_runner_.commands_ran_[0] == "cp zdd-in zdd") { t.FailNow() }
   if "cp out1 out2" != command_runner_.commands_ran_[2] { t.FailNow() }
 }
 

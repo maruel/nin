@@ -21,9 +21,9 @@ TEST(CLParserTest, ShowIncludes) {
   if "" != CLParser::FilterShowIncludes("", "") { t.FailNow() }
 
   if "" != CLParser::FilterShowIncludes("Sample compiler output", "") { t.FailNow() }
-  ASSERT_EQ("c:\\Some Files\\foobar.h", CLParser::FilterShowIncludes("Note: including file: " "c:\\Some Files\\foobar.h", ""))
-  ASSERT_EQ("c:\\initspaces.h", CLParser::FilterShowIncludes("Note: including file:    " "c:\\initspaces.h", ""))
-  ASSERT_EQ("c:\\initspaces.h", CLParser::FilterShowIncludes("Non-default prefix: inc file:    " "c:\\initspaces.h", "Non-default prefix: inc file:"))
+  if "c:\\Some Files\\foobar.h" != CLParser::FilterShowIncludes("Note: including file: " "c:\\Some Files\\foobar.h", "") { t.FailNow() }
+  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Note: including file:    " "c:\\initspaces.h", "") { t.FailNow() }
+  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Non-default prefix: inc file:    " "c:\\initspaces.h", "Non-default prefix: inc file:") { t.FailNow() }
 }
 
 TEST(CLParserTest, FilterInputFilename) {
@@ -32,13 +32,13 @@ TEST(CLParserTest, FilterInputFilename) {
   if CLParser::FilterInputFilename("baz.c") { t.FailNow() }
   if CLParser::FilterInputFilename("FOOBAR.CC") { t.FailNow() }
 
-  ASSERT_FALSE(CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end " "of file found ..."))
+  if !CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end " "of file found ...") { t.FailNow() }
 }
 
 TEST(CLParserTest, ParseSimple) {
   CLParser parser
   string output, err
-  ASSERT_TRUE(parser.Parse( "foo\r\n" "Note: inc file prefix:  foo.h\r\n" "bar\r\n", "Note: inc file prefix:", &output, &err))
+  if parser.Parse( "foo\r\n" "Note: inc file prefix:  foo.h\r\n" "bar\r\n", "Note: inc file prefix:", &output, &err) { t.FailNow() }
 
   if "foo\nbar\n" != output { t.FailNow() }
   if 1u != parser.includes_.size() { t.FailNow() }
@@ -48,21 +48,21 @@ TEST(CLParserTest, ParseSimple) {
 TEST(CLParserTest, ParseFilenameFilter) {
   CLParser parser
   string output, err
-  ASSERT_TRUE(parser.Parse( "foo.cc\r\n" "cl: warning\r\n", "", &output, &err))
+  if parser.Parse( "foo.cc\r\n" "cl: warning\r\n", "", &output, &err) { t.FailNow() }
   if "cl: warning\n" != output { t.FailNow() }
 }
 
 TEST(CLParserTest, NoFilenameFilterAfterShowIncludes) {
   CLParser parser
   string output, err
-  ASSERT_TRUE(parser.Parse( "foo.cc\r\n" "Note: including file: foo.h\r\n" "something something foo.cc\r\n", "", &output, &err))
+  if parser.Parse( "foo.cc\r\n" "Note: including file: foo.h\r\n" "something something foo.cc\r\n", "", &output, &err) { t.FailNow() }
   if "something something foo.cc\n" != output { t.FailNow() }
 }
 
 TEST(CLParserTest, ParseSystemInclude) {
   CLParser parser
   string output, err
-  ASSERT_TRUE(parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\n" "Note: including file: d:\\Microsoft Visual Studio\\bar.h\r\n" "Note: including file: path.h\r\n", "", &output, &err))
+  if parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\n" "Note: including file: d:\\Microsoft Visual Studio\\bar.h\r\n" "Note: including file: path.h\r\n", "", &output, &err) { t.FailNow() }
   // We should have dropped the first two includes because they look like
   // system headers.
   if "" != output { t.FailNow() }
@@ -73,7 +73,7 @@ TEST(CLParserTest, ParseSystemInclude) {
 TEST(CLParserTest, DuplicatedHeader) {
   CLParser parser
   string output, err
-  ASSERT_TRUE(parser.Parse( "Note: including file: foo.h\r\n" "Note: including file: bar.h\r\n" "Note: including file: foo.h\r\n", "", &output, &err))
+  if parser.Parse( "Note: including file: foo.h\r\n" "Note: including file: bar.h\r\n" "Note: including file: foo.h\r\n", "", &output, &err) { t.FailNow() }
   // We should have dropped one copy of foo.h.
   if "" != output { t.FailNow() }
   if 2u != parser.includes_.size() { t.FailNow() }

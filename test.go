@@ -162,13 +162,11 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
     // Check that the edge's inputs have the edge as out-edge.
     for (vector<Node*>::const_iterator in_node = (*e).inputs_.begin(); in_node != (*e).inputs_.end(); ++in_node) {
       const vector<Edge*>& out_edges = (*in_node).out_edges()
-      EXPECT_NE(find(out_edges.begin(), out_edges.end(), *e), out_edges.end())
+      if find(out_edges.begin() == out_edges.end(), *e), out_edges.end() { t.FailNow() }
     }
     // Check that the edge's outputs have the edge as in-edge.
     for (vector<Node*>::const_iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
-      if *out_node {
-      	.in_edge() != *e { t.FailNow() }
-      }
+      if (*out_node).in_edge() != *e { t.FailNow() }
     }
   }
 

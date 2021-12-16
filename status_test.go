@@ -22,12 +22,12 @@ TEST(StatusTest, StatusFormatElapsed) {
 
   status.BuildStarted()
   // Before any task is done, the elapsed time must be zero.
-  EXPECT_EQ("[%/e0.000]", status.FormatProgressStatus("[%%/e%e]", 0))
+  if "[%/e0.000]" != status.FormatProgressStatus("[%%/e%e]", 0) { t.FailNow() }
 }
 
 TEST(StatusTest, StatusFormatReplacePlaceholder) {
   BuildConfig config
 
-  EXPECT_EQ("[%/s0/t0/r0/u0/f0]", status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0))
+  if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }
 }
 

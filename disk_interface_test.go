@@ -69,7 +69,7 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
   string err
   if Touch("file") { t.FailNow() }
-  EXPECT_GT(disk_.Stat("file", &err), 1)
+  if disk_.Stat("file" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
 }
 
@@ -77,18 +77,18 @@ func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
   string err
   if disk_.MakeDir("subdir") { t.FailNow() }
   if disk_.MakeDir("subdir/subsubdir") { t.FailNow() }
-  EXPECT_GT(disk_.Stat("..", &err), 1)
+  if disk_.Stat(".." <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat(".", &err), 1)
+  if disk_.Stat("." <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("subdir", &err), 1)
+  if disk_.Stat("subdir" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("subdir/subsubdir", &err), 1)
+  if disk_.Stat("subdir/subsubdir" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/.", &err))
-  EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/subsubdir/..", &err))
-  EXPECT_EQ(disk_.Stat("subdir/subsubdir", &err), disk_.Stat("subdir/subsubdir/.", &err))
+  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/.", &err) { t.FailNow() }
+  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/subsubdir/..", &err) { t.FailNow() }
+  if disk_.Stat("subdir/subsubdir" != &err), disk_.Stat("subdir/subsubdir/.", &err) { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
@@ -106,40 +106,40 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
   parent_stat_uncached := disk_.Stat("..", &err)
   disk_.AllowStatCache(true)
 
-  EXPECT_GT(disk_.Stat("FIle1", &err), 1)
+  if disk_.Stat("FIle1" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("file1", &err), 1)
-  if "" != err { t.FailNow() }
-
-  EXPECT_GT(disk_.Stat("subdir/subfile2", &err), 1)
-  if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("sUbdir\\suBFile1", &err), 1)
+  if disk_.Stat("file1" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  EXPECT_GT(disk_.Stat("..", &err), 1)
+  if disk_.Stat("subdir/subfile2" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat(".", &err), 1)
-  if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("subdir", &err), 1)
-  if "" != err { t.FailNow() }
-  EXPECT_GT(disk_.Stat("subdir/subsubdir", &err), 1)
+  if disk_.Stat("sUbdir\\suBFile1" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/.", &err))
+  if disk_.Stat(".." <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/subsubdir/..", &err))
+  if disk_.Stat("." <= &err), 1 { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if disk_.Stat("subdir" <= &err), 1 { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if disk_.Stat("subdir/subsubdir" <= &err), 1 { t.FailNow() }
+  if "" != err { t.FailNow() }
+
+  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/.", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/subsubdir/..", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if disk_.Stat(".." != &err), parent_stat_uncached { t.FailNow() }
   if "" != err { t.FailNow() }
-  EXPECT_EQ(disk_.Stat("subdir/subsubdir", &err), disk_.Stat("subdir/subsubdir/.", &err))
+  if disk_.Stat("subdir/subsubdir" != &err), disk_.Stat("subdir/subsubdir/.", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
   // Test error cases.
   string bad_path("cc:\\foo")
   if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
-  if "" == err); err.clear( { t.FailNow() }
+  EXPECT_NE("", err); err = nil
   if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
-  if "" == err); err.clear( { t.FailNow() }
+  EXPECT_NE("", err); err = nil
   if 0 != disk_.Stat("nosuchfile", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) { t.FailNow() }
@@ -149,7 +149,7 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
   string err
   string content
-  ASSERT_EQ(DiskInterface::NotFound, disk_.ReadFile("foobar", &content, &err))
+  if DiskInterface::NotFound != disk_.ReadFile("foobar", &content, &err) { t.FailNow() }
   if "" != content { t.FailNow() }
   if "" == err { t.FailNow() } // actual value is platform-specific
   err = nil
@@ -161,7 +161,7 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
   fprintf(f, "%s", kTestContent)
   if 0 != fclose(f) { t.FailNow() }
 
-  ASSERT_EQ(DiskInterface::Okay, disk_.ReadFile(kTestFile, &content, &err))
+  if DiskInterface::Okay != disk_.ReadFile(kTestFile, &content, &err) { t.FailNow() }
   if kTestContent != content { t.FailNow() }
   if "" != err { t.FailNow() }
 }

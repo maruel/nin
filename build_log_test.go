@@ -150,7 +150,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
   string err
   BuildLog log
   if log.Load(kTestFilename, &err) { t.FailNow() }
-  ASSERT_NE(err.find("version"), string::npos)
+  if err.find("version") == string::npos { t.FailNow() }
 }
 
 TEST_F(BuildLogTest, SpacesInOutputV4) {
