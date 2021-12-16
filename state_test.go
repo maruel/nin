@@ -17,7 +17,7 @@
 package ginja
 
 
-TEST(State, Basic) {
+func TestState_Basic(t *testing.T) {
   State state
 
   EvalString command

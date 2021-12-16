@@ -17,11 +17,11 @@
 package ginja
 
 
-TEST(EscapeForDepfileTest, SpacesInFilename) {
+func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
   if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") { t.FailNow() }
 }
 
-TEST(MSVCHelperTest, EnvBlock) {
+func TestMSVCHelperTest_EnvBlock(t *testing.T) {
   char env_block[] = "foo=bar\0"
   CLWrapper cl
   cl.SetEnvBlock(env_block)
@@ -30,7 +30,7 @@ TEST(MSVCHelperTest, EnvBlock) {
   if "foo is bar\r\n" != output { t.FailNow() }
 }
 
-TEST(MSVCHelperTest, NoReadOfStderr) {
+func TestMSVCHelperTest_NoReadOfStderr(t *testing.T) {
   CLWrapper cl
   string output
   cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)

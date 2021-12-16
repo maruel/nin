@@ -17,20 +17,20 @@
 package ginja
 
 
-TEST(EditDistanceTest, TestEmpty) {
+func TestEditDistanceTest_TestEmpty(t *testing.T) {
   if 5 != EditDistance("", "ninja") { t.FailNow() }
   if 5 != EditDistance("ninja", "") { t.FailNow() }
   if 0 != EditDistance("", "") { t.FailNow() }
 }
 
-TEST(EditDistanceTest, TestMaxDistance) {
+func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
   const bool allow_replacements = true
   for (int max_distance = 1; max_distance < 7; ++max_distance) {
     if max_distance + 1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) { t.FailNow() }
   }
 }
 
-TEST(EditDistanceTest, TestAllowReplacements) {
+func TestEditDistanceTest_TestAllowReplacements(t *testing.T) {
   allow_replacements := true
   if 1 != EditDistance("ninja", "njnja", allow_replacements) { t.FailNow() }
   if 1 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
@@ -40,7 +40,7 @@ TEST(EditDistanceTest, TestAllowReplacements) {
   if 2 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
 }
 
-TEST(EditDistanceTest, TestBasics) {
+func TestEditDistanceTest_TestBasics(t *testing.T) {
   if 0 != EditDistance("browser_tests", "browser_tests") { t.FailNow() }
   if 1 != EditDistance("browser_test", "browser_tests") { t.FailNow() }
   if 1 != EditDistance("browser_tests", "browser_test") { t.FailNow() }

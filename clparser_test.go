@@ -17,7 +17,7 @@
 package ginja
 
 
-TEST(CLParserTest, ShowIncludes) {
+func TestCLParserTest_ShowIncludes(t *testing.T) {
   if "" != CLParser::FilterShowIncludes("", "") { t.FailNow() }
 
   if "" != CLParser::FilterShowIncludes("Sample compiler output", "") { t.FailNow() }
@@ -26,7 +26,7 @@ TEST(CLParserTest, ShowIncludes) {
   if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Non-default prefix: inc file:    " "c:\\initspaces.h", "Non-default prefix: inc file:") { t.FailNow() }
 }
 
-TEST(CLParserTest, FilterInputFilename) {
+func TestCLParserTest_FilterInputFilename(t *testing.T) {
   if CLParser::FilterInputFilename("foobar.cc") { t.FailNow() }
   if CLParser::FilterInputFilename("foo bar.cc") { t.FailNow() }
   if CLParser::FilterInputFilename("baz.c") { t.FailNow() }
@@ -35,7 +35,7 @@ TEST(CLParserTest, FilterInputFilename) {
   if !CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end " "of file found ...") { t.FailNow() }
 }
 
-TEST(CLParserTest, ParseSimple) {
+func TestCLParserTest_ParseSimple(t *testing.T) {
   CLParser parser
   string output, err
   if parser.Parse( "foo\r\n" "Note: inc file prefix:  foo.h\r\n" "bar\r\n", "Note: inc file prefix:", &output, &err) { t.FailNow() }
@@ -45,21 +45,21 @@ TEST(CLParserTest, ParseSimple) {
   if "foo.h" != *parser.includes_.begin() { t.FailNow() }
 }
 
-TEST(CLParserTest, ParseFilenameFilter) {
+func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
   CLParser parser
   string output, err
   if parser.Parse( "foo.cc\r\n" "cl: warning\r\n", "", &output, &err) { t.FailNow() }
   if "cl: warning\n" != output { t.FailNow() }
 }
 
-TEST(CLParserTest, NoFilenameFilterAfterShowIncludes) {
+func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
   CLParser parser
   string output, err
   if parser.Parse( "foo.cc\r\n" "Note: including file: foo.h\r\n" "something something foo.cc\r\n", "", &output, &err) { t.FailNow() }
   if "something something foo.cc\n" != output { t.FailNow() }
 }
 
-TEST(CLParserTest, ParseSystemInclude) {
+func TestCLParserTest_ParseSystemInclude(t *testing.T) {
   CLParser parser
   string output, err
   if parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\n" "Note: including file: d:\\Microsoft Visual Studio\\bar.h\r\n" "Note: including file: path.h\r\n", "", &output, &err) { t.FailNow() }
@@ -70,7 +70,7 @@ TEST(CLParserTest, ParseSystemInclude) {
   if "path.h" != *parser.includes_.begin() { t.FailNow() }
 }
 
-TEST(CLParserTest, DuplicatedHeader) {
+func TestCLParserTest_DuplicatedHeader(t *testing.T) {
   CLParser parser
   string output, err
   if parser.Parse( "Note: including file: foo.h\r\n" "Note: including file: bar.h\r\n" "Note: including file: foo.h\r\n", "", &output, &err) { t.FailNow() }
@@ -79,7 +79,7 @@ TEST(CLParserTest, DuplicatedHeader) {
   if 2u != parser.includes_.size() { t.FailNow() }
 }
 
-TEST(CLParserTest, DuplicatedHeaderPathConverted) {
+func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
   CLParser parser
   string output, err
 

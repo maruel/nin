@@ -22,7 +22,7 @@ func CanonicalizePath(path *string) {
   ::CanonicalizePath(path, &unused)
 }
 
-TEST(CanonicalizePath, PathSamples) {
+func TestCanonicalizePath_PathSamples(t *testing.T) {
   string path
 
   CanonicalizePath(&path)

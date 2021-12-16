@@ -17,7 +17,7 @@
 package ginja
 
 
-TEST(StatusTest, StatusFormatElapsed) {
+func TestStatusTest_StatusFormatElapsed(t *testing.T) {
   BuildConfig config
 
   status.BuildStarted()
@@ -25,7 +25,7 @@ TEST(StatusTest, StatusFormatElapsed) {
   if "[%/e0.000]" != status.FormatProgressStatus("[%%/e%e]", 0) { t.FailNow() }
 }
 
-TEST(StatusTest, StatusFormatReplacePlaceholder) {
+func TestStatusTest_StatusFormatReplacePlaceholder(t *testing.T) {
   BuildConfig config
 
   if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }

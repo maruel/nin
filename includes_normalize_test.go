@@ -39,14 +39,14 @@ func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
   return result
 }
 
-TEST(IncludesNormalize, Simple) {
+func TestIncludesNormalize_Simple(t *testing.T) {
   if "b" != NormalizeAndCheckNoError("a\\..\\b") { t.FailNow() }
   if "b" != NormalizeAndCheckNoError("a\\../b") { t.FailNow() }
   if "a/b" != NormalizeAndCheckNoError("a\\.\\b") { t.FailNow() }
   if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.FailNow() }
 }
 
-TEST(IncludesNormalize, WithRelative) {
+func TestIncludesNormalize_WithRelative(t *testing.T) {
   string err
   currentdir := GetCurDir()
   if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.FailNow() }
@@ -58,7 +58,7 @@ TEST(IncludesNormalize, WithRelative) {
   if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.FailNow() }
 }
 
-TEST(IncludesNormalize, Case) {
+func TestIncludesNormalize_Case(t *testing.T) {
   if "b" != NormalizeAndCheckNoError("Abc\\..\\b") { t.FailNow() }
   if "BdEf" != NormalizeAndCheckNoError("Abc\\..\\BdEf") { t.FailNow() }
   if "A/b" != NormalizeAndCheckNoError("A\\.\\b") { t.FailNow() }
@@ -67,7 +67,7 @@ TEST(IncludesNormalize, Case) {
   if "A/B" != NormalizeAndCheckNoError("A\\./B") { t.FailNow() }
 }
 
-TEST(IncludesNormalize, DifferentDrive) {
+func TestIncludesNormalize_DifferentDrive(t *testing.T) {
   if "stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
   if "stuff.h" != NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
   if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08") { t.FailNow() }
@@ -76,7 +76,7 @@ TEST(IncludesNormalize, DifferentDrive) {
   if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") { t.FailNow() }
 }
 
-TEST(IncludesNormalize, LongInvalidPath) {
+func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
   const char kLongInputString[] =
       "C:\\Program Files (x86)\\Microsoft Visual Studio "
       "12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the "
@@ -118,7 +118,7 @@ TEST(IncludesNormalize, LongInvalidPath) {
   if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.FailNow() }
 }
 
-TEST(IncludesNormalize, ShortRelativeButTooLongAbsolutePath) {
+func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
   string result, err
   IncludesNormalize normalizer(".")
   // A short path should work

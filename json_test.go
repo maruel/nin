@@ -17,16 +17,16 @@
 package ginja
 
 
-TEST(JSONTest, RegularAscii) {
+func TestJSONTest_RegularAscii(t *testing.T) {
   if EncodeJSONString("foo bar") != "foo bar" { t.FailNow() }
 }
 
-TEST(JSONTest, EscapedChars) {
+func TestJSONTest_EscapedChars(t *testing.T) {
   if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"" "\\\\" "\\b\\f\\n\\r\\t" { t.FailNow() }
 }
 
 // codepoints between 0 and 0x1f should be escaped
-TEST(JSONTest, ControlChars) {
+func TestJSONTest_ControlChars(t *testing.T) {
   if EncodeJSONString("\x01\x1f") != "\\u0001\\u001f" { t.FailNow() }
 }
 
