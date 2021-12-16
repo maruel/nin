@@ -30,7 +30,7 @@ type BuildLogTest struct {
   virtual bool IsPathDead(StringPiece s) const { return false; }
 }
 
-TEST_F(BuildLogTest, WriteRead) {
+func TestBuildLogTest_WriteRead(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
 
   BuildLog log1
@@ -56,7 +56,7 @@ TEST_F(BuildLogTest, WriteRead) {
   ASSERT_EQ("out", e1.output)
 }
 
-TEST_F(BuildLogTest, FirstWriteAddsSignature) {
+func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
   const char kExpectedVersion[] = "# ninja log vX\n"
   const size_t kVersionPos = strlen(kExpectedVersion) - 2  // Points at 'X'.
 
@@ -88,7 +88,7 @@ TEST_F(BuildLogTest, FirstWriteAddsSignature) {
   EXPECT_EQ(kExpectedVersion, contents)
 }
 
-TEST_F(BuildLogTest, DoubleEntry) {
+func TestBuildLogTest_DoubleEntry(t *testing.T) {
   f := fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "0\t1\t2\tout\tcommand abc\n")
@@ -105,7 +105,7 @@ TEST_F(BuildLogTest, DoubleEntry) {
   ASSERT_NO_FATAL_FAILURE(AssertHash("command def", e.command_hash))
 }
 
-TEST_F(BuildLogTest, Truncate) {
+func TestBuildLogTest_Truncate(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
 
   {
@@ -141,7 +141,7 @@ TEST_F(BuildLogTest, Truncate) {
   }
 }
 
-TEST_F(BuildLogTest, ObsoleteOldVersion) {
+func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
   f := fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v3\n")
   fprintf(f, "123 456 0 out command\n")
@@ -172,7 +172,7 @@ TEST_F(BuildLogTest, SpacesInOutputV4) {
   ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
 }
 
-TEST_F(BuildLogTest, DuplicateVersionHeader) {
+func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
   // Old versions of ninja accidentally wrote multiple version headers to the
   // build log on Windows. This shouldn't crash, and the second version header
   // should be ignored.
@@ -225,7 +225,7 @@ type TestDiskInterface struct {
   }
 }
 
-TEST_F(BuildLogTest, Restat) {
+func TestBuildLogTest_Restat(t *testing.T) {
   f := fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n" "1\t2\t3\tout\tcommand\n")
   fclose(f)
@@ -250,7 +250,7 @@ TEST_F(BuildLogTest, Restat) {
   ASSERT_EQ(4, e.mtime)
 }
 
-TEST_F(BuildLogTest, VeryLongInputLine) {
+func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
   // Ninja's build log buffer is currently 256kB. Lines longer than that are
   // silently ignored, but don't affect parsing of other lines.
   f := fopen(kTestFilename, "wb")
@@ -278,7 +278,7 @@ TEST_F(BuildLogTest, VeryLongInputLine) {
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
-TEST_F(BuildLogTest, MultiTargetEdge) {
+func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
   AssertParse(&state_, "build out out.d: cat\n")
 
   BuildLog log
@@ -301,7 +301,7 @@ type BuildLogRecompactTest struct {
   virtual bool IsPathDead(StringPiece s) const { return s == "out2"; }
 }
 
-TEST_F(BuildLogRecompactTest, Recompact) {
+func TestBuildLogRecompactTest_Recompact(t *testing.T) {
   AssertParse(&state_, "build out: cat in\n" "build out2: cat in\n")
 
   BuildLog log1

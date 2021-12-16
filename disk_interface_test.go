@@ -39,7 +39,7 @@ type DiskInterfaceTest struct {
   RealDiskInterface disk_
 }
 
-TEST_F(DiskInterfaceTest, StatMissingFile) {
+func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
   string err
   EXPECT_EQ(0, disk_.Stat("nosuchfile", &err))
   EXPECT_EQ("", err)
@@ -56,7 +56,7 @@ TEST_F(DiskInterfaceTest, StatMissingFile) {
   EXPECT_EQ("", err)
 }
 
-TEST_F(DiskInterfaceTest, StatBadPath) {
+func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
   string err
   string bad_path("cc:\\foo")
   EXPECT_EQ(-1, disk_.Stat(bad_path, &err))
@@ -66,14 +66,14 @@ TEST_F(DiskInterfaceTest, StatBadPath) {
   EXPECT_NE("", err)
 }
 
-TEST_F(DiskInterfaceTest, StatExistingFile) {
+func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
   string err
   ASSERT_TRUE(Touch("file"))
   EXPECT_GT(disk_.Stat("file", &err), 1)
   EXPECT_EQ("", err)
 }
 
-TEST_F(DiskInterfaceTest, StatExistingDir) {
+func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
   string err
   ASSERT_TRUE(disk_.MakeDir("subdir"))
   ASSERT_TRUE(disk_.MakeDir("subdir/subsubdir"))
@@ -91,7 +91,7 @@ TEST_F(DiskInterfaceTest, StatExistingDir) {
   EXPECT_EQ(disk_.Stat("subdir/subsubdir", &err), disk_.Stat("subdir/subsubdir/.", &err))
 }
 
-TEST_F(DiskInterfaceTest, StatCache) {
+func TestDiskInterfaceTest_StatCache(t *testing.T) {
   string err
 
   ASSERT_TRUE(Touch("file1"))
@@ -146,7 +146,7 @@ TEST_F(DiskInterfaceTest, StatCache) {
   EXPECT_EQ("", err)
 }
 
-TEST_F(DiskInterfaceTest, ReadFile) {
+func TestDiskInterfaceTest_ReadFile(t *testing.T) {
   string err
   string content
   ASSERT_EQ(DiskInterface::NotFound, disk_.ReadFile("foobar", &content, &err))
@@ -166,7 +166,7 @@ TEST_F(DiskInterfaceTest, ReadFile) {
   EXPECT_EQ("", err)
 }
 
-TEST_F(DiskInterfaceTest, MakeDirs) {
+func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
   string path = "path/with/double//slash/";
   EXPECT_TRUE(disk_.MakeDirs(path))
   f := fopen((path + "a_file"), "w")
@@ -179,7 +179,7 @@ TEST_F(DiskInterfaceTest, MakeDirs) {
   EXPECT_EQ(0, fclose(f2))
 }
 
-TEST_F(DiskInterfaceTest, RemoveFile) {
+func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
   kFileName := "file-to-remove"
   ASSERT_TRUE(Touch(kFileName))
   EXPECT_EQ(0, disk_.RemoveFile(kFileName))
@@ -191,7 +191,7 @@ TEST_F(DiskInterfaceTest, RemoveFile) {
   EXPECT_EQ(1, disk_.RemoveFile(kFileName))
 }
 
-TEST_F(DiskInterfaceTest, RemoveDirectory) {
+func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
   kDirectoryName := "directory-to-remove"
   EXPECT_TRUE(disk_.MakeDir(kDirectoryName))
   EXPECT_EQ(0, disk_.RemoveFile(kDirectoryName))
@@ -234,7 +234,7 @@ func (s *StatTest) Stat(path string, err *string) TimeStamp {
   return i.second
 }
 
-TEST_F(StatTest, Simple) {
+func TestStatTest_Simple(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in\n"))
 
   out := GetNode("out")
@@ -248,7 +248,7 @@ TEST_F(StatTest, Simple) {
   ASSERT_EQ("in",  stats_[1])
 }
 
-TEST_F(StatTest, TwoStep) {
+func TestStatTest_TwoStep(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
 
   out := GetNode("out")
@@ -265,7 +265,7 @@ TEST_F(StatTest, TwoStep) {
   ASSERT_EQ("in",  stats_[2])
 }
 
-TEST_F(StatTest, Tree) {
+func TestStatTest_Tree(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\n" "build mid1: cat in11 in12\n" "build mid2: cat in21 in22\n"))
 
   out := GetNode("out")
@@ -280,7 +280,7 @@ TEST_F(StatTest, Tree) {
   ASSERT_EQ("in11", stats_[2])
 }
 
-TEST_F(StatTest, Middle) {
+func TestStatTest_Middle(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
 
   mtimes_["in"] = 1

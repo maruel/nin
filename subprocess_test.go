@@ -27,7 +27,7 @@ type SubprocessTest struct {
 }
 
 // Run a command that fails and emits to stderr.
-TEST_F(SubprocessTest, BadCommandStderr) {
+func TestSubprocessTest_BadCommandStderr(t *testing.T) {
   subproc := subprocs_.Add("cmd /c ninja_no_such_command")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -41,7 +41,7 @@ TEST_F(SubprocessTest, BadCommandStderr) {
 }
 
 // Run a command that does not exist
-TEST_F(SubprocessTest, NoSuchCommand) {
+func TestSubprocessTest_NoSuchCommand(t *testing.T) {
   subproc := subprocs_.Add("ninja_no_such_command")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -55,7 +55,7 @@ TEST_F(SubprocessTest, NoSuchCommand) {
   ASSERT_EQ("CreateProcess failed: The system cannot find the file " "specified.\n", subproc.GetOutput())
 }
 
-TEST_F(SubprocessTest, InterruptChild) {
+func TestSubprocessTest_InterruptChild(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $$")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -66,7 +66,7 @@ TEST_F(SubprocessTest, InterruptChild) {
   EXPECT_EQ(ExitInterrupted, subproc.Finish())
 }
 
-TEST_F(SubprocessTest, InterruptParent) {
+func TestSubprocessTest_InterruptParent(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $PPID ; sleep 1")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -80,7 +80,7 @@ TEST_F(SubprocessTest, InterruptParent) {
   ASSERT_FALSE("We should have been interrupted")
 }
 
-TEST_F(SubprocessTest, InterruptChildWithSigTerm) {
+func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $$")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -91,7 +91,7 @@ TEST_F(SubprocessTest, InterruptChildWithSigTerm) {
   EXPECT_EQ(ExitInterrupted, subproc.Finish())
 }
 
-TEST_F(SubprocessTest, InterruptParentWithSigTerm) {
+func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $PPID ; sleep 1")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -105,7 +105,7 @@ TEST_F(SubprocessTest, InterruptParentWithSigTerm) {
   ASSERT_FALSE("We should have been interrupted")
 }
 
-TEST_F(SubprocessTest, InterruptChildWithSigHup) {
+func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $$")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -116,7 +116,7 @@ TEST_F(SubprocessTest, InterruptChildWithSigHup) {
   EXPECT_EQ(ExitInterrupted, subproc.Finish())
 }
 
-TEST_F(SubprocessTest, InterruptParentWithSigHup) {
+func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $PPID ; sleep 1")
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -130,7 +130,7 @@ TEST_F(SubprocessTest, InterruptParentWithSigHup) {
   ASSERT_FALSE("We should have been interrupted")
 }
 
-TEST_F(SubprocessTest, Console) {
+func TestSubprocessTest_Console(t *testing.T) {
   // Skip test if we don't have the console ourselves.
   if isatty(0) && isatty(1) && isatty(2) {
     Subprocess* subproc =
@@ -145,7 +145,7 @@ TEST_F(SubprocessTest, Console) {
   }
 }
 
-TEST_F(SubprocessTest, SetWithSingle) {
+func TestSubprocessTest_SetWithSingle(t *testing.T) {
   subproc := subprocs_.Add(kSimpleCommand)
   ASSERT_NE((Subprocess *) 0, subproc)
 
@@ -158,7 +158,7 @@ TEST_F(SubprocessTest, SetWithSingle) {
   ASSERT_EQ(1u, subprocs_.finished_.size())
 }
 
-TEST_F(SubprocessTest, SetWithMulti) {
+func TestSubprocessTest_SetWithMulti(t *testing.T) {
   Subprocess* processes[3]
   string kCommands[3] = {
     kSimpleCommand,
@@ -194,7 +194,7 @@ TEST_F(SubprocessTest, SetWithMulti) {
   }
 }
 
-TEST_F(SubprocessTest, SetWithLots) {
+func TestSubprocessTest_SetWithLots(t *testing.T) {
   // Arbitrary big number; needs to be over 1024 to confirm we're no longer
   // hostage to pselect.
   const unsigned kNumProcs = 1025
@@ -226,7 +226,7 @@ TEST_F(SubprocessTest, SetWithLots) {
 // read stdin.
 // Verify that a command that attempts to read stdin correctly thinks
 // that stdin is closed.
-TEST_F(SubprocessTest, ReadStdin) {
+func TestSubprocessTest_ReadStdin(t *testing.T) {
   subproc := subprocs_.Add("cat -")
   while (!subproc.Done()) {
     subprocs_.DoWork()

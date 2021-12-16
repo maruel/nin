@@ -29,7 +29,7 @@ type DepsLogTest struct {
   }
 }
 
-TEST_F(DepsLogTest, WriteRead) {
+func TestDepsLogTest_WriteRead(t *testing.T) {
   State state1
   DepsLog log1
   string err
@@ -79,7 +79,7 @@ TEST_F(DepsLogTest, WriteRead) {
   ASSERT_EQ("bar2.h", log_deps.nodes[1].path())
 }
 
-TEST_F(DepsLogTest, LotsOfDeps) {
+func TestDepsLogTest_LotsOfDeps(t *testing.T) {
   const int kNumDeps = 100000  // More than 64k.
 
   State state1
@@ -113,7 +113,7 @@ TEST_F(DepsLogTest, LotsOfDeps) {
 }
 
 // Verify that adding the same deps twice doesn't grow the file.
-TEST_F(DepsLogTest, DoubleEntry) {
+func TestDepsLogTest_DoubleEntry(t *testing.T) {
   // Write some deps to the file and grab its size.
   int file_size
   {
@@ -159,7 +159,7 @@ TEST_F(DepsLogTest, DoubleEntry) {
 }
 
 // Verify that adding the new deps works and can be compacted away.
-TEST_F(DepsLogTest, Recompact) {
+func TestDepsLogTest_Recompact(t *testing.T) {
   const char kManifest[] =
 "rule cc\n"
 "  command = cc\n"
@@ -315,7 +315,7 @@ TEST_F(DepsLogTest, Recompact) {
 }
 
 // Verify that invalid file headers cause a new build.
-TEST_F(DepsLogTest, InvalidHeader) {
+func TestDepsLogTest_InvalidHeader(t *testing.T) {
   stringkInvalidHeaders[] = {
     "",                              // Empty file.
     "# ninjad",                      // Truncated first line.
@@ -338,7 +338,7 @@ TEST_F(DepsLogTest, InvalidHeader) {
 }
 
 // Simulate what happens when loading a truncated log file.
-TEST_F(DepsLogTest, Truncated) {
+func TestDepsLogTest_Truncated(t *testing.T) {
   // Create a file with some entries.
   {
     State state
@@ -397,7 +397,7 @@ TEST_F(DepsLogTest, Truncated) {
 }
 
 // Run the truncation-recovery logic.
-TEST_F(DepsLogTest, TruncatedRecovery) {
+func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
   // Create a file with some entries.
   {
     State state
@@ -465,7 +465,7 @@ TEST_F(DepsLogTest, TruncatedRecovery) {
   }
 }
 
-TEST_F(DepsLogTest, ReverseDepsNodes) {
+func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
   State state
   DepsLog log
   string err

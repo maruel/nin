@@ -28,7 +28,7 @@ func (d *DepfileParserTest) Parse(input string, err *string) bool {
   return parser_.Parse(&input_, err)
 }
 
-TEST_F(DepfileParserTest, Basic) {
+func TestDepfileParserTest_Basic(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( "build/ninja.o: ninja.cc ninja.h eval_env.h manifest_parser.h\n", &err))
   ASSERT_EQ("", err)
@@ -37,13 +37,13 @@ TEST_F(DepfileParserTest, Basic) {
   EXPECT_EQ(4u, parser_.ins_.size())
 }
 
-TEST_F(DepfileParserTest, EarlyNewlineAndWhitespace) {
+func TestDepfileParserTest_EarlyNewlineAndWhitespace(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( " \\\n" "  out: in\n", &err))
   ASSERT_EQ("", err)
 }
 
-TEST_F(DepfileParserTest, Continuation) {
+func TestDepfileParserTest_Continuation(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( "foo.o: \\\n" "  bar.h baz.h\n", &err))
   ASSERT_EQ("", err)
@@ -52,7 +52,7 @@ TEST_F(DepfileParserTest, Continuation) {
   EXPECT_EQ(2u, parser_.ins_.size())
 }
 
-TEST_F(DepfileParserTest, CarriageReturnContinuation) {
+func TestDepfileParserTest_CarriageReturnContinuation(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( "foo.o: \\\r\n" "  bar.h baz.h\r\n", &err))
   ASSERT_EQ("", err)
@@ -61,7 +61,7 @@ TEST_F(DepfileParserTest, CarriageReturnContinuation) {
   EXPECT_EQ(2u, parser_.ins_.size())
 }
 
-TEST_F(DepfileParserTest, BackSlashes) {
+func TestDepfileParserTest_BackSlashes(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( "Project\\Dir\\Build\\Release8\\Foo\\Foo.res : \\\n" "  Dir\\Library\\Foo.rc \\\n" "  Dir\\Library\\Version\\Bar.h \\\n" "  Dir\\Library\\Foo.ico \\\n" "  Project\\Thing\\Bar.tlb \\\n", &err))
   ASSERT_EQ("", err)
@@ -70,7 +70,7 @@ TEST_F(DepfileParserTest, BackSlashes) {
   EXPECT_EQ(4u, parser_.ins_.size())
 }
 
-TEST_F(DepfileParserTest, Spaces) {
+func TestDepfileParserTest_Spaces(t *testing.T) {
   string err
   EXPECT_TRUE(Parse( "a\\ bc\\ def:   a\\ b c d", &err))
   ASSERT_EQ("", err)
@@ -82,7 +82,7 @@ TEST_F(DepfileParserTest, Spaces) {
   EXPECT_EQ("d", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, MultipleBackslashes) {
+func TestDepfileParserTest_MultipleBackslashes(t *testing.T) {
   // Successive 2N+1 backslashes followed by space (' ') are replaced by N >= 0
   // backslashes and the space. A single backslash before hash sign is removed.
   // Other backslashes remain untouched (including 2N backslashes followed by
@@ -98,7 +98,7 @@ TEST_F(DepfileParserTest, MultipleBackslashes) {
   EXPECT_EQ("\\\\share\\info\\#1", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, Escapes) {
+func TestDepfileParserTest_Escapes(t *testing.T) {
   // Put backslashes before a variety of characters, see which ones make
   // it through.
   string err
@@ -133,7 +133,7 @@ TEST_F(DepfileParserTest, EscapedTargetColon)
   EXPECT_EQ("x", parser_.ins_[0].AsString())
 }
 
-TEST_F(DepfileParserTest, SpecialChars) {
+func TestDepfileParserTest_SpecialChars(t *testing.T) {
   // See filenames like istreambuf.iterator_op!= in
   // https://github.com/google/libcxx/tree/master/test/iterators/stream.iterators/istreambuf.iterator/
   string err
@@ -149,7 +149,7 @@ TEST_F(DepfileParserTest, SpecialChars) {
   EXPECT_EQ("a[1]b@2%c", parser_.ins_[4].AsString())
 }
 
-TEST_F(DepfileParserTest, UnifyMultipleOutputs) {
+func TestDepfileParserTest_UnifyMultipleOutputs(t *testing.T) {
   // check that multiple duplicate targets are properly unified
   string err
   EXPECT_TRUE(Parse("foo foo: x y z", &err))
@@ -161,7 +161,7 @@ TEST_F(DepfileParserTest, UnifyMultipleOutputs) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, MultipleDifferentOutputs) {
+func TestDepfileParserTest_MultipleDifferentOutputs(t *testing.T) {
   // check that multiple different outputs are accepted by the parser
   string err
   EXPECT_TRUE(Parse("foo bar: x y z", &err))
@@ -174,7 +174,7 @@ TEST_F(DepfileParserTest, MultipleDifferentOutputs) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, MultipleEmptyRules) {
+func TestDepfileParserTest_MultipleEmptyRules(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\n" "foo: \n" "foo:\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -183,7 +183,7 @@ TEST_F(DepfileParserTest, MultipleEmptyRules) {
   EXPECT_EQ("x", parser_.ins_[0].AsString())
 }
 
-TEST_F(DepfileParserTest, UnifyMultipleRulesLF) {
+func TestDepfileParserTest_UnifyMultipleRulesLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\n" "foo: y\n" "foo \\\n" "foo: z\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -194,7 +194,7 @@ TEST_F(DepfileParserTest, UnifyMultipleRulesLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, UnifyMultipleRulesCRLF) {
+func TestDepfileParserTest_UnifyMultipleRulesCRLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\r\n" "foo: y\r\n" "foo \\\r\n" "foo: z\r\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -205,7 +205,7 @@ TEST_F(DepfileParserTest, UnifyMultipleRulesCRLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, UnifyMixedRulesLF) {
+func TestDepfileParserTest_UnifyMixedRulesLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\\\n" "     y\n" "foo \\\n" "foo: z\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -216,7 +216,7 @@ TEST_F(DepfileParserTest, UnifyMixedRulesLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, UnifyMixedRulesCRLF) {
+func TestDepfileParserTest_UnifyMixedRulesCRLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\\\r\n" "     y\r\n" "foo \\\r\n" "foo: z\r\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -227,7 +227,7 @@ TEST_F(DepfileParserTest, UnifyMixedRulesCRLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, IndentedRulesLF) {
+func TestDepfileParserTest_IndentedRulesLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse(" foo: x\n" " foo: y\n" " foo: z\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -238,7 +238,7 @@ TEST_F(DepfileParserTest, IndentedRulesLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, IndentedRulesCRLF) {
+func TestDepfileParserTest_IndentedRulesCRLF(t *testing.T) {
   string err
   EXPECT_TRUE(Parse(" foo: x\r\n" " foo: y\r\n" " foo: z\r\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -249,7 +249,7 @@ TEST_F(DepfileParserTest, IndentedRulesCRLF) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, TolerateMP) {
+func TestDepfileParserTest_TolerateMP(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x y z\n" "x:\n" "y:\n" "z:\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -260,7 +260,7 @@ TEST_F(DepfileParserTest, TolerateMP) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, MultipleRulesTolerateMP) {
+func TestDepfileParserTest_MultipleRulesTolerateMP(t *testing.T) {
   string err
   EXPECT_TRUE(Parse("foo: x\n" "x:\n" "foo: y\n" "y:\n" "foo: z\n" "z:\n", &err))
   ASSERT_EQ(1u, parser_.outs_.size())
@@ -271,7 +271,7 @@ TEST_F(DepfileParserTest, MultipleRulesTolerateMP) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, MultipleRulesDifferentOutputs) {
+func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
   // check that multiple different outputs are accepted by the parser
   // when spread across multiple rules
   string err
@@ -285,7 +285,7 @@ TEST_F(DepfileParserTest, MultipleRulesDifferentOutputs) {
   EXPECT_EQ("z", parser_.ins_[2].AsString())
 }
 
-TEST_F(DepfileParserTest, BuggyMP) {
+func TestDepfileParserTest_BuggyMP(t *testing.T) {
   string err
   EXPECT_FALSE(Parse("foo: x y z\n" "x: alsoin\n" "y:\n" "z:\n", &err))
   ASSERT_EQ("inputs may not also have inputs", err)

@@ -33,7 +33,7 @@ type DyndepParserTest struct {
   DyndepFile dyndep_file_
 }
 
-TEST_F(DyndepParserTest, Empty) {
+func TestDyndepParserTest_Empty(t *testing.T) {
   const char kInput[] =
 ""
   string err
@@ -57,27 +57,27 @@ TEST_F(DyndepParserTest, Version1_0Extra) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1.0-extra\n"))
 }
 
-TEST_F(DyndepParserTest, CommentVersion) {
+func TestDyndepParserTest_CommentVersion(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\n" "ninja_dyndep_version = 1\n"))
 }
 
-TEST_F(DyndepParserTest, BlankLineVersion) {
+func TestDyndepParserTest_BlankLineVersion(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "\n" "ninja_dyndep_version = 1\n"))
 }
 
-TEST_F(DyndepParserTest, VersionCRLF) {
+func TestDyndepParserTest_VersionCRLF(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\r\n"))
 }
 
-TEST_F(DyndepParserTest, CommentVersionCRLF) {
+func TestDyndepParserTest_CommentVersionCRLF(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\r\n" "ninja_dyndep_version = 1\r\n"))
 }
 
-TEST_F(DyndepParserTest, BlankLineVersionCRLF) {
+func TestDyndepParserTest_BlankLineVersionCRLF(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "\r\n" "ninja_dyndep_version = 1\r\n"))
 }
 
-TEST_F(DyndepParserTest, VersionUnexpectedEOF) {
+func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1.0"
   string err
@@ -101,7 +101,7 @@ TEST_F(DyndepParserTest, UnsupportedVersion1_1) {
   EXPECT_EQ("input:1: unsupported 'ninja_dyndep_version = 1.1'\n" "ninja_dyndep_version = 1.1\n" "                          ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, DuplicateVersion) {
+func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "ninja_dyndep_version = 1\n"
@@ -110,7 +110,7 @@ TEST_F(DyndepParserTest, DuplicateVersion) {
   EXPECT_EQ("input:2: unexpected identifier\n", err)
 }
 
-TEST_F(DyndepParserTest, MissingVersionOtherVar) {
+func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
   const char kInput[] =
 "not_ninja_dyndep_version = 1\n"
   string err
@@ -118,7 +118,7 @@ TEST_F(DyndepParserTest, MissingVersionOtherVar) {
   EXPECT_EQ("input:1: expected 'ninja_dyndep_version = ...'\n" "not_ninja_dyndep_version = 1\n" "                            ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, MissingVersionBuild) {
+func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
   const char kInput[] =
 "build out: dyndep\n"
   string err
@@ -126,7 +126,7 @@ TEST_F(DyndepParserTest, MissingVersionBuild) {
   EXPECT_EQ("input:1: expected 'ninja_dyndep_version = ...'\n", err)
 }
 
-TEST_F(DyndepParserTest, UnexpectedEqual) {
+func TestDyndepParserTest_UnexpectedEqual(t *testing.T) {
   const char kInput[] =
 "= 1\n"
   string err
@@ -134,7 +134,7 @@ TEST_F(DyndepParserTest, UnexpectedEqual) {
   EXPECT_EQ("input:1: unexpected '='\n", err)
 }
 
-TEST_F(DyndepParserTest, UnexpectedIndent) {
+func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
   const char kInput[] =
 " = 1\n"
   string err
@@ -142,7 +142,7 @@ TEST_F(DyndepParserTest, UnexpectedIndent) {
   EXPECT_EQ("input:1: unexpected indent\n", err)
 }
 
-TEST_F(DyndepParserTest, OutDuplicate) {
+func TestDyndepParserTest_OutDuplicate(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep\n"
@@ -152,7 +152,7 @@ TEST_F(DyndepParserTest, OutDuplicate) {
   EXPECT_EQ("input:3: multiple statements for 'out'\n" "build out: dyndep\n" "         ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OutDuplicateThroughOther) {
+func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep\n"
@@ -162,7 +162,7 @@ TEST_F(DyndepParserTest, OutDuplicateThroughOther) {
   EXPECT_EQ("input:3: multiple statements for 'otherout'\n" "build otherout: dyndep\n" "              ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, NoOutEOF) {
+func TestDyndepParserTest_NoOutEOF(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build"
@@ -171,7 +171,7 @@ TEST_F(DyndepParserTest, NoOutEOF) {
   EXPECT_EQ("input:2: unexpected EOF\n" "build\n" "     ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, NoOutColon) {
+func TestDyndepParserTest_NoOutColon(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build :\n"
@@ -180,7 +180,7 @@ TEST_F(DyndepParserTest, NoOutColon) {
   EXPECT_EQ("input:2: expected path\n" "build :\n" "      ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OutNoStatement) {
+func TestDyndepParserTest_OutNoStatement(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build missing: dyndep\n"
@@ -189,7 +189,7 @@ TEST_F(DyndepParserTest, OutNoStatement) {
   EXPECT_EQ("input:2: no build statement exists for 'missing'\n" "build missing: dyndep\n" "             ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OutEOF) {
+func TestDyndepParserTest_OutEOF(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out"
@@ -198,7 +198,7 @@ TEST_F(DyndepParserTest, OutEOF) {
   EXPECT_EQ("input:2: unexpected EOF\n" "build out\n" "         ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OutNoRule) {
+func TestDyndepParserTest_OutNoRule(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out:"
@@ -207,7 +207,7 @@ TEST_F(DyndepParserTest, OutNoRule) {
   EXPECT_EQ("input:2: expected build command name 'dyndep'\n" "build out:\n" "          ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OutBadRule) {
+func TestDyndepParserTest_OutBadRule(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: touch"
@@ -216,7 +216,7 @@ TEST_F(DyndepParserTest, OutBadRule) {
   EXPECT_EQ("input:2: expected build command name 'dyndep'\n" "build out: touch\n" "           ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, BuildEOF) {
+func TestDyndepParserTest_BuildEOF(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep"
@@ -225,7 +225,7 @@ TEST_F(DyndepParserTest, BuildEOF) {
   EXPECT_EQ("input:2: unexpected EOF\n" "build out: dyndep\n" "                 ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, ExplicitOut) {
+func TestDyndepParserTest_ExplicitOut(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out exp: dyndep\n"
@@ -234,7 +234,7 @@ TEST_F(DyndepParserTest, ExplicitOut) {
   EXPECT_EQ("input:2: explicit outputs not supported\n" "build out exp: dyndep\n" "             ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, ExplicitIn) {
+func TestDyndepParserTest_ExplicitIn(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep exp\n"
@@ -243,7 +243,7 @@ TEST_F(DyndepParserTest, ExplicitIn) {
   EXPECT_EQ("input:2: explicit inputs not supported\n" "build out: dyndep exp\n" "                     ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, OrderOnlyIn) {
+func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep ||\n"
@@ -252,7 +252,7 @@ TEST_F(DyndepParserTest, OrderOnlyIn) {
   EXPECT_EQ("input:2: order-only inputs not supported\n" "build out: dyndep ||\n" "                  ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, BadBinding) {
+func TestDyndepParserTest_BadBinding(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep\n"
@@ -262,7 +262,7 @@ TEST_F(DyndepParserTest, BadBinding) {
   EXPECT_EQ("input:3: binding is not 'restat'\n" "  not_restat = 1\n" "                ^ near here", err)
 }
 
-TEST_F(DyndepParserTest, RestatTwice) {
+func TestDyndepParserTest_RestatTwice(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1\n"
 "build out: dyndep\n"
@@ -273,7 +273,7 @@ TEST_F(DyndepParserTest, RestatTwice) {
   EXPECT_EQ("input:4: unexpected indent\n", err)
 }
 
-TEST_F(DyndepParserTest, NoImplicit) {
+func TestDyndepParserTest_NoImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -284,7 +284,7 @@ TEST_F(DyndepParserTest, NoImplicit) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, EmptyImplicit) {
+func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | : dyndep |\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -295,7 +295,7 @@ TEST_F(DyndepParserTest, EmptyImplicit) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, ImplicitIn) {
+func TestDyndepParserTest_ImplicitIn(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep | impin\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -307,7 +307,7 @@ TEST_F(DyndepParserTest, ImplicitIn) {
   EXPECT_EQ("impin", i.second.implicit_inputs_[0].path())
 }
 
-TEST_F(DyndepParserTest, ImplicitIns) {
+func TestDyndepParserTest_ImplicitIns(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep | impin1 impin2\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -320,7 +320,7 @@ TEST_F(DyndepParserTest, ImplicitIns) {
   EXPECT_EQ("impin2", i.second.implicit_inputs_[1].path())
 }
 
-TEST_F(DyndepParserTest, ImplicitOut) {
+func TestDyndepParserTest_ImplicitOut(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout: dyndep\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -332,7 +332,7 @@ TEST_F(DyndepParserTest, ImplicitOut) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, ImplicitOuts) {
+func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout1 impout2 : dyndep\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -345,7 +345,7 @@ TEST_F(DyndepParserTest, ImplicitOuts) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, ImplicitInsAndOuts) {
+func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout1 impout2: dyndep | impin1 impin2\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -360,7 +360,7 @@ TEST_F(DyndepParserTest, ImplicitInsAndOuts) {
   EXPECT_EQ("impin2", i.second.implicit_inputs_[1].path())
 }
 
-TEST_F(DyndepParserTest, Restat) {
+func TestDyndepParserTest_Restat(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep\n" "  restat = 1\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -371,7 +371,7 @@ TEST_F(DyndepParserTest, Restat) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, OtherOutput) {
+func TestDyndepParserTest_OtherOutput(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build otherout: dyndep\n"))
 
   EXPECT_EQ(1u, dyndep_file_.size())
@@ -382,7 +382,7 @@ TEST_F(DyndepParserTest, OtherOutput) {
   EXPECT_EQ(0u, i.second.implicit_inputs_.size())
 }
 
-TEST_F(DyndepParserTest, MultipleEdges) {
+func TestDyndepParserTest_MultipleEdges(t *testing.T) {
     ::AssertParse(&state_, "build out2: touch\n")
   ASSERT_EQ(2u, state_.edges_.size())
   ASSERT_EQ(1u, state_.edges_[1].outputs_.size())

@@ -27,7 +27,7 @@ type CleanTest struct {
   }
 }
 
-TEST_F(CleanTest, CleanAll) {
+func TestCleanTest_CleanAll(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -52,7 +52,7 @@ TEST_F(CleanTest, CleanAll) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanAllDryRun) {
+func TestCleanTest_CleanAllDryRun(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -79,7 +79,7 @@ TEST_F(CleanTest, CleanAllDryRun) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanTarget) {
+func TestCleanTest_CleanTarget(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -104,7 +104,7 @@ TEST_F(CleanTest, CleanTarget) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanTargetDryRun) {
+func TestCleanTest_CleanTargetDryRun(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -131,7 +131,7 @@ TEST_F(CleanTest, CleanTargetDryRun) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanRule) {
+func TestCleanTest_CleanRule(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cat_e\n" "  command = cat -e $in > $out\n" "build in1: cat_e src1\n" "build out1: cat in1\n" "build in2: cat_e src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -156,7 +156,7 @@ TEST_F(CleanTest, CleanRule) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanRuleDryRun) {
+func TestCleanTest_CleanRuleDryRun(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cat_e\n" "  command = cat -e $in > $out\n" "build in1: cat_e src1\n" "build out1: cat in1\n" "build in2: cat_e src2\n" "build out2: cat in2\n"))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -183,7 +183,7 @@ TEST_F(CleanTest, CleanRuleDryRun) {
   EXPECT_EQ(0u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanRuleGenerator) {
+func TestCleanTest_CleanRuleGenerator(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule regen\n" "  command = cat $in > $out\n" "  generator = 1\n" "build out1: cat in1\n" "build out2: regen in2\n"))
   fs_.Create("out1", "")
   fs_.Create("out2", "")
@@ -199,7 +199,7 @@ TEST_F(CleanTest, CleanRuleGenerator) {
   EXPECT_EQ(2u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanDepFile) {
+func TestCleanTest_CleanDepFile(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n" "  command = cc $in > $out\n" "  depfile = $out.d\n" "build out1: cc in1\n"))
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
@@ -209,7 +209,7 @@ TEST_F(CleanTest, CleanDepFile) {
   EXPECT_EQ(2u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanDepFileOnCleanTarget) {
+func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n" "  command = cc $in > $out\n" "  depfile = $out.d\n" "build out1: cc in1\n"))
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
@@ -219,7 +219,7 @@ TEST_F(CleanTest, CleanDepFileOnCleanTarget) {
   EXPECT_EQ(2u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanDepFileOnCleanRule) {
+func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n" "  command = cc $in > $out\n" "  depfile = $out.d\n" "build out1: cc in1\n"))
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
@@ -229,7 +229,7 @@ TEST_F(CleanTest, CleanDepFileOnCleanRule) {
   EXPECT_EQ(2u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanDyndep) {
+func TestCleanTest_CleanDyndep(t *testing.T) {
   // Verify that a dyndep file can be loaded to discover a new output
   // to be cleaned.
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in || dd\n" "  dyndep = dd\n" ))
@@ -248,7 +248,7 @@ TEST_F(CleanTest, CleanDyndep) {
   EXPECT_EQ(0, fs_.Stat("out.imp", &err))
 }
 
-TEST_F(CleanTest, CleanDyndepMissing) {
+func TestCleanTest_CleanDyndepMissing(t *testing.T) {
   // Verify that a missing dyndep file is tolerated.
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in || dd\n" "  dyndep = dd\n" ))
   fs_.Create("in", "")
@@ -265,7 +265,7 @@ TEST_F(CleanTest, CleanDyndepMissing) {
   EXPECT_EQ(1, fs_.Stat("out.imp", &err))
 }
 
-TEST_F(CleanTest, CleanRspFile) {
+func TestCleanTest_CleanRspFile(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n" "  command = cc $in > $out\n" "  rspfile = $rspfile\n" "  rspfile_content=$in\n" "build out1: cc in1\n" "  rspfile = cc1.rsp\n"))
   fs_.Create("out1", "")
   fs_.Create("cc1.rsp", "")
@@ -275,7 +275,7 @@ TEST_F(CleanTest, CleanRspFile) {
   EXPECT_EQ(2u, fs_.files_removed_.size())
 }
 
-TEST_F(CleanTest, CleanRsp) {
+func TestCleanTest_CleanRsp(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cat_rsp \n" "  command = cat $rspfile > $out\n" "  rspfile = $rspfile\n" "  rspfile_content = $in\n" "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat_rsp src2\n" "  rspfile=in2.rsp\n" "build out2: cat_rsp in2\n" "  rspfile=out2.rsp\n" ))
   fs_.Create("in1", "")
   fs_.Create("out1", "")
@@ -304,13 +304,13 @@ TEST_F(CleanTest, CleanRsp) {
   EXPECT_EQ(0, fs_.Stat("out2.rsp", &err))
 }
 
-TEST_F(CleanTest, CleanFailure) {
+func TestCleanTest_CleanFailure(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build dir: cat src1\n"))
   fs_.MakeDir("dir")
   EXPECT_NE(0, cleaner.CleanAll())
 }
 
-TEST_F(CleanTest, CleanPhony) {
+func TestCleanTest_CleanPhony(t *testing.T) {
   string err
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build phony: phony t1 t2\n" "build t1: cat\n" "build t2: cat\n"))
 
@@ -331,7 +331,7 @@ TEST_F(CleanTest, CleanPhony) {
   EXPECT_LT(0, fs_.Stat("phony", &err))
 }
 
-TEST_F(CleanTest, CleanDepFileAndRspFileWithSpaces) {
+func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc_dep\n" "  command = cc $in > $out\n" "  depfile = $out.d\n" "rule cc_rsp\n" "  command = cc $in > $out\n" "  rspfile = $out.rsp\n" "  rspfile_content = $in\n" "build out$ 1: cc_dep in$ 1\n" "build out$ 2: cc_rsp in$ 1\n" ))
   fs_.Create("out 1", "")
   fs_.Create("out 2", "")
@@ -361,7 +361,7 @@ type CleanDeadTest struct {
   virtual bool IsPathDead(StringPiece) const { return false; }
 }
 
-TEST_F(CleanDeadTest, CleanDead) {
+func TestCleanDeadTest_CleanDead(t *testing.T) {
   State state
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state, "rule cat\n" "  command = cat $in > $out\n" "build out1: cat in\n" "build out2: cat in\n" ))
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out2: cat in\n" ))
@@ -410,7 +410,7 @@ TEST_F(CleanDeadTest, CleanDead) {
   log2.Close()
 }
 
-TEST_F(CleanDeadTest, CleanDeadPreservesInputs) {
+func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
   State state
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state, "rule cat\n" "  command = cat $in > $out\n" "build out1: cat in\n" "build out2: cat in\n" ))
   // This manifest does not build out1 anymore, but makes

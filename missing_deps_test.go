@@ -82,18 +82,18 @@ type MissingDependencyScannerTest struct {
   MissingDependencyScanner scanner_
 }
 
-TEST_F(MissingDependencyScannerTest, EmptyGraph) {
+func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
   ProcessAllNodes()
   ASSERT_FALSE(scanner().HadMissingDeps())
 }
 
-TEST_F(MissingDependencyScannerTest, NoMissingDep) {
+func TestMissingDependencyScannerTest_NoMissingDep(t *testing.T) {
   CreateInitialState()
   ProcessAllNodes()
   ASSERT_FALSE(scanner().HadMissingDeps())
 }
 
-TEST_F(MissingDependencyScannerTest, MissingDepPresent) {
+func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
   CreateInitialState()
   // compiled_object uses generated_header, without a proper dependency
   RecordDepsLogDep("compiled_object", "generated_header")
@@ -104,7 +104,7 @@ TEST_F(MissingDependencyScannerTest, MissingDepPresent) {
   AssertMissingDependencyBetween("compiled_object", "generated_header", &generator_rule_)
 }
 
-TEST_F(MissingDependencyScannerTest, MissingDepFixedDirect) {
+func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
   CreateInitialState()
   // Adding the direct dependency fixes the missing dep
   CreateGraphDependencyBetween("compiled_object", "generated_header")
@@ -113,7 +113,7 @@ TEST_F(MissingDependencyScannerTest, MissingDepFixedDirect) {
   ASSERT_FALSE(scanner().HadMissingDeps())
 }
 
-TEST_F(MissingDependencyScannerTest, MissingDepFixedIndirect) {
+func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
   CreateInitialState()
   // Adding an indirect dependency also fixes the issue
   intermediate_edge := state_.AddEdge(&generator_rule_)
@@ -125,7 +125,7 @@ TEST_F(MissingDependencyScannerTest, MissingDepFixedIndirect) {
   ASSERT_FALSE(scanner().HadMissingDeps())
 }
 
-TEST_F(MissingDependencyScannerTest, CyclicMissingDep) {
+func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
   CreateInitialState()
   RecordDepsLogDep("generated_header", "compiled_object")
   RecordDepsLogDep("compiled_object", "generated_header")
@@ -139,7 +139,7 @@ TEST_F(MissingDependencyScannerTest, CyclicMissingDep) {
   AssertMissingDependencyBetween("generated_header", "compiled_object", &compile_rule_)
 }
 
-TEST_F(MissingDependencyScannerTest, CycleInGraph) {
+func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
   CreateInitialState()
   CreateGraphDependencyBetween("compiled_object", "generated_header")
   CreateGraphDependencyBetween("generated_header", "compiled_object")
