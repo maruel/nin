@@ -36,8 +36,8 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  EXPECT_EQ(ExitFailure, subproc.Finish())
-  EXPECT_NE("", subproc.GetOutput())
+  if ExitFailure != subproc.Finish() { t.FailNow() }
+  if "" == subproc.GetOutput() { t.FailNow() }
 }
 
 // Run a command that does not exist
@@ -50,8 +50,8 @@ func TestSubprocessTest_NoSuchCommand(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  EXPECT_EQ(ExitFailure, subproc.Finish())
-  EXPECT_NE("", subproc.GetOutput())
+  if ExitFailure != subproc.Finish() { t.FailNow() }
+  if "" == subproc.GetOutput() { t.FailNow() }
   ASSERT_EQ("CreateProcess failed: The system cannot find the file " "specified.\n", subproc.GetOutput())
 }
 
@@ -63,7 +63,7 @@ func TestSubprocessTest_InterruptChild(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  EXPECT_EQ(ExitInterrupted, subproc.Finish())
+  if ExitInterrupted != subproc.Finish() { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptParent(t *testing.T) {
@@ -77,7 +77,7 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
     }
   }
 
-  ASSERT_FALSE("We should have been interrupted")
+  if !"We should have been interrupted" { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
@@ -88,7 +88,7 @@ func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  EXPECT_EQ(ExitInterrupted, subproc.Finish())
+  if ExitInterrupted != subproc.Finish() { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
@@ -102,7 +102,7 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
     }
   }
 
-  ASSERT_FALSE("We should have been interrupted")
+  if !"We should have been interrupted" { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
@@ -113,7 +113,7 @@ func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  EXPECT_EQ(ExitInterrupted, subproc.Finish())
+  if ExitInterrupted != subproc.Finish() { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
@@ -127,7 +127,7 @@ func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
     }
   }
 
-  ASSERT_FALSE("We should have been interrupted")
+  if !"We should have been interrupted" { t.FailNow() }
 }
 
 func TestSubprocessTest_Console(t *testing.T) {
@@ -141,7 +141,7 @@ func TestSubprocessTest_Console(t *testing.T) {
       subprocs_.DoWork()
     }
 
-    EXPECT_EQ(ExitSuccess, subproc.Finish())
+    if ExitSuccess != subproc.Finish() { t.FailNow() }
   }
 }
 
@@ -152,10 +152,10 @@ func TestSubprocessTest_SetWithSingle(t *testing.T) {
   while (!subproc.Done()) {
     subprocs_.DoWork()
   }
-  ASSERT_EQ(ExitSuccess, subproc.Finish())
-  ASSERT_NE("", subproc.GetOutput())
+  if ExitSuccess != subproc.Finish() { t.FailNow() }
+  if "" == subproc.GetOutput() { t.FailNow() }
 
-  ASSERT_EQ(1u, subprocs_.finished_.size())
+  if 1u != subprocs_.finished_.size() { t.FailNow() }
 }
 
 func TestSubprocessTest_SetWithMulti(t *testing.T) {
@@ -173,10 +173,10 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
     ASSERT_NE((Subprocess *) 0, processes[i])
   }
 
-  ASSERT_EQ(3u, subprocs_.running_.size())
+  if 3u != subprocs_.running_.size() { t.FailNow() }
   for (int i = 0; i < 3; ++i) {
-    ASSERT_FALSE(processes[i].Done())
-    ASSERT_EQ("", processes[i].GetOutput())
+    if !processes[i].Done() { t.FailNow() }
+    if "" != processes[i].GetOutput() { t.FailNow() }
   }
 
   while (!processes[0].Done() || !processes[1].Done() || !processes[2].Done()) {
@@ -184,12 +184,12 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
     subprocs_.DoWork()
   }
 
-  ASSERT_EQ(0u, subprocs_.running_.size())
-  ASSERT_EQ(3u, subprocs_.finished_.size())
+  if 0u != subprocs_.running_.size() { t.FailNow() }
+  if 3u != subprocs_.finished_.size() { t.FailNow() }
 
   for (int i = 0; i < 3; ++i) {
-    ASSERT_EQ(ExitSuccess, processes[i].Finish())
-    ASSERT_NE("", processes[i].GetOutput())
+    if ExitSuccess != processes[i].Finish() { t.FailNow() }
+    if "" == processes[i].GetOutput() { t.FailNow() }
     delete processes[i]
   }
 }
@@ -201,7 +201,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 
   // Make sure [ulimit -n] isn't going to stop us from working.
   rlimit rlim
-  ASSERT_EQ(0, getrlimit(RLIMIT_NOFILE, &rlim))
+  if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.FailNow() }
   if rlim.rlim_cur < kNumProcs {
     printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)
     return
@@ -216,10 +216,10 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
   while (!subprocs_.running_.empty())
     subprocs_.DoWork()
   for (size_t i = 0; i < procs.size(); ++i) {
-    ASSERT_EQ(ExitSuccess, procs[i].Finish())
-    ASSERT_NE("", procs[i].GetOutput())
+    if ExitSuccess != procs[i].Finish() { t.FailNow() }
+    if "" == procs[i].GetOutput() { t.FailNow() }
   }
-  ASSERT_EQ(kNumProcs, subprocs_.finished_.size())
+  if kNumProcs != subprocs_.finished_.size() { t.FailNow() }
 }
 
 // TODO: this test could work on Windows, just not sure how to simply
@@ -231,7 +231,7 @@ func TestSubprocessTest_ReadStdin(t *testing.T) {
   while (!subproc.Done()) {
     subprocs_.DoWork()
   }
-  ASSERT_EQ(ExitSuccess, subproc.Finish())
-  ASSERT_EQ(1u, subprocs_.finished_.size())
+  if ExitSuccess != subproc.Finish() { t.FailNow() }
+  if 1u != subprocs_.finished_.size() { t.FailNow() }
 }
 

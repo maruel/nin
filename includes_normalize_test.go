@@ -27,44 +27,44 @@ func GetCurDir() string {
 func NormalizeAndCheckNoError(input string) string {
   string result, err
   IncludesNormalize normalizer(".")
-  EXPECT_TRUE(normalizer.Normalize(input, &result, &err))
-  EXPECT_EQ("", err)
+  if normalizer.Normalize(input, &result, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   return result
 }
 
 func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
   string result, err
-  EXPECT_TRUE(normalizer.Normalize(input, &result, &err))
-  EXPECT_EQ("", err)
+  if normalizer.Normalize(input, &result, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   return result
 }
 
 TEST(IncludesNormalize, Simple) {
-  EXPECT_EQ("b", NormalizeAndCheckNoError("a\\..\\b"))
-  EXPECT_EQ("b", NormalizeAndCheckNoError("a\\../b"))
-  EXPECT_EQ("a/b", NormalizeAndCheckNoError("a\\.\\b"))
-  EXPECT_EQ("a/b", NormalizeAndCheckNoError("a\\./b"))
+  if "b" != NormalizeAndCheckNoError("a\\..\\b") { t.FailNow() }
+  if "b" != NormalizeAndCheckNoError("a\\../b") { t.FailNow() }
+  if "a/b" != NormalizeAndCheckNoError("a\\.\\b") { t.FailNow() }
+  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.FailNow() }
 }
 
 TEST(IncludesNormalize, WithRelative) {
   string err
   currentdir := GetCurDir()
-  EXPECT_EQ("c", NormalizeRelativeAndCheckNoError("a/b/c", "a/b"))
+  if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.FailNow() }
   EXPECT_EQ("a", NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)))
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_EQ(string("../") + currentdir + string("/a"), NormalizeRelativeAndCheckNoError("a", "../b"))
   EXPECT_EQ(string("../") + currentdir + string("/a/b"), NormalizeRelativeAndCheckNoError("a/b", "../c"))
-  EXPECT_EQ("../../a", NormalizeRelativeAndCheckNoError("a", "b/c"))
-  EXPECT_EQ(".", NormalizeRelativeAndCheckNoError("a", "a"))
+  if "../../a" != NormalizeRelativeAndCheckNoError("a", "b/c") { t.FailNow() }
+  if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.FailNow() }
 }
 
 TEST(IncludesNormalize, Case) {
-  EXPECT_EQ("b", NormalizeAndCheckNoError("Abc\\..\\b"))
-  EXPECT_EQ("BdEf", NormalizeAndCheckNoError("Abc\\..\\BdEf"))
-  EXPECT_EQ("A/b", NormalizeAndCheckNoError("A\\.\\b"))
-  EXPECT_EQ("a/b", NormalizeAndCheckNoError("a\\./b"))
-  EXPECT_EQ("A/B", NormalizeAndCheckNoError("A\\.\\B"))
-  EXPECT_EQ("A/B", NormalizeAndCheckNoError("A\\./B"))
+  if "b" != NormalizeAndCheckNoError("Abc\\..\\b") { t.FailNow() }
+  if "BdEf" != NormalizeAndCheckNoError("Abc\\..\\BdEf") { t.FailNow() }
+  if "A/b" != NormalizeAndCheckNoError("A\\.\\b") { t.FailNow() }
+  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.FailNow() }
+  if "A/B" != NormalizeAndCheckNoError("A\\.\\B") { t.FailNow() }
+  if "A/B" != NormalizeAndCheckNoError("A\\./B") { t.FailNow() }
 }
 
 TEST(IncludesNormalize, DifferentDrive) {
@@ -87,7 +87,7 @@ TEST(IncludesNormalize, LongInvalidPath) {
   string result, err
   IncludesNormalize normalizer(".")
   EXPECT_FALSE( normalizer.Normalize(kLongInputString, &result, &err))
-  EXPECT_EQ("path too long", err)
+  if "path too long" != err { t.FailNow() }
 
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
@@ -111,7 +111,7 @@ TEST(IncludesNormalize, LongInvalidPath) {
   }
 
   kExactlyMaxPath[_MAX_PATH] = '\0'
-  EXPECT_EQ(strlen(kExactlyMaxPath), _MAX_PATH)
+  if strlen(kExactlyMaxPath) != _MAX_PATH { t.FailNow() }
 
   replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
   // Make sure a path that's exactly _MAX_PATH long is canonicalized.
@@ -122,8 +122,8 @@ TEST(IncludesNormalize, ShortRelativeButTooLongAbsolutePath) {
   string result, err
   IncludesNormalize normalizer(".")
   // A short path should work
-  EXPECT_TRUE(normalizer.Normalize("a", &result, &err))
-  EXPECT_EQ("", err)
+  if normalizer.Normalize("a", &result, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
@@ -136,10 +136,10 @@ TEST(IncludesNormalize, ShortRelativeButTooLongAbsolutePath) {
     }
   }
   kExactlyMaxPath[_MAX_PATH] = '\0'
-  EXPECT_EQ(strlen(kExactlyMaxPath), _MAX_PATH)
+  if strlen(kExactlyMaxPath) != _MAX_PATH { t.FailNow() }
 
   // Make sure a path that's exactly _MAX_PATH long fails with a proper error.
-  EXPECT_FALSE(normalizer.Normalize(kExactlyMaxPath, &result, &err))
-  EXPECT_TRUE(err.find("GetFullPathName") != string::npos)
+  if !normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.FailNow() }
+  if err.find("GetFullPathName") != string::npos { t.FailNow() }
 }
 

@@ -35,10 +35,10 @@ TEST(State, Basic) {
   state.AddIn(edge, "in2", 0)
   state.AddOut(edge, "out", 0)
 
-  EXPECT_EQ("cat in1 in2 > out", edge.EvaluateCommand())
+  if "cat in1 in2 > out" != edge.EvaluateCommand() { t.FailNow() }
 
-  EXPECT_FALSE(state.GetNode("in1", 0).dirty())
-  EXPECT_FALSE(state.GetNode("in2", 0).dirty())
-  EXPECT_FALSE(state.GetNode("out", 0).dirty())
+  if !state.GetNode("in1", 0).dirty() { t.FailNow() }
+  if !state.GetNode("in2", 0).dirty() { t.FailNow() }
+  if !state.GetNode("out", 0).dirty() { t.FailNow() }
 }
 

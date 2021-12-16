@@ -27,13 +27,13 @@ TEST(MSVCHelperTest, EnvBlock) {
   cl.SetEnvBlock(env_block)
   string output
   cl.Run("cmd /c \"echo foo is %foo%", &output)
-  ASSERT_EQ("foo is bar\r\n", output)
+  if "foo is bar\r\n" != output { t.FailNow() }
 }
 
 TEST(MSVCHelperTest, NoReadOfStderr) {
   CLWrapper cl
   string output
   cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
-  ASSERT_EQ("to stdout\r\n", output)
+  if "to stdout\r\n" != output { t.FailNow() }
 }
 

@@ -18,7 +18,7 @@ package ginja
 
 
 TEST(JSONTest, RegularAscii) {
-  EXPECT_EQ(EncodeJSONString("foo bar"), "foo bar")
+  if EncodeJSONString("foo bar") != "foo bar" { t.FailNow() }
 }
 
 TEST(JSONTest, EscapedChars) {
@@ -27,13 +27,13 @@ TEST(JSONTest, EscapedChars) {
 
 // codepoints between 0 and 0x1f should be escaped
 TEST(JSONTest, ControlChars) {
-  EXPECT_EQ(EncodeJSONString("\x01\x1f"), "\\u0001\\u001f")
+  if EncodeJSONString("\x01\x1f") != "\\u0001\\u001f" { t.FailNow() }
 }
 
 // Leave them alone as JSON accepts unicode literals
 // out of control character range
 TEST(JSONTest, UTF8) {
   string utf8str = "\xe4\xbd\xa0\xe5\xa5\xbd"
-  EXPECT_EQ(EncodeJSONString(utf8str), utf8str)
+  if EncodeJSONString(utf8str) != utf8str { t.FailNow() }
 }
 

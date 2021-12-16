@@ -41,50 +41,50 @@ type DiskInterfaceTest struct {
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
   string err
-  EXPECT_EQ(0, disk_.Stat("nosuchfile", &err))
-  EXPECT_EQ("", err)
+  if 0 != disk_.Stat("nosuchfile", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // On Windows, the errno for a file in a nonexistent directory
   // is different.
-  EXPECT_EQ(0, disk_.Stat("nosuchdir/nosuchfile", &err))
-  EXPECT_EQ("", err)
+  if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // On POSIX systems, the errno is different if a component of the
   // path prefix is not a directory.
-  ASSERT_TRUE(Touch("notadir"))
-  EXPECT_EQ(0, disk_.Stat("notadir/nosuchfile", &err))
-  EXPECT_EQ("", err)
+  if Touch("notadir") { t.FailNow() }
+  if 0 != disk_.Stat("notadir/nosuchfile", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
   string err
   string bad_path("cc:\\foo")
-  EXPECT_EQ(-1, disk_.Stat(bad_path, &err))
-  EXPECT_NE("", err)
+  if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
+  if "" == err { t.FailNow() }
   string too_long_name(512, 'x')
-  EXPECT_EQ(-1, disk_.Stat(too_long_name, &err))
-  EXPECT_NE("", err)
+  if -1 != disk_.Stat(too_long_name, &err) { t.FailNow() }
+  if "" == err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
   string err
-  ASSERT_TRUE(Touch("file"))
+  if Touch("file") { t.FailNow() }
   EXPECT_GT(disk_.Stat("file", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
   string err
-  ASSERT_TRUE(disk_.MakeDir("subdir"))
-  ASSERT_TRUE(disk_.MakeDir("subdir/subsubdir"))
+  if disk_.MakeDir("subdir") { t.FailNow() }
+  if disk_.MakeDir("subdir/subsubdir") { t.FailNow() }
   EXPECT_GT(disk_.Stat("..", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat(".", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("subdir", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("subdir/subsubdir", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 
   EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/.", &err))
   EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/subsubdir/..", &err))
@@ -94,109 +94,109 @@ func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
   string err
 
-  ASSERT_TRUE(Touch("file1"))
-  ASSERT_TRUE(Touch("fiLE2"))
-  ASSERT_TRUE(disk_.MakeDir("subdir"))
-  ASSERT_TRUE(disk_.MakeDir("subdir/subsubdir"))
-  ASSERT_TRUE(Touch("subdir\\subfile1"))
-  ASSERT_TRUE(Touch("subdir\\SUBFILE2"))
-  ASSERT_TRUE(Touch("subdir\\SUBFILE3"))
+  if Touch("file1") { t.FailNow() }
+  if Touch("fiLE2") { t.FailNow() }
+  if disk_.MakeDir("subdir") { t.FailNow() }
+  if disk_.MakeDir("subdir/subsubdir") { t.FailNow() }
+  if Touch("subdir\\subfile1") { t.FailNow() }
+  if Touch("subdir\\SUBFILE2") { t.FailNow() }
+  if Touch("subdir\\SUBFILE3") { t.FailNow() }
 
   disk_.AllowStatCache(false)
   parent_stat_uncached := disk_.Stat("..", &err)
   disk_.AllowStatCache(true)
 
   EXPECT_GT(disk_.Stat("FIle1", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("file1", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 
   EXPECT_GT(disk_.Stat("subdir/subfile2", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("sUbdir\\suBFile1", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 
   EXPECT_GT(disk_.Stat("..", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat(".", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("subdir", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_GT(disk_.Stat("subdir/subsubdir", &err), 1)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 
   EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/.", &err))
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
   EXPECT_EQ(disk_.Stat("subdir", &err), disk_.Stat("subdir/subsubdir/..", &err))
-  EXPECT_EQ("", err)
-  EXPECT_EQ(disk_.Stat("..", &err), parent_stat_uncached)
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
+  if disk_.Stat(".." != &err), parent_stat_uncached { t.FailNow() }
+  if "" != err { t.FailNow() }
   EXPECT_EQ(disk_.Stat("subdir/subsubdir", &err), disk_.Stat("subdir/subsubdir/.", &err))
-  EXPECT_EQ("", err)
+  if "" != err { t.FailNow() }
 
   // Test error cases.
   string bad_path("cc:\\foo")
-  EXPECT_EQ(-1, disk_.Stat(bad_path, &err))
-  EXPECT_NE("", err); err = nil
-  EXPECT_EQ(-1, disk_.Stat(bad_path, &err))
-  EXPECT_NE("", err); err = nil
-  EXPECT_EQ(0, disk_.Stat("nosuchfile", &err))
-  EXPECT_EQ("", err)
-  EXPECT_EQ(0, disk_.Stat("nosuchdir/nosuchfile", &err))
-  EXPECT_EQ("", err)
+  if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
+  if "" == err); err.clear( { t.FailNow() }
+  if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
+  if "" == err); err.clear( { t.FailNow() }
+  if 0 != disk_.Stat("nosuchfile", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
   string err
   string content
   ASSERT_EQ(DiskInterface::NotFound, disk_.ReadFile("foobar", &content, &err))
-  EXPECT_EQ("", content)
-  EXPECT_NE("", err) // actual value is platform-specific
+  if "" != content { t.FailNow() }
+  if "" == err { t.FailNow() } // actual value is platform-specific
   err = nil
 
   kTestFile := "testfile"
   f := fopen(kTestFile, "wb")
-  ASSERT_TRUE(f)
+  if f { t.FailNow() }
   kTestContent := "test content\nok"
   fprintf(f, "%s", kTestContent)
-  ASSERT_EQ(0, fclose(f))
+  if 0 != fclose(f) { t.FailNow() }
 
   ASSERT_EQ(DiskInterface::Okay, disk_.ReadFile(kTestFile, &content, &err))
-  EXPECT_EQ(kTestContent, content)
-  EXPECT_EQ("", err)
+  if kTestContent != content { t.FailNow() }
+  if "" != err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
   string path = "path/with/double//slash/";
-  EXPECT_TRUE(disk_.MakeDirs(path))
+  if disk_.MakeDirs(path) { t.FailNow() }
   f := fopen((path + "a_file"), "w")
-  EXPECT_TRUE(f)
-  EXPECT_EQ(0, fclose(f))
+  if f { t.FailNow() }
+  if 0 != fclose(f) { t.FailNow() }
   string path2 = "another\\with\\back\\\\slashes\\"
-  EXPECT_TRUE(disk_.MakeDirs(path2))
+  if disk_.MakeDirs(path2) { t.FailNow() }
   FILE* f2 = fopen((path2 + "a_file"), "w")
-  EXPECT_TRUE(f2)
-  EXPECT_EQ(0, fclose(f2))
+  if f2 { t.FailNow() }
+  if 0 != fclose(f2) { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
   kFileName := "file-to-remove"
-  ASSERT_TRUE(Touch(kFileName))
-  EXPECT_EQ(0, disk_.RemoveFile(kFileName))
-  EXPECT_EQ(1, disk_.RemoveFile(kFileName))
-  EXPECT_EQ(1, disk_.RemoveFile("does not exist"))
-  ASSERT_TRUE(Touch(kFileName))
-  EXPECT_EQ(0, system((string("attrib +R ") + kFileName)))
-  EXPECT_EQ(0, disk_.RemoveFile(kFileName))
-  EXPECT_EQ(1, disk_.RemoveFile(kFileName))
+  if Touch(kFileName) { t.FailNow() }
+  if 0 != disk_.RemoveFile(kFileName) { t.FailNow() }
+  if 1 != disk_.RemoveFile(kFileName) { t.FailNow() }
+  if 1 != disk_.RemoveFile("does not exist") { t.FailNow() }
+  if Touch(kFileName) { t.FailNow() }
+  if 0 != system((string("attrib +R ") + kFileName)) { t.FailNow() }
+  if 0 != disk_.RemoveFile(kFileName) { t.FailNow() }
+  if 1 != disk_.RemoveFile(kFileName) { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
   kDirectoryName := "directory-to-remove"
-  EXPECT_TRUE(disk_.MakeDir(kDirectoryName))
-  EXPECT_EQ(0, disk_.RemoveFile(kDirectoryName))
-  EXPECT_EQ(1, disk_.RemoveFile(kDirectoryName))
-  EXPECT_EQ(1, disk_.RemoveFile("does not exist"))
+  if disk_.MakeDir(kDirectoryName) { t.FailNow() }
+  if 0 != disk_.RemoveFile(kDirectoryName) { t.FailNow() }
+  if 1 != disk_.RemoveFile(kDirectoryName) { t.FailNow() }
+  if 1 != disk_.RemoveFile("does not exist") { t.FailNow() }
 }
 
 type StatTest struct {
@@ -239,13 +239,13 @@ func TestStatTest_Simple(t *testing.T) {
 
   out := GetNode("out")
   string err
-  EXPECT_TRUE(out.Stat(this, &err))
-  EXPECT_EQ("", err)
-  ASSERT_EQ(1u, stats_.size())
+  if out.Stat(this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 1u != stats_.size() { t.FailNow() }
   scan_.RecomputeDirty(out, nil)
-  ASSERT_EQ(2u, stats_.size())
-  ASSERT_EQ("out", stats_[0])
-  ASSERT_EQ("in",  stats_[1])
+  if 2u != stats_.size() { t.FailNow() }
+  if "out" != stats_[0] { t.FailNow() }
+  if "in" !=  stats_[1] { t.FailNow() }
 }
 
 func TestStatTest_TwoStep(t *testing.T) {
@@ -253,16 +253,16 @@ func TestStatTest_TwoStep(t *testing.T) {
 
   out := GetNode("out")
   string err
-  EXPECT_TRUE(out.Stat(this, &err))
-  EXPECT_EQ("", err)
-  ASSERT_EQ(1u, stats_.size())
+  if out.Stat(this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 1u != stats_.size() { t.FailNow() }
   scan_.RecomputeDirty(out, nil)
-  ASSERT_EQ(3u, stats_.size())
-  ASSERT_EQ("out", stats_[0])
-  ASSERT_TRUE(GetNode("out").dirty())
-  ASSERT_EQ("mid",  stats_[1])
-  ASSERT_TRUE(GetNode("mid").dirty())
-  ASSERT_EQ("in",  stats_[2])
+  if 3u != stats_.size() { t.FailNow() }
+  if "out" != stats_[0] { t.FailNow() }
+  if GetNode("out").dirty() { t.FailNow() }
+  if "mid" !=  stats_[1] { t.FailNow() }
+  if GetNode("mid").dirty() { t.FailNow() }
+  if "in" !=  stats_[2] { t.FailNow() }
 }
 
 func TestStatTest_Tree(t *testing.T) {
@@ -270,14 +270,14 @@ func TestStatTest_Tree(t *testing.T) {
 
   out := GetNode("out")
   string err
-  EXPECT_TRUE(out.Stat(this, &err))
-  EXPECT_EQ("", err)
-  ASSERT_EQ(1u, stats_.size())
+  if out.Stat(this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 1u != stats_.size() { t.FailNow() }
   scan_.RecomputeDirty(out, nil)
-  ASSERT_EQ(1u + 6u, stats_.size())
-  ASSERT_EQ("mid1", stats_[1])
-  ASSERT_TRUE(GetNode("mid1").dirty())
-  ASSERT_EQ("in11", stats_[2])
+  if 1u + 6u != stats_.size() { t.FailNow() }
+  if "mid1" != stats_[1] { t.FailNow() }
+  if GetNode("mid1").dirty() { t.FailNow() }
+  if "in11" != stats_[2] { t.FailNow() }
 }
 
 func TestStatTest_Middle(t *testing.T) {
@@ -289,12 +289,12 @@ func TestStatTest_Middle(t *testing.T) {
 
   out := GetNode("out")
   string err
-  EXPECT_TRUE(out.Stat(this, &err))
-  EXPECT_EQ("", err)
-  ASSERT_EQ(1u, stats_.size())
+  if out.Stat(this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 1u != stats_.size() { t.FailNow() }
   scan_.RecomputeDirty(out, nil)
-  ASSERT_FALSE(GetNode("in").dirty())
-  ASSERT_TRUE(GetNode("mid").dirty())
-  ASSERT_TRUE(GetNode("out").dirty())
+  if !GetNode("in").dirty() { t.FailNow() }
+  if GetNode("mid").dirty() { t.FailNow() }
+  if GetNode("out").dirty() { t.FailNow() }
 }
 

@@ -34,22 +34,22 @@ func TestCleanTest_CleanAll(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(4, cleaner.cleaned_files_count())
-  EXPECT_EQ(4u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 4 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 4u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
   string err
-  EXPECT_EQ(0, fs_.Stat("in1", &err))
-  EXPECT_EQ(0, fs_.Stat("out1", &err))
-  EXPECT_EQ(0, fs_.Stat("in2", &err))
-  EXPECT_EQ(0, fs_.Stat("out2", &err))
+  if 0 != fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanAllDryRun(t *testing.T) {
@@ -61,22 +61,22 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 
   config_.dry_run = true
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(4, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 4 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
   string err
-  EXPECT_LT(0, fs_.Stat("in1", &err))
-  EXPECT_LT(0, fs_.Stat("out1", &err))
-  EXPECT_LT(0, fs_.Stat("in2", &err))
-  EXPECT_LT(0, fs_.Stat("out2", &err))
+  if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(4, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 4 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanTarget(t *testing.T) {
@@ -86,22 +86,22 @@ func TestCleanTest_CleanTarget(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
   string err
-  EXPECT_EQ(0, fs_.Stat("in1", &err))
-  EXPECT_EQ(0, fs_.Stat("out1", &err))
-  EXPECT_LT(0, fs_.Stat("in2", &err))
-  EXPECT_LT(0, fs_.Stat("out2", &err))
+  if 0 != fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  ASSERT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanTargetDryRun(t *testing.T) {
@@ -113,22 +113,22 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 
   config_.dry_run = true
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
   string err
-  EXPECT_LT(0, fs_.Stat("in1", &err))
-  EXPECT_LT(0, fs_.Stat("out1", &err))
-  EXPECT_LT(0, fs_.Stat("in2", &err))
-  EXPECT_LT(0, fs_.Stat("out2", &err))
+  if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  ASSERT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanRule(t *testing.T) {
@@ -138,22 +138,22 @@ func TestCleanTest_CleanRule(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanRule("cat_e"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
   string err
-  EXPECT_EQ(0, fs_.Stat("in1", &err))
-  EXPECT_LT(0, fs_.Stat("out1", &err))
-  EXPECT_EQ(0, fs_.Stat("in2", &err))
-  EXPECT_LT(0, fs_.Stat("out2", &err))
+  if 0 != fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  ASSERT_EQ(0, cleaner.CleanRule("cat_e"))
-  EXPECT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanRuleDryRun(t *testing.T) {
@@ -165,22 +165,22 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 
   config_.dry_run = true
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanRule("cat_e"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
   string err
-  EXPECT_LT(0, fs_.Stat("in1", &err))
-  EXPECT_LT(0, fs_.Stat("out1", &err))
-  EXPECT_LT(0, fs_.Stat("in2", &err))
-  EXPECT_LT(0, fs_.Stat("out2", &err))
+  if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 >= fs_.Stat("out2", &err) { t.FailNow() }
   fs_.files_removed_ = nil
 
-  ASSERT_EQ(0, cleaner.CleanRule("cat_e"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanRuleGenerator(t *testing.T) {
@@ -188,15 +188,15 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out2", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(1, cleaner.cleaned_files_count())
-  EXPECT_EQ(1u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 1 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 1u != fs_.files_removed_.size() { t.FailNow() }
 
   fs_.Create("out1", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll(/*generator=*/true))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll(/*generator=*/true) { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanDepFile(t *testing.T) {
@@ -204,9 +204,9 @@ func TestCleanTest_CleanDepFile(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
@@ -214,9 +214,9 @@ func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
-  EXPECT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
@@ -224,9 +224,9 @@ func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
-  EXPECT_EQ(0, cleaner.CleanRule("cc"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanRule("cc") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanDyndep(t *testing.T) {
@@ -238,14 +238,14 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
   fs_.Create("out", "")
   fs_.Create("out.imp", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 
   string err
-  EXPECT_EQ(0, fs_.Stat("out", &err))
-  EXPECT_EQ(0, fs_.Stat("out.imp", &err))
+  if 0 != fs_.Stat("out", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out.imp", &err) { t.FailNow() }
 }
 
 func TestCleanTest_CleanDyndepMissing(t *testing.T) {
@@ -255,14 +255,14 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
   fs_.Create("out", "")
   fs_.Create("out.imp", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(1, cleaner.cleaned_files_count())
-  EXPECT_EQ(1u, fs_.files_removed_.size())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 1 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 1u != fs_.files_removed_.size() { t.FailNow() }
 
   string err
-  EXPECT_EQ(0, fs_.Stat("out", &err))
-  EXPECT_EQ(1, fs_.Stat("out.imp", &err))
+  if 0 != fs_.Stat("out", &err) { t.FailNow() }
+  if 1 != fs_.Stat("out.imp", &err) { t.FailNow() }
 }
 
 func TestCleanTest_CleanRspFile(t *testing.T) {
@@ -270,9 +270,9 @@ func TestCleanTest_CleanRspFile(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("cc1.rsp", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_EQ(2u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 2u != fs_.files_removed_.size() { t.FailNow() }
 }
 
 func TestCleanTest_CleanRsp(t *testing.T) {
@@ -284,30 +284,30 @@ func TestCleanTest_CleanRsp(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
-  ASSERT_EQ(0, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanTarget("out1"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanTarget("in2"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  ASSERT_EQ(0, cleaner.CleanRule("cat_rsp"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
+  if 0 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanTarget("in2") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 != cleaner.CleanRule("cat_rsp") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
 
-  EXPECT_EQ(6u, fs_.files_removed_.size())
+  if 6u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
   string err
-  EXPECT_EQ(0, fs_.Stat("in1", &err))
-  EXPECT_EQ(0, fs_.Stat("out1", &err))
-  EXPECT_EQ(0, fs_.Stat("in2", &err))
-  EXPECT_EQ(0, fs_.Stat("out2", &err))
-  EXPECT_EQ(0, fs_.Stat("in2.rsp", &err))
-  EXPECT_EQ(0, fs_.Stat("out2.rsp", &err))
+  if 0 != fs_.Stat("in1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("in2", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out2", &err) { t.FailNow() }
+  if 0 != fs_.Stat("in2.rsp", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out2.rsp", &err) { t.FailNow() }
 }
 
 func TestCleanTest_CleanFailure(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build dir: cat src1\n"))
   fs_.MakeDir("dir")
-  EXPECT_NE(0, cleaner.CleanAll())
+  if 0 == cleaner.CleanAll() { t.FailNow() }
 }
 
 func TestCleanTest_CleanPhony(t *testing.T) {
@@ -318,17 +318,17 @@ func TestCleanTest_CleanPhony(t *testing.T) {
   fs_.Create("t1", "")
   fs_.Create("t2", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_LT(0, fs_.Stat("phony", &err))
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 >= fs_.Stat("phony", &err) { t.FailNow() }
 
   fs_.Create("t1", "")
   fs_.Create("t2", "")
 
   // Check that CleanTarget does not remove "phony".
-  EXPECT_EQ(0, cleaner.CleanTarget("phony"))
-  EXPECT_EQ(2, cleaner.cleaned_files_count())
-  EXPECT_LT(0, fs_.Stat("phony", &err))
+  if 0 != cleaner.CleanTarget("phony") { t.FailNow() }
+  if 2 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 0 >= fs_.Stat("phony", &err) { t.FailNow() }
 }
 
 func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
@@ -338,15 +338,15 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
   fs_.Create("out 1.d", "")
   fs_.Create("out 2.rsp", "")
 
-  EXPECT_EQ(0, cleaner.CleanAll())
-  EXPECT_EQ(4, cleaner.cleaned_files_count())
-  EXPECT_EQ(4u, fs_.files_removed_.size())
+  if 0 != cleaner.CleanAll() { t.FailNow() }
+  if 4 != cleaner.cleaned_files_count() { t.FailNow() }
+  if 4u != fs_.files_removed_.size() { t.FailNow() }
 
   string err
-  EXPECT_EQ(0, fs_.Stat("out 1", &err))
-  EXPECT_EQ(0, fs_.Stat("out 2", &err))
-  EXPECT_EQ(0, fs_.Stat("out 1.d", &err))
-  EXPECT_EQ(0, fs_.Stat("out 2.rsp", &err))
+  if 0 != fs_.Stat("out 1", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out 2", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out 1.d", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out 2.rsp", &err) { t.FailNow() }
 }
 
 type CleanDeadTest struct {
@@ -371,42 +371,42 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 
   BuildLog log1
   string err
-  EXPECT_TRUE(log1.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   log1.RecordCommand(state.edges_[0], 15, 18)
   log1.RecordCommand(state.edges_[1], 20, 25)
   log1.Close()
 
   BuildLog log2
-  EXPECT_TRUE(log2.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
-  ASSERT_EQ(2u, log2.entries().size())
-  ASSERT_TRUE(log2.LookupByOutput("out1"))
-  ASSERT_TRUE(log2.LookupByOutput("out2"))
+  if log2.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 2u != log2.entries().size() { t.FailNow() }
+  if log2.LookupByOutput("out1") { t.FailNow() }
+  if log2.LookupByOutput("out2") { t.FailNow() }
 
-  EXPECT_EQ(0, cleaner1.CleanDead(log2.entries()))
-  EXPECT_EQ(0, cleaner1.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_NE(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner1.CleanDead(log2.entries()) { t.FailNow() }
+  if 0 != cleaner1.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
-  EXPECT_EQ(0, cleaner2.CleanDead(log2.entries()))
-  EXPECT_EQ(1, cleaner2.cleaned_files_count())
-  EXPECT_EQ(1u, fs_.files_removed_.size())
-  EXPECT_EQ("out1", *(fs_.files_removed_.begin()))
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_EQ(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
+  if 1 != cleaner2.cleaned_files_count() { t.FailNow() }
+  if 1u != fs_.files_removed_.size() { t.FailNow() }
+  if "out1" != *(fs_.files_removed_.begin()) { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
   // Nothing to do now.
-  EXPECT_EQ(0, cleaner2.CleanDead(log2.entries()))
-  EXPECT_EQ(0, cleaner2.cleaned_files_count())
-  EXPECT_EQ(1u, fs_.files_removed_.size())
-  EXPECT_EQ("out1", *(fs_.files_removed_.begin()))
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_EQ(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
+  if 0 != cleaner2.cleaned_files_count() { t.FailNow() }
+  if 1u != fs_.files_removed_.size() { t.FailNow() }
+  if "out1" != *(fs_.files_removed_.begin()) { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
   log2.Close()
 }
 
@@ -423,40 +423,40 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 
   BuildLog log1
   string err
-  EXPECT_TRUE(log1.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   log1.RecordCommand(state.edges_[0], 15, 18)
   log1.RecordCommand(state.edges_[1], 20, 25)
   log1.Close()
 
   BuildLog log2
-  EXPECT_TRUE(log2.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
-  ASSERT_EQ(2u, log2.entries().size())
-  ASSERT_TRUE(log2.LookupByOutput("out1"))
-  ASSERT_TRUE(log2.LookupByOutput("out2"))
+  if log2.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 2u != log2.entries().size() { t.FailNow() }
+  if log2.LookupByOutput("out1") { t.FailNow() }
+  if log2.LookupByOutput("out2") { t.FailNow() }
 
-  EXPECT_EQ(0, cleaner1.CleanDead(log2.entries()))
-  EXPECT_EQ(0, cleaner1.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_NE(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner1.CleanDead(log2.entries()) { t.FailNow() }
+  if 0 != cleaner1.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
-  EXPECT_EQ(0, cleaner2.CleanDead(log2.entries()))
-  EXPECT_EQ(0, cleaner2.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_NE(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
+  if 0 != cleaner2.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
   // Nothing to do now.
-  EXPECT_EQ(0, cleaner2.CleanDead(log2.entries()))
-  EXPECT_EQ(0, cleaner2.cleaned_files_count())
-  EXPECT_EQ(0u, fs_.files_removed_.size())
-  EXPECT_NE(0, fs_.Stat("in", &err))
-  EXPECT_NE(0, fs_.Stat("out1", &err))
-  EXPECT_NE(0, fs_.Stat("out2", &err))
+  if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
+  if 0 != cleaner2.cleaned_files_count() { t.FailNow() }
+  if 0u != fs_.files_removed_.size() { t.FailNow() }
+  if 0 == fs_.Stat("in", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out1", &err) { t.FailNow() }
+  if 0 == fs_.Stat("out2", &err) { t.FailNow() }
   log2.Close()
 }
 

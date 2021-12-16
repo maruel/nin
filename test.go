@@ -140,25 +140,25 @@ func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
 
 // Short way to get a Node by its path from state_.
 func (s *StateTestWithBuiltinRules) GetNode(path string) Node* {
-  EXPECT_FALSE(strpbrk(path, "/\\"))
+  if !strpbrk(path, "/\\") { t.FailNow() }
   return state_.GetNode(path, 0)
 }
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
   string err
-  EXPECT_TRUE(parser.ParseTest(input, &err))
-  ASSERT_EQ("", err)
+  if parser.ParseTest(input, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   VerifyGraph(*state)
 }
 
 void AssertHash(string expected, uint64_t actual) {
-  ASSERT_EQ(BuildLog::LogEntry::HashCommand(expected), actual)
+  if BuildLog::LogEntry::HashCommand(expected) != actual { t.FailNow() }
 }
 
 func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
   for (vector<Edge*>::const_iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
     // All edges need at least one output.
-    EXPECT_FALSE((*e).outputs_.empty())
+    if !(*e).outputs_.empty() { t.FailNow() }
     // Check that the edge's inputs have the edge as out-edge.
     for (vector<Node*>::const_iterator in_node = (*e).inputs_.begin(); in_node != (*e).inputs_.end(); ++in_node) {
       const vector<Edge*>& out_edges = (*in_node).out_edges()
@@ -166,7 +166,9 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
     }
     // Check that the edge's outputs have the edge as in-edge.
     for (vector<Node*>::const_iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
-      EXPECT_EQ((*out_node).in_edge(), *e)
+      if *out_node {
+      	.in_edge() != *e { t.FailNow() }
+      }
     }
   }
 
@@ -180,7 +182,7 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
     node_edge_set.insert(n.out_edges().begin(), n.out_edges().end())
   }
   set<const Edge*> edge_set(state.edges_.begin(), state.edges_.end())
-  EXPECT_EQ(node_edge_set, edge_set)
+  if node_edge_set != edge_set { t.FailNow() }
 }
 
 // "Create" a file with contents.

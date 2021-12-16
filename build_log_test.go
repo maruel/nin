@@ -35,25 +35,25 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
   BuildLog log1
   string err
-  EXPECT_TRUE(log1.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   log1.RecordCommand(state_.edges_[0], 15, 18)
   log1.RecordCommand(state_.edges_[1], 20, 25)
   log1.Close()
 
   BuildLog log2
-  EXPECT_TRUE(log2.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log2.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  ASSERT_EQ(2u, log1.entries().size())
-  ASSERT_EQ(2u, log2.entries().size())
+  if 2u != log1.entries().size() { t.FailNow() }
+  if 2u != log2.entries().size() { t.FailNow() }
   BuildLog::LogEntry* e1 = log1.LookupByOutput("out")
-  ASSERT_TRUE(e1)
+  if e1 { t.FailNow() }
   BuildLog::LogEntry* e2 = log2.LookupByOutput("out")
-  ASSERT_TRUE(e2)
-  ASSERT_TRUE(*e1 == *e2)
-  ASSERT_EQ(15, e1.start_time)
-  ASSERT_EQ("out", e1.output)
+  if e2 { t.FailNow() }
+  if *e1 == *e2 { t.FailNow() }
+  if 15 != e1.start_time { t.FailNow() }
+  if "out" != e1.output { t.FailNow() }
 }
 
 func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
@@ -63,29 +63,29 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
   BuildLog log
   string contents, err
 
-  EXPECT_TRUE(log.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   log.Close()
 
-  ASSERT_EQ(0, ReadFile(kTestFilename, &contents, &err))
-  ASSERT_EQ("", err)
+  if 0 != ReadFile(kTestFilename, &contents, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   if contents.size() >= kVersionPos {
     contents[kVersionPos] = 'X'
   }
-  EXPECT_EQ(kExpectedVersion, contents)
+  if kExpectedVersion != contents { t.FailNow() }
 
   // Opening the file anew shouldn't add a second version string.
-  EXPECT_TRUE(log.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   log.Close()
 
   contents = nil
-  ASSERT_EQ(0, ReadFile(kTestFilename, &contents, &err))
-  ASSERT_EQ("", err)
+  if 0 != ReadFile(kTestFilename, &contents, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   if contents.size() >= kVersionPos {
     contents[kVersionPos] = 'X'
   }
-  EXPECT_EQ(kExpectedVersion, contents)
+  if kExpectedVersion != contents { t.FailNow() }
 }
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
@@ -97,11 +97,11 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   e := log.LookupByOutput("out")
-  ASSERT_TRUE(e)
+  if e { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command def", e.command_hash))
 }
 
@@ -111,33 +111,33 @@ func TestBuildLogTest_Truncate(t *testing.T) {
   {
     BuildLog log1
     string err
-    EXPECT_TRUE(log1.OpenForWrite(kTestFilename, *this, &err))
-    ASSERT_EQ("", err)
+    if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+    if "" != err { t.FailNow() }
     log1.RecordCommand(state_.edges_[0], 15, 18)
     log1.RecordCommand(state_.edges_[1], 20, 25)
     log1.Close()
   }
 
   struct stat statbuf
-  ASSERT_EQ(0, stat(kTestFilename, &statbuf))
-  ASSERT_GT(statbuf.st_size, 0)
+  if 0 != stat(kTestFilename, &statbuf) { t.FailNow() }
+  if statbuf.st_size <= 0 { t.FailNow() }
 
   // For all possible truncations of the input file, assert that we don't
   // crash when parsing.
   for (off_t size = statbuf.st_size; size > 0; --size) {
     BuildLog log2
     string err
-    EXPECT_TRUE(log2.OpenForWrite(kTestFilename, *this, &err))
-    ASSERT_EQ("", err)
+    if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+    if "" != err { t.FailNow() }
     log2.RecordCommand(state_.edges_[0], 15, 18)
     log2.RecordCommand(state_.edges_[1], 20, 25)
     log2.Close()
 
-    ASSERT_TRUE(Truncate(kTestFilename, size, &err))
+    if Truncate(kTestFilename, size, &err) { t.FailNow() }
 
     BuildLog log3
     err = nil
-    ASSERT_TRUE(log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty())
+    if log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() { t.FailNow() }
   }
 }
 
@@ -149,7 +149,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
+  if log.Load(kTestFilename, &err) { t.FailNow() }
   ASSERT_NE(err.find("version"), string::npos)
 }
 
@@ -161,14 +161,14 @@ TEST_F(BuildLogTest, SpacesInOutputV4) {
 
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   e := log.LookupByOutput("out with space")
-  ASSERT_TRUE(e)
-  ASSERT_EQ(123, e.start_time)
-  ASSERT_EQ(456, e.end_time)
-  ASSERT_EQ(456, e.mtime)
+  if e { t.FailNow() }
+  if 123 != e.start_time { t.FailNow() }
+  if 456 != e.end_time { t.FailNow() }
+  if 456 != e.mtime { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
 }
 
@@ -185,21 +185,21 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   e := log.LookupByOutput("out")
-  ASSERT_TRUE(e)
-  ASSERT_EQ(123, e.start_time)
-  ASSERT_EQ(456, e.end_time)
-  ASSERT_EQ(456, e.mtime)
+  if e { t.FailNow() }
+  if 123 != e.start_time { t.FailNow() }
+  if 456 != e.end_time { t.FailNow() }
+  if 456 != e.mtime { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
 
   e = log.LookupByOutput("out2")
-  ASSERT_TRUE(e)
-  ASSERT_EQ(456, e.start_time)
-  ASSERT_EQ(789, e.end_time)
-  ASSERT_EQ(789, e.mtime)
+  if e { t.FailNow() }
+  if 456 != e.start_time { t.FailNow() }
+  if 789 != e.end_time { t.FailNow() }
+  if 789 != e.mtime { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
@@ -231,23 +231,23 @@ func TestBuildLogTest_Restat(t *testing.T) {
   fclose(f)
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   e := log.LookupByOutput("out")
-  ASSERT_EQ(3, e.mtime)
+  if 3 != e.mtime { t.FailNow() }
 
   TestDiskInterface testDiskInterface
   char out2[] = { 'o', 'u', 't', '2', 0 }
   char* filter2[] = { out2 }
-  EXPECT_TRUE(log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err))
-  ASSERT_EQ("", err)
+  if log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   e = log.LookupByOutput("out")
-  ASSERT_EQ(3, e.mtime) // unchanged, since the filter doesn't match
+  if 3 != e.mtime { t.FailNow() } // unchanged, since the filter doesn't match
 
-  EXPECT_TRUE(log.Restat(kTestFilename, testDiskInterface, 0, nil, &err))
-  ASSERT_EQ("", err)
+  if log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   e = log.LookupByOutput("out")
-  ASSERT_EQ(4, e.mtime)
+  if 4 != e.mtime { t.FailNow() }
 }
 
 func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
@@ -264,17 +264,17 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
   string err
   BuildLog log
-  EXPECT_TRUE(log.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
+  if log.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   e := log.LookupByOutput("out")
-  ASSERT_EQ(nil, e)
+  if nil != e { t.FailNow() }
 
   e = log.LookupByOutput("out2")
-  ASSERT_TRUE(e)
-  ASSERT_EQ(456, e.start_time)
-  ASSERT_EQ(789, e.end_time)
-  ASSERT_EQ(789, e.mtime)
+  if e { t.FailNow() }
+  if 456 != e.start_time { t.FailNow() }
+  if 789 != e.end_time { t.FailNow() }
+  if 789 != e.mtime { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
@@ -284,17 +284,17 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
   BuildLog log
   log.RecordCommand(state_.edges_[0], 21, 22)
 
-  ASSERT_EQ(2u, log.entries().size())
+  if 2u != log.entries().size() { t.FailNow() }
   BuildLog::LogEntry* e1 = log.LookupByOutput("out")
-  ASSERT_TRUE(e1)
+  if e1 { t.FailNow() }
   BuildLog::LogEntry* e2 = log.LookupByOutput("out.d")
-  ASSERT_TRUE(e2)
-  ASSERT_EQ("out", e1.output)
-  ASSERT_EQ("out.d", e2.output)
-  ASSERT_EQ(21, e1.start_time)
-  ASSERT_EQ(21, e2.start_time)
-  ASSERT_EQ(22, e2.end_time)
-  ASSERT_EQ(22, e2.end_time)
+  if e2 { t.FailNow() }
+  if "out" != e1.output { t.FailNow() }
+  if "out.d" != e2.output { t.FailNow() }
+  if 21 != e1.start_time { t.FailNow() }
+  if 21 != e2.start_time { t.FailNow() }
+  if 22 != e2.end_time { t.FailNow() }
+  if 22 != e2.end_time { t.FailNow() }
 }
 
 type BuildLogRecompactTest struct {
@@ -306,8 +306,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 
   BuildLog log1
   string err
-  EXPECT_TRUE(log1.OpenForWrite(kTestFilename, *this, &err))
-  ASSERT_EQ("", err)
+  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
   // Record the same edge several times, to trigger recompaction
   // the next time the log is opened.
   for (int i = 0; i < 200; ++i)
@@ -317,21 +317,21 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 
   // Load...
   BuildLog log2
-  EXPECT_TRUE(log2.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
-  ASSERT_EQ(2u, log2.entries().size())
-  ASSERT_TRUE(log2.LookupByOutput("out"))
-  ASSERT_TRUE(log2.LookupByOutput("out2"))
+  if log2.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 2u != log2.entries().size() { t.FailNow() }
+  if log2.LookupByOutput("out") { t.FailNow() }
+  if log2.LookupByOutput("out2") { t.FailNow() }
   // ...and force a recompaction.
-  EXPECT_TRUE(log2.OpenForWrite(kTestFilename, *this, &err))
+  if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
   log2.Close()
 
   // "out2" is dead, it should've been removed.
   BuildLog log3
-  EXPECT_TRUE(log2.Load(kTestFilename, &err))
-  ASSERT_EQ("", err)
-  ASSERT_EQ(1u, log2.entries().size())
-  ASSERT_TRUE(log2.LookupByOutput("out"))
-  ASSERT_FALSE(log2.LookupByOutput("out2"))
+  if log2.Load(kTestFilename, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if 1u != log2.entries().size() { t.FailNow() }
+  if log2.LookupByOutput("out") { t.FailNow() }
+  if !log2.LookupByOutput("out2") { t.FailNow() }
 }
 

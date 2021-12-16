@@ -26,55 +26,55 @@ TEST(CanonicalizePath, PathSamples) {
   string path
 
   CanonicalizePath(&path)
-  EXPECT_EQ("", path)
+  if "" != path { t.FailNow() }
 
   path = "foo.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("foo.h", path)
+  if "foo.h" != path { t.FailNow() }
 
   path = "./foo.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("foo.h", path)
+  if "foo.h" != path { t.FailNow() }
 
   path = "./foo/./bar.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("foo/bar.h", path)
+  if "foo/bar.h" != path { t.FailNow() }
 
   path = "./x/foo/../bar.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("x/bar.h", path)
+  if "x/bar.h" != path { t.FailNow() }
 
   path = "./x/foo/../../bar.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("bar.h", path)
+  if "bar.h" != path { t.FailNow() }
 
   path = "foo//bar";
   CanonicalizePath(&path)
-  EXPECT_EQ("foo/bar", path)
+  if "foo/bar" != path { t.FailNow() }
 
   path = "foo//.//..///bar";
   CanonicalizePath(&path)
-  EXPECT_EQ("bar", path)
+  if "bar" != path { t.FailNow() }
 
   path = "./x/../foo/../../bar.h"
   CanonicalizePath(&path)
-  EXPECT_EQ("../bar.h", path)
+  if "../bar.h" != path { t.FailNow() }
 
   path = "foo/./."
   CanonicalizePath(&path)
-  EXPECT_EQ("foo", path)
+  if "foo" != path { t.FailNow() }
 
   path = "foo/bar/.."
   CanonicalizePath(&path)
-  EXPECT_EQ("foo", path)
+  if "foo" != path { t.FailNow() }
 
   path = "foo/.hidden_bar"
   CanonicalizePath(&path)
-  EXPECT_EQ("foo/.hidden_bar", path)
+  if "foo/.hidden_bar" != path { t.FailNow() }
 
   path = "/foo"
   CanonicalizePath(&path)
-  EXPECT_EQ("/foo", path)
+  if "/foo" != path { t.FailNow() }
 
   path = "//foo";
   CanonicalizePath(&path)

@@ -18,19 +18,19 @@ package ginja
 
 
 TEST(CLParserTest, ShowIncludes) {
-  ASSERT_EQ("", CLParser::FilterShowIncludes("", ""))
+  if "" != CLParser::FilterShowIncludes("", "") { t.FailNow() }
 
-  ASSERT_EQ("", CLParser::FilterShowIncludes("Sample compiler output", ""))
+  if "" != CLParser::FilterShowIncludes("Sample compiler output", "") { t.FailNow() }
   ASSERT_EQ("c:\\Some Files\\foobar.h", CLParser::FilterShowIncludes("Note: including file: " "c:\\Some Files\\foobar.h", ""))
   ASSERT_EQ("c:\\initspaces.h", CLParser::FilterShowIncludes("Note: including file:    " "c:\\initspaces.h", ""))
   ASSERT_EQ("c:\\initspaces.h", CLParser::FilterShowIncludes("Non-default prefix: inc file:    " "c:\\initspaces.h", "Non-default prefix: inc file:"))
 }
 
 TEST(CLParserTest, FilterInputFilename) {
-  ASSERT_TRUE(CLParser::FilterInputFilename("foobar.cc"))
-  ASSERT_TRUE(CLParser::FilterInputFilename("foo bar.cc"))
-  ASSERT_TRUE(CLParser::FilterInputFilename("baz.c"))
-  ASSERT_TRUE(CLParser::FilterInputFilename("FOOBAR.CC"))
+  if CLParser::FilterInputFilename("foobar.cc") { t.FailNow() }
+  if CLParser::FilterInputFilename("foo bar.cc") { t.FailNow() }
+  if CLParser::FilterInputFilename("baz.c") { t.FailNow() }
+  if CLParser::FilterInputFilename("FOOBAR.CC") { t.FailNow() }
 
   ASSERT_FALSE(CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end " "of file found ..."))
 }
@@ -40,23 +40,23 @@ TEST(CLParserTest, ParseSimple) {
   string output, err
   ASSERT_TRUE(parser.Parse( "foo\r\n" "Note: inc file prefix:  foo.h\r\n" "bar\r\n", "Note: inc file prefix:", &output, &err))
 
-  ASSERT_EQ("foo\nbar\n", output)
-  ASSERT_EQ(1u, parser.includes_.size())
-  ASSERT_EQ("foo.h", *parser.includes_.begin())
+  if "foo\nbar\n" != output { t.FailNow() }
+  if 1u != parser.includes_.size() { t.FailNow() }
+  if "foo.h" != *parser.includes_.begin() { t.FailNow() }
 }
 
 TEST(CLParserTest, ParseFilenameFilter) {
   CLParser parser
   string output, err
   ASSERT_TRUE(parser.Parse( "foo.cc\r\n" "cl: warning\r\n", "", &output, &err))
-  ASSERT_EQ("cl: warning\n", output)
+  if "cl: warning\n" != output { t.FailNow() }
 }
 
 TEST(CLParserTest, NoFilenameFilterAfterShowIncludes) {
   CLParser parser
   string output, err
   ASSERT_TRUE(parser.Parse( "foo.cc\r\n" "Note: including file: foo.h\r\n" "something something foo.cc\r\n", "", &output, &err))
-  ASSERT_EQ("something something foo.cc\n", output)
+  if "something something foo.cc\n" != output { t.FailNow() }
 }
 
 TEST(CLParserTest, ParseSystemInclude) {
@@ -65,9 +65,9 @@ TEST(CLParserTest, ParseSystemInclude) {
   ASSERT_TRUE(parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\n" "Note: including file: d:\\Microsoft Visual Studio\\bar.h\r\n" "Note: including file: path.h\r\n", "", &output, &err))
   // We should have dropped the first two includes because they look like
   // system headers.
-  ASSERT_EQ("", output)
-  ASSERT_EQ(1u, parser.includes_.size())
-  ASSERT_EQ("path.h", *parser.includes_.begin())
+  if "" != output { t.FailNow() }
+  if 1u != parser.includes_.size() { t.FailNow() }
+  if "path.h" != *parser.includes_.begin() { t.FailNow() }
 }
 
 TEST(CLParserTest, DuplicatedHeader) {
@@ -75,8 +75,8 @@ TEST(CLParserTest, DuplicatedHeader) {
   string output, err
   ASSERT_TRUE(parser.Parse( "Note: including file: foo.h\r\n" "Note: including file: bar.h\r\n" "Note: including file: foo.h\r\n", "", &output, &err))
   // We should have dropped one copy of foo.h.
-  ASSERT_EQ("", output)
-  ASSERT_EQ(2u, parser.includes_.size())
+  if "" != output { t.FailNow() }
+  if 2u != parser.includes_.size() { t.FailNow() }
 }
 
 TEST(CLParserTest, DuplicatedHeaderPathConverted) {
@@ -90,9 +90,9 @@ TEST(CLParserTest, DuplicatedHeaderPathConverted) {
       "Note: including file: bar.h\r\n"
       "Note: including file: sub\\foo.h\r\n"
       "Note: including file: sub/foo.h\r\n"
-  ASSERT_TRUE(parser.Parse(kInput, "", &output, &err))
+  if parser.Parse(kInput, "", &output, &err) { t.FailNow() }
   // We should have dropped one copy of foo.h.
-  ASSERT_EQ("", output)
-  ASSERT_EQ(2u, parser.includes_.size())
+  if "" != output { t.FailNow() }
+  if 2u != parser.includes_.size() { t.FailNow() }
 }
 

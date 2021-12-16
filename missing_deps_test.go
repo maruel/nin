@@ -29,7 +29,7 @@ type MissingDependencyScannerTest struct {
         scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {
     string err
     deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
-    ASSERT_EQ("", err)
+    if "" != err { t.FailNow() }
   }
 
   MissingDependencyScanner& scanner() { return scanner_; }
@@ -42,7 +42,7 @@ type MissingDependencyScannerTest struct {
   func (m *MissingDependencyScannerTest) ProcessAllNodes() {
     string err
     nodes := state_.RootNodes(&err)
-    EXPECT_EQ("", err)
+    if "" != err { t.FailNow() }
     for (vector<Node*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
       scanner().ProcessNode(*it)
     }
@@ -67,10 +67,10 @@ type MissingDependencyScannerTest struct {
 
   func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
     flaky_node := state_.LookupNode(flaky)
-    ASSERT_EQ(1u, scanner().nodes_missing_deps_.count(flaky_node))
+    if 1u != scanner().nodes_missing_deps_.count(flaky_node) { t.FailNow() }
     generated_node := state_.LookupNode(generated)
-    ASSERT_EQ(1u, scanner().generated_nodes_.count(generated_node))
-    ASSERT_EQ(1u, scanner().generator_rules_.count(rule))
+    if 1u != scanner().generated_nodes_.count(generated_node) { t.FailNow() }
+    if 1u != scanner().generator_rules_.count(rule) { t.FailNow() }
   }
 
   MissingDependencyTestDelegate delegate_
@@ -84,13 +84,13 @@ type MissingDependencyScannerTest struct {
 
 func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
   ProcessAllNodes()
-  ASSERT_FALSE(scanner().HadMissingDeps())
+  if !scanner().HadMissingDeps() { t.FailNow() }
 }
 
 func TestMissingDependencyScannerTest_NoMissingDep(t *testing.T) {
   CreateInitialState()
   ProcessAllNodes()
-  ASSERT_FALSE(scanner().HadMissingDeps())
+  if !scanner().HadMissingDeps() { t.FailNow() }
 }
 
 func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
@@ -98,9 +98,9 @@ func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
   // compiled_object uses generated_header, without a proper dependency
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  ASSERT_TRUE(scanner().HadMissingDeps())
-  ASSERT_EQ(1u, scanner().nodes_missing_deps_.size())
-  ASSERT_EQ(1u, scanner().missing_dep_path_count_)
+  if scanner().HadMissingDeps() { t.FailNow() }
+  if 1u != scanner().nodes_missing_deps_.size() { t.FailNow() }
+  if 1u != scanner().missing_dep_path_count_ { t.FailNow() }
   AssertMissingDependencyBetween("compiled_object", "generated_header", &generator_rule_)
 }
 
@@ -110,7 +110,7 @@ func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
   CreateGraphDependencyBetween("compiled_object", "generated_header")
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  ASSERT_FALSE(scanner().HadMissingDeps())
+  if !scanner().HadMissingDeps() { t.FailNow() }
 }
 
 func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
@@ -122,7 +122,7 @@ func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
   CreateGraphDependencyBetween("intermediate", "generated_header")
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  ASSERT_FALSE(scanner().HadMissingDeps())
+  if !scanner().HadMissingDeps() { t.FailNow() }
 }
 
 func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
@@ -132,9 +132,9 @@ func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
   // In case of a cycle, both paths are reported (and there is
   // no way to fix the issue by adding deps).
   ProcessAllNodes()
-  ASSERT_TRUE(scanner().HadMissingDeps())
-  ASSERT_EQ(2u, scanner().nodes_missing_deps_.size())
-  ASSERT_EQ(2u, scanner().missing_dep_path_count_)
+  if scanner().HadMissingDeps() { t.FailNow() }
+  if 2u != scanner().nodes_missing_deps_.size() { t.FailNow() }
+  if 2u != scanner().missing_dep_path_count_ { t.FailNow() }
   AssertMissingDependencyBetween("compiled_object", "generated_header", &generator_rule_)
   AssertMissingDependencyBetween("generated_header", "compiled_object", &compile_rule_)
 }
@@ -148,6 +148,6 @@ func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
   // This test is to illustrate that.
   string err
   nodes := state_.RootNodes(&err)
-  ASSERT_NE("", err)
+  if "" == err { t.FailNow() }
 }
 

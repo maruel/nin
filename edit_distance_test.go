@@ -18,9 +18,9 @@ package ginja
 
 
 TEST(EditDistanceTest, TestEmpty) {
-  EXPECT_EQ(5, EditDistance("", "ninja"))
-  EXPECT_EQ(5, EditDistance("ninja", ""))
-  EXPECT_EQ(0, EditDistance("", ""))
+  if 5 != EditDistance("", "ninja") { t.FailNow() }
+  if 5 != EditDistance("ninja", "") { t.FailNow() }
+  if 0 != EditDistance("", "") { t.FailNow() }
 }
 
 TEST(EditDistanceTest, TestMaxDistance) {
@@ -32,17 +32,17 @@ TEST(EditDistanceTest, TestMaxDistance) {
 
 TEST(EditDistanceTest, TestAllowReplacements) {
   allow_replacements := true
-  EXPECT_EQ(1, EditDistance("ninja", "njnja", allow_replacements))
-  EXPECT_EQ(1, EditDistance("njnja", "ninja", allow_replacements))
+  if 1 != EditDistance("ninja", "njnja", allow_replacements) { t.FailNow() }
+  if 1 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
 
   allow_replacements = false
-  EXPECT_EQ(2, EditDistance("ninja", "njnja", allow_replacements))
-  EXPECT_EQ(2, EditDistance("njnja", "ninja", allow_replacements))
+  if 2 != EditDistance("ninja", "njnja", allow_replacements) { t.FailNow() }
+  if 2 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
 }
 
 TEST(EditDistanceTest, TestBasics) {
-  EXPECT_EQ(0, EditDistance("browser_tests", "browser_tests"))
-  EXPECT_EQ(1, EditDistance("browser_test", "browser_tests"))
-  EXPECT_EQ(1, EditDistance("browser_tests", "browser_test"))
+  if 0 != EditDistance("browser_tests", "browser_tests") { t.FailNow() }
+  if 1 != EditDistance("browser_test", "browser_tests") { t.FailNow() }
+  if 1 != EditDistance("browser_tests", "browser_test") { t.FailNow() }
 }
 

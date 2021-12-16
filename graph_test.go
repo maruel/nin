@@ -30,13 +30,13 @@ func TestGraphTest_MissingImplicit(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // A missing implicit dep *should* make the output dirty.
   // (In fact, a build will fail.)
   // This is a change from prior semantics of ninja.
-  EXPECT_TRUE(GetNode("out").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ModifiedImplicit(t *testing.T) {
@@ -47,11 +47,11 @@ func TestGraphTest_ModifiedImplicit(t *testing.T) {
   fs_.Create("implicit", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // A modified implicit dep should make the output dirty.
-  EXPECT_TRUE(GetNode("out").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_FunkyMakefilePath(t *testing.T) {
@@ -63,12 +63,12 @@ func TestGraphTest_FunkyMakefilePath(t *testing.T) {
   fs_.Create("implicit.h", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // implicit.h has changed, though our depfile refers to it with a
   // non-canonical path; we should still find it.
-  EXPECT_TRUE(GetNode("out.o").dirty())
+  if GetNode("out.o").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ExplicitImplicit(t *testing.T) {
@@ -81,24 +81,24 @@ func TestGraphTest_ExplicitImplicit(t *testing.T) {
   fs_.Create("data", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   // We have both an implicit and an explicit dep on implicit.h.
   // The implicit dep should "win" (in the sense that it should cause
   // the output to be dirty).
-  EXPECT_TRUE(GetNode("out.o").dirty())
+  if GetNode("out.o").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputParse(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out | out.imp: cat in\n"))
 
   edge := GetNode("out").in_edge()
-  EXPECT_EQ(2, edge.outputs_.size())
-  EXPECT_EQ("out", edge.outputs_[0].path())
-  EXPECT_EQ("out.imp", edge.outputs_[1].path())
-  EXPECT_EQ(1, edge.implicit_outs_)
-  EXPECT_EQ(edge, GetNode("out.imp").in_edge())
+  if 2 != edge.outputs_.size() { t.FailNow() }
+  if "out" != edge.outputs_[0].path() { t.FailNow() }
+  if "out.imp" != edge.outputs_[1].path() { t.FailNow() }
+  if 1 != edge.implicit_outs_ { t.FailNow() }
+  if edge != GetNode("out.imp").in_edge() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputMissing(t *testing.T) {
@@ -107,11 +107,11 @@ func TestGraphTest_ImplicitOutputMissing(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("out").dirty())
-  EXPECT_TRUE(GetNode("out.imp").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
+  if GetNode("out.imp").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputOutOfDate(t *testing.T) {
@@ -122,21 +122,21 @@ func TestGraphTest_ImplicitOutputOutOfDate(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("out").dirty())
-  EXPECT_TRUE(GetNode("out.imp").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
+  if GetNode("out.imp").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build | out.imp: cat in\n"))
 
   edge := GetNode("out.imp").in_edge()
-  EXPECT_EQ(1, edge.outputs_.size())
-  EXPECT_EQ("out.imp", edge.outputs_[0].path())
-  EXPECT_EQ(1, edge.implicit_outs_)
-  EXPECT_EQ(edge, GetNode("out.imp").in_edge())
+  if 1 != edge.outputs_.size() { t.FailNow() }
+  if "out.imp" != edge.outputs_[0].path() { t.FailNow() }
+  if 1 != edge.implicit_outs_ { t.FailNow() }
+  if edge != GetNode("out.imp").in_edge() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputOnlyMissing(t *testing.T) {
@@ -144,10 +144,10 @@ func TestGraphTest_ImplicitOutputOnlyMissing(t *testing.T) {
   fs_.Create("in", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.imp"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.imp"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("out.imp").dirty())
+  if GetNode("out.imp").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_ImplicitOutputOnlyOutOfDate(t *testing.T) {
@@ -157,10 +157,10 @@ func TestGraphTest_ImplicitOutputOnlyOutOfDate(t *testing.T) {
   fs_.Create("in", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.imp"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.imp"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("out.imp").dirty())
+  if GetNode("out.imp").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_PathWithCurrentDirectory(t *testing.T) {
@@ -170,10 +170,10 @@ func TestGraphTest_PathWithCurrentDirectory(t *testing.T) {
   fs_.Create("out.o", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_FALSE(GetNode("out.o").dirty())
+  if !GetNode("out.o").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_RootNodes(t *testing.T) {
@@ -181,10 +181,10 @@ func TestGraphTest_RootNodes(t *testing.T) {
 
   string err
   root_nodes := state_.RootNodes(&err)
-  EXPECT_EQ(4u, root_nodes.size())
+  if 4u != root_nodes.size() { t.FailNow() }
   for (size_t i = 0; i < root_nodes.size(); ++i) {
     name := root_nodes[i].path()
-    EXPECT_EQ("out", name.substr(0, 3))
+    if "out" != name.substr(0, 3) { t.FailNow() }
   }
 }
 
@@ -204,10 +204,10 @@ func TestGraphTest_DepfileWithCanonicalizablePath(t *testing.T) {
   fs_.Create("out.o", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_FALSE(GetNode("out.o").dirty())
+  if !GetNode("out.o").dirty() { t.FailNow() }
 }
 
 // Regression test for https://github.com/ninja-build/ninja/issues/404
@@ -220,51 +220,51 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
   fs_.Create("out.o", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
-  EXPECT_FALSE(GetNode("out.o").dirty())
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if !GetNode("out.o").dirty() { t.FailNow() }
 
   state_.Reset()
   fs_.RemoveFile("out.o.d")
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out.o"), &err))
-  ASSERT_EQ("", err)
-  EXPECT_TRUE(GetNode("out.o").dirty())
+  if scan_.RecomputeDirty(GetNode("out.o"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if GetNode("out.o").dirty() { t.FailNow() }
 }
 
 // Check that rule-level variables are in scope for eval.
 func TestGraphTest_RuleVariablesInScope(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = depfile is $depfile\n" "build out: r in\n"))
   edge := GetNode("out").in_edge()
-  EXPECT_EQ("depfile is x", edge.EvaluateCommand())
+  if "depfile is x" != edge.EvaluateCommand() { t.FailNow() }
 }
 
 // Check that build statements can override rule builtins like depfile.
 func TestGraphTest_DepfileOverride(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = unused\n" "build out: r in\n" "  depfile = y\n"))
   edge := GetNode("out").in_edge()
-  EXPECT_EQ("y", edge.GetBinding("depfile"))
+  if "y" != edge.GetBinding("depfile") { t.FailNow() }
 }
 
 // Check that overridden values show up in expansion of rule-level bindings.
 func TestGraphTest_DepfileOverrideParent(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = depfile is $depfile\n" "build out: r in\n" "  depfile = y\n"))
   edge := GetNode("out").in_edge()
-  EXPECT_EQ("depfile is y", edge.GetBinding("command"))
+  if "depfile is y" != edge.GetBinding("command") { t.FailNow() }
 }
 
 // Verify that building a nested phony rule prints "no work to do"
 func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
   AssertParse(&state_, "build n1: phony \n" "build n2: phony n1\n" )
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("n2"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("n2"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
   Plan plan_
-  EXPECT_TRUE(plan_.AddTarget(GetNode("n2"), &err))
-  ASSERT_EQ("", err)
+  if plan_.AddTarget(GetNode("n2"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_EQ(0, plan_.command_edge_count())
-  ASSERT_FALSE(plan_.more_to_do())
+  if 0 != plan_.command_edge_count() { t.FailNow() }
+  if !plan_.more_to_do() { t.FailNow() }
 }
 
 func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
@@ -273,44 +273,44 @@ func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
   AssertParse(&state_, "build a: phony a\n", parser_opts)
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("a"), &err))
-  ASSERT_EQ("dependency cycle: a . a [-w phonycycle=err]", err)
+  if !scan_.RecomputeDirty(GetNode("a"), &err) { t.FailNow() }
+  if "dependency cycle: a . a [-w phonycycle=err]" != err { t.FailNow() }
 }
 
 func TestGraphTest_DependencyCycle(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n" "build in: cat pre\n" "build pre: cat out\n")
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("dependency cycle: out . mid . in . pre . out", err)
+  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "dependency cycle: out . mid . in . pre . out" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, CycleInEdgesButNotInNodes1) {
   string err
   AssertParse(&state_, "build a b: cat a\n")
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("b"), &err))
-  ASSERT_EQ("dependency cycle: a . a", err)
+  if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
+  if "dependency cycle: a . a" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, CycleInEdgesButNotInNodes2) {
   string err
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build b a: cat a\n"))
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("b"), &err))
-  ASSERT_EQ("dependency cycle: a . a", err)
+  if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
+  if "dependency cycle: a . a" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, CycleInEdgesButNotInNodes3) {
   string err
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a b: cat c\n" "build c: cat a\n"))
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("b"), &err))
-  ASSERT_EQ("dependency cycle: a . c . a", err)
+  if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
+  if "dependency cycle: a . c . a" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, CycleInEdgesButNotInNodes4) {
   string err
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build d: cat c\n" "build c: cat b\n" "build b: cat a\n" "build a e: cat d\n" "build f: cat e\n"))
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("f"), &err))
-  ASSERT_EQ("dependency cycle: a . d . c . b . a", err)
+  if !scan_.RecomputeDirty(GetNode("f"), &err) { t.FailNow() }
+  if "dependency cycle: a . d . c . b . a" != err { t.FailNow() }
 }
 
 // Verify that cycles in graphs with multiple outputs are handled correctly
@@ -320,15 +320,15 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
   fs_.Create("dep.d", "a: b\n")
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("a"), &err))
-  ASSERT_EQ("dependency cycle: b . b", err)
+  if !scan_.RecomputeDirty(GetNode("a"), &err) { t.FailNow() }
+  if "dependency cycle: b . b" != err { t.FailNow() }
 
   // Despite the depfile causing edge to be a cycle (it has outputs a and b,
   // but the depfile also adds b as an input), the deps should have been loaded
   // only once:
   edge := GetNode("a").in_edge()
-  EXPECT_EQ(1, edge.inputs_.size())
-  EXPECT_EQ("b", edge.inputs_[0].path())
+  if 1 != edge.inputs_.size() { t.FailNow() }
+  if "b" != edge.inputs_[0].path() { t.FailNow() }
 }
 
 // Like CycleWithLengthZeroFromDepfile but with a higher cycle length.
@@ -337,15 +337,15 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
   fs_.Create("dep.d", "a: c\n")
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("a"), &err))
-  ASSERT_EQ("dependency cycle: b . c . b", err)
+  if !scan_.RecomputeDirty(GetNode("a"), &err) { t.FailNow() }
+  if "dependency cycle: b . c . b" != err { t.FailNow() }
 
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
   // output)), the deps should have been loaded only once:
   edge := GetNode("a").in_edge()
-  EXPECT_EQ(1, edge.inputs_.size())
-  EXPECT_EQ("c", edge.inputs_[0].path())
+  if 1 != edge.inputs_.size() { t.FailNow() }
+  if "c" != edge.inputs_[0].path() { t.FailNow() }
 }
 
 // Like CycleWithLengthOneFromDepfile but building a node one hop away from
@@ -355,15 +355,15 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
   fs_.Create("dep.d", "a: c\n")
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("d"), &err))
-  ASSERT_EQ("dependency cycle: b . c . b", err)
+  if !scan_.RecomputeDirty(GetNode("d"), &err) { t.FailNow() }
+  if "dependency cycle: b . c . b" != err { t.FailNow() }
 
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
   // output)), the deps should have been loaded only once:
   edge := GetNode("a").in_edge()
-  EXPECT_EQ(1, edge.inputs_.size())
-  EXPECT_EQ("c", edge.inputs_[0].path())
+  if 1 != edge.inputs_.size() { t.FailNow() }
+  if "c" != edge.inputs_[0].path() { t.FailNow() }
 }
 
 func TestGraphTest_Decanonicalize(t *testing.T) {
@@ -371,15 +371,15 @@ func TestGraphTest_Decanonicalize(t *testing.T) {
 
   string err
   root_nodes := state_.RootNodes(&err)
-  EXPECT_EQ(4u, root_nodes.size())
-  EXPECT_EQ(root_nodes[0].path(), "out/out1")
-  EXPECT_EQ(root_nodes[1].path(), "out/out2/out3/out4")
-  EXPECT_EQ(root_nodes[2].path(), "out3")
-  EXPECT_EQ(root_nodes[3].path(), "out4/foo")
-  EXPECT_EQ(root_nodes[0].PathDecanonicalized(), "out\\out1")
-  EXPECT_EQ(root_nodes[1].PathDecanonicalized(), "out\\out2/out3\\out4")
-  EXPECT_EQ(root_nodes[2].PathDecanonicalized(), "out3")
-  EXPECT_EQ(root_nodes[3].PathDecanonicalized(), "out4\\foo")
+  if 4u != root_nodes.size() { t.FailNow() }
+  if root_nodes[0].path() != "out/out1" { t.FailNow() }
+  if root_nodes[1].path() != "out/out2/out3/out4" { t.FailNow() }
+  if root_nodes[2].path() != "out3" { t.FailNow() }
+  if root_nodes[3].path() != "out4/foo" { t.FailNow() }
+  if root_nodes[0].PathDecanonicalized() != "out\\out1" { t.FailNow() }
+  if root_nodes[1].PathDecanonicalized() != "out\\out2/out3\\out4" { t.FailNow() }
+  if root_nodes[2].PathDecanonicalized() != "out3" { t.FailNow() }
+  if root_nodes[3].PathDecanonicalized() != "out4\\foo" { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
@@ -387,20 +387,20 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out: dyndep\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_TRUE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("", err)
-  EXPECT_FALSE(GetNode("dd").dyndep_pending())
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if !GetNode("dd").dyndep_pending() { t.FailNow() }
 
   edge := GetNode("out").in_edge()
-  ASSERT_EQ(1u, edge.outputs_.size())
-  EXPECT_EQ("out", edge.outputs_[0].path())
-  ASSERT_EQ(2u, edge.inputs_.size())
-  EXPECT_EQ("in", edge.inputs_[0].path())
-  EXPECT_EQ("dd", edge.inputs_[1].path())
-  EXPECT_EQ(0u, edge.implicit_deps_)
-  EXPECT_EQ(1u, edge.order_only_deps_)
-  EXPECT_FALSE(edge.GetBindingBool("restat"))
+  if 1u != edge.outputs_.size() { t.FailNow() }
+  if "out" != edge.outputs_[0].path() { t.FailNow() }
+  if 2u != edge.inputs_.size() { t.FailNow() }
+  if "in" != edge.inputs_[0].path() { t.FailNow() }
+  if "dd" != edge.inputs_[1].path() { t.FailNow() }
+  if 0u != edge.implicit_deps_ { t.FailNow() }
+  if 1u != edge.order_only_deps_ { t.FailNow() }
+  if !edge.GetBindingBool("restat") { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
@@ -408,30 +408,30 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out1: dyndep | out2\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_TRUE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("", err)
-  EXPECT_FALSE(GetNode("dd").dyndep_pending())
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if !GetNode("dd").dyndep_pending() { t.FailNow() }
 
   edge := GetNode("out1").in_edge()
-  ASSERT_EQ(1u, edge.outputs_.size())
-  EXPECT_EQ("out1", edge.outputs_[0].path())
-  ASSERT_EQ(3u, edge.inputs_.size())
-  EXPECT_EQ("in", edge.inputs_[0].path())
-  EXPECT_EQ("out2", edge.inputs_[1].path())
-  EXPECT_EQ("dd", edge.inputs_[2].path())
-  EXPECT_EQ(1u, edge.implicit_deps_)
-  EXPECT_EQ(1u, edge.order_only_deps_)
-  EXPECT_FALSE(edge.GetBindingBool("restat"))
+  if 1u != edge.outputs_.size() { t.FailNow() }
+  if "out1" != edge.outputs_[0].path() { t.FailNow() }
+  if 3u != edge.inputs_.size() { t.FailNow() }
+  if "in" != edge.inputs_[0].path() { t.FailNow() }
+  if "out2" != edge.inputs_[1].path() { t.FailNow() }
+  if "dd" != edge.inputs_[2].path() { t.FailNow() }
+  if 1u != edge.implicit_deps_ { t.FailNow() }
+  if 1u != edge.order_only_deps_ { t.FailNow() }
+  if !edge.GetBindingBool("restat") { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadMissingFile(t *testing.T) {
   AssertParse(&state_, "rule r\n" "  command = unused\n" "build out: r in || dd\n" "  dyndep = dd\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_FALSE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("loading 'dd': No such file or directory", err)
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if !scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "loading 'dd': No such file or directory" != err { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadMissingEntry(t *testing.T) {
@@ -439,9 +439,9 @@ func TestGraphTest_DyndepLoadMissingEntry(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_FALSE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("'out' not mentioned in its dyndep file 'dd'", err)
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if !scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "'out' not mentioned in its dyndep file 'dd'" != err { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
@@ -449,8 +449,8 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out: dyndep\n" "build out2: dyndep\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_FALSE(scan_.LoadDyndeps(GetNode("dd"), &err))
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if !scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
   EXPECT_EQ("dyndep file 'dd' mentions output 'out2' whose build statement " "does not have a dyndep binding for the file", err)
 }
 
@@ -459,9 +459,9 @@ TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules1) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out2 | out-twice.imp: dyndep\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_FALSE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("multiple rules generate out-twice.imp", err)
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if !scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "multiple rules generate out-twice.imp" != err { t.FailNow() }
 }
 
 TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules2) {
@@ -470,12 +470,12 @@ TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules2) {
   fs_.Create("dd2", "ninja_dyndep_version = 1\n" "build out2 | out-twice.imp: dyndep\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd1").dyndep_pending())
-  EXPECT_TRUE(scan_.LoadDyndeps(GetNode("dd1"), &err))
-  EXPECT_EQ("", err)
-  ASSERT_TRUE(GetNode("dd2").dyndep_pending())
-  EXPECT_FALSE(scan_.LoadDyndeps(GetNode("dd2"), &err))
-  EXPECT_EQ("multiple rules generate out-twice.imp", err)
+  if GetNode("dd1").dyndep_pending() { t.FailNow() }
+  if scan_.LoadDyndeps(GetNode("dd1"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if GetNode("dd2").dyndep_pending() { t.FailNow() }
+  if !scan_.LoadDyndeps(GetNode("dd2"), &err) { t.FailNow() }
+  if "multiple rules generate out-twice.imp" != err { t.FailNow() }
 }
 
 func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
@@ -483,50 +483,50 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out1 | out1imp: dyndep | in1imp\n" "build out2: dyndep | in2imp\n" "  restat = 1\n" )
 
   string err
-  ASSERT_TRUE(GetNode("dd").dyndep_pending())
-  EXPECT_TRUE(scan_.LoadDyndeps(GetNode("dd"), &err))
-  EXPECT_EQ("", err)
-  EXPECT_FALSE(GetNode("dd").dyndep_pending())
+  if GetNode("dd").dyndep_pending() { t.FailNow() }
+  if scan_.LoadDyndeps(GetNode("dd"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  if !GetNode("dd").dyndep_pending() { t.FailNow() }
 
   Edge* edge1 = GetNode("out1").in_edge()
-  ASSERT_EQ(2u, edge1.outputs_.size())
-  EXPECT_EQ("out1", edge1.outputs_[0].path())
-  EXPECT_EQ("out1imp", edge1.outputs_[1].path())
-  EXPECT_EQ(1u, edge1.implicit_outs_)
-  ASSERT_EQ(3u, edge1.inputs_.size())
-  EXPECT_EQ("in1", edge1.inputs_[0].path())
-  EXPECT_EQ("in1imp", edge1.inputs_[1].path())
-  EXPECT_EQ("dd", edge1.inputs_[2].path())
-  EXPECT_EQ(1u, edge1.implicit_deps_)
-  EXPECT_EQ(1u, edge1.order_only_deps_)
-  EXPECT_FALSE(edge1.GetBindingBool("restat"))
-  EXPECT_EQ(edge1, GetNode("out1imp").in_edge())
+  if 2u != edge1.outputs_.size() { t.FailNow() }
+  if "out1" != edge1.outputs_[0].path() { t.FailNow() }
+  if "out1imp" != edge1.outputs_[1].path() { t.FailNow() }
+  if 1u != edge1.implicit_outs_ { t.FailNow() }
+  if 3u != edge1.inputs_.size() { t.FailNow() }
+  if "in1" != edge1.inputs_[0].path() { t.FailNow() }
+  if "in1imp" != edge1.inputs_[1].path() { t.FailNow() }
+  if "dd" != edge1.inputs_[2].path() { t.FailNow() }
+  if 1u != edge1.implicit_deps_ { t.FailNow() }
+  if 1u != edge1.order_only_deps_ { t.FailNow() }
+  if !edge1.GetBindingBool("restat") { t.FailNow() }
+  if edge1 != GetNode("out1imp").in_edge() { t.FailNow() }
   Node* in1imp = GetNode("in1imp")
-  ASSERT_EQ(1u, in1imp.out_edges().size())
-  EXPECT_EQ(edge1, in1imp.out_edges()[0])
+  if 1u != in1imp.out_edges().size() { t.FailNow() }
+  if edge1 != in1imp.out_edges()[0] { t.FailNow() }
 
   Edge* edge2 = GetNode("out2").in_edge()
-  ASSERT_EQ(1u, edge2.outputs_.size())
-  EXPECT_EQ("out2", edge2.outputs_[0].path())
-  EXPECT_EQ(0u, edge2.implicit_outs_)
-  ASSERT_EQ(3u, edge2.inputs_.size())
-  EXPECT_EQ("in2", edge2.inputs_[0].path())
-  EXPECT_EQ("in2imp", edge2.inputs_[1].path())
-  EXPECT_EQ("dd", edge2.inputs_[2].path())
-  EXPECT_EQ(1u, edge2.implicit_deps_)
-  EXPECT_EQ(1u, edge2.order_only_deps_)
-  EXPECT_TRUE(edge2.GetBindingBool("restat"))
+  if 1u != edge2.outputs_.size() { t.FailNow() }
+  if "out2" != edge2.outputs_[0].path() { t.FailNow() }
+  if 0u != edge2.implicit_outs_ { t.FailNow() }
+  if 3u != edge2.inputs_.size() { t.FailNow() }
+  if "in2" != edge2.inputs_[0].path() { t.FailNow() }
+  if "in2imp" != edge2.inputs_[1].path() { t.FailNow() }
+  if "dd" != edge2.inputs_[2].path() { t.FailNow() }
+  if 1u != edge2.implicit_deps_ { t.FailNow() }
+  if 1u != edge2.order_only_deps_ { t.FailNow() }
+  if edge2.GetBindingBool("restat") { t.FailNow() }
   Node* in2imp = GetNode("in2imp")
-  ASSERT_EQ(1u, in2imp.out_edges().size())
-  EXPECT_EQ(edge2, in2imp.out_edges()[0])
+  if 1u != in2imp.out_edges().size() { t.FailNow() }
+  if edge2 != in2imp.out_edges()[0] { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileMissing(t *testing.T) {
   AssertParse(&state_, "rule r\n" "  command = unused\n" "build out: r || dd\n" "  dyndep = dd\n" )
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("loading 'dd': No such file or directory", err)
+  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "loading 'dd': No such file or directory" != err { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileError(t *testing.T) {
@@ -534,8 +534,8 @@ func TestGraphTest_DyndepFileError(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" )
 
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("'out' not mentioned in its dyndep file 'dd'", err)
+  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "'out' not mentioned in its dyndep file 'dd'" != err { t.FailNow() }
 }
 
 func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
@@ -546,14 +546,14 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
   fs_.Create("in", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_FALSE(GetNode("in").dirty())
-  EXPECT_FALSE(GetNode("dd").dirty())
+  if !GetNode("in").dirty() { t.FailNow() }
+  if !GetNode("dd").dirty() { t.FailNow() }
 
   // "out" is dirty due to dyndep-specified implicit input
-  EXPECT_TRUE(GetNode("out").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileReady(t *testing.T) {
@@ -565,15 +565,15 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
   fs_.Create("in", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_FALSE(GetNode("in").dirty())
-  EXPECT_FALSE(GetNode("dd").dirty())
-  EXPECT_TRUE(GetNode("dd").in_edge().outputs_ready())
+  if !GetNode("in").dirty() { t.FailNow() }
+  if !GetNode("dd").dirty() { t.FailNow() }
+  if GetNode("dd").in_edge().outputs_ready() { t.FailNow() }
 
   // "out" is dirty due to dyndep-specified implicit input
-  EXPECT_TRUE(GetNode("out").dirty())
+  if GetNode("out").dirty() { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileNotClean(t *testing.T) {
@@ -584,15 +584,15 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("dd").dirty())
-  EXPECT_FALSE(GetNode("dd").in_edge().outputs_ready())
+  if GetNode("dd").dirty() { t.FailNow() }
+  if !GetNode("dd").in_edge().outputs_ready() { t.FailNow() }
 
   // "out" is clean but not ready since "dd" is not ready
-  EXPECT_FALSE(GetNode("out").dirty())
-  EXPECT_FALSE(GetNode("out").in_edge().outputs_ready())
+  if !GetNode("out").dirty() { t.FailNow() }
+  if !GetNode("out").in_edge().outputs_ready() { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileNotReady(t *testing.T) {
@@ -603,13 +603,13 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_FALSE(GetNode("dd").dirty())
-  EXPECT_FALSE(GetNode("dd").in_edge().outputs_ready())
-  EXPECT_FALSE(GetNode("out").dirty())
-  EXPECT_FALSE(GetNode("out").in_edge().outputs_ready())
+  if !GetNode("dd").dirty() { t.FailNow() }
+  if !GetNode("dd").in_edge().outputs_ready() { t.FailNow() }
+  if !GetNode("out").dirty() { t.FailNow() }
+  if !GetNode("out").in_edge().outputs_ready() { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
@@ -622,15 +622,15 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
   fs_.Create("out", "")
 
   string err
-  EXPECT_TRUE(scan_.RecomputeDirty(GetNode("out"), &err))
-  ASSERT_EQ("", err)
+  if scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
 
-  EXPECT_TRUE(GetNode("dd1").dirty())
-  EXPECT_FALSE(GetNode("dd1").in_edge().outputs_ready())
-  EXPECT_FALSE(GetNode("dd2").dirty())
-  EXPECT_FALSE(GetNode("dd2").in_edge().outputs_ready())
-  EXPECT_FALSE(GetNode("out").dirty())
-  EXPECT_FALSE(GetNode("out").in_edge().outputs_ready())
+  if GetNode("dd1").dirty() { t.FailNow() }
+  if !GetNode("dd1").in_edge().outputs_ready() { t.FailNow() }
+  if !GetNode("dd2").dirty() { t.FailNow() }
+  if !GetNode("dd2").in_edge().outputs_ready() { t.FailNow() }
+  if !GetNode("out").dirty() { t.FailNow() }
+  if !GetNode("out").in_edge().outputs_ready() { t.FailNow() }
 }
 
 func TestGraphTest_DyndepFileCircular(t *testing.T) {
@@ -641,17 +641,17 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 
   edge := GetNode("out").in_edge()
   string err
-  EXPECT_FALSE(scan_.RecomputeDirty(GetNode("out"), &err))
-  EXPECT_EQ("dependency cycle: circ . in . circ", err)
+  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
+  if "dependency cycle: circ . in . circ" != err { t.FailNow() }
 
   // Verify that "out.d" was loaded exactly once despite
   // circular reference discovered from dyndep file.
-  ASSERT_EQ(3u, edge.inputs_.size())
-  EXPECT_EQ("in", edge.inputs_[0].path())
-  EXPECT_EQ("inimp", edge.inputs_[1].path())
-  EXPECT_EQ("dd", edge.inputs_[2].path())
-  EXPECT_EQ(1u, edge.implicit_deps_)
-  EXPECT_EQ(1u, edge.order_only_deps_)
+  if 3u != edge.inputs_.size() { t.FailNow() }
+  if "in" != edge.inputs_[0].path() { t.FailNow() }
+  if "inimp" != edge.inputs_[1].path() { t.FailNow() }
+  if "dd" != edge.inputs_[2].path() { t.FailNow() }
+  if 1u != edge.implicit_deps_ { t.FailNow() }
+  if 1u != edge.order_only_deps_ { t.FailNow() }
 }
 
 // Check that phony's dependencies' mtimes are propagated.
@@ -663,12 +663,12 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
   Node* out1 = GetNode("out1")
   Node* in1  = GetNode("in1")
 
-  EXPECT_TRUE(scan_.RecomputeDirty(out1, &err))
-  EXPECT_TRUE(!out1.dirty())
+  if scan_.RecomputeDirty(out1, &err) { t.FailNow() }
+  if !out1.dirty() { t.FailNow() }
 
   // Get the mtime of out1
-  ASSERT_TRUE(in1.Stat(&fs_, &err))
-  ASSERT_TRUE(out1.Stat(&fs_, &err))
+  if in1.Stat(&fs_, &err) { t.FailNow() }
+  if out1.Stat(&fs_, &err) { t.FailNow() }
   TimeStamp out1Mtime1 = out1.mtime()
   TimeStamp in1Mtime1 = in1.mtime()
 
@@ -677,12 +677,12 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
   fs_.Tick()
   fs_.Create("in1", "")
 
-  ASSERT_TRUE(in1.Stat(&fs_, &err))
+  if in1.Stat(&fs_, &err) { t.FailNow() }
   EXPECT_GT(in1.mtime(), in1Mtime1)
 
-  EXPECT_TRUE(scan_.RecomputeDirty(out1, &err))
+  if scan_.RecomputeDirty(out1, &err) { t.FailNow() }
   EXPECT_GT(in1.mtime(), in1Mtime1)
-  EXPECT_EQ(out1.mtime(), out1Mtime1)
-  EXPECT_TRUE(out1.dirty())
+  if out1.mtime() != out1Mtime1 { t.FailNow() }
+  if out1.dirty() { t.FailNow() }
 }
 
