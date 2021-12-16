@@ -71,20 +71,17 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		out := in
 		// filename: start of the current parsed filename.
 		filename := out
+		backup := 0
 		for {
 			// start: beginning of the current parsed span.
 			start := in
-			yymarker := nil
+			yymarker := 0
 			/*
 			 re2c:define:YYCTYPE = "byte";
 			 re2c:define:YYCURSOR = "l.input_[p]";
-			 re2c:define:YYSKIP = "p++";
 			 re2c:define:YYMARKER = q;
 			 re2c:yyfill:enable = 0;
 			 re2c:flags:nested-ifs = 1;
-			 re2c:define:YYPEEK = "l.input_[p]";
-			 re2c:define:YYBACKUP = "q = p";
-			 re2c:define:YYRESTORE = "p = q";
 			*/
 
 			/*!re2c
@@ -92,6 +89,10 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			re2c:define:YYCURSOR = content[in];
 			re2c:define:YYLIMIT = end;
 			re2c:define:YYMARKER = yymarker;
+			re2c:define:YYBACKUP = "backup = yymarker";
+			re2c:define:YYRESTORE = "yymarker = backup";
+			re2c:define:YYPEEK = "content[in]";
+			re2c:define:YYSKIP = "in++";
 
 			re2c:yyfill:enable = 0;
 
@@ -145,7 +146,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				l := in - start - 1
 				// Need to shift it over if we're overwriting backslashes.
 				if out < start {
-					memmove(out, start, l)
+					copy(content[out:out+l], content[start:start+l])
 				}
 				out += l
 				if content[in - 1] == '\n' {
@@ -178,7 +179,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				l := in - start
 				// Need to shift it over if we're overwriting backslashes.
 				if out < start {
-					memmove(out, start, l)
+					copy(content[out:out+l], content[start:start+l])
 				}
 				out += l
 				continue
@@ -204,7 +205,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		l := out - filename
-		is_dependency := !d.parsing_targets
+		is_dependency := !parsing_targets
 		if l > 0 && content[filename-l-1] == ':' {
 			l-- // Strip off trailing colon, if any.
 			parsing_targets = false
@@ -212,7 +213,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		if l > 0 {
-			piece := content[filename : filename+l]
+			piece := string(content[filename : filename+l])
 			// If we've seen this as an input before, skip it.
 			// TODO(maruel): Use a map[string]struct{} while constructing.
 			pos := -1
@@ -233,7 +234,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				} else {
 					// Check for a new output.
 					pos = -1
-					for i, v := range d.out_ {
+					for i, v := range d.outs_ {
 						if piece == v {
 							pos = i
 							break

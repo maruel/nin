@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 //go:generate ./regen.sh
 
 package ginja
@@ -72,25 +70,22 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		out := in
 		// filename: start of the current parsed filename.
 		filename := out
+		backup := 0
 		for {
 			// start: beginning of the current parsed span.
 			start := in
-			yymarker := nil
+			yymarker := 0
 			/*
 			 re2c:define:YYCTYPE = "byte";
 			 re2c:define:YYCURSOR = "l.input_[p]";
-			 re2c:define:YYSKIP = "p++";
 			 re2c:define:YYMARKER = q;
 			 re2c:yyfill:enable = 0;
 			 re2c:flags:nested-ifs = 1;
-			 re2c:define:YYPEEK = "l.input_[p]";
-			 re2c:define:YYBACKUP = "q = p";
-			 re2c:define:YYRESTORE = "p = q";
 			*/
 
 			{
 				var yych byte
-				yych = YYPEEK
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					goto yy2
@@ -192,12 +187,12 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy9
 				}
 			yy2:
-				YYSKIP
+				in++
 				{
 					break
 				}
 			yy4:
-				YYSKIP
+				in++
 			yy5:
 				{
 					// For any other character (e.g. whitespace), swallow it here,
@@ -205,15 +200,15 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					break
 				}
 			yy6:
-				YYSKIP
+				in++
 				{
 					// A newline ends the current file name and the current rule.
 					have_newline = true
 					break
 				}
 			yy8:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case '\n':
 					goto yy6
@@ -221,8 +216,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy5
 				}
 			yy9:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					fallthrough
@@ -329,14 +324,14 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					l := in - start
 					// Need to shift it over if we're overwriting backslashes.
 					if out < start {
-						memmove(out, start, l)
+						copy(content[out:out+l], content[start:start+l])
 					}
 					out += l
 					continue
 				}
 			yy12:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case '$':
 					goto yy14
@@ -344,9 +339,9 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy5
 				}
 			yy13:
-				YYSKIP
-				YYBACKUP
-				yych = YYPEEK
+				in++
+				backup = yymarker
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					goto yy5
@@ -366,24 +361,24 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy16
 				}
 			yy14:
-				YYSKIP
+				in++
 				{
 					// De-escape dollar character.
 					content[out] = '$'
 					continue
 				}
 			yy16:
-				YYSKIP
+				in++
 				goto yy11
 			yy17:
-				YYSKIP
+				in++
 				{
 					// A line continuation ends the current file name.
 					break
 				}
 			yy19:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case '\n':
 					goto yy17
@@ -391,10 +386,10 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy20
 				}
 			yy20:
-				YYRESTORE
+				yymarker = backup
 				goto yy5
 			yy21:
-				YYSKIP
+				in++
 				{
 					// 2N+1 backslashes plus space -> N backslashes plus space.
 					l := in - start
@@ -410,7 +405,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					continue
 				}
 			yy23:
-				YYSKIP
+				in++
 				{
 					// De-escape hash sign, but preserve other leading backslashes.
 					l := in - start
@@ -425,8 +420,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					continue
 				}
 			yy25:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					fallthrough
@@ -458,8 +453,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					continue
 				}
 			yy27:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					fallthrough
@@ -479,14 +474,14 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					goto yy16
 				}
 			yy28:
-				YYSKIP
+				in++
 				{
 					// Backslash followed by : and whitespace.
 					// It is therefore normal text and not an escaped colon
 					l := in - start - 1
 					// Need to shift it over if we're overwriting backslashes.
 					if out < start {
-						memmove(out, start, l)
+						copy(content[out:out+l], content[start:start+l])
 					}
 					out += l
 					if content[in-1] == '\n' {
@@ -495,7 +490,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					break
 				}
 			yy30:
-				YYSKIP
+				in++
 				{
 					// 2N backslashes plus space -> 2N backslashes, end of filename.
 					l := in - start
@@ -508,8 +503,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 					break
 				}
 			yy32:
-				YYSKIP
-				yych = YYPEEK
+				in++
+				yych = content[in]
 				switch yych {
 				case 0x00:
 					fallthrough
@@ -533,7 +528,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		l := out - filename
-		is_dependency := !d.parsing_targets
+		is_dependency := !parsing_targets
 		if l > 0 && content[filename-l-1] == ':' {
 			l-- // Strip off trailing colon, if any.
 			parsing_targets = false
@@ -541,7 +536,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		if l > 0 {
-			piece := content[filename : filename+l]
+			piece := string(content[filename : filename+l])
 			// If we've seen this as an input before, skip it.
 			// TODO(maruel): Use a map[string]struct{} while constructing.
 			pos := -1
@@ -562,7 +557,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				} else {
 					// Check for a new output.
 					pos = -1
-					for i, v := range d.out_ {
+					for i, v := range d.outs_ {
 						if piece == v {
 							pos = i
 							break
