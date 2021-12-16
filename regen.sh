@@ -25,10 +25,10 @@ fi
 
 echo "Generating depfile_parser.go"
 re2go depfile_parser.in.go -o depfile_parser.go -i --no-generation-date
-sed -i -e "/go.\+nobuild/d" depfile_parser.go
+sed -i -e "/go.\+neverbuild/d" depfile_parser.go
 gofmt -s -w depfile_parser.go
 
 echo "Generating lexer.go"
 re2go lexer.in.go -o lexer.go -i --no-generation-date
-sed -i -e "/go.\+nobuild/d" lexer.go
+sed -i -e "/go.\+neverbuild/d" lexer.go
 gofmt -s -w lexer.go
