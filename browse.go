@@ -12,69 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"os"
+	"os/exec"
+	"strings"
+)
 
+// TODO(maruel): Remove.
+type State int
+
+const NINJA_PYTHON = "abc.py"
+const kBrowsePy = "abc"
 
 // Run in "browse" mode, which execs a Python webserver.
 // \a ninja_command is the command used to invoke ninja.
 // \a args are the number of arguments to be passed to the Python script.
 // \a argv are arguments to be passed to the Python script.
 // This function does not return if it runs successfully.
-func RunBrowsePython(state *State, ninja_command string, input_file string, argc int, argv []*char) {
-  // Fork off a Python process and have it run our code via its stdin.
-  // (Actually the Python process becomes the parent.)
-  int pipefd[2]
-  if pipe(pipefd) < 0 {
-    perror("ninja: pipe")
-    return
-  }
+func RunBrowsePython(state *State, ninja_command string, input_file string, args []string) {
+	// The original C++ code exec() python as the parent, which is super weird.
+	// We cannot do this easily so do it the normal way for now.
 
-  pid := fork()
-  if pid < 0 {
-    perror("ninja: fork")
-    return
-  }
-
-  if pid > 0 {  // Parent.
-    close(pipefd[1])
-    do {
-      if dup2(pipefd[0], 0) < 0 {
-        perror("ninja: dup2")
-        break
-      }
-
-      var command []string
-      command.push_back(NINJA_PYTHON)
-      command.push_back("-")
-      command.push_back("--ninja-command")
-      command.push_back(ninja_command)
-      command.push_back("-f")
-      command.push_back(input_file)
-      for i := 0; i < argc; i++ {
-          command.push_back(argv[i])
-      }
-      command.push_back(nil)
-      execvp(command[0], (char**)&command[0])
-      if errno == ENOENT {
-        printf("ninja: %s is required for the browse tool\n", NINJA_PYTHON)
-      } else {
-        perror("ninja: execvp")
-      }
-    } while (false)
-    _exit(1)
-  } else {  // Child.
-    close(pipefd[0])
-
-    // Write the script file into the stdin of the Python process.
-    len := write(pipefd[1], kBrowsePy, sizeof(kBrowsePy))
-    if len < (ssize_t)sizeof(kBrowsePy) {
-      perror("ninja: write")
-    }
-    close(pipefd[1])
-    exit(0)
-  }
+	cmd := exec.Command(NINJA_PYTHON, "-", "--ninja-command", ninja_command, "-f", "input_file")
+	cmd.Args = append(cmd.Args, args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = strings.NewReader(kBrowsePy)
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ExitCode())
+		}
+	}
+	os.Exit(0)
 }
-
