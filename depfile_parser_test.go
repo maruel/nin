@@ -14,7 +14,11 @@
 
 package ginja
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestDepfileParserTest_Basic(t *testing.T) {
 	err := ""
@@ -183,8 +187,8 @@ func TestDepfileParserTest_Escapes(t *testing.T) {
 	if 1 != len(p.outs_) {
 		t.Fatal(p.outs_)
 	}
-	if "\\!\\@#$\\%\\^\\&\\[\\]\\\\" != p.outs_[0] {
-		t.Fatal(p.outs_)
+	if diff := cmp.Diff("\\!\\@#$\\%\\^\\&\\[\\]\\\\", p.outs_[0]); diff != "" {
+		t.Fatal(diff)
 	}
 	if 0 != len(p.ins_) {
 		t.Fatal(p.ins_)

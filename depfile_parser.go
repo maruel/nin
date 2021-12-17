@@ -367,6 +367,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				{
 					// De-escape dollar character.
 					content[out] = '$'
+					out++
 					continue
 				}
 			yy16:

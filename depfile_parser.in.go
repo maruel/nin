@@ -174,6 +174,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			'$$' {
 				// De-escape dollar character.
 				content[out] = '$'
+				out++
 				continue
 			}
 			'\\'+ [^\000\r\n] | [a-zA-Z0-9+,/_:.~()}{%=@\x5B\x5D!\x80-\xFF-]+ {
