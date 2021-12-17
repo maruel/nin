@@ -270,7 +270,7 @@ func (s *SubprocessSet) DoWork() bool {
   return false
 }
 
-func (s *SubprocessSet) NextFinished() Subprocess* {
+func (s *SubprocessSet) NextFinished() *Subprocess {
   if finished_.empty() {
     return nil
   }

@@ -21,7 +21,7 @@ func random(low int, high int) int {
   return int(low + (rand() / double(RAND_MAX)) * (high - low) + 0.5)
 }
 
-func RandomCommand(s **char) {
+func RandomCommand(s *char*) {
   len := random(5, 100)
   *s = new char[len+1]
   for i := 0; i < len; i++ {

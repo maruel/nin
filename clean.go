@@ -265,7 +265,7 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
   return status_
 }
 
-func (c *Cleaner) DoCleanRule(rule *const Rule) {
+func (c *Cleaner) DoCleanRule(rule *Rule) {
   if !rule { panic("oops") }
 
   for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
@@ -282,7 +282,7 @@ func (c *Cleaner) DoCleanRule(rule *const Rule) {
 // @return non-zero if an error occurs.
 // Clean all the file built with the given rule @a rule.
 // @return non-zero if an error occurs.
-func (c *Cleaner) CleanRule(rule *const Rule) int {
+func (c *Cleaner) CleanRule(rule *Rule) int {
   if !rule { panic("oops") }
 
   Reset()

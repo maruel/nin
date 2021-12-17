@@ -140,7 +140,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
 }
 
 // Print the given data to the console, or buffer it if it is locked.
-func (l *LinePrinter) PrintOrBuffer(data string, size size_t) {
+func (l *LinePrinter) PrintOrBuffer(data string, size uint) {
   if console_locked_ {
     output_buffer_.append(data, size)
   } else {

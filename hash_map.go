@@ -19,7 +19,7 @@ package ginja
 
 // MurmurHash2, by Austin Appleby
 static inline
-func MurmurHash2(key *const void, len size_t) unsigned int {
+func MurmurHash2(key *void, len uint) unsigned int {
   seed := 0xDECAFBAD
   m := 0x5bd1e995
   r := 24

@@ -175,7 +175,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
 
 // Get the Node for a given command-line path, handling features like
 // spell correction.
-func (n *NinjaMain) CollectTarget(cpath string, err *string) Node* {
+func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
   path := cpath
   if len(path) == 0 {
     *err = "empty path"
@@ -246,7 +246,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
 }
 
 // The various subcommands, run via "-t XXX".
-func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolGraph(options *Options, argc int, argv []*char) int {
   var nodes []*Node
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
@@ -264,7 +264,7 @@ func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) in
   return 0
 }
 
-func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
   if argc == 0 {
     Error("expected a target to query")
     return 1
@@ -308,7 +308,7 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
   return 0
 }
 
-func (n *NinjaMain) ToolBrowse(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolBrowse(options *Options, argc int, argv []*char) int {
   RunBrowsePython(&state_, ninja_command_, options.input_file, argc, argv)
   // If we get here, the browse failed.
   return 1
@@ -318,7 +318,7 @@ func (n *NinjaMain) ToolBrowse(Options* const, int, char**) int {
   return 1
 }
 
-func (n *NinjaMain) ToolMSVC(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolMSVC(options *Options, argc int, argv []*char) int {
   // Reset getopt: push one argument onto the front of argv, reset optind.
   argc++
   argv--
@@ -384,7 +384,7 @@ func ToolTargetsList(state *State) int {
   return 0
 }
 
-func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int {
+func (n *NinjaMain) ToolDeps(options *Options, argc int, argv *char*) int {
   var nodes []*Node
   if argc == 0 {
     for ni := deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ni++ {
@@ -423,7 +423,7 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
   return 0
 }
 
-func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **char) int {
+func (n *NinjaMain) ToolMissingDeps(options *Options, argc int, argv *char*) int {
   var nodes []*Node
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
@@ -443,7 +443,7 @@ func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **cha
   return 0
 }
 
-func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolTargets(options *Options, argc int, argv []*char) int {
   depth := 1
   if argc >= 1 {
     mode := argv[0]
@@ -485,7 +485,7 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
   }
 }
 
-func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolRules(options *Options, argc int, argv []*char) int {
   // Parse options.
 
   // The rules tool uses getopt, and expects argv[0] to contain the name of
@@ -529,7 +529,7 @@ func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) in
   return 0
 }
 
-func (n *NinjaMain) ToolWinCodePage(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolWinCodePage(options *Options, argc int, argv []*char) int {
   if argc != 0 {
     printf("usage: ninja -t wincodepage\n")
     return 1
@@ -558,7 +558,7 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
   }
 }
 
-func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolCommands(options *Options, argc int, argv []*char) int {
   // The clean tool uses getopt, and expects argv[0] to contain the name of
   // the tool, i.e. "commands".
   argc++
@@ -597,7 +597,7 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   return 0
 }
 
-func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolClean(options *Options, argc int, argv []*char) int {
   // The clean tool uses getopt, and expects argv[0] to contain the name of
   // the tool, i.e. "clean".
   argc++
@@ -642,7 +642,7 @@ func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) in
   }
 }
 
-func (n *NinjaMain) ToolCleanDead(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolCleanDead(options *Options, argc int, argv []*char) int {
   Cleaner cleaner(&state_, config_, &disk_interface_)
   return cleaner.CleanDead(build_log_.entries())
 }
@@ -651,7 +651,7 @@ enum EvaluateCommandMode {
   ECM_NORMAL,
   ECM_EXPAND_RSPFILE
 }
-func EvaluateCommandWithRspfile(edge *const Edge, mode EvaluateCommandMode) string {
+func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
   command := edge.EvaluateCommand()
   if mode == ECM_NORMAL {
     return command
@@ -689,7 +689,7 @@ func printCompdb(directory string const, edge Edge* const, eval_mode EvaluateCom
   printf("\"\n  }")
 }
 
-func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*char) int {
   // The compdb tool uses getopt, and expects argv[0] to contain the name of
   // the tool, i.e. "compdb".
   argc++
@@ -756,7 +756,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
   return 0
 }
 
-func (n *NinjaMain) ToolRecompact(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolRecompact(options *Options, argc int, argv []*char) int {
   if !EnsureBuildDirExists() {
     return 1
   }
@@ -768,7 +768,7 @@ func (n *NinjaMain) ToolRecompact(options *const Options, argc int, argv []*char
   return 0
 }
 
-func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) int {
+func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
   // The restat tool uses getopt, and expects argv[0] to contain the name of the
   // tool, i.e. "restat"
   argc++
@@ -828,7 +828,7 @@ func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) i
   return EXIT_SUCCESS
 }
 
-func (n *NinjaMain) ToolUrtle(options *const Options, argc int, argv **char) int {
+func (n *NinjaMain) ToolUrtle(options *Options, argc int, argv *char*) int {
   // RLE encoded.
   string urtle =
 " 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 " ",2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<" "; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5" "'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"" "2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e"
@@ -853,7 +853,7 @@ func (n *NinjaMain) ToolUrtle(options *const Options, argc int, argv **char) int
 
 // Find the function to execute for \a tool_name and return it via \a func.
 // Returns a Tool, or NULL if Ninja should exit.
-func ChooseTool(tool_name string) const Tool* {
+func ChooseTool(tool_name string) *Tool {
   static const Tool kTools[] = {
     { "browse", "browse dependency graph in a web browser",
       Tool::RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
@@ -1094,7 +1094,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 
 // Build the targets listed on the command line.
 // @return an exit code.
-func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
+func (n *NinjaMain) RunBuild(argc int, argv *char*, status *Status) int {
   err := ""
   var targets []*Node
   if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
@@ -1157,7 +1157,7 @@ func ExceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
 
 // Parse argv for command-line options.
 // Returns an exit code, or -1 if Ninja should continue.
-func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) int {
+func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) int {
   config.parallelism = GuessParallelism()
 
   enum { OPT_VERSION = 1, OPT_QUIET = 2 }
@@ -1252,7 +1252,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
   return -1
 }
 
-func real_main(argc int, argv **char) NORETURN void {
+func real_main(argc int, argv *char*) NORETURN void {
   // Use exit() instead of return in this function to avoid potentially
   // expensive cleanup when destructing NinjaMain.
   var config BuildConfig
@@ -1361,7 +1361,7 @@ func real_main(argc int, argv **char) NORETURN void {
   exit(1)
 }
 
-func main(argc int, argv **char) int {
+func main(argc int, argv *char*) int {
   // Set a handler to catch crashes not caught by the __try..__except
   // block (e.g. an exception in a stack-unwind-block).
   set_terminate(TerminateHandler)

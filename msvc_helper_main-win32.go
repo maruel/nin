@@ -58,7 +58,7 @@ func WriteDepFileOrDie(object_path string, parse *CLParser) {
   fclose(depfile)
 }
 
-func MSVCHelperMain(argc int, argv **char) int {
+func MSVCHelperMain(argc int, argv *char*) int {
   output_filename := nil
   envfile := nil
 

@@ -181,14 +181,14 @@ type Edge struct {
   implicit_outs_ int
 
 }
-  func (e *Edge) is_implicit(index size_t) bool {
+  func (e *Edge) is_implicit(index uint) bool {
     return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
         !is_order_only(index)
   }
-  func (e *Edge) is_order_only(index size_t) bool {
+  func (e *Edge) is_order_only(index uint) bool {
     return index >= inputs_.size() - order_only_deps_
   }
-  func (e *Edge) is_implicit_out(index size_t) bool {
+  func (e *Edge) is_implicit_out(index uint) bool {
     return index >= outputs_.size() - implicit_outs_
   }
 
@@ -212,7 +212,7 @@ type ImplicitDepLoader struct {
   deps_log_ *DepsLog
   depfile_parser_options_ *DepfileParserOptions const
 }
-  func (i *ImplicitDepLoader) deps_log() DepsLog* {
+  func (i *ImplicitDepLoader) deps_log() *DepsLog {
     return deps_log_
   }
 
@@ -230,13 +230,13 @@ type DependencyScan struct {
   dep_loader_ ImplicitDepLoader
   dyndep_loader_ DyndepLoader
 }
-  func (d *DependencyScan) build_log() BuildLog* {
+  func (d *DependencyScan) build_log() *BuildLog {
     return build_log_
   }
   func (d *DependencyScan) set_build_log(log *BuildLog) {
     build_log_ = log
   }
-  func (d *DependencyScan) deps_log() DepsLog* {
+  func (d *DependencyScan) deps_log() *DepsLog {
     return dep_loader_.deps_log()
   }
 
@@ -474,7 +474,7 @@ func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *No
 
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
-func (d *DependencyScan) RecomputeOutputDirty(edge *const Edge, most_recent_input *const Node, command string, output *Node) bool {
+func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Node, command string, output *Node) bool {
   if edge.is_phony() {
     // Phony edges don't write any output.  Outputs are only dirty if
     // there are no inputs and we're missing the output.

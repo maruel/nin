@@ -71,7 +71,7 @@ func TestMatchesFilter(test string, filter string) bool {
   return PatternMatchesString(pos, test) && !PatternMatchesString(neg, test)
 }
 
-func ReadFlags(argc *int, argv ***char, test_filter *string) bool {
+func ReadFlags(argc *int, argv *char**, test_filter *string) bool {
   enum { OPT_GTEST_FILTER = 1 }
   const option kLongOptions[] = {
     { "gtest_filter", required_argument, nil, OPT_GTEST_FILTER },

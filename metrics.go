@@ -57,7 +57,7 @@ type Stopwatch struct {
 
   started_ uint64
 }
-  func (s *Stopwatch) Elapsed() double {
+  func (s *Stopwatch) Elapsed() float64 {
     return 1e-6 * static_cast<double>(Now() - started_)
   }
 
@@ -70,7 +70,7 @@ type Stopwatch struct {
 Metrics* g_metrics = nil
 
 // Compute a platform-specific high-res timer value that fits into an int64.
-func HighResTimer() int64_t {
+func HighResTimer() int64 {
   var tv timeval
   if gettimeofday(&tv, nil) < 0 {
     Fatal("gettimeofday: %s", strerror(errno))
@@ -79,15 +79,15 @@ func HighResTimer() int64_t {
 }
 
 // Convert a delta of HighResTimer() values to microseconds.
-func TimerToMicros(dt int64_t) int64_t {
+func TimerToMicros(dt int64) int64 {
   // No conversion necessary.
   return dt
 }
-func LargeIntegerToInt64(i *LARGE_INTEGER) int64_t {
+func LargeIntegerToInt64(i *LARGE_INTEGER) int64 {
   return ((int64_t)i.HighPart) << 32 | i.LowPart
 }
 
-func HighResTimer() int64_t {
+func HighResTimer() int64 {
   var counter LARGE_INTEGER
   if !QueryPerformanceCounter(&counter) {
     Fatal("QueryPerformanceCounter: %s", GetLastErrorString())
@@ -95,7 +95,7 @@ func HighResTimer() int64_t {
   return LargeIntegerToInt64(counter)
 }
 
-func TimerToMicros(dt int64_t) int64_t {
+func TimerToMicros(dt int64) int64 {
   ticks_per_sec := 0
   if !ticks_per_sec {
     var freq LARGE_INTEGER
@@ -123,7 +123,7 @@ ScopedMetric::~ScopedMetric() {
   metric_.sum += dt
 }
 
-func (m *Metrics) NewMetric(name string) Metric* {
+func (m *Metrics) NewMetric(name string) *Metric {
   metric := new Metric
   metric.name = name
   metric.count = 0
@@ -148,13 +148,13 @@ func (m *Metrics) Report() {
   }
 }
 
-func (s *Stopwatch) Now() uint64_t {
+func (s *Stopwatch) Now() uint64 {
   return TimerToMicros(HighResTimer())
 }
 
 // Get the current time as relative to some epoch.
 // Epoch varies between platforms; only useful for measuring elapsed time.
-func GetTimeMillis() int64_t {
+func GetTimeMillis() int64 {
   return TimerToMicros(HighResTimer()) / 1000
 }
 

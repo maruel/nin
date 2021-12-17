@@ -110,7 +110,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
   }
 }
 
-func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node, dep_nodes_count int) {
+func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes *Node*, dep_nodes_count int) {
   edge := node.in_edge()
   var deplog_edges map[*Edge]struct{}
   for i := 0; i < dep_nodes_count; i++ {

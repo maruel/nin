@@ -141,7 +141,7 @@ func (s *State) AddPool(pool *Pool) {
   pools_[pool.name()] = pool
 }
 
-func (s *State) LookupPool(pool_name string) Pool* {
+func (s *State) LookupPool(pool_name string) *Pool {
   i := pools_.find(pool_name)
   if i == pools_.end() {
     return nil
@@ -149,7 +149,7 @@ func (s *State) LookupPool(pool_name string) Pool* {
   return i.second
 }
 
-func (s *State) AddEdge(rule *const Rule) Edge* {
+func (s *State) AddEdge(rule *Rule) *Edge {
   edge := new Edge()
   edge.rule_ = rule
   edge.pool_ = &State::kDefaultPool
@@ -159,7 +159,7 @@ func (s *State) AddEdge(rule *const Rule) Edge* {
   return edge
 }
 
-func (s *State) GetNode(path string, slash_bits uint64_t) Node* {
+func (s *State) GetNode(path string, slash_bits uint64) *Node {
   node := LookupNode(path)
   if node != nil {
     return node
@@ -169,7 +169,7 @@ func (s *State) GetNode(path string, slash_bits uint64_t) Node* {
   return node
 }
 
-func (s *State) LookupNode(path string) Node* {
+func (s *State) LookupNode(path string) *Node {
   i := paths_.find(path)
   if i != paths_.end() {
     return i.second
@@ -177,7 +177,7 @@ func (s *State) LookupNode(path string) Node* {
   return nil
 }
 
-func (s *State) SpellcheckNode(path string) Node* {
+func (s *State) SpellcheckNode(path string) *Node {
   kAllowReplacements := true
   kMaxValidEditDistance := 3
 
@@ -193,13 +193,13 @@ func (s *State) SpellcheckNode(path string) Node* {
   return result
 }
 
-func (s *State) AddIn(edge *Edge, path string, slash_bits uint64_t) {
+func (s *State) AddIn(edge *Edge, path string, slash_bits uint64) {
   node := GetNode(path, slash_bits)
   edge.inputs_.push_back(node)
   node.AddOutEdge(edge)
 }
 
-func (s *State) AddOut(edge *Edge, path string, slash_bits uint64_t) bool {
+func (s *State) AddOut(edge *Edge, path string, slash_bits uint64) bool {
   node := GetNode(path, slash_bits)
   if node.in_edge() {
     return false
@@ -221,7 +221,7 @@ func (s *State) AddDefault(path string, err *string) bool {
 
 // @return the root node(s) of the graph. (Root nodes have no output edges).
 // @param error where to write the error message if somethings went wrong.
-func (s *State) RootNodes(err *string) vector<Node*> {
+func (s *State) RootNodes(err *string) []*Node {
   var root_nodes []*Node
   // Search for nodes with no output.
   for e := edges_.begin(); e != edges_.end(); e++ {
@@ -239,7 +239,7 @@ func (s *State) RootNodes(err *string) vector<Node*> {
   return root_nodes
 }
 
-func (s *State) DefaultNodes(err *string) vector<Node*> {
+func (s *State) DefaultNodes(err *string) []*Node {
   return defaults_.empty() ? RootNodes(err) : defaults_
 }
 

@@ -73,7 +73,7 @@ const int kCurrentVersion = 5
 
 // 64bit MurmurHash2, by Austin Appleby
 inline
-func MurmurHash64A(key *const void, len size_t) uint64_t {
+func MurmurHash64A(key *void, len uint) uint64 {
   seed := 0xDECAFBADDECAFBADull
   m := BIG_CONSTANT(0xc6a4a7935bd1e995)
   r := 47
@@ -235,7 +235,7 @@ type LineReader struct {
   // Points at the next \n in buf_ after line_start, or NULL.
   line_end_ *char
 }
-  func (l *LineReader) ReadLine(line_start **char, line_end **char) bool {
+  func (l *LineReader) ReadLine(line_start *char*, line_end *char*) bool {
     if line_start_ >= buf_end_ || !line_end_ {
       // Buffer empty, refill.
       size_read := fread(buf_, 1, sizeof(buf_), file_)
@@ -388,7 +388,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 }
 
 // Lookup a previously-run command by its output path.
-func (b *BuildLog) LookupByOutput(path string) BuildLog::LogEntry* {
+func (b *BuildLog) LookupByOutput(path string) *BuildLog::LogEntry {
   i := entries_.find(path)
   if i != entries_.end() {
     return i.second
@@ -452,7 +452,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs **char, err string* const) bool {
+func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs *char*, err string* const) bool {
   METRIC_RECORD(".ninja_log restat")
 
   Close()

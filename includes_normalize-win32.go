@@ -17,7 +17,7 @@
 package ginja
 
 
-func InternalGetFullPathName(file_name *string, buffer *char, buffer_length size_t, err *string) bool {
+func InternalGetFullPathName(file_name *string, buffer *char, buffer_length uint, err *string) bool {
   result_size := GetFullPathNameA(file_name.AsString(), buffer_length, buffer, nil)
   if result_size == 0 {
     *err = "GetFullPathNameA(" + file_name.AsString() + "): " +

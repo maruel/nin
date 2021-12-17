@@ -336,7 +336,7 @@ func (s *SubprocessSet) DoWork() bool {
   return IsInterrupted()
 }
 
-func (s *SubprocessSet) NextFinished() Subprocess* {
+func (s *SubprocessSet) NextFinished() *Subprocess {
   if finished_.empty() {
     return nil
   }

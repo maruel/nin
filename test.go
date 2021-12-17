@@ -96,7 +96,7 @@ type ScopedTempDir struct {
 namespace {
 
 // Windows has no mkdtemp.  Implement it in terms of _mktemp_s.
-func mkdtemp(name_template *char) char* {
+func mkdtemp(name_template *char) *char {
   int err = _mktemp_s(name_template, strlen(name_template) + 1)
   if err < 0 {
     perror("_mktemp_s")
@@ -138,7 +138,7 @@ func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
 }
 
 // Short way to get a Node by its path from state_.
-func (s *StateTestWithBuiltinRules) GetNode(path string) Node* {
+func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
   if !strpbrk(path, "/\\") { t.FailNow() }
   return state_.GetNode(path, 0)
 }
@@ -151,7 +151,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
   VerifyGraph(*state)
 }
 
-func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64_t) {
+func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
   if BuildLog::LogEntry::HashCommand(expected) != actual { t.FailNow() }
 }
 

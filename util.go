@@ -561,7 +561,7 @@ static uint64_t FileTimeToTickCount(const FILETIME & ft)
 
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
   FILETIME idle_time, kernel_time, user_time
   BOOL get_system_time_succeeded =
       GetSystemTimes(&idle_time, &kernel_time, &user_time)
@@ -585,12 +585,12 @@ func GetLoadAverage() double {
 }
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
   return -0.0f
 }
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
   var cpu_stats perfstat_cpu_total_t
   if perfstat_cpu_total(nil, &cpu_stats, sizeof(cpu_stats), 1) < 0 {
     return -0.0f
@@ -601,7 +601,7 @@ func GetLoadAverage() double {
 }
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
   var si sysinfo
   if sysinfo(&si) != 0 {
     return -0.0f
@@ -610,12 +610,12 @@ func GetLoadAverage() double {
 }
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
     return -0.0f
 }
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() double {
+func GetLoadAverage() float64 {
   double loadavg[3] = { 0.0f, 0.0f, 0.0f }
   if getloadavg(loadavg, 3) < 0 {
     // Maybe we should return an error here or the availability of
@@ -627,7 +627,7 @@ func GetLoadAverage() double {
 
 // Elide the given string @a str with '...' in the middle if the length
 // exceeds @a width.
-func ElideMiddle(str string, width size_t) string {
+func ElideMiddle(str string, width uint) string {
   switch (width) {
       case 0: return ""
       case 1: return "."
@@ -646,7 +646,7 @@ func ElideMiddle(str string, width size_t) string {
 }
 
 // Truncates a file to the given size.
-func Truncate(path string, size size_t, err *string) bool {
+func Truncate(path string, size uint, err *string) bool {
   int fh = _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   success := _chsize(fh, size)
   _close(fh)

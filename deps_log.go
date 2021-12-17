@@ -121,7 +121,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes *vector<Node*>) 
   return RecordDeps(node, mtime, nodes.size(), nodes.empty() ? nil : (Node**)&nodes.front())
 }
 
-func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes **Node) bool {
+func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes *Node*) bool {
   // Track whether there's any new data to be recorded.
   made_change := false
 
@@ -362,7 +362,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   return LOAD_SUCCESS
 }
 
-func (d *DepsLog) GetDeps(node *Node) DepsLog::Deps* {
+func (d *DepsLog) GetDeps(node *Node) *DepsLog::Deps {
   // Abort if the node has no id (never referenced in the deps) or if
   // there's no deps recorded for the node.
   if node.id() < 0 || node.id() >= (int)deps_.size() {
@@ -371,7 +371,7 @@ func (d *DepsLog) GetDeps(node *Node) DepsLog::Deps* {
   return deps_[node.id()]
 }
 
-func (d *DepsLog) GetFirstReverseDepsNode(node *Node) Node* {
+func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
   for id := 0; id < deps_.size(); id++ {
     deps := deps_[id]
     if deps == nil {

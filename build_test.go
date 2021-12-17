@@ -19,7 +19,7 @@ package ginja
 
 type CompareEdgesByOutput struct {
 }
-  func (c *CompareEdgesByOutput) cmp(a *const Edge, b *const Edge) bool {
+  func (c *CompareEdgesByOutput) cmp(a *Edge, b *Edge) bool {
     return a.outputs_[0].path() < b.outputs_[0].path()
   }
 
@@ -599,7 +599,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
   return true
 }
 
-func (f *FakeCommandRunner) GetActiveEdges() vector<Edge*> {
+func (f *FakeCommandRunner) GetActiveEdges() []*Edge {
   return active_edges_
 }
 
