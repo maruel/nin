@@ -399,8 +399,8 @@ type FakeCommandRunner struct {
   explicit FakeCommandRunner(VirtualFileSystem* fs) :
       max_active_edges_(1), fs_(fs) {}
 
-  commands_ran_ vector<string>
-  active_edges_ vector<Edge*>
+  commands_ran_ []string
+  active_edges_ []*Edge
   max_active_edges_ uint
   fs_ *VirtualFileSystem
 }

@@ -96,7 +96,7 @@ type Node struct {
   in_edge_ *Edge
 
   // All Edges that use this Node as an input.
-  out_edges_ vector<Edge*>
+  out_edges_ []*Edge
 
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
@@ -146,8 +146,8 @@ type Edge struct {
 
   rule_ *Rule
   pool_ *Pool
-  inputs_ vector<Node*>
-  outputs_ vector<Node*>
+  inputs_ []*Node
+  outputs_ []*Node
   dyndep_ *Node
   env_ *BindingEnv
   mark_ VisitMark
@@ -582,7 +582,7 @@ type EdgeEnv struct {
   EdgeEnv(const Edge* const edge, const EscapeKind escape)
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 
-  lookups_ vector<string>
+  lookups_ []string
   edge_ Edge* const
   escape_in_out_ EscapeKind
   recursive_ bool

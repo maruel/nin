@@ -201,7 +201,7 @@ type StatTest struct {
   StatTest() : scan_(&state_, nil, nil, this, nil) {}
 
   scan_ DependencyScan
-  mtimes_ map<string, TimeStamp>
+  mtimes_ map[string]TimeStamp
   stats_ mutable vector<string>
 }
   func (s *StatTest) WriteFile(path string, contents string) bool {

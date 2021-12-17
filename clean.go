@@ -26,8 +26,8 @@ type Cleaner struct {
   state_ *State
   config_ *BuildConfig
   dyndep_loader_ DyndepLoader
-  removed_ set<string>
-  cleaned_ set<Node*>
+  removed_ map[string]struct{}
+  cleaned_ map[*Node]struct{}
   cleaned_files_count_ int
   disk_interface_ *DiskInterface
   status_ int

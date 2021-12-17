@@ -356,7 +356,7 @@ func ToolTargetsSourceList(state *State) int {
 }
 
 func ToolTargetsList(state *State, rule_name string) int {
-  var rules set<string>
+  var rules map[string]struct{}
 
   // Gather the outputs.
   for e := state.edges_.begin(); e != state.edges_.end(); e++ {

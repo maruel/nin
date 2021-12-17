@@ -62,12 +62,12 @@ type VirtualFileSystem struct {
 
   // An entry for a single in-memory file.
 
-  directories_made_ vector<string>
-  files_read_ vector<string>
+  directories_made_ []string
+  files_read_ []string
   FileMap typedef map<string, Entry>
   files_ FileMap
-  files_removed_ set<string>
-  files_created_ set<string>
+  files_removed_ map[string]struct{}
+  files_created_ map[string]struct{}
 
   // A simple fake timestamp for file operations.
   now_ int
@@ -171,7 +171,7 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
   }
 
   // The union of all in- and out-edges of each nodes should be exactly edges_.
-  var node_edge_set set<const Edge*>
+  var node_edge_set map[*Edge]struct{}
   for p := state.paths_.begin(); p != state.paths_.end(); p++ {
     n := p.second
     if n.in_edge() {

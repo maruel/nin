@@ -23,7 +23,7 @@ package ginja
 // output.
 type CLParser struct {
 
-  includes_ set<string>
+  includes_ map[string]struct{}
 }
 
 

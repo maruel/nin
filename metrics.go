@@ -43,7 +43,7 @@ type ScopedMetric struct {
 // The singleton that stores metrics and prints the report.
 type Metrics struct {
 
-  metrics_ vector<Metric*>
+  metrics_ []*Metric
 }
 
 // A simple stopwatch which returns the time

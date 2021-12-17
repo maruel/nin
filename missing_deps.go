@@ -31,10 +31,10 @@ type MissingDependencyScanner struct {
   deps_log_ *DepsLog
   state_ *State
   disk_interface_ *DiskInterface
-  seen_ set<Node*>
-  nodes_missing_deps_ set<Node*>
-  generated_nodes_ set<Node*>
-  generator_rules_ set<const Rule*>
+  seen_ map[*Node]struct{}
+  nodes_missing_deps_ map[*Node]struct{}
+  generated_nodes_ map[*Node]struct{}
+  generator_rules_ map[*Rule]struct{}
   missing_dep_path_count_ int
 
   using InnerAdjacencyMap = unordered_map<Edge*, bool>
@@ -112,7 +112,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 
 func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node, dep_nodes_count int) {
   edge := node.in_edge()
-  var deplog_edges set<Edge*>
+  var deplog_edges map[*Edge]struct{}
   for i := 0; i < dep_nodes_count; i++ {
     deplog_node := dep_nodes[i]
     // Special exception: A dep on build.ninja can be used to mean "always
@@ -137,7 +137,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
   }
 
   if !missing_deps.empty() {
-    var missing_deps_rule_names set<string>
+    var missing_deps_rule_names map[string]struct{}
     for ne := missing_deps.begin(); ne != missing_deps.end(); ne++ {
       for i := 0; i < dep_nodes_count; i++ {
         if dep_nodes[i].in_edge() == *ne {

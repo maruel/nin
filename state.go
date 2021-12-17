@@ -68,13 +68,13 @@ type State struct {
   paths_ Paths
 
   // All the pools used in the graph.
-  pools_ map<string, Pool*>
+  pools_ map[string]*Pool
 
   // All the edges of the graph.
-  edges_ vector<Edge*>
+  edges_ []*Edge
 
   bindings_ BindingEnv
-  defaults_ vector<Node*>
+  defaults_ []*Node
 }
 
 

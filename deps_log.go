@@ -71,9 +71,9 @@ type DepsLog struct {
   file_path_ string
 
   // Maps id -> Node.
-  nodes_ vector<Node*>
+  nodes_ []*Node
   // Maps id -> deps of that id.
-  deps_ vector<Deps*>
+  deps_ []*Deps
 
   DepsLogTest friend struct
 }

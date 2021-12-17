@@ -22,8 +22,8 @@ type Dyndeps struct {
   Dyndeps() : used_(false), restat_(false) {}
   used_ bool
   restat_ bool
-  implicit_inputs_ vector<Node*>
-  implicit_outputs_ vector<Node*>
+  implicit_inputs_ []*Node
+  implicit_outputs_ []*Node
 }
 
 // Store data loaded from one dyndep file.  Map from an edge
