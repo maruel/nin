@@ -24,9 +24,9 @@ type NoDeadPaths struct {
 }
 
 func WriteTestData(err *string) bool {
-  BuildLog log
+  var log BuildLog
 
-  NoDeadPaths no_dead_paths
+  var no_dead_paths NoDeadPaths
   if !log.OpenForWrite(kTestFilename, no_dead_paths, err) {
     return false
   }
@@ -62,7 +62,7 @@ func WriteTestData(err *string) bool {
   }
   long_rule_command += "$in -o $out\n"
 
-  State state
+  var state State
   ManifestParser parser(&state, nil)
   if !parser.ParseTest("rule cxx\n  command = " + long_rule_command, err) {
     return false
@@ -71,7 +71,7 @@ func WriteTestData(err *string) bool {
   // Create build edges. Using ManifestParser is as fast as using the State api
   // for edge creation, so just use that.
   kNumCommands := 30000
-  string build_rules
+  build_rules := ""
   for i := 0; i < kNumCommands; i++ {
     char buf[80]
     sprintf(buf, "build input%d.o: cxx input%d.cc\n", i, i)
@@ -91,7 +91,7 @@ func WriteTestData(err *string) bool {
 
 func main() int {
   vector<int> times
-  string err
+  err := ""
 
   if !WriteTestData(&err) {
     fprintf(stderr, "Failed to write test data: %s\n", err)
@@ -100,7 +100,7 @@ func main() int {
 
   {
     // Read once to warm up disk cache.
-    BuildLog log
+    var log BuildLog
     if log.Load(kTestFilename, &err) == LOAD_ERROR {
       fprintf(stderr, "Failed to read test data: %s\n", err)
       return 1
@@ -109,7 +109,7 @@ func main() int {
   kNumRepetitions := 5
   for i := 0; i < kNumRepetitions; i++ {
     start := GetTimeMillis()
-    BuildLog log
+    var log BuildLog
     if log.Load(kTestFilename, &err) == LOAD_ERROR {
       fprintf(stderr, "Failed to read test data: %s\n", err)
       return 1

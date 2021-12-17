@@ -107,7 +107,7 @@ func IsFullPathName(s StringPiece) bool {
 }
 
 IncludesNormalize::IncludesNormalize(string relative_to) {
-  string err
+  err := ""
   relative_to_ = AbsPath(relative_to, &err)
   if len(err) != 0 {
     Fatal("Initializing IncludesNormalize(): %s", err)
@@ -144,7 +144,7 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
     return ""
   }
   vector<StringPiece> path_list = SplitStringPiece(abs_path, '/')
-  int i
+  i := 0
   for i = 0; i < static_cast<int>(min(start_list.size(), path_list.size())); i++ {
     if !EqualsCaseInsensitiveASCII(start_list[i], path_list[i]) {
       break
@@ -173,7 +173,7 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
     return false
   }
   strncpy(copy, input, input.size() + 1)
-  uint64_t slash_bits
+  var slash_bits uint64
   CanonicalizePath(copy, &len, &slash_bits)
   StringPiece partially_fixed(copy, len)
   abs_input := AbsPath(partially_fixed, err)

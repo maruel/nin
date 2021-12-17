@@ -133,10 +133,10 @@ func main(argc int, argv []*char) int {
   for limit := 1 << 10; limit < (1<<20); limit *= 2 {
     start := GetTimeMillis()
     for rep := 0; rep < limit; rep++ {
-      string output
-      string err
+      output := ""
+      err := ""
 
-      CLParser parser
+      var parser CLParser
       if !parser.Parse(perf_testdata, "", &output, &err) {
         printf("%s\n", err)
         return 1

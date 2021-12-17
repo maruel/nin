@@ -60,7 +60,7 @@ func Warning(msg string, ap va_list) {
 }
 
 void Warning(string msg, ...) {
-  va_list ap
+  var ap va_list
   va_start(ap, msg)
   Warning(msg, ap)
   va_end(ap)
@@ -73,7 +73,7 @@ func Error(msg string, ap va_list) {
 }
 
 void Error(string msg, ...) {
-  va_list ap
+  var ap va_list
   va_start(ap, msg)
   Error(msg, ap)
   va_end(ap)
@@ -86,7 +86,7 @@ func Info(msg string, ap va_list) {
 }
 
 void Info(string msg, ...) {
-  va_list ap
+  var ap va_list
   va_start(ap, msg)
   Info(msg, ap)
   va_end(ap)
@@ -333,7 +333,7 @@ func ReadFile(path string, contents *string, err *string) int {
   }
 
   for ; ;  {
-    DWORD len
+    var len DWORD
     char buf[64 << 10]
     if !::ReadFile(f, buf, sizeof(buf), &len, nil) {
       err.assign(GetLastErrorString())
@@ -364,7 +364,7 @@ func ReadFile(path string, contents *string, err *string) int {
   contents.reserve(st.st_size + 1)
 
   char buf[64 << 10]
-  size_t len
+  var len uint
   while !feof(f) && (len = fread(buf, 1, sizeof(buf), f)) > 0 {
     contents.append(buf, len)
   }
@@ -415,10 +415,10 @@ func SpellcheckStringV(text string, words *vector<string>) string {
 string SpellcheckString(string text, ...) {
   // Note: This takes a const char* instead of a string& because using
   // va_start() with a reference parameter is undefined behavior.
-  va_list ap
+  var ap va_list
   va_start(ap, text)
   vector<string> words
-  string word
+  word := ""
   while (word = va_arg(ap, string)) {
     words.push_back(word)
   }
@@ -430,7 +430,7 @@ string SpellcheckString(string text, ...) {
 func GetLastErrorString() string {
   err := GetLastError()
 
-  char* msg_buf
+  var msg_buf *char
   FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nil, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&msg_buf, 0, nil)
   msg := msg_buf
   LocalFree(msg_buf)
@@ -452,7 +452,7 @@ func islatinalpha(c int) bool {
 
 // Removes all Ansi escape codes (http://www.termsys.demon.co.uk/vtansi.htm).
 func StripAnsiEscapeCodes(in string) string {
-  string stripped
+  stripped := ""
   stripped.reserve(in.size())
 
   for i := 0; i < in.size(); i++ {
@@ -507,12 +507,12 @@ func GetProcessorCount() int {
   // The number of exposed processors might not represent the actual number of
   // processors threads can run on. This happens when a CPU set limitation is
   // active, see https://github.com/ninja-build/ninja/issues/1278
-  cpuset_t mask
+  var mask cpuset_t
   CPU_ZERO(&mask)
   if cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(mask), &mask) == 0 {
     return CPU_COUNT(&mask)
   }
-  cpu_set_t set
+  var set cpu_set_t
   if sched_getaffinity(getpid(), sizeof(set), &set) == 0 {
     return CPU_COUNT(&set)
   }
@@ -531,7 +531,7 @@ static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
   bool first_call = (previous_total_ticks == 0)
   bool ticks_not_updated_since_last_call = (total_ticks_since_last_time == 0)
 
-  double load
+  load := 0.
   if first_call || ticks_not_updated_since_last_call {
     load = previous_load
   } else {
@@ -569,7 +569,7 @@ func GetLoadAverage() double {
   BOOL get_system_time_succeeded =
       GetSystemTimes(&idle_time, &kernel_time, &user_time)
 
-  double posix_compatible_load
+  posix_compatible_load := 0.
   if get_system_time_succeeded {
     idle_ticks := FileTimeToTickCount(idle_time)
 
@@ -594,7 +594,7 @@ func GetLoadAverage() double {
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() double {
-  perfstat_cpu_total_t cpu_stats
+  var cpu_stats perfstat_cpu_total_t
   if perfstat_cpu_total(nil, &cpu_stats, sizeof(cpu_stats), 1) < 0 {
     return -0.0f
   }

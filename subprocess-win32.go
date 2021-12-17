@@ -53,7 +53,7 @@ func (s *Subprocess) SetupPipe(ioport HANDLE) HANDLE {
   // Get the write end of the pipe as a handle inheritable across processes.
   HANDLE output_write_handle =
       CreateFileA(pipe_name, GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, nil)
-  HANDLE output_write_child
+  var output_write_child HANDLE
   if !DuplicateHandle(GetCurrentProcess(), output_write_handle, GetCurrentProcess(), &output_write_child, 0, TRUE, DUPLICATE_SAME_ACCESS) {
     Win32Fatal("DuplicateHandle")
   }
@@ -65,7 +65,7 @@ func (s *Subprocess) SetupPipe(ioport HANDLE) HANDLE {
 func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   child_pipe := SetupPipe(set.ioport_)
 
-  SECURITY_ATTRIBUTES security_attributes
+  var security_attributes SECURITY_ATTRIBUTES
   memset(&security_attributes, 0, sizeof(SECURITY_ATTRIBUTES))
   security_attributes.nLength = sizeof(SECURITY_ATTRIBUTES)
   security_attributes.bInheritHandle = TRUE
@@ -76,7 +76,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
     Fatal("couldn't open nul")
   }
 
-  STARTUPINFOA startup_info
+  var startup_info STARTUPINFOA
   memset(&startup_info, 0, sizeof(startup_info))
   startup_info.cb = sizeof(STARTUPINFO)
   if !use_console_ {
@@ -88,7 +88,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   // In the console case, child_pipe is still inherited by the child and closed
   // when the subprocess finishes, which then notifies ninja.
 
-  PROCESS_INFORMATION process_info
+  var process_info PROCESS_INFORMATION
   memset(&process_info, 0, sizeof(process_info))
 
   // Ninja handles ctrl-c, except for subprocesses in console pools.
@@ -141,7 +141,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 }
 
 func (s *Subprocess) OnPipeReady() {
-  DWORD bytes
+  var bytes DWORD
   if !GetOverlappedResult(pipe_, &overlapped_, &bytes, TRUE) {
     if GetLastError() == ERROR_BROKEN_PIPE {
       CloseHandle(pipe_)
@@ -232,7 +232,7 @@ BOOL WINAPI SubprocessSet::NotifyInterrupted(DWORD dwCtrlType) {
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
   subprocess := new Subprocess(use_console)
   if !subprocess.Start(this, command) {
-    delete subprocess
+    var subprocess delete
     return 0
   }
   if subprocess.child_ {
@@ -244,9 +244,9 @@ Subprocess *SubprocessSet::Add(string command, bool use_console) {
 }
 
 func (s *SubprocessSet) DoWork() bool {
-  DWORD bytes_read
-  Subprocess* subproc
-  OVERLAPPED* overlapped
+  var bytes_read DWORD
+  var subproc *Subprocess
+  var overlapped *OVERLAPPED
 
   if !GetQueuedCompletionStatus(ioport_, &bytes_read, (PULONG_PTR)&subproc, &overlapped, INFINITE) {
     if GetLastError() != ERROR_BROKEN_PIPE {
@@ -293,7 +293,7 @@ func (s *SubprocessSet) Clear() {
     }
   }
   for i := running_.begin(); i != running_.end(); i++ {
-    delete *i
+    var *i delete
   }
   running_ = nil
 }

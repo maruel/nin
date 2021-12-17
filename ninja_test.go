@@ -20,7 +20,7 @@ package ginja
 type RegisteredTest struct {
   testing::Test* (*factory)()
   stringname
-  bool should_run
+  should_run bool
 }
 // This can't be a vector because tests call RegisterTest from static
 // initializers and the order static initializers run it isn't specified. So
@@ -40,7 +40,7 @@ string StringPrintf(string format, ...) {
   const int N = 1024
   char buf[N]
 
-  va_list ap
+  ap va_list
   va_start(ap, format)
   vsnprintf(buf, N, format, ap)
   va_end(ap)
@@ -78,7 +78,7 @@ func ReadFlags(argc *int, argv ***char, test_filter *string) bool {
     { nil, 0, nil, 0 }
   }
 
-  int opt
+  opt := 0
   while (opt = getopt_long(*argc, *argv, "h", kLongOptions, nil)) != -1 {
     switch (opt) {
     case OPT_GTEST_FILTER:
@@ -134,7 +134,7 @@ func main(argc int, argv **char) int {
     if test.Failed() {
       passed = false
     }
-    delete test
+    var test delete
   }
 
   printer.PrintOnNewLine(passed ? "passed\n" : "failed\n")

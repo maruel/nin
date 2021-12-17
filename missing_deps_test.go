@@ -27,7 +27,7 @@ type MissingDependencyScannerTest struct {
   MissingDependencyScannerTest()
       : generator_rule_("generator_rule"), compile_rule_("compile_rule"),
         scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {
-    string err
+    err string
     deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
     ASSERT_EQ("", err)
   }
@@ -40,7 +40,7 @@ type MissingDependencyScannerTest struct {
   }
 
   func (m *MissingDependencyScannerTest) ProcessAllNodes() {
-    string err
+    err := ""
     nodes := state_.RootNodes(&err)
     if "" != err { t.FailNow() }
     for it := nodes.begin(); it != nodes.end(); it++ {
@@ -49,7 +49,7 @@ type MissingDependencyScannerTest struct {
   }
 
   func (m *MissingDependencyScannerTest) CreateInitialState() {
-    EvalString deps_type
+    var deps_type EvalString
     deps_type.AddText("gcc")
     compile_rule_.AddBinding("deps", deps_type)
     generator_rule_.AddBinding("deps", deps_type)
@@ -73,13 +73,13 @@ type MissingDependencyScannerTest struct {
     if 1u != scanner().generator_rules_.count(rule) { t.FailNow() }
   }
 
-  MissingDependencyTestDelegate delegate_
-  Rule generator_rule_
-  Rule compile_rule_
-  DepsLog deps_log_
-  State state_
-  VirtualFileSystem filesystem_
-  MissingDependencyScanner scanner_
+  var delegate_ MissingDependencyTestDelegate
+  var generator_rule_ Rule
+  var compile_rule_ Rule
+  var deps_log_ DepsLog
+  var state_ State
+  var filesystem_ VirtualFileSystem
+  scanner_ MissingDependencyScanner
 }
 
 func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
@@ -146,7 +146,7 @@ func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
   // The missing-deps tool doesn't deal with cycles in the graph, because
   // there will be an error loading the graph before we get to the tool.
   // This test is to illustrate that.
-  string err
+  err := ""
   nodes := state_.RootNodes(&err)
   if "" == err { t.FailNow() }
 }

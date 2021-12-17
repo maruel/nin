@@ -47,7 +47,7 @@ type RealDiskInterface struct {
   virtual ~RealDiskInterface() {}
 
   // Whether stat information can be cached.
-  bool use_cache_
+  use_cache_ bool
 
   typedef map<string, TimeStamp> DirCache
   // TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
@@ -88,7 +88,7 @@ func TimeStampFromFileTime(filetime *FILETIME) TimeStamp {
 }
 
 func StatSingleFile(path string, err *string) TimeStamp {
-  WIN32_FILE_ATTRIBUTE_DATA attrs
+  var attrs WIN32_FILE_ATTRIBUTE_DATA
   if !GetFileAttributesExA(path, GetFileExInfoStandard, &attrs) {
     win_err := GetLastError()
     if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
@@ -117,7 +117,7 @@ func StatAllFilesInDir(dir string, stamps *map<string, TimeStamp>, err *string) 
       static_cast<FINDEX_INFO_LEVELS>(1)
   FINDEX_INFO_LEVELS level =
       can_use_basic_info ? kFindExInfoBasic : FindExInfoStandard
-  WIN32_FIND_DATAA ffd
+  var ffd WIN32_FIND_DATAA
   HANDLE find_handle = FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)
 
   if find_handle == INVALID_HANDLE_VALUE {
@@ -151,7 +151,7 @@ func (d *DiskInterface) MakeDirs(path string) bool {
   if len(dir) == 0 {
     return true  // Reached root; assume it's there.
   }
-  string err
+  err := ""
   mtime := Stat(dir, &err)
   if mtime < 0 {
     Error("%s", err)
@@ -176,7 +176,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
   // MSDN: "Naming Files, Paths, and Namespaces"
   // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
   if !path.empty() && path[0] != '\\' && path.size() > MAX_PATH {
-    ostringstream err_stream
+    var err_stream ostringstream
     err_stream << "Stat(" << path << "): Filename longer than " << MAX_PATH
                << " characters"
     *err = err_stream.str()

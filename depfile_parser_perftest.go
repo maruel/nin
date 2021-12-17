@@ -30,14 +30,14 @@ func main(argc int, argv []*char) int {
     for limit := 1 << 10; limit < (1<<20); limit *= 2 {
       start := GetTimeMillis()
       for rep := 0; rep < limit; rep++ {
-        string buf
-        string err
+        buf := ""
+        err := ""
         if ReadFile(filename, &buf, &err) < 0 {
           printf("%s: %s\n", filename, err)
           return 1
         }
 
-        DepfileParser parser
+        var parser DepfileParser
         if !parser.Parse(&buf, &err) {
           printf("%s: %s\n", filename, err)
           return 1

@@ -18,9 +18,9 @@ package ginja
 
 
 func TestState_Basic(t *testing.T) {
-  State state
+  var state State
 
-  EvalString command
+  var command EvalString
   command.AddText("cat ")
   command.AddSpecial("in")
   command.AddText(" > ")

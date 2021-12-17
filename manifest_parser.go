@@ -31,8 +31,8 @@ type ManifestParserOptions struct {
   ManifestParserOptions()
       : dupe_edge_action_(kDupeEdgeActionWarn),
         phony_cycle_action_(kPhonyCycleActionWarn) {}
-  DupeEdgeAction dupe_edge_action_
-  PhonyCycleAction phony_cycle_action_
+  dupe_edge_action_ DupeEdgeAction
+  phony_cycle_action_ PhonyCycleAction
 }
 
 // Parses .ninja files.
@@ -45,9 +45,9 @@ type ManifestParser struct {
     return Parse("input", input, err)
   }
 
-  BindingEnv* env_
-  ManifestParserOptions options_
-  bool quiet_
+  var env_ *BindingEnv
+  var options_ ManifestParserOptions
+  quiet_ bool
 }
 
 
@@ -86,8 +86,8 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
       break
     case Lexer::IDENT: {
       lexer_.UnreadToken()
-      string name
-      EvalString let_value
+      name := ""
+      var let_value EvalString
       if !ParseLet(&name, &let_value, err) {
         return false
       }
@@ -126,7 +126,7 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 
 // Parse various statement types.
 func (m *ManifestParser) ParsePool(err *string) bool {
-  string name
+  name := ""
   if !lexer_.ReadIdent(&name) {
     return lexer_.Error("expected pool name", err)
   }
@@ -142,8 +142,8 @@ func (m *ManifestParser) ParsePool(err *string) bool {
   int depth = -1
 
   while lexer_.PeekToken(Lexer::INDENT) {
-    string key
-    EvalString value
+    key := ""
+    var value EvalString
     if !ParseLet(&key, &value, err) {
       return false
     }
@@ -168,7 +168,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 }
 
 func (m *ManifestParser) ParseRule(err *string) bool {
-  string name
+  name := ""
   if !lexer_.ReadIdent(&name) {
     return lexer_.Error("expected rule name", err)
   }
@@ -184,8 +184,8 @@ func (m *ManifestParser) ParseRule(err *string) bool {
   rule := new Rule(name)  // XXX scoped_ptr
 
   while lexer_.PeekToken(Lexer::INDENT) {
-    string key
-    EvalString value
+    key := ""
+    var value EvalString
     if !ParseLet(&key, &value, err) {
       return false
     }
@@ -225,7 +225,7 @@ func (m *ManifestParser) ParseLet(key *string, value *EvalString, err *string) b
 }
 
 func (m *ManifestParser) ParseDefault(err *string) bool {
-  EvalString eval
+  var eval EvalString
   if !lexer_.ReadPath(&eval, err) {
     return false
   }
@@ -238,9 +238,9 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    uint64_t slash_bits  // Unused because this only does lookup.
+    var slash_bits uint64  // Unused because this only does lookup.
     CanonicalizePath(&path, &slash_bits)
-    string default_err
+    default_err := ""
     if !state_.AddDefault(path, &default_err) {
       return lexer_.Error(default_err, err)
     }
@@ -258,7 +258,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   vector<EvalString> ins, outs
 
   {
-    EvalString out
+    var out EvalString
     if !lexer_.ReadPath(&out, err) {
       return false
     }
@@ -276,7 +276,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   implicit_outs := 0
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
-      EvalString out
+      var out EvalString
       if !lexer_.ReadPath(&out, err) {
         return false
       }
@@ -296,7 +296,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     return false
   }
 
-  string rule_name
+  rule_name := ""
   if !lexer_.ReadIdent(&rule_name) {
     return lexer_.Error("expected build command name", err)
   }
@@ -308,7 +308,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
   for ; ;  {
     // XXX should we require one path here?
-    EvalString in
+    var in EvalString
     if !lexer_.ReadPath(&in, err) {
       return false
     }
@@ -322,7 +322,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   implicit := 0
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
-      EvalString in
+      var in EvalString
       if !lexer_.ReadPath(&in, err) {
         return false
       }
@@ -338,7 +338,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   order_only := 0
   if lexer_.PeekToken(Lexer::PIPE2) {
     for ; ;  {
-      EvalString in
+      var in EvalString
       if !lexer_.ReadPath(&in, err) {
         return false
       }
@@ -358,8 +358,8 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   has_indent_token := lexer_.PeekToken(Lexer::INDENT)
   BindingEnv* env = has_indent_token ? new BindingEnv(env_) : env_
   while has_indent_token {
-    string key
-    EvalString val
+    key := ""
+    var val EvalString
     if !ParseLet(&key, &val, err) {
       return false
     }
@@ -386,7 +386,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&path, &slash_bits)
     if !state_.AddOut(edge, path, slash_bits) {
       if options_.dupe_edge_action_ == kDupeEdgeActionError {
@@ -406,7 +406,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     // All outputs of the edge are already created by other edges. Don't add
     // this edge.  Do this check before input nodes are connected to the edge.
     state_.edges_.pop_back()
-    delete edge
+    var edge delete
     return true
   }
   edge.implicit_outs_ = implicit_outs
@@ -417,7 +417,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&path, &slash_bits)
     state_.AddIn(edge, path, slash_bits)
   }
@@ -445,7 +445,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   // be one of our manifest-specified inputs.
   dyndep := edge.GetUnescapedDyndep()
   if len(dyndep) != 0 {
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&dyndep, &slash_bits)
     edge.dyndep_ = state_.GetNode(dyndep, slash_bits)
     edge.dyndep_.set_dyndep_pending(true)
@@ -461,7 +461,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
-  EvalString eval
+  var eval EvalString
   if !lexer_.ReadPath(&eval, err) {
     return false
   }

@@ -29,14 +29,14 @@ type Cleaner struct {
     return (config_.verbosity != BuildConfig::QUIET && (config_.verbosity == BuildConfig::VERBOSE || config_.dry_run))
   }
 
-  State* state_
+  var state_ *State
   const BuildConfig& config_
-  DyndepLoader dyndep_loader_
+  var dyndep_loader_ DyndepLoader
   set<string> removed_
   set<Node*> cleaned_
-  int cleaned_files_count_
-  DiskInterface* disk_interface_
-  int status_
+  cleaned_files_count_ := 0
+  var disk_interface_ *DiskInterface
+  status_ int
 }
 
 
@@ -57,7 +57,7 @@ func (c *Cleaner) RemoveFile(path string) int {
 
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
-  string err
+  err := ""
   mtime := disk_interface_.Stat(path, &err)
   if mtime == -1 {
     Error("%s", err)
@@ -248,7 +248,7 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
       status_ = 1
       continue
     }
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&target_name, &slash_bits)
     target := state_.LookupNode(target_name)
     if target != nil {
@@ -350,7 +350,7 @@ func (c *Cleaner) LoadDyndeps() {
     if Node* dyndep = (*e).dyndep_ {
       // Capture and ignore errors loading the dyndep file.
       // We clean as much of the graph as we know.
-      string err
+      err := ""
       dyndep_loader_.LoadDyndeps(dyndep, &err)
     }
   }

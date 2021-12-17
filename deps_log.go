@@ -65,18 +65,18 @@ type DepsLog struct {
     Deps(int64_t mtime, int node_count)
         : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
     ~Deps() { delete [] nodes; }
-    TimeStamp mtime
-    int node_count
-    Node** nodes
+    mtime TimeStamp
+    node_count int
+    nodes *Node*
   }
 
   // Used for tests.
   const vector<Node*>& nodes() const { return nodes_; }
   const vector<Deps*>& deps() const { return deps_; }
 
-  bool needs_recompaction_
-  FILE* file_
-  string file_path_
+  needs_recompaction_ bool
+  file_ *FILE
+  file_path_ string
 
   // Maps id -> Node.
   vector<Node*> nodes_
@@ -249,14 +249,14 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
     return LOAD_SUCCESS
   }
 
-  long offset
+  var offset int32
   read_failed := false
   unique_dep_record_count := 0
   total_dep_record_count := 0
   for ; ;  {
     offset = ftell(f)
 
-    unsigned size
+    var size uint32
     if fread(&size, 4, 1, f) < 1 {
       if !feof(f) {
         read_failed = true
@@ -275,7 +275,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       if !size % 4 == 0 { panic("oops") }
       deps_data := reinterpret_cast<int*>(buf)
       out_id := deps_data[0]
-      TimeStamp mtime
+      var mtime TimeStamp
       mtime = (TimeStamp)(((uint64_t)(unsigned int)deps_data[2] << 32) | (uint64_t)(unsigned int)deps_data[1])
       deps_data += 3
       int deps_count = (size / 4) - 3
@@ -397,7 +397,7 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
   // left-over file from a previous recompaction attempt that crashed somehow.
   unlink(temp_path)
 
-  DepsLog new_log
+  var new_log DepsLog
   if !new_log.OpenForWrite(temp_path, err) {
     return false
   }

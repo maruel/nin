@@ -20,19 +20,19 @@ package ginja
 // Command-line options.
 type Options struct {
   // Build file to load.
-  string input_file
+  input_file string
 
   // Directory to change into before running.
-  string working_dir
+  working_dir string
 
   // Tool to run rather than building.
   const Tool* tool
 
   // Whether duplicate rules for one target should warn or print an error.
-  bool dupe_edges_should_err
+  dupe_edges_should_err bool
 
   // Whether phony cycles should warn or print an error.
-  bool phony_cycle_should_err
+  phony_cycle_should_err bool
 }
 
 // The Ninja main() loads up a series of data structures; various tools need
@@ -43,22 +43,22 @@ type NinjaMain struct {
       start_time_millis_(GetTimeMillis()) {}
 
   // Command line used to run Ninja.
-  string ninja_command_
+  ninja_command_ string
 
   // Build configuration set from flags (e.g. parallelism).
   const BuildConfig& config_
 
   // Loaded state (rules, nodes).
-  State state_
+  state_ State
 
   // Functions for accessing the disk.
-  RealDiskInterface disk_interface_
+  disk_interface_ RealDiskInterface
 
   // The build directory, used for storing the build log etc.
-  string build_dir_
+  build_dir_ string
 
-  BuildLog build_log_
-  DepsLog deps_log_
+  build_log_ BuildLog
+  deps_log_ DepsLog
 
   // The type of functions that are the entry points to tools (subcommands).
   typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
@@ -77,7 +77,7 @@ type NinjaMain struct {
     // which seems good enough for this corner case.)
     // Do keep entries around for files which still exist on disk, for
     // generators that want to use this information.
-    string err
+    err := ""
     mtime := disk_interface_.Stat(s.AsString(), &err)
     if mtime == -1 {
       Error("%s", err)  // Log and ignore Stat() errors.
@@ -85,16 +85,16 @@ type NinjaMain struct {
     return mtime == 0
   }
 
-  int64_t start_time_millis_
+  start_time_millis_ int64
 }
 
 // Subtools, accessible via "-t foo".
 type Tool struct {
   // Short name of the tool.
-  string name
+  name string
 
   // Description (shown in "-t list").
-  string desc
+  desc string
 
   // When to run the tool.
   enum {
@@ -142,7 +142,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
     *err = "empty path"
     return false
   }
-  uint64_t slash_bits  // Unused because this path is only used for lookup.
+  var slash_bits uint64  // Unused because this path is only used for lookup.
   CanonicalizePath(&path, &slash_bits)
   node := state_.LookupNode(path)
   if node == nil {
@@ -182,7 +182,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) Node* {
     *err = "empty path"
     return nil
   }
-  uint64_t slash_bits
+  var slash_bits uint64
   CanonicalizePath(&path, &slash_bits)
 
   // Special syntax: "foo.cc^" means "the first output of foo.cc".
@@ -249,7 +249,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
 // The various subcommands, run via "-t XXX".
 func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) int {
   vector<Node*> nodes
-  string err
+  err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
     return 1
@@ -274,7 +274,7 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
   DyndepLoader dyndep_loader(&state_, &disk_interface_)
 
   for i := 0; i < argc; i++ {
-    string err
+    err := ""
     node := CollectTarget(argv[i], &err)
     if node == nil {
       Error("%s", err)
@@ -394,14 +394,14 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
       }
     }
   } else {
-    string err
+    err := ""
     if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
       Error("%s", err)
       return 1
     }
   }
 
-  RealDiskInterface disk_interface
+  var disk_interface RealDiskInterface
   for vector<Node*>::iterator it = nodes.begin(), end = nodes.end(); it != end; it++ {
     deps := deps_log_.GetDeps(*it)
     if deps == nil {
@@ -409,7 +409,7 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
       continue
     }
 
-    string err
+    err := ""
     mtime := disk_interface.Stat((*it).path(), &err)
     if mtime == -1 {
       Error("%s", err)  // Log and ignore Stat() errors;
@@ -426,13 +426,13 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
 
 func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **char) int {
   vector<Node*> nodes
-  string err
+  err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
     return 1
   }
-  RealDiskInterface disk_interface
-  MissingDependencyPrinter printer
+  var disk_interface RealDiskInterface
+  var printer MissingDependencyPrinter
   MissingDependencyScanner scanner(&printer, &deps_log_, &state_, &disk_interface)
   for it := nodes.begin(); it != nodes.end(); it++ {
     scanner.ProcessNode(*it)
@@ -449,7 +449,7 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
   if argc >= 1 {
     mode := argv[0]
     if mode == "rule" {
-      string rule
+      rule := ""
       if argc > 1 {
         rule = argv[1]
       }
@@ -476,7 +476,7 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
     }
   }
 
-  string err
+  err := ""
   root_nodes := state_.RootNodes(&err)
   if len(err) == 0 {
     return ToolTargetsList(root_nodes, depth, 0)
@@ -497,7 +497,7 @@ func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) in
   print_description := false
 
   optind = 1
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("hd"))) != -1 {
     switch (opt) {
     case 'd':
@@ -568,7 +568,7 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   mode := PCM_All
 
   optind = 1
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("hs"))) != -1 {
     switch (opt) {
     case 's':
@@ -584,13 +584,13 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   argc -= optind
 
   vector<Node*> nodes
-  string err
+  err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
     return 1
   }
 
-  EdgeSet seen
+  var seen EdgeSet
   for in := nodes.begin(); in != nodes.end(); in++ {
     PrintCommands((*in).in_edge(), &seen, mode)
   }
@@ -608,7 +608,7 @@ func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) in
   clean_rules := false
 
   optind = 1
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("hgr"))) != -1 {
     switch (opt) {
     case 'g':
@@ -699,7 +699,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
   eval_mode := ECM_NORMAL
 
   optind = 1
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("hx"))) != -1 {
     switch(opt) {
       case 'x':
@@ -776,7 +776,7 @@ func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) i
   argv--
 
   optind = 1
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("h"))) != -1 {
     switch (opt) {
     case 'h':
@@ -797,7 +797,7 @@ func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) i
     log_path = build_dir_ + "/" + log_path
   }
 
-  string err
+  err := ""
   status := build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
@@ -994,7 +994,7 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
     log_path = build_dir_ + "/" + log_path
   }
 
-  string err
+  err := ""
   status := build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
@@ -1037,7 +1037,7 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
     path = build_dir_ + "/" + path
   }
 
-  string err
+  err := ""
   status := deps_log_.Load(path, &state_, &err)
   if status == LOAD_ERROR {
     Error("loading deps log %s: %s", path, err)
@@ -1096,7 +1096,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 // Build the targets listed on the command line.
 // @return an exit code.
 func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
-  string err
+  err := ""
   vector<Node*> targets
   if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
     status.Error("%s", err)
@@ -1170,7 +1170,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
     { nil, 0, nil, 0 }
   }
 
-  int opt
+  opt := 0
   while !options.tool && (opt = getopt_long(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", kLongOptions, nil)) != -1 {
     switch (opt) {
       case 'd':
@@ -1182,7 +1182,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
         options.input_file = optarg
         break
       case 'j': {
-        char* end
+        var end *char
         value := strtol(optarg, &end, 10)
         if *end != 0 || value < 0 {
           Fatal("invalid -j parameter")
@@ -1194,7 +1194,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
         break
       }
       case 'k': {
-        char* end
+        var end *char
         value := strtol(optarg, &end, 10)
         if *end != 0 {
           Fatal("-k parameter not numeric; did you mean -k 0?")
@@ -1207,7 +1207,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
         break
       }
       case 'l': {
-        char* end
+        var end *char
         value := strtod(optarg, &end)
         if end == optarg {
           Fatal("-l parameter not numeric: did you mean -l 0.0?")
@@ -1256,7 +1256,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
 NORETURN void real_main(int argc, char** argv) {
   // Use exit() instead of return in this function to avoid potentially
   // expensive cleanup when destructing NinjaMain.
-  BuildConfig config
+  var config BuildConfig
   Options options = {}
   options.input_file = "build.ninja"
   options.dupe_edges_should_err = true
@@ -1307,7 +1307,7 @@ NORETURN void real_main(int argc, char** argv) {
   for cycle := 1; cycle <= kCycleLimit; cycle++ {
     NinjaMain ninja(ninja_command, config)
 
-    ManifestParserOptions parser_opts
+    var parser_opts ManifestParserOptions
     if options.dupe_edges_should_err {
       parser_opts.dupe_edge_action_ = kDupeEdgeActionError
     }
@@ -1315,7 +1315,7 @@ NORETURN void real_main(int argc, char** argv) {
       parser_opts.phony_cycle_action_ = kPhonyCycleActionError
     }
     ManifestParser parser(&ninja.state_, &ninja.disk_interface_, parser_opts)
-    string err
+    err := ""
     if !parser.Load(options.input_file, &err) {
       status.Error("%s", err)
       exit(1)

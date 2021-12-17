@@ -30,9 +30,9 @@ type DepsLogTest struct {
 }
 
 func TestDepsLogTest_WriteRead(t *testing.T) {
-  State state1
-  DepsLog log1
-  string err
+  var state1 State
+  var log1 DepsLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -57,8 +57,8 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 
   log1.Close()
 
-  State state2
-  DepsLog log2
+  var state2 State
+  var log2 DepsLog
   if log2.Load(kTestFilename, &state2, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -82,9 +82,9 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 func TestDepsLogTest_LotsOfDeps(t *testing.T) {
   kNumDeps := 100000  // More than 64k.
 
-  State state1
-  DepsLog log1
-  string err
+  var state1 State
+  var log1 DepsLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -103,8 +103,8 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
   log1.Close()
 
-  State state2
-  DepsLog log2
+  var state2 State
+  var log2 DepsLog
   if log2.Load(kTestFilename, &state2, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -115,11 +115,11 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 // Verify that adding the same deps twice doesn't grow the file.
 func TestDepsLogTest_DoubleEntry(t *testing.T) {
   // Write some deps to the file and grab its size.
-  int file_size
+  file_size := 0
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
@@ -137,9 +137,9 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 
   // Now reload the file, and read the same deps.
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
@@ -168,12 +168,12 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 "build other_out.o: cc\n"
 
   // Write some deps to the file and grab its size.
-  int file_size
+  file_size := 0
   {
-    State state
+    var state State
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, kManifest))
-    DepsLog log
-    string err
+    var log DepsLog
+    err := ""
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
@@ -196,12 +196,12 @@ func TestDepsLogTest_Recompact(t *testing.T) {
   }
 
   // Now reload the file, and add slightly different deps.
-  int file_size_2
+  file_size_2 := 0
   {
-    State state
+    var state State
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, kManifest))
-    DepsLog log
-    string err
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
@@ -221,12 +221,12 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 
   // Now reload the file, verify the new deps have replaced the old, then
   // recompact.
-  int file_size_3
+  file_size_3 := 0
   {
-    State state
+    var state State
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, kManifest))
-    DepsLog log
-    string err
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     Node* out = state.GetNode("out.o", 0)
@@ -272,10 +272,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
   // Now reload the file and recompact with an empty manifest. The previous
   // entries should be removed.
   {
-    State state
+    var state State
     // Intentionally not parsing kManifest here.
-    DepsLog log
-    string err
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     Node* out = state.GetNode("out.o", 0)
@@ -329,9 +329,9 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
     if  strlen(kInvalidHeaders[i]) != fwrite(kInvalidHeaders[i], 1, strlen(kInvalidHeaders[i]), deps_log) { t.FailNow() }
     ASSERT_EQ(0 ,fclose(deps_log))
 
-    string err
-    DepsLog log
-    State state
+    err := ""
+    var log DepsLog
+    var state State
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
     if "bad deps log signature or version; starting over" != err { t.FailNow() }
   }
@@ -341,9 +341,9 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 func TestDepsLogTest_Truncated(t *testing.T) {
   // Create a file with some entries.
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
@@ -370,11 +370,11 @@ func TestDepsLogTest_Truncated(t *testing.T) {
   node_count := 5
   deps_count := 2
   for size := (int)st.st_size; size > 0; size-- {
-    string err
+    err := ""
     if Truncate(kTestFilename, size, &err) { t.FailNow() }
 
-    State state
-    DepsLog log
+    var state State
+    var log DepsLog
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
     if len(err) != 0 {
       // At some point the log will be so short as to be unparsable.
@@ -400,9 +400,9 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
   // Create a file with some entries.
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
@@ -423,15 +423,15 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
   {
     struct stat st
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
-    string err
+    err := ""
     if Truncate(kTestFilename, st.st_size - 2, &err) { t.FailNow() }
   }
 
   // Load the file again, add an entry.
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
     if "premature end of file; recovering" != err { t.FailNow() }
     err = nil
@@ -454,9 +454,9 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
   // Load the file a third time to verify appending after a mangled
   // entry doesn't break things.
   {
-    State state
-    DepsLog log
-    string err
+    var state State
+    var log DepsLog
+    err := ""
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     // The truncated entry should exist.
@@ -466,9 +466,9 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 }
 
 func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
-  State state
-  DepsLog log
-  string err
+  var state State
+  var log DepsLog
+  err := ""
   if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 

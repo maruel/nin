@@ -25,8 +25,8 @@ type DyndepParser struct {
     return Parse("input", input, err)
   }
 
-  DyndepFile* dyndep_file_
-  BindingEnv env_
+  var dyndep_file_ *DyndepFile
+  env_ BindingEnv
 }
 
 
@@ -83,8 +83,8 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 }
 
 func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
-  string name
-  EvalString let_value
+  name := ""
+  var let_value EvalString
   if !ParseLet(&name, &let_value, err) {
     return false
   }
@@ -119,7 +119,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   // We will record its dynamically-discovered dependency information.
   dyndeps := nil
   {
-    EvalString out0
+    var out0 EvalString
     if !lexer_.ReadPath(&out0, err) {
       return false
     }
@@ -131,7 +131,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&path, &slash_bits)
     node := state_.LookupNode(path)
     if !node || !node.in_edge() {
@@ -148,7 +148,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 
   // Disallow explicit outputs.
   {
-    EvalString out
+    var out EvalString
     if !lexer_.ReadPath(&out, err) {
       return false
     }
@@ -161,7 +161,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   vector<EvalString> outs
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
-      EvalString out
+      var out EvalString
       if !lexer_.ReadPath(&out, err) {
         return err
       }
@@ -176,14 +176,14 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
     return false
   }
 
-  string rule_name
+  rule_name := ""
   if !lexer_.ReadIdent(&rule_name) || rule_name != "dyndep" {
     return lexer_.Error("expected build command name 'dyndep'", err)
   }
 
   // Disallow explicit inputs.
   {
-    EvalString in
+    var in EvalString
     if !lexer_.ReadPath(&in, err) {
       return false
     }
@@ -196,7 +196,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   vector<EvalString> ins
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
-      EvalString in
+      var in EvalString
       if !lexer_.ReadPath(&in, err) {
         return err
       }
@@ -217,8 +217,8 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   if lexer_.PeekToken(Lexer::INDENT) {
-    string key
-    EvalString val
+    key := ""
+    var val EvalString
     if !ParseLet(&key, &val, err) {
       return false
     }
@@ -235,7 +235,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(&path, &slash_bits)
     n := state_.GetNode(path, slash_bits)
     dyndeps.implicit_inputs_.push_back(n)
@@ -247,8 +247,8 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
     }
-    string path_err
-    uint64_t slash_bits
+    path_err := ""
+    var slash_bits uint64
     CanonicalizePath(&path, &slash_bits)
     n := state_.GetNode(path, slash_bits)
     dyndeps.implicit_outputs_.push_back(n)

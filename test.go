@@ -46,7 +46,7 @@ void RegisterTest(testing::Test* (*)(), string)
 // builtin "cat" rule.
 type StateTestWithBuiltinRules struct {
 
-  State state_
+  state_ State
 }
 
 void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
@@ -65,28 +65,28 @@ type VirtualFileSystem struct {
 
   // An entry for a single in-memory file.
   type Entry struct {
-    int mtime
-    string stat_error  // If mtime is -1.
-    string contents
+    mtime := 0
+    stat_error := ""  // If mtime is -1.
+    contents := ""
   }
 
   vector<string> directories_made_
   vector<string> files_read_
   typedef map<string, Entry> FileMap
-  FileMap files_
+  var files_ FileMap
   set<string> files_removed_
   set<string> files_created_
 
   // A simple fake timestamp for file operations.
-  int now_
+  now_ int
 }
 
 type ScopedTempDir struct {
 
   // The temp directory containing our dir.
-  string start_dir_
+  start_dir_ string
   // The subdirectory name for our dir, or empty if it hasn't been set up.
-  string temp_dir_name_
+  temp_dir_name_ string
 }
 
 
@@ -145,7 +145,7 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) Node* {
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
   ManifestParser parser(state, nil, opts)
-  string err
+  err := ""
   if parser.ParseTest(input, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   VerifyGraph(*state)

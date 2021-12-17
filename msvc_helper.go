@@ -25,6 +25,6 @@ type CLWrapper struct {
   // by Run().
   void SetEnvBlock(void* env_block) { env_block_ = env_block; }
 
-  void* env_block_
+  env_block_ *void
 }
 

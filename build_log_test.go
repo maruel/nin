@@ -33,15 +33,15 @@ type BuildLogTest struct {
 func TestBuildLogTest_WriteRead(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
 
-  BuildLog log1
-  string err
+  var log1 BuildLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   log1.RecordCommand(state_.edges_[0], 15, 18)
   log1.RecordCommand(state_.edges_[1], 20, 25)
   log1.Close()
 
-  BuildLog log2
+  var log2 BuildLog
   if log2.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -60,7 +60,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
   const char kExpectedVersion[] = "# ninja log vX\n"
   const size_t kVersionPos = strlen(kExpectedVersion) - 2  // Points at 'X'.
 
-  BuildLog log
+  var log BuildLog
   string contents, err
 
   if log.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
@@ -95,8 +95,8 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
   fprintf(f, "3\t4\t5\tout\tcommand def\n")
   fclose(f)
 
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -109,8 +109,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
 
   {
-    BuildLog log1
-    string err
+    var log1 BuildLog
+    err := ""
     if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
     log1.RecordCommand(state_.edges_[0], 15, 18)
@@ -125,8 +125,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
   // For all possible truncations of the input file, assert that we don't
   // crash when parsing.
   for size := statbuf.st_size; size > 0; size-- {
-    BuildLog log2
-    string err
+    var log2 BuildLog
+    err := ""
     if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
     log2.RecordCommand(state_.edges_[0], 15, 18)
@@ -135,7 +135,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 
     if Truncate(kTestFilename, size, &err) { t.FailNow() }
 
-    BuildLog log3
+    var log3 BuildLog
     err = nil
     if log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() { t.FailNow() }
   }
@@ -147,8 +147,8 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
   fprintf(f, "123 456 0 out command\n")
   fclose(f)
 
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if err.find("version") == string::npos { t.FailNow() }
 }
@@ -159,8 +159,8 @@ TEST_F(BuildLogTest, SpacesInOutputV4) {
   fprintf(f, "123\t456\t456\tout with space\tcommand\n")
   fclose(f)
 
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -183,8 +183,8 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
   fprintf(f, "456\t789\t789\tout2\tcommand2\n")
   fclose(f)
 
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -229,14 +229,14 @@ func TestBuildLogTest_Restat(t *testing.T) {
   FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n" "1\t2\t3\tout\tcommand\n")
   fclose(f)
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   BuildLog::LogEntry* e = log.LookupByOutput("out")
   if 3 != e.mtime { t.FailNow() }
 
-  TestDiskInterface testDiskInterface
+  var testDiskInterface TestDiskInterface
   char out2[] = { 'o', 'u', 't', '2', 0 }
   char* filter2[] = { out2 }
   if log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.FailNow() }
@@ -263,8 +263,8 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
   fprintf(f, "456\t789\t789\tout2\tcommand2\n")
   fclose(f)
 
-  string err
-  BuildLog log
+  err := ""
+  var log BuildLog
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -282,7 +282,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
   AssertParse(&state_, "build out out.d: cat\n")
 
-  BuildLog log
+  var log BuildLog
   log.RecordCommand(state_.edges_[0], 21, 22)
 
   if 2u != log.entries().size() { t.FailNow() }
@@ -305,8 +305,8 @@ type BuildLogRecompactTest struct {
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
   AssertParse(&state_, "build out: cat in\n" "build out2: cat in\n")
 
-  BuildLog log1
-  string err
+  var log1 BuildLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   // Record the same edge several times, to trigger recompaction
@@ -318,7 +318,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
   log1.Close()
 
   // Load...
-  BuildLog log2
+  var log2 BuildLog
   if log2.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 2u != log2.entries().size() { t.FailNow() }
@@ -329,7 +329,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
   log2.Close()
 
   // "out2" is dead, it should've been removed.
-  BuildLog log3
+  var log3 BuildLog
   if log2.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != log2.entries().size() { t.FailNow() }

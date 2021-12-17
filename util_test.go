@@ -18,12 +18,12 @@ package ginja
 
 
 func CanonicalizePath(path *string) {
-  uint64_t unused
+  var unused uint64
   ::CanonicalizePath(path, &unused)
 }
 
 func TestCanonicalizePath_PathSamples(t *testing.T) {
-  string path
+  path := ""
 
   CanonicalizePath(&path)
   if "" != path { t.FailNow() }

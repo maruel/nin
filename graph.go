@@ -89,17 +89,17 @@ type Node struct {
 
   void Dump(string prefix="") const
 
-  string path_
+  path_ := ""
 
   // Set bits starting from lowest for backslashes that were normalized to
   // forward slashes by CanonicalizePath. See |PathDecanonicalized|.
-  uint64_t slash_bits_
+  var slash_bits_ uint64
 
   // Possible values of mtime_:
   //   -1: file hasn't been examined
   //   0:  we looked, and file doesn't exist
   //   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
-  TimeStamp mtime_
+  var mtime_ TimeStamp
 
   enum ExistenceStatus {
     // The file hasn't been examined.
@@ -109,26 +109,26 @@ type Node struct {
     // The path is an actual file. mtime_ will be the file's mtime.
     ExistenceStatusExists
   }
-  ExistenceStatus exists_
+  var exists_ ExistenceStatus
 
   // Dirty is true when the underlying file is out-of-date.
   // But note that Edge::outputs_ready_ is also used in judging which
   // edges to build.
-  bool dirty_
+  var dirty_ bool
 
   // Store whether dyndep information is expected from this node but
   // has not yet been loaded.
-  bool dyndep_pending_
+  var dyndep_pending_ bool
 
   // The Edge that produces this Node, or NULL when there is no
   // known edge to produce it.
-  Edge* in_edge_
+  var in_edge_ *Edge
 
   // All Edges that use this Node as an input.
   vector<Edge*> out_edges_
 
   // A dense integer id for the node, assigned and used by DepsLog.
-  int id_
+  id_ int
 }
 
 // An edge in the dependency graph; links between Nodes using Rules.
@@ -148,17 +148,17 @@ type Edge struct {
   void Dump(string prefix="") const
 
   const Rule* rule_
-  Pool* pool_
+  pool_ *Pool
   vector<Node*> inputs_
   vector<Node*> outputs_
-  Node* dyndep_
-  BindingEnv* env_
-  VisitMark mark_
-  size_t id_
-  bool outputs_ready_
-  bool deps_loaded_
-  bool deps_missing_
-  bool generated_by_dep_loader_
+  dyndep_ *Node
+  env_ *BindingEnv
+  mark_ VisitMark
+  id_ uint
+  outputs_ready_ bool
+  deps_loaded_ bool
+  deps_missing_ bool
+  generated_by_dep_loader_ bool
 
   const Rule& rule() const { return *rule_; }
   Pool* pool() const { return pool_; }
@@ -173,8 +173,8 @@ type Edge struct {
   //                     don't cause the target to rebuild.
   // These are stored in inputs_ in that order, and we keep counts of
   // #2 and #3 when we need to access the various subsets.
-  int implicit_deps_
-  int order_only_deps_
+  implicit_deps_ int
+  order_only_deps_ int
   func (e *Edge) is_implicit(index size_t) bool {
     return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
         !is_order_only(index)
@@ -188,7 +188,7 @@ type Edge struct {
   // 2) implicit outs, which the target generates but are not part of $out.
   // These are stored in outputs_ in that order, and we keep a count of
   // #2 to use when we need to access the various subsets.
-  int implicit_outs_
+  implicit_outs_ := 0
   func (e *Edge) is_implicit_out(index size_t) bool {
     return index >= outputs_.size() - implicit_outs_
   }
@@ -218,9 +218,9 @@ type ImplicitDepLoader struct {
   // an iterator pointing at the first new space.
   vector<Node*>::iterator PreallocateSpace(Edge* edge, int count)
 
-  State* state_
-  DiskInterface* disk_interface_
-  DepsLog* deps_log_
+  var state_ *State
+  var disk_interface_ *DiskInterface
+  var deps_log_ *DepsLog
   DepfileParserOptions const* depfile_parser_options_
 }
 
@@ -244,10 +244,10 @@ type DependencyScan struct {
     return dep_loader_.deps_log()
   }
 
-  BuildLog* build_log_
-  DiskInterface* disk_interface_
-  ImplicitDepLoader dep_loader_
-  DyndepLoader dyndep_loader_
+  var build_log_ *BuildLog
+  var disk_interface_ *DiskInterface
+  var dep_loader_ ImplicitDepLoader
+  dyndep_loader_ DyndepLoader
 }
 
 
@@ -594,8 +594,8 @@ type EdgeEnv struct {
 
   vector<string> lookups_
   const Edge* const edge_
-  EscapeKind escape_in_out_
-  bool recursive_
+  var escape_in_out_ EscapeKind
+  var recursive_ bool
 }
 
 func (e *EdgeEnv) LookupVariable(var string) string {

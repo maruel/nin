@@ -22,9 +22,9 @@ type Parser struct {
   Parser(State* state, FileReader* file_reader)
       : state_(state), file_reader_(file_reader) {}
 
-  State* state_
-  FileReader* file_reader_
-  Lexer lexer_
+  state_ *State
+  file_reader_ *FileReader
+  lexer_ Lexer
 
 }
 
@@ -32,8 +32,8 @@ type Parser struct {
 // Load and parse a file.
 func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
   METRIC_RECORD(".ninja parse")
-  string contents
-  string read_err
+  contents := ""
+  read_err := ""
   if file_reader_.ReadFile(filename, &contents, &read_err) != FileReader::Okay {
     *err = "loading '" + filename + "': " + read_err
     if parent != nil {

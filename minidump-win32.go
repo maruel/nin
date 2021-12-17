@@ -50,7 +50,7 @@ func CreateWin32MiniDump(pep *_EXCEPTION_POINTERS) {
     return
   }
 
-  MINIDUMP_EXCEPTION_INFORMATION mdei
+  var mdei MINIDUMP_EXCEPTION_INFORMATION
   mdei.ThreadId           = GetCurrentThreadId()
   mdei.ExceptionPointers  = pep
   mdei.ClientPointers     = FALSE

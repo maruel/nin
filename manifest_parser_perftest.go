@@ -21,7 +21,7 @@ package ginja
 // directory.
 
 func WriteFakeManifests(dir string, err *string) bool {
-  RealDiskInterface disk_interface
+  var disk_interface RealDiskInterface
   TimeStamp mtime = disk_interface.Stat(dir + "/build.ninja", err)
   if mtime != 0 {  // 0 means that the file doesn't exist yet.
     return mtime != -1
@@ -38,9 +38,9 @@ func WriteFakeManifests(dir string, err *string) bool {
 }
 
 func LoadManifests(measure_command_evaluation bool) int {
-  string err
-  RealDiskInterface disk_interface
-  State state
+  err := ""
+  var disk_interface RealDiskInterface
+  var state State
   ManifestParser parser(&state, &disk_interface)
   if !parser.Load("build.ninja", &err) {
     fprintf(stderr, "Failed to read test data: %s\n", err)
@@ -60,7 +60,7 @@ func LoadManifests(measure_command_evaluation bool) int {
 
 func main(argc int, argv []*char) int {
   measure_command_evaluation := true
-  int opt
+  opt := 0
   while (opt = getopt(argc, argv, const_cast<char*>("fh"))) != -1 {
     switch (opt) {
     case 'f':
@@ -75,7 +75,7 @@ func main(argc int, argv []*char) int {
 
   const char kManifestDir[] = "build/manifest_perftest"
 
-  string err
+  err := ""
   if !WriteFakeManifests(kManifestDir, &err) {
     fprintf(stderr, "Failed to write test data: %s\n", err)
     return 1

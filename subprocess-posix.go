@@ -44,7 +44,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   }
   SetCloseOnExec(fd_)
 
-  posix_spawn_file_actions_t action
+  var action posix_spawn_file_actions_t
   err := posix_spawn_file_actions_init(&action)
   if err != 0 {
     Fatal("posix_spawn_file_actions_init: %s", strerror(err))
@@ -55,7 +55,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
     Fatal("posix_spawn_file_actions_addclose: %s", strerror(err))
   }
 
-  posix_spawnattr_t attr
+  var attr posix_spawnattr_t
   err = posix_spawnattr_init(&attr)
   if err != 0 {
     Fatal("posix_spawnattr_init: %s", strerror(err))
@@ -140,7 +140,7 @@ func (s *Subprocess) OnPipeReady() {
 
 func (s *Subprocess) Finish() ExitStatus {
   if !pid_ != -1 { panic("oops") }
-  int status
+  status := 0
   if waitpid(pid_, &status, 0) < 0 {
     Fatal("waitpid(%d): %s", pid_, strerror(errno))
   }
@@ -182,7 +182,7 @@ func (s *SubprocessSet) SetInterruptedFlag(signum int) {
 }
 
 func (s *SubprocessSet) HandlePendingInterruption() {
-  sigset_t pending
+  var pending sigset_t
   sigemptyset(&pending)
   if sigpending(&pending) == -1 {
     perror("ninja: sigpending")
@@ -198,7 +198,7 @@ func (s *SubprocessSet) HandlePendingInterruption() {
 }
 
 SubprocessSet::SubprocessSet() {
-  sigset_t set
+  var set sigset_t
   sigemptyset(&set)
   sigaddset(&set, SIGINT)
   sigaddset(&set, SIGTERM)
@@ -241,7 +241,7 @@ SubprocessSet::~SubprocessSet() {
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
   subprocess := new Subprocess(use_console)
   if !subprocess.Start(this, command) {
-    delete subprocess
+    var subprocess delete
     return 0
   }
   running_.push_back(subprocess)
@@ -299,7 +299,7 @@ func (s *SubprocessSet) DoWork() bool {
 }
 
 func (s *SubprocessSet) DoWork() bool {
-  fd_set set
+  var set fd_set
   nfds := 0
   FD_ZERO(&set)
 
@@ -362,7 +362,7 @@ func (s *SubprocessSet) Clear() {
       kill(-(*i).pid_, interrupted_)
     }
   for i := running_.begin(); i != running_.end(); i++ {
-    delete *i
+    var *i delete
   }
   running_ = nil
 }

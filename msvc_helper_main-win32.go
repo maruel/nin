@@ -66,8 +66,8 @@ func MSVCHelperMain(argc int, argv **char) int {
     { "help", no_argument, nil, 'h' },
     { nil, 0, nil, 0 }
   }
-  int opt
-  string deps_prefix
+  opt := 0
+  deps_prefix := ""
   while (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
     switch (opt) {
       case 'e':
@@ -86,9 +86,9 @@ func MSVCHelperMain(argc int, argv **char) int {
     }
   }
 
-  string env
+  env := ""
   if envfile != nil {
-    string err
+    err := ""
     if ReadFile(envfile, &env, &err) != 0 {
       Fatal("couldn't open %s: %s", envfile, err)
     }
@@ -102,16 +102,16 @@ func MSVCHelperMain(argc int, argv **char) int {
   }
   command += 4
 
-  CLWrapper cl
+  var cl CLWrapper
   if len(env) != 0 {
     cl.SetEnvBlock((void*)env.data())
   }
-  string output
+  output := ""
   exit_code := cl.Run(command, &output)
 
   if output_filename {
-    CLParser parser
-    string err
+    var parser CLParser
+    err := ""
     if !parser.Parse(output, deps_prefix, &output, &err) {
       Fatal("%s\n", err)
     }

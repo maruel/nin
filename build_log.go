@@ -32,11 +32,11 @@ type BuildLog struct {
   ~BuildLog()
 
   type LogEntry struct {
-    string output
-    uint64_t command_hash
-    int start_time
-    int end_time
-    TimeStamp mtime
+    output string
+    command_hash uint64
+    start_time int
+    end_time int
+    mtime TimeStamp
 
     static uint64_t HashCommand(StringPiece command)
 
@@ -53,10 +53,10 @@ type BuildLog struct {
   typedef ExternalStringHashMap<LogEntry*>::Type Entries
   const Entries& entries() const { return entries_; }
 
-  Entries entries_
-  FILE* log_file_
-  string log_file_path_
-  bool needs_recompaction_
+  entries_ Entries
+  log_file_ *FILE
+  log_file_path_ string
+  needs_recompaction_ bool
 }
 
 
@@ -157,7 +157,7 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime
   for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
     path := (*out).path()
     i := entries_.find(path)
-    LogEntry* log_entry
+    var log_entry *LogEntry
     if i != entries_.end() {
       log_entry = i.second
     } else {
@@ -261,13 +261,13 @@ type LineReader struct {
     return true
   }
 
-  FILE* file_
+  var file_ *FILE
   char buf_[256 << 10]
-  char* buf_end_  // Points one past the last valid byte in |buf_|.
+  var buf_end_ *char  // Points one past the last valid byte in |buf_|.
 
-  char* line_start_
+  var line_start_ *char
   // Points at the next \n in buf_ after line_start, or NULL.
-  char* line_end_
+  var line_end_ *char
 }
 
 // Load the on-disk log.
@@ -348,7 +348,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     start = end + 1
     end = line_end
 
-    LogEntry* entry
+    var entry *LogEntry
     i := entries_.find(output)
     if i != entries_.end() {
       entry = i.second

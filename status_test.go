@@ -18,7 +18,7 @@ package ginja
 
 
 func TestStatusTest_StatusFormatElapsed(t *testing.T) {
-  BuildConfig config
+  var config BuildConfig
   StatusPrinter status(config)
 
   status.BuildStarted()
@@ -27,7 +27,7 @@ func TestStatusTest_StatusFormatElapsed(t *testing.T) {
 }
 
 func TestStatusTest_StatusFormatReplacePlaceholder(t *testing.T) {
-  BuildConfig config
+  var config BuildConfig
   StatusPrinter status(config)
 
   if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }

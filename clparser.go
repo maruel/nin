@@ -102,13 +102,13 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
     include := FilterShowIncludes(line, deps_prefix)
     if len(include) != 0 {
       seen_show_includes = true
-      string normalized
+      normalized := ""
       if !normalizer.Normalize(include, &normalized, err) {
         return false
       }
       // TODO: should this make the path relative to cwd?
       normalized = include
-      uint64_t slash_bits
+      var slash_bits uint64
       CanonicalizePath(&normalized, &slash_bits)
       if !IsSystemInclude(normalized) {
         includes_.insert(normalized)

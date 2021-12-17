@@ -35,12 +35,12 @@ type DiskInterfaceTest struct {
     return fclose(f) == 0
   }
 
-  ScopedTempDir temp_dir_
-  RealDiskInterface disk_
+  var temp_dir_ ScopedTempDir
+  disk_ RealDiskInterface
 }
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
-  string err
+  err := ""
   if 0 != disk_.Stat("nosuchfile", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
@@ -57,7 +57,7 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
-  string err
+  err := ""
   string bad_path("cc:\\foo")
   if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
   if "" == err { t.FailNow() }
@@ -67,14 +67,14 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
-  string err
+  err := ""
   if Touch("file") { t.FailNow() }
   if disk_.Stat("file" <= &err), 1 { t.FailNow() }
   if "" != err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
-  string err
+  err := ""
   if disk_.MakeDir("subdir") { t.FailNow() }
   if disk_.MakeDir("subdir/subsubdir") { t.FailNow() }
   if disk_.Stat(".." <= &err), 1 { t.FailNow() }
@@ -92,7 +92,7 @@ func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
-  string err
+  err := ""
 
   if Touch("file1") { t.FailNow() }
   if Touch("fiLE2") { t.FailNow() }
@@ -147,8 +147,8 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
-  string err
-  string content
+  err := ""
+  content := ""
   if DiskInterface::NotFound != disk_.ReadFile("foobar", &content, &err) { t.FailNow() }
   if "" != content { t.FailNow() }
   if "" == err { t.FailNow() } // actual value is platform-specific
@@ -219,7 +219,7 @@ type StatTest struct {
     return 0
   }
 
-  DependencyScan scan_
+  var scan_ DependencyScan
   map<string, TimeStamp> mtimes_
   mutable vector<string> stats_
 }
@@ -238,7 +238,7 @@ func TestStatTest_Simple(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in\n"))
 
   Node* out = GetNode("out")
-  string err
+  err := ""
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != stats_.size() { t.FailNow() }
@@ -252,7 +252,7 @@ func TestStatTest_TwoStep(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
 
   Node* out = GetNode("out")
-  string err
+  err := ""
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != stats_.size() { t.FailNow() }
@@ -269,7 +269,7 @@ func TestStatTest_Tree(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\n" "build mid1: cat in11 in12\n" "build mid2: cat in21 in22\n"))
 
   Node* out = GetNode("out")
-  string err
+  err := ""
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != stats_.size() { t.FailNow() }
@@ -288,7 +288,7 @@ func TestStatTest_Middle(t *testing.T) {
   mtimes_["out"] = 1
 
   Node* out = GetNode("out")
-  string err
+  err := ""
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 1u != stats_.size() { t.FailNow() }

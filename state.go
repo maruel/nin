@@ -38,12 +38,12 @@ type Pool struct {
   // true if the Pool might delay this edge
   bool ShouldDelayEdge() const { return depth_ != 0; }
 
-  string name_
+  name_ string
 
   // |current_use_| is the total of the weights of the edges which are
   // currently scheduled in the Plan (i.e. the edges in Plan::ready_).
-  int current_use_
-  int depth_
+  current_use_ int
+  depth_ int
 
   type WeightedEdgeCmp struct {
     bool operator()(const Edge* a, const Edge* b) const {
@@ -55,7 +55,7 @@ type Pool struct {
   }
 
   typedef set<Edge*, WeightedEdgeCmp> DelayedEdges
-  DelayedEdges delayed_
+  delayed_ DelayedEdges
 }
 
 // Global state (file status) for a single run.
@@ -66,7 +66,7 @@ type State struct {
 
   // Mapping of path -> Node.
   typedef ExternalStringHashMap<Node*>::Type Paths
-  Paths paths_
+  paths_ Paths
 
   // All the pools used in the graph.
   map<string, Pool*> pools_
@@ -74,7 +74,7 @@ type State struct {
   // All the edges of the graph.
   vector<Edge*> edges_
 
-  BindingEnv bindings_
+  bindings_ BindingEnv
   vector<Node*> defaults_
 }
 

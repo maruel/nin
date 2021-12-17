@@ -20,8 +20,8 @@ package ginja
 const char kTestFilename[] = "CleanTest-tempfile"
 
 type CleanTest struct {
-  VirtualFileSystem fs_
-  BuildConfig config_
+  fs_ VirtualFileSystem
+  config_ BuildConfig
   func (c *CleanTest) SetUp() {
     config_.verbosity = BuildConfig::QUIET
   }
@@ -42,7 +42,7 @@ func TestCleanTest_CleanAll(t *testing.T) {
   if 4u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
-  string err
+  err := ""
   if 0 != fs_.Stat("in1", &err) { t.FailNow() }
   if 0 != fs_.Stat("out1", &err) { t.FailNow() }
   if 0 != fs_.Stat("in2", &err) { t.FailNow() }
@@ -70,7 +70,7 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
   if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
-  string err
+  err := ""
   if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
@@ -97,7 +97,7 @@ func TestCleanTest_CleanTarget(t *testing.T) {
   if 2u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
-  string err
+  err := ""
   if 0 != fs_.Stat("in1", &err) { t.FailNow() }
   if 0 != fs_.Stat("out1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
@@ -125,7 +125,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
   if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
-  string err
+  err := ""
   if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
@@ -152,7 +152,7 @@ func TestCleanTest_CleanRule(t *testing.T) {
   if 2u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
-  string err
+  err := ""
   if 0 != fs_.Stat("in1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
   if 0 != fs_.Stat("in2", &err) { t.FailNow() }
@@ -180,7 +180,7 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
   if 0u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are not removed.
-  string err
+  err := ""
   if 0 >= fs_.Stat("in1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("out1", &err) { t.FailNow() }
   if 0 >= fs_.Stat("in2", &err) { t.FailNow() }
@@ -258,7 +258,7 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 2u != fs_.files_removed_.size() { t.FailNow() }
 
-  string err
+  err := ""
   if 0 != fs_.Stat("out", &err) { t.FailNow() }
   if 0 != fs_.Stat("out.imp", &err) { t.FailNow() }
 }
@@ -277,7 +277,7 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
   if 1 != cleaner.cleaned_files_count() { t.FailNow() }
   if 1u != fs_.files_removed_.size() { t.FailNow() }
 
-  string err
+  err := ""
   if 0 != fs_.Stat("out", &err) { t.FailNow() }
   if 1 != fs_.Stat("out.imp", &err) { t.FailNow() }
 }
@@ -314,7 +314,7 @@ func TestCleanTest_CleanRsp(t *testing.T) {
   if 6u != fs_.files_removed_.size() { t.FailNow() }
 
   // Check they are removed.
-  string err
+  err := ""
   if 0 != fs_.Stat("in1", &err) { t.FailNow() }
   if 0 != fs_.Stat("out1", &err) { t.FailNow() }
   if 0 != fs_.Stat("in2", &err) { t.FailNow() }
@@ -331,7 +331,7 @@ func TestCleanTest_CleanFailure(t *testing.T) {
 }
 
 func TestCleanTest_CleanPhony(t *testing.T) {
-  string err
+  err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build phony: phony t1 t2\n" "build t1: cat\n" "build t2: cat\n"))
 
   fs_.Create("phony", "")
@@ -365,7 +365,7 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
   if 4 != cleaner.cleaned_files_count() { t.FailNow() }
   if 4u != fs_.files_removed_.size() { t.FailNow() }
 
-  string err
+  err := ""
   if 0 != fs_.Stat("out 1", &err) { t.FailNow() }
   if 0 != fs_.Stat("out 2", &err) { t.FailNow() }
   if 0 != fs_.Stat("out 1.d", &err) { t.FailNow() }
@@ -385,22 +385,22 @@ type CleanDeadTest struct {
 }
 
 func TestCleanDeadTest_CleanDead(t *testing.T) {
-  State state
+  var state State
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state, "rule cat\n" "  command = cat $in > $out\n" "build out1: cat in\n" "build out2: cat in\n" ))
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out2: cat in\n" ))
   fs_.Create("in", "")
   fs_.Create("out1", "")
   fs_.Create("out2", "")
 
-  BuildLog log1
-  string err
+  var log1 BuildLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   log1.RecordCommand(state.edges_[0], 15, 18)
   log1.RecordCommand(state.edges_[1], 20, 25)
   log1.Close()
 
-  BuildLog log2
+  var log2 BuildLog
   if log2.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 2u != log2.entries().size() { t.FailNow() }
@@ -438,7 +438,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 }
 
 func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
-  State state
+  var state State
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state, "rule cat\n" "  command = cat $in > $out\n" "build out1: cat in\n" "build out2: cat in\n" ))
   // This manifest does not build out1 anymore, but makes
   // it an implicit input. CleanDead should detect this
@@ -448,15 +448,15 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out2", "")
 
-  BuildLog log1
-  string err
+  var log1 BuildLog
+  err := ""
   if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   log1.RecordCommand(state.edges_[0], 15, 18)
   log1.RecordCommand(state.edges_[1], 20, 25)
   log1.Close()
 
-  BuildLog log2
+  var log2 BuildLog
   if log2.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   if 2u != log2.entries().size() { t.FailNow() }

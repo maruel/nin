@@ -23,16 +23,16 @@ func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
 
 func TestMSVCHelperTest_EnvBlock(t *testing.T) {
   char env_block[] = "foo=bar\0"
-  CLWrapper cl
+  var cl CLWrapper
   cl.SetEnvBlock(env_block)
-  string output
+  output := ""
   cl.Run("cmd /c \"echo foo is %foo%", &output)
   if "foo is bar\r\n" != output { t.FailNow() }
 }
 
 func TestMSVCHelperTest_NoReadOfStderr(t *testing.T) {
-  CLWrapper cl
-  string output
+  var cl CLWrapper
+  output := ""
   cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
   if "to stdout\r\n" != output { t.FailNow() }
 }

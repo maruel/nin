@@ -23,7 +23,7 @@ string kSimpleCommand = "cmd /c dir \\"
 string kSimpleCommand = "ls /"
 
 type SubprocessTest struct {
-  SubprocessSet subprocs_
+  subprocs_ SubprocessSet
 }
 
 // Run a command that fails and emits to stderr.
@@ -200,7 +200,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
   kNumProcs := 1025
 
   // Make sure [ulimit -n] isn't going to stop us from working.
-  rlimit rlim
+  var rlim rlimit
   if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.FailNow() }
   if rlim.rlim_cur < kNumProcs {
     printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)

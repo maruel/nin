@@ -32,27 +32,27 @@ type LinePrinter struct {
   }
 
   // Whether we can do fancy terminal control codes.
-  bool smart_terminal_
+  smart_terminal_ bool
 
   // Whether we can use ISO 6429 (ANSI) color sequences.
-  bool supports_color_
+  supports_color_ bool
 
   // Whether the caret is at the beginning of a blank line.
-  bool have_blank_line_
+  have_blank_line_ bool
 
   // Whether console is locked.
-  bool console_locked_
+  console_locked_ bool
 
   // Buffered current line while console is locked.
-  string line_buffer_
+  line_buffer_ string
 
   // Buffered line type while console is locked.
-  LineType line_type_
+  line_type_ LineType
 
   // Buffered console output while console is locked.
-  string output_buffer_
+  output_buffer_ string
 
-  void* console_
+  console_ *void
 
 }
 
@@ -99,7 +99,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
   }
 
   if smart_terminal_ && type == ELIDE {
-    CONSOLE_SCREEN_BUFFER_INFO csbi
+    var csbi CONSOLE_SCREEN_BUFFER_INFO
     GetConsoleScreenBufferInfo(console_, &csbi)
 
     to_print = ElideMiddle(to_print, static_cast<size_t>(csbi.dwSize.X))
@@ -125,7 +125,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
     }
     // Limit output to width of the terminal if provided so we don't cause
     // line-wrapping.
-    winsize size
+    var size winsize
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0) && size.ws_col {
       to_print = ElideMiddle(to_print, size.ws_col)
     }

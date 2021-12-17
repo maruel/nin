@@ -36,7 +36,7 @@ func TestCLParserTest_FilterInputFilename(t *testing.T) {
 }
 
 func TestCLParserTest_ParseSimple(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
   if parser.Parse( "foo\r\n" "Note: inc file prefix:  foo.h\r\n" "bar\r\n", "Note: inc file prefix:", &output, &err) { t.FailNow() }
 
@@ -46,21 +46,21 @@ func TestCLParserTest_ParseSimple(t *testing.T) {
 }
 
 func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
   if parser.Parse( "foo.cc\r\n" "cl: warning\r\n", "", &output, &err) { t.FailNow() }
   if "cl: warning\n" != output { t.FailNow() }
 }
 
 func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
   if parser.Parse( "foo.cc\r\n" "Note: including file: foo.h\r\n" "something something foo.cc\r\n", "", &output, &err) { t.FailNow() }
   if "something something foo.cc\n" != output { t.FailNow() }
 }
 
 func TestCLParserTest_ParseSystemInclude(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
   if parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\n" "Note: including file: d:\\Microsoft Visual Studio\\bar.h\r\n" "Note: including file: path.h\r\n", "", &output, &err) { t.FailNow() }
   // We should have dropped the first two includes because they look like
@@ -71,7 +71,7 @@ func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 }
 
 func TestCLParserTest_DuplicatedHeader(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
   if parser.Parse( "Note: including file: foo.h\r\n" "Note: including file: bar.h\r\n" "Note: including file: foo.h\r\n", "", &output, &err) { t.FailNow() }
   // We should have dropped one copy of foo.h.
@@ -80,7 +80,7 @@ func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 }
 
 func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
-  CLParser parser
+  var parser CLParser
   string output, err
 
   // This isn't inline in the Parse() call below because the #ifdef in

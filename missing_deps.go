@@ -27,21 +27,21 @@ class MissingDependencyPrinter : public MissingDependencyScannerDelegate {
 type MissingDependencyScanner struct {
   bool HadMissingDeps() { return !nodes_missing_deps_.empty(); }
 
-  MissingDependencyScannerDelegate* delegate_
-  DepsLog* deps_log_
-  State* state_
-  DiskInterface* disk_interface_
+  delegate_ *MissingDependencyScannerDelegate
+  deps_log_ *DepsLog
+  state_ *State
+  disk_interface_ *DiskInterface
   set<Node*> seen_
   set<Node*> nodes_missing_deps_
   set<Node*> generated_nodes_
   set<const Rule*> generator_rules_
-  int missing_dep_path_count_
+  missing_dep_path_count_ int
 
   using InnerAdjacencyMap = unordered_map<Edge*, bool>
   using AdjacencyMap = unordered_map<Edge*, InnerAdjacencyMap>
   typedef map<Edge*, bool> InnerAdjacencyMap
   typedef map<Edge*, InnerAdjacencyMap> AdjacencyMap
-  AdjacencyMap adjacency_map_
+  adjacency_map_ AdjacencyMap
 }
 
 
@@ -57,7 +57,7 @@ type NodeStoringImplicitDepLoader struct {
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<StringPiece>, err *string) bool {
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
-    uint64_t slash_bits
+    var slash_bits uint64
     CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
     node := state_.GetNode(*i, slash_bits)
     dep_nodes_output_.push_back(node)
@@ -99,10 +99,10 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
       ProcessNodeDeps(node, deps.nodes, deps.node_count)
     }
   } else {
-    DepfileParserOptions parser_opts
+    var parser_opts DepfileParserOptions
     vector<Node*> depfile_deps
     NodeStoringImplicitDepLoader dep_loader(state_, deps_log_, disk_interface_, &parser_opts, &depfile_deps)
-    string err
+    err := ""
     dep_loader.LoadDeps(edge, &err)
     if !depfile_deps.empty() {
       ProcessNodeDeps(node, &depfile_deps[0], depfile_deps.size())

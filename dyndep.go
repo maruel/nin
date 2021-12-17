@@ -20,8 +20,8 @@ package ginja
 // Store dynamically-discovered dependency information for one edge.
 type Dyndeps struct {
   Dyndeps() : used_(false), restat_(false) {}
-  bool used_
-  bool restat_
+  used_ bool
+  restat_ bool
   vector<Node*> implicit_inputs_
   vector<Node*> implicit_outputs_
 }
@@ -38,8 +38,8 @@ type DyndepLoader struct {
   DyndepLoader(State* state, DiskInterface* disk_interface)
       : state_(state), disk_interface_(disk_interface) {}
 
-  State* state_
-  DiskInterface* disk_interface_
+  state_ *State
+  disk_interface_ *DiskInterface
 }
 
 
@@ -48,7 +48,7 @@ type DyndepLoader struct {
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
-  DyndepFile ddf
+  var ddf DyndepFile
   return LoadDyndeps(node, &ddf, err)
 }
 

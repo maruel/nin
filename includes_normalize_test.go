@@ -48,7 +48,7 @@ func TestIncludesNormalize_Simple(t *testing.T) {
 }
 
 func TestIncludesNormalize_WithRelative(t *testing.T) {
-  string err
+  err := ""
   currentdir := GetCurDir()
   if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.FailNow() }
   if "a" != NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)) { t.FailNow() }

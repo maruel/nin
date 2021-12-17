@@ -25,7 +25,7 @@ type IncludesNormalize struct {
   static string AbsPath(StringPiece s, string* err)
   static string Relativize(StringPiece path, const vector<StringPiece>& start_list, string* err)
 
-  string relative_to_
+  relative_to_ string
   vector<StringPiece> split_relative_to_
 }
 

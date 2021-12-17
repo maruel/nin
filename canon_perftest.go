@@ -31,7 +31,7 @@ func main() int {
   for j := 0; j < 5; j++ {
     kNumRepetitions := 2000000
     start := GetTimeMillis()
-    uint64_t slash_bits
+    var slash_bits uint64
     for i := 0; i < kNumRepetitions; i++ {
       CanonicalizePath(buf, &len, &slash_bits)
     }

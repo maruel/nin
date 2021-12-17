@@ -20,14 +20,14 @@ package ginja
 type ParserTest struct {
   func (p *ParserTest) AssertParse(input string) {
     ManifestParser parser(&state, &fs_)
-    string err
+    err := ""
     if parser.ParseTest(input, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
     VerifyGraph(state)
   }
 
-  State state
-  VirtualFileSystem fs_
+  var state State
+  fs_ VirtualFileSystem
 }
 
 func TestParserTest_Empty(t *testing.T) {

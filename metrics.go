@@ -22,11 +22,11 @@ package ginja
 
 // A single metrics we're tracking, like "depfile load time".
 type Metric struct {
-  string name
+  name string
   // Number of times we've hit the code path.
-  int count
+  count int
   // Total time (in micros) we've spent on the code path.
-  int64_t sum
+  sum int64
 }
 
 // A scoped object for recording a metric across the body of a function.
@@ -34,10 +34,10 @@ type Metric struct {
 type ScopedMetric struct {
   ~ScopedMetric()
 
-  Metric* metric_
+  metric_ *Metric
   // Timestamp when the measurement started.
   // Value is platform-dependent.
-  int64_t start_
+  start_ int64
 }
 
 // The singleton that stores metrics and prints the report.
@@ -62,7 +62,7 @@ type Stopwatch struct {
 
   void Restart() { started_ = Now(); }
 
-  uint64_t started_
+  var started_ uint64
   uint64_t Now() const
 }
 
