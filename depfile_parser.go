@@ -60,6 +60,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 	// parsing_targets: whether we are parsing targets or dependencies.
 	in := 0
 	end := len(content)
+	// TODO(maruel): Temporary.
+	content = append(content, 0)
 	have_target := false
 	parsing_targets := true
 	poisoned_input := false
@@ -529,7 +531,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 
 		l := out - filename
 		is_dependency := !parsing_targets
-		if l > 0 && content[filename-l-1] == ':' {
+		if l > 0 && content[filename+l-1] == ':' {
 			l-- // Strip off trailing colon, if any.
 			parsing_targets = false
 			have_target = true

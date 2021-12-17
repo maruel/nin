@@ -10,14 +10,13 @@ if ! re2go -help &> /dev/null; then
   echo "re2go is needed to generate the high performance regexp."
   echo "Install with:"
   echo ""
-  echo "git clone -b 2.2 https://github.com/skvadrik/re2c"
-  echo "cd re2c"
-  echo "mkdir out"
-  echo "cd out"
+  echo "git clone -b 2.2 https://github.com/skvadrik/re2c ../re2c"
+  echo "mkdir ../re2c/out"
+  echo "cd ../re2c/out"
   echo "cmake .."
   echo "cmake --build . -j 16"
-  echo "cd ../.."
-  echo 'export PATH=$PATH:$(pwd)/re2c/out'
+  echo "cd -"
+  echo 'export PATH=$PATH:$(pwd)/../re2c/out'
   echo ""
   echo "then run this command again."
   exit 1
