@@ -207,7 +207,7 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
 // Clean the given @a target and all the file built for it.
 // @return non-zero if an error occurs.
 func (c *Cleaner) CleanTarget(target *Node) int {
-  assert(target)
+  if !target { panic("oops") }
 
   Reset()
   PrintHeader()
@@ -222,7 +222,7 @@ func (c *Cleaner) CleanTarget(target *Node) int {
 // Clean the given @a target and all the file built for it.
 // @return non-zero if an error occurs.
 func (c *Cleaner) CleanTarget(target string) int {
-  assert(target)
+  if !target { panic("oops") }
 
   Reset()
   node := state_.LookupNode(target)
@@ -266,7 +266,7 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
 }
 
 func (c *Cleaner) DoCleanRule(rule *const Rule) {
-  assert(rule)
+  if !rule { panic("oops") }
 
   for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {
     if (*e).rule().name() == rule.name() {
@@ -283,7 +283,7 @@ func (c *Cleaner) DoCleanRule(rule *const Rule) {
 // Clean all the file built with the given rule @a rule.
 // @return non-zero if an error occurs.
 func (c *Cleaner) CleanRule(rule *const Rule) int {
-  assert(rule)
+  if !rule { panic("oops") }
 
   Reset()
   PrintHeader()
@@ -298,7 +298,7 @@ func (c *Cleaner) CleanRule(rule *const Rule) int {
 // Clean all the file built with the given rule @a rule.
 // @return non-zero if an error occurs.
 func (c *Cleaner) CleanRule(rule string) int {
-  assert(rule)
+  if !rule { panic("oops") }
 
   Reset()
   const Rule* r = state_.bindings_.LookupRule(rule)
@@ -314,7 +314,7 @@ func (c *Cleaner) CleanRule(rule string) int {
 // Clean the file produced by the given @a rules.
 // @return non-zero if an error occurs.
 func (c *Cleaner) CleanRules(rule_count int, rules []*char) int {
-  assert(rules)
+  if !rules { panic("oops") }
 
   Reset()
   PrintHeader()

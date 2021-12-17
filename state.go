@@ -46,7 +46,7 @@ type Pool struct {
   int depth_
 
   type WeightedEdgeCmp struct {
-    bool operator()(const Edge* a, const Edge* b) {
+    bool operator()(const Edge* a, const Edge* b) const {
       if (!a) return b
       if (!b) return false
       weight_diff := a.weight() - b.weight()
@@ -63,11 +63,6 @@ type State struct {
   static Pool kDefaultPool
   static Pool kConsolePool
   static const Rule kPhonyRule
-
-  Node* GetNode(StringPiece path, uint64_t slash_bits)
-
-  void AddIn(Edge* edge, StringPiece path, uint64_t slash_bits)
-  bool AddOut(Edge* edge, StringPiece path, uint64_t slash_bits)
 
   // Mapping of path -> Node.
   typedef ExternalStringHashMap<Node*>::Type Paths
@@ -102,7 +97,7 @@ func (p *Pool) EdgeFinished(edge *Edge) {
 
 // adds the given edge to this Pool to be delayed.
 func (p *Pool) DelayEdge(edge *Edge) {
-  assert(depth_ != 0)
+  if !depth_ != 0 { panic("oops") }
   delayed_.insert(edge)
 }
 
@@ -142,7 +137,7 @@ State::State() {
 }
 
 func (s *State) AddPool(pool *Pool) {
-  assert(LookupPool(pool.name()) == nil)
+  if !LookupPool(pool.name()) == nil { panic("oops") }
   pools_[pool.name()] = pool
 }
 
@@ -164,7 +159,7 @@ func (s *State) AddEdge(rule *const Rule) Edge* {
   return edge
 }
 
-Node* State::GetNode(StringPiece path, uint64_t slash_bits) {
+func (s *State) GetNode(path StringPiece, slash_bits uint64_t) Node* {
   node := LookupNode(path)
   if node != nil {
     return node
@@ -198,13 +193,13 @@ func (s *State) SpellcheckNode(path string) Node* {
   return result
 }
 
-void State::AddIn(Edge* edge, StringPiece path, uint64_t slash_bits) {
+func (s *State) AddIn(edge *Edge, path StringPiece, slash_bits uint64_t) {
   node := GetNode(path, slash_bits)
   edge.inputs_.push_back(node)
   node.AddOutEdge(edge)
 }
 
-bool State::AddOut(Edge* edge, StringPiece path, uint64_t slash_bits) {
+func (s *State) AddOut(edge *Edge, path StringPiece, slash_bits uint64_t) bool {
   node := GetNode(path, slash_bits)
   if node.in_edge() {
     return false

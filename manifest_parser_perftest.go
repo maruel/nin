@@ -41,6 +41,7 @@ func LoadManifests(measure_command_evaluation bool) int {
   string err
   RealDiskInterface disk_interface
   State state
+  ManifestParser parser(&state, &disk_interface)
   if !parser.Load("build.ninja", &err) {
     fprintf(stderr, "Failed to read test data: %s\n", err)
     exit(1)

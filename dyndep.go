@@ -49,6 +49,7 @@ type DyndepLoader struct {
 // information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
   DyndepFile ddf
+  return LoadDyndeps(node, &ddf, err)
 }
 
 // Load a dyndep file from the given node's path and update the
@@ -137,6 +138,7 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps const, err *strin
 }
 
 func (d *DyndepLoader) LoadDyndepFile(file *Node, ddf *DyndepFile, err *string) bool {
+  DyndepParser parser(state_, disk_interface_, ddf)
   return parser.Load(file.path(), err)
 }
 

@@ -55,7 +55,7 @@ type hash struct {
   typedef StringPiece argument_type
   typedef size_t result_type
 
-  size_t operator()(StringPiece key) {
+  size_t operator()(StringPiece key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 }
@@ -64,10 +64,10 @@ using stdext::hash_map
 using stdext::hash_compare
 
 type StringPieceCmp struct {
-  size_t operator()(const StringPiece& key) {
+  size_t operator()(const StringPiece& key) const {
     return MurmurHash2(key.str_, key.len_)
   }
-  bool operator()(const StringPiece& a, const StringPiece& b) {
+  bool operator()(const StringPiece& a, const StringPiece& b) const {
     cmp := memcmp(a.str_, b.str_, min(a.len_, b.len_))
     if (cmp < 0) {
       return true
@@ -83,7 +83,7 @@ using __gnu_cxx::hash_map
 
 template<>
 type hash struct {
-  size_t operator()(StringPiece key) {
+  size_t operator()(StringPiece key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 }

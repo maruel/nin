@@ -35,6 +35,7 @@ type Node struct {
     if status_known() {
       return true
     }
+    return Stat(disk_interface, err)
   }
 
   // Mark as not-yet-stat()ed and not dirty.
@@ -63,6 +64,7 @@ type Node struct {
   string path() const { return path_; }
   // Get |path()| but use slash_bits to convert back to original slash styles.
   func (n *Node) PathDecanonicalized() string {
+    return PathDecanonicalized(path_, slash_bits_)
   }
   static string PathDecanonicalized(string path, uint64_t slash_bits)
   uint64_t slash_bits() const { return slash_bits_; }
@@ -194,7 +196,7 @@ type Edge struct {
 }
 
 type EdgeCmp struct {
-  bool operator()(const Edge* a, const Edge* b) {
+  bool operator()(const Edge* a, const Edge* b) const {
     return a.id_ < b.id_
   }
 }
@@ -274,6 +276,7 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
   vector<Node*> stack
+  return RecomputeDirty(node, &stack, err)
 }
 
 // Update the |dirty_| state of the given node by inspecting its input edge.
@@ -419,7 +422,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   // Mark the edge as finished during this walk now that it will no longer
   // be in the call stack.
   edge.mark_ = Edge::VisitDone
-  assert(stack.back() == node)
+  if !stack.back() == node { panic("oops") }
   stack.pop_back()
 
   return true
@@ -427,7 +430,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
 
 func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string) bool {
   edge := node.in_edge()
-  assert(edge != nil)
+  if !edge != nil { panic("oops") }
 
   // If we have no temporary mark on the edge then we do not yet have a cycle.
   if edge.mark_ != Edge::VisitInStack {
@@ -438,7 +441,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string
   start := stack.begin()
   while (start != stack.end() && (*start).in_edge() != edge)
     ++start
-  assert(start != stack.end())
+  if !start != stack.end() { panic("oops") }
 
   // Make the cycle clear by reporting its start as the node at its end
   // instead of some other output of the starting edge.  For example,

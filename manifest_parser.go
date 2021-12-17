@@ -251,6 +251,7 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
     }
   } while (!eval.empty())
 
+  return ExpectToken(Lexer::NEWLINE, err)
 }
 
 func (m *ManifestParser) ParseEdge(err *string) bool {
@@ -466,6 +467,7 @@ func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
   }
   path := eval.Evaluate(env_)
 
+  ManifestParser subparser(state_, file_reader_, options_)
   if new_scope {
     subparser.env_ = new BindingEnv(env_)
   } else {

@@ -34,6 +34,7 @@ func NormalizeAndCheckNoError(input string) string {
 
 func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
   string result, err
+  IncludesNormalize normalizer(relative_to)
   if normalizer.Normalize(input, &result, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   return result
@@ -113,6 +114,7 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
   kExactlyMaxPath[_MAX_PATH] = '\0'
   if strlen(kExactlyMaxPath) != _MAX_PATH { t.FailNow() }
 
+  string forward_slashes(kExactlyMaxPath)
   replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
   // Make sure a path that's exactly _MAX_PATH long is canonicalized.
   if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.FailNow() }

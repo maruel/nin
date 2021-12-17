@@ -86,7 +86,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
   METRIC_RECORD("CLParser::Parse")
 
   // Loop over all lines in the output to process them.
-  assert(&output != filtered_output)
+  if !&output != filtered_output { panic("oops") }
   size_t start = 0
   seen_show_includes := false
   IncludesNormalize normalizer(".")

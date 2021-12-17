@@ -139,7 +139,7 @@ func (s *Subprocess) OnPipeReady() {
 }
 
 func (s *Subprocess) Finish() ExitStatus {
-  assert(pid_ != -1)
+  if !pid_ != -1 { panic("oops") }
   int status
   if waitpid(pid_, &status, 0) < 0 {
     Fatal("waitpid(%d): %s", pid_, strerror(errno))
@@ -269,6 +269,7 @@ func (s *SubprocessSet) DoWork() bool {
       perror("ninja: ppoll")
       return false
     }
+    return IsInterrupted()
   }
 
   HandlePendingInterruption()
@@ -282,7 +283,7 @@ func (s *SubprocessSet) DoWork() bool {
     if fd < 0 {
       continue
     }
-    assert(fd == fds[cur_nfd].fd)
+    if !fd == fds[cur_nfd].fd { panic("oops") }
     if fds[cur_nfd++].revents {
       (*i).OnPipeReady()
       if (*i).Done() {
@@ -294,6 +295,7 @@ func (s *SubprocessSet) DoWork() bool {
     ++i
   }
 
+  return IsInterrupted()
 }
 
 func (s *SubprocessSet) DoWork() bool {
@@ -318,6 +320,7 @@ func (s *SubprocessSet) DoWork() bool {
       perror("ninja: pselect")
       return false
     }
+    return IsInterrupted()
   }
 
   HandlePendingInterruption()
@@ -338,6 +341,7 @@ func (s *SubprocessSet) DoWork() bool {
     ++i
   }
 
+  return IsInterrupted()
 }
 
 func (s *SubprocessSet) NextFinished() Subprocess* {

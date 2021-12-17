@@ -101,6 +101,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
   } else {
     DepfileParserOptions parser_opts
     vector<Node*> depfile_deps
+    NodeStoringImplicitDepLoader dep_loader(state_, deps_log_, disk_interface_, &parser_opts, &depfile_deps)
     string err
     dep_loader.LoadDeps(edge, &err)
     if !depfile_deps.empty() {

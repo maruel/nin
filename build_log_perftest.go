@@ -63,6 +63,7 @@ func WriteTestData(err *string) bool {
   long_rule_command += "$in -o $out\n"
 
   State state
+  ManifestParser parser(&state, nil)
   if !parser.ParseTest("rule cxx\n  command = " + long_rule_command, err) {
     return false
   }

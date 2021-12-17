@@ -203,19 +203,19 @@ type StatTest struct {
   StatTest() : scan_(&state_, nil, nil, this, nil) {}
 
   func (s *StatTest) WriteFile(path string, contents string) bool {
-    assert(false)
+    if !false { panic("oops") }
     return true
   }
   func (s *StatTest) MakeDir(path string) bool {
-    assert(false)
+    if !false { panic("oops") }
     return false
   }
   func (s *StatTest) ReadFile(path string, contents *string, err *string) Status {
-    assert(false)
+    if !false { panic("oops") }
     return NotFound
   }
   func (s *StatTest) RemoveFile(path string) int {
-    assert(false)
+    if !false { panic("oops") }
     return 0
   }
 

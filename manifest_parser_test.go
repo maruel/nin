@@ -19,6 +19,7 @@ package ginja
 
 type ParserTest struct {
   func (p *ParserTest) AssertParse(input string) {
+    ManifestParser parser(&state, &fs_)
     string err
     if parser.ParseTest(input, &err) { t.FailNow() }
     if "" != err { t.FailNow() }

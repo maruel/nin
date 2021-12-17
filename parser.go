@@ -49,6 +49,7 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
   // it is, and C++11 demands that too), so add an explicit nul byte.
   contents.resize(contents.size() + 1)
 
+  return Parse(filename, contents, err)
 }
 
 // If the next token is not \a expected, produce an error string

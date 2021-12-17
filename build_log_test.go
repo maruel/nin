@@ -208,19 +208,19 @@ type TestDiskInterface struct {
     return 4
   }
   func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
-    assert(false)
+    if !false { panic("oops") }
     return true
   }
   func (t *TestDiskInterface) MakeDir(path string) bool {
-    assert(false)
+    if !false { panic("oops") }
     return false
   }
   func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) Status {
-    assert(false)
+    if !false { panic("oops") }
     return NotFound
   }
   func (t *TestDiskInterface) RemoveFile(path string) int {
-    assert(false)
+    if !false { panic("oops") }
     return 0
   }
 }

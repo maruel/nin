@@ -31,8 +31,6 @@ type BuildLogUser struct {
 type BuildLog struct {
   ~BuildLog()
 
-  bool RecordCommand(Edge* edge, int start_time, int end_time, TimeStamp mtime = 0)
-
   type LogEntry struct {
     string output
     uint64_t command_hash
@@ -147,7 +145,7 @@ func (b *BuildLog) OpenForWrite(path string, user *BuildLogUser, err *string) bo
     }
   }
 
-  assert(!log_file_)
+  if !!log_file_ { panic("oops") }
   log_file_path_ = path  // we don't actually open the file right now, but will
                           // do so on the first write attempt
   return true
@@ -288,6 +286,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   unique_entry_count := 0
   total_entry_count := 0
 
+  LineReader reader(file)
   line_start := 0
   line_end := 0
   while (reader.ReadLine(&line_start, &line_end)) {

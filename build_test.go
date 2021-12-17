@@ -43,6 +43,7 @@ type PlanTest struct {
     sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
   }
 
+  void TestPoolWithDepthOne(stringtest_case)
 }
 
 func TestPlanTest_Basic(t *testing.T) {
@@ -488,8 +489,8 @@ func (f *FakeCommandRunner) CanRunMore() bool {
 }
 
 func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
-  assert(active_edges_.size() < max_active_edges_)
-  assert(find(active_edges_.begin(), active_edges_.end(), edge) == active_edges_.end())
+  if !active_edges_.size() < max_active_edges_ { panic("oops") }
+  if !find(active_edges_.begin(), active_edges_.end(), edge) == active_edges_.end() { panic("oops") }
   commands_ran_.push_back(edge.EvaluateCommand())
   if edge.rule().name() == "cat"  || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
     for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
@@ -498,8 +499,8 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
   } else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
     // Don't do anything.
   } else if edge.rule().name() == "cp" {
-    assert(!edge.inputs_.empty())
-    assert(edge.outputs_.size() == 1)
+    if !!edge.inputs_.empty() { panic("oops") }
+    if !edge.outputs_.size() == 1 { panic("oops") }
     string content
     string err
     if fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == DiskInterface::Okay {

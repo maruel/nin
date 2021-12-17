@@ -111,7 +111,7 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
     }
   }
 
-  assert(!file_)
+  if !!file_ { panic("oops") }
   file_path_ = path  // we don't actually open the file right now, but will do
                       // so on the first write attempt
   return true
@@ -271,7 +271,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
     }
 
     if is_deps {
-      assert(size % 4 == 0)
+      if !size % 4 == 0 { panic("oops") }
       deps_data := reinterpret_cast<int*>(buf)
       out_id := deps_data[0]
       TimeStamp mtime
@@ -281,8 +281,8 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
       deps := new Deps(mtime, deps_count)
       for (int i = 0; i < deps_count; ++i) {
-        assert(deps_data[i] < (int)nodes_.size())
-        assert(nodes_[deps_data[i]])
+        if !deps_data[i] < (int)nodes_.size() { panic("oops") }
+        if !nodes_[deps_data[i]] { panic("oops") }
         deps.nodes[i] = nodes_[deps_data[i]]
       }
 
@@ -292,7 +292,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       }
     } else {
       path_size := size - 4
-      assert(path_size > 0)  // CanonicalizePath() rejects empty paths.
+      if !path_size > 0 { panic("oops") }  // CanonicalizePath() rejects empty paths.
       // There can be up to 3 bytes of padding.
       if buf[path_size - 1] == '\0' {
       	--path_size
@@ -303,6 +303,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       if buf[path_size - 1] == '\0' {
       	--path_size
       }
+      StringPiece subpath(buf, path_size)
       // It is not necessary to pass in a correct slash_bits here. It will
       // either be a Node that's in the manifest (in which case it will already
       // have a correct slash_bits that GetNode will look up), or it is an
@@ -322,7 +323,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
         break
       }
 
-      assert(node.id() < 0)
+      if !node.id() < 0 { panic("oops") }
       node.set_id(id)
       nodes_.push_back(node)
     }
@@ -490,7 +491,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
     return false
   }
   if fwrite(node.path().data(), path_size, 1, file_) < 1 {
-    assert(!node.path().empty())
+    if !!node.path().empty() { panic("oops") }
     return false
   }
   if padding && fwrite("\0\0", padding, 1, file_) < 1 {

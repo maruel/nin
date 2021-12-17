@@ -64,13 +64,15 @@ func DirName(path string) string {
 
   string::size_type slash_pos = path.find_last_of(kPathSeparators)
   if slash_pos == string::npos {
-  while (slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos - 1]) != kEnd)
+    return string()  // Nothing to do.
   }
+  while (slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos - 1]) != kEnd)
     --slash_pos
   return path.substr(0, slash_pos)
 }
 
 func MakeDir(path string) int {
+  return _mkdir(path)
   return mkdir(path, 0777)
 }
 
@@ -163,6 +165,7 @@ func (d *DiskInterface) MakeDirs(path string) bool {
   if success == nil {
     return false
   }
+  return MakeDir(dir)
 }
 
 // RealDiskInterface -----------------------------------------------------------
@@ -179,8 +182,9 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
     return -1
   }
   if !use_cache_ {
-
+    return StatSingleFile(path, err)
   }
+
   dir := DirName(path)
   string base(path.substr(dir.size() ? dir.size() + 1 : 0))
   if base == ".." {

@@ -34,6 +34,8 @@ func TestCleanTest_CleanAll(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
+
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 4 != cleaner.cleaned_files_count() { t.FailNow() }
@@ -60,6 +62,7 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
   fs_.Create("out2", "")
 
   config_.dry_run = true
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanAll() { t.FailNow() }
@@ -85,6 +88,8 @@ func TestCleanTest_CleanTarget(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("in2", "")
   fs_.Create("out2", "")
+
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
@@ -112,6 +117,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
   fs_.Create("out2", "")
 
   config_.dry_run = true
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
@@ -137,6 +143,8 @@ func TestCleanTest_CleanRule(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("in2", "")
   fs_.Create("out2", "")
+
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
@@ -164,6 +172,7 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
   fs_.Create("out2", "")
 
   config_.dry_run = true
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanRule("cat_e") { t.FailNow() }
@@ -188,6 +197,7 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out2", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 1 != cleaner.cleaned_files_count() { t.FailNow() }
   if 1u != fs_.files_removed_.size() { t.FailNow() }
@@ -204,6 +214,7 @@ func TestCleanTest_CleanDepFile(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 2u != fs_.files_removed_.size() { t.FailNow() }
@@ -214,6 +225,7 @@ func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 2u != fs_.files_removed_.size() { t.FailNow() }
@@ -224,6 +236,7 @@ func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("out1.d", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanRule("cc") { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 2u != fs_.files_removed_.size() { t.FailNow() }
@@ -237,6 +250,8 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out | out.imp: dyndep\n" )
   fs_.Create("out", "")
   fs_.Create("out.imp", "")
+
+  Cleaner cleaner(&state_, config_, &fs_)
 
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanAll() { t.FailNow() }
@@ -255,6 +270,8 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
   fs_.Create("out", "")
   fs_.Create("out.imp", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
+
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 1 != cleaner.cleaned_files_count() { t.FailNow() }
@@ -270,6 +287,7 @@ func TestCleanTest_CleanRspFile(t *testing.T) {
   fs_.Create("out1", "")
   fs_.Create("cc1.rsp", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 2u != fs_.files_removed_.size() { t.FailNow() }
@@ -284,6 +302,7 @@ func TestCleanTest_CleanRsp(t *testing.T) {
   fs_.Create("in2", "")
   fs_.Create("out2", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 != cleaner.CleanTarget("out1") { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
@@ -307,6 +326,7 @@ func TestCleanTest_CleanRsp(t *testing.T) {
 func TestCleanTest_CleanFailure(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build dir: cat src1\n"))
   fs_.MakeDir("dir")
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 == cleaner.CleanAll() { t.FailNow() }
 }
 
@@ -318,6 +338,8 @@ func TestCleanTest_CleanPhony(t *testing.T) {
   fs_.Create("t1", "")
   fs_.Create("t2", "")
 
+  // Check that CleanAll does not remove "phony".
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 2 != cleaner.cleaned_files_count() { t.FailNow() }
   if 0 >= fs_.Stat("phony", &err) { t.FailNow() }
@@ -338,6 +360,7 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
   fs_.Create("out 1.d", "")
   fs_.Create("out 2.rsp", "")
 
+  Cleaner cleaner(&state_, config_, &fs_)
   if 0 != cleaner.CleanAll() { t.FailNow() }
   if 4 != cleaner.cleaned_files_count() { t.FailNow() }
   if 4u != fs_.files_removed_.size() { t.FailNow() }
@@ -384,6 +407,8 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
   if log2.LookupByOutput("out1") { t.FailNow() }
   if log2.LookupByOutput("out2") { t.FailNow() }
 
+  // First use the manifest that describe how to build out1.
+  Cleaner cleaner1(&state, config_, &fs_)
   if 0 != cleaner1.CleanDead(log2.entries()) { t.FailNow() }
   if 0 != cleaner1.cleaned_files_count() { t.FailNow() }
   if 0u != fs_.files_removed_.size() { t.FailNow() }
@@ -391,6 +416,8 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
   if 0 == fs_.Stat("out1", &err) { t.FailNow() }
   if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
+  // Then use the manifest that does not build out1 anymore.
+  Cleaner cleaner2(&state_, config_, &fs_)
   if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
   if 1 != cleaner2.cleaned_files_count() { t.FailNow() }
   if 1u != fs_.files_removed_.size() { t.FailNow() }
@@ -436,6 +463,8 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
   if log2.LookupByOutput("out1") { t.FailNow() }
   if log2.LookupByOutput("out2") { t.FailNow() }
 
+  // First use the manifest that describe how to build out1.
+  Cleaner cleaner1(&state, config_, &fs_)
   if 0 != cleaner1.CleanDead(log2.entries()) { t.FailNow() }
   if 0 != cleaner1.cleaned_files_count() { t.FailNow() }
   if 0u != fs_.files_removed_.size() { t.FailNow() }
@@ -443,6 +472,8 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
   if 0 == fs_.Stat("out1", &err) { t.FailNow() }
   if 0 == fs_.Stat("out2", &err) { t.FailNow() }
 
+  // Then use the manifest that does not build out1 anymore.
+  Cleaner cleaner2(&state_, config_, &fs_)
   if 0 != cleaner2.CleanDead(log2.entries()) { t.FailNow() }
   if 0 != cleaner2.cleaned_files_count() { t.FailNow() }
   if 0u != fs_.files_removed_.size() { t.FailNow() }

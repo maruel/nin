@@ -31,12 +31,6 @@ void Error(string msg, ...)
 // Log an informational message.
 void Info(string msg, ...)
 
-// Canonicalize a path like "foo/../bar.h" into just "bar.h".
-// |slash_bits| has bits set starting from lowest for a backslash that was
-// normalized to a forward slash. (only used on Windows)
-void CanonicalizePath(string* path, uint64_t* slash_bits)
-void CanonicalizePath(char* path, size_t* len, uint64_t* slash_bits)
-
 // Like SpellcheckStringV, but takes a NULL-terminated list.
 string SpellcheckString(string text, ...)
 
@@ -98,7 +92,10 @@ void Info(string msg, ...) {
   va_end(ap)
 }
 
-void CanonicalizePath(string* path, uint64_t* slash_bits) {
+// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+// |slash_bits| has bits set starting from lowest for a backslash that was
+// normalized to a forward slash. (only used on Windows)
+func CanonicalizePath(path *string, slash_bits *uint64_t) {
   size_t len = path.size()
   str := 0
   if len > 0 {
@@ -113,7 +110,10 @@ static bool IsPathSeparator(char c) {
   return c == '/'
 }
 
-void CanonicalizePath(char* path, size_t* len, uint64_t* slash_bits) {
+// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+// |slash_bits| has bits set starting from lowest for a backslash that was
+// normalized to a forward slash. (only used on Windows)
+func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
   // WARNING: this function is performance-critical; please benchmark
   // any changes you make to it.
   if *len == 0 {
@@ -260,7 +260,7 @@ static inline bool StringNeedsWin32Escaping(string input) {
 // Appends the string directly to |result| without modification if we can
 // determine that it contains no problematic characters.
 func GetShellEscapedString(input string, result *string) {
-  assert(result)
+  if !result { panic("oops") }
 
   if !StringNeedsShellEscaping(input) {
     result.append(input)
@@ -285,7 +285,7 @@ func GetShellEscapedString(input string, result *string) {
 }
 
 func GetWin32EscapedString(input string, result *string) {
-  assert(result)
+  if !result { panic("oops") }
   if !StringNeedsWin32Escaping(input) {
     result.append(input)
     return
@@ -421,6 +421,7 @@ string SpellcheckString(string text, ...) {
   while ((word = va_arg(ap, string)))
     words.push_back(word)
   va_end(ap)
+  return SpellcheckStringV(text, words)
 }
 
 // Convert the value returned by GetLastError() into a string.
@@ -482,6 +483,7 @@ func GetProcessorCount() int {
   // machines with >64 cores. See https://stackoverflow.com/a/31209344/21475
   len := 0
   if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+    vector<char> buf(len)
     cores := 0
     if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len) {
       for (DWORD i = 0; i < len; ) {
@@ -498,16 +500,20 @@ func GetProcessorCount() int {
       }
     }
   }
+  return GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)
   // The number of exposed processors might not represent the actual number of
   // processors threads can run on. This happens when a CPU set limitation is
   // active, see https://github.com/ninja-build/ninja/issues/1278
   cpuset_t mask
   CPU_ZERO(&mask)
   if cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(mask), &mask) == 0 {
+    return CPU_COUNT(&mask)
   }
   cpu_set_t set
   if sched_getaffinity(getpid(), sizeof(set), &set) == 0 {
+    return CPU_COUNT(&set)
   }
+  return sysconf(_SC_NPROCESSORS_ONLN)
 }
 
 static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)

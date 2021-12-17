@@ -149,6 +149,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
     return false
   }
 
+  Builder builder(&state_, config_, &build_log_, &deps_log_, &disk_interface_, status, start_time_millis_)
   if !builder.AddTarget(node, err) {
     return false
   }
@@ -254,6 +255,7 @@ func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) in
     return 1
   }
 
+  GraphViz graph(&state_, &disk_interface_)
   graph.Start()
   for (vector<Node*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n)
     graph.AddTarget(*n)
@@ -267,6 +269,8 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
     Error("expected a target to query")
     return 1
   }
+
+  DyndepLoader dyndep_loader(&state_, &disk_interface_)
 
   for (int i = 0; i < argc; ++i) {
     string err
@@ -319,6 +323,7 @@ func (n *NinjaMain) ToolMSVC(options *const Options, argc int, argv []*char) int
   argc++
   argv--
   optind = 0
+  return MSVCHelperMain(argc, argv)
 }
 
 func ToolTargetsList(nodes *vector<Node*>, depth int, indent int) int {
@@ -425,6 +430,7 @@ func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **cha
   }
   RealDiskInterface disk_interface
   MissingDependencyPrinter printer
+  MissingDependencyScanner scanner(&printer, &deps_log_, &state_, &disk_interface)
   for (vector<Node*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
     scanner.ProcessNode(*it)
   }
@@ -445,13 +451,16 @@ func (n *NinjaMain) ToolTargets(options *const Options, argc int, argv []*char) 
         rule = argv[1]
       }
       if len(rule) == 0 {
-      else
+        return ToolTargetsSourceList(&state_)
+      } else {
+        return ToolTargetsList(&state_, rule)
       }
     } else if mode == "depth" {
       if argc > 1 {
         depth = atoi(argv[1])
       }
     } else if mode == "all" {
+      return ToolTargetsList(&state_)
     } else {
       string suggestion =
           SpellcheckString(mode, "rule", "depth", "all", nil)
@@ -617,6 +626,7 @@ func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) in
     return 1
   }
 
+  Cleaner cleaner(&state_, config_, &disk_interface_)
   if argc >= 1 {
     if clean_rules {
       return cleaner.CleanRules(argc, argv)
@@ -629,6 +639,7 @@ func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) in
 }
 
 func (n *NinjaMain) ToolCleanDead(options *const Options, argc int, argv []*char) int {
+  Cleaner cleaner(&state_, config_, &disk_interface_)
   return cleaner.CleanDead(build_log_.entries())
 }
 
@@ -1087,6 +1098,7 @@ func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
 
   disk_interface_.AllowStatCache(g_experimental_statcache)
 
+  Builder builder(&state_, config_, &build_log_, &deps_log_, &disk_interface_, status, start_time_millis_)
   for (size_t i = 0; i < targets.size(); ++i) {
     if !builder.AddTarget(targets[i], &err) {
       if len(err) != 0 {
@@ -1267,6 +1279,9 @@ NORETURN void real_main(int argc, char** argv) {
   }
 
   if options.tool && options.tool.when == Tool::RUN_AFTER_FLAGS {
+    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
+    // by other tools.
+    NinjaMain ninja(ninja_command, config)
     exit((ninja.*options.tool.func)(&options, argc, argv))
   }
 
@@ -1283,6 +1298,7 @@ NORETURN void real_main(int argc, char** argv) {
   // Limit number of rebuilds, to prevent infinite loops.
   const int kCycleLimit = 100
   for (int cycle = 1; cycle <= kCycleLimit; ++cycle) {
+    NinjaMain ninja(ninja_command, config)
 
     ManifestParserOptions parser_opts
     if options.dupe_edges_should_err {

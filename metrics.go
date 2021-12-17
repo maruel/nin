@@ -95,6 +95,7 @@ int64_t HighResTimer() {
   LARGE_INTEGER counter
   if (!QueryPerformanceCounter(&counter))
     Fatal("QueryPerformanceCounter: %s", GetLastErrorString())
+  return LargeIntegerToInt64(counter)
 }
 
 int64_t TimerToMicros(int64_t dt) {
@@ -149,7 +150,7 @@ func (m *Metrics) Report() {
   }
 }
 
-uint64_t Stopwatch::Now() {
+uint64_t Stopwatch::Now() const {
   return TimerToMicros(HighResTimer())
 }
 

@@ -17,10 +17,8 @@
 package ginja
 
 
-int EditDistance(const StringPiece& s1, const StringPiece& s2, bool allow_replacements = true, int max_edit_distance = 0)
 
-
-int EditDistance(const StringPiece& s1, const StringPiece& s2, bool allow_replacements, int max_edit_distance) {
+func EditDistance(s1 *StringPiece, s2 *StringPiece, allow_replacements bool, max_edit_distance int) int {
   // The algorithm implemented below is the "classic"
   // dynamic-programming algorithm for computing the Levenshtein
   // distance, which is described here:
@@ -47,21 +45,23 @@ int EditDistance(const StringPiece& s1, const StringPiece& s2, bool allow_replac
     previous := y - 1
     for (int x = 1; x <= n; ++x) {
       old_row := row[x]
-      if (allow_replacements) {
+      if allow_replacements {
         row[x] = min(previous + (s1.str_[y - 1] == s2.str_[x - 1] ? 0 : 1), min(row[x - 1], row[x]) + 1)
       }
       else {
-        if (s1.str_[y - 1] == s2.str_[x - 1])
+        if s1.str_[y - 1] == s2.str_[x - 1] {
           row[x] = previous
-        else
+        } else {
           row[x] = min(row[x - 1], row[x]) + 1
+        }
       }
       previous = old_row
       best_this_row = min(best_this_row, row[x])
     }
 
-    if (max_edit_distance && best_this_row > max_edit_distance)
+    if max_edit_distance && best_this_row > max_edit_distance {
       return max_edit_distance + 1
+    }
   }
 
   return row[n]

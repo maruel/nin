@@ -50,7 +50,6 @@ type StateTestWithBuiltinRules struct {
 }
 
 void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
-void AssertHash(string expected, uint64_t actual)
 
 // An implementation of DiskInterface that uses an in-memory representation
 // of disk state.  It also logs file accesses and directory creations
@@ -145,13 +144,14 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) Node* {
 }
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
+  ManifestParser parser(state, nil, opts)
   string err
   if parser.ParseTest(input, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
   VerifyGraph(*state)
 }
 
-void AssertHash(string expected, uint64_t actual) {
+func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64_t) {
   if BuildLog::LogEntry::HashCommand(expected) != actual { t.FailNow() }
 }
 

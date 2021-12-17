@@ -172,6 +172,7 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
   strncpy(copy, input, input.size() + 1)
   uint64_t slash_bits
   CanonicalizePath(copy, &len, &slash_bits)
+  StringPiece partially_fixed(copy, len)
   abs_input := AbsPath(partially_fixed, err)
   if len(err) != 0 {
     return false
