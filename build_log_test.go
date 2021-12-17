@@ -89,7 +89,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 }
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "0\t1\t2\tout\tcommand abc\n")
   fprintf(f, "3\t4\t5\tout\tcommand def\n")
@@ -100,7 +100,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  e := log.LookupByOutput("out")
+  BuildLog::LogEntry* e = log.LookupByOutput("out")
   if e { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command def", e.command_hash))
 }
@@ -124,7 +124,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 
   // For all possible truncations of the input file, assert that we don't
   // crash when parsing.
-  for (off_t size = statbuf.st_size; size > 0; --size) {
+  for size := statbuf.st_size; size > 0; size-- {
     BuildLog log2
     string err
     if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
@@ -142,7 +142,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 }
 
 func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v3\n")
   fprintf(f, "123 456 0 out command\n")
   fclose(f)
@@ -154,7 +154,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 }
 
 TEST_F(BuildLogTest, SpacesInOutputV4) {
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "123\t456\t456\tout with space\tcommand\n")
   fclose(f)
@@ -164,7 +164,7 @@ TEST_F(BuildLogTest, SpacesInOutputV4) {
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  e := log.LookupByOutput("out with space")
+  BuildLog::LogEntry* e = log.LookupByOutput("out with space")
   if e { t.FailNow() }
   if 123 != e.start_time { t.FailNow() }
   if 456 != e.end_time { t.FailNow() }
@@ -176,7 +176,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
   // Old versions of ninja accidentally wrote multiple version headers to the
   // build log on Windows. This shouldn't crash, and the second version header
   // should be ignored.
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "123\t456\t456\tout\tcommand\n")
   fprintf(f, "# ninja log v4\n")
@@ -188,7 +188,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  e := log.LookupByOutput("out")
+  BuildLog::LogEntry* e = log.LookupByOutput("out")
   if e { t.FailNow() }
   if 123 != e.start_time { t.FailNow() }
   if 456 != e.end_time { t.FailNow() }
@@ -226,14 +226,14 @@ type TestDiskInterface struct {
 }
 
 func TestBuildLogTest_Restat(t *testing.T) {
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n" "1\t2\t3\tout\tcommand\n")
   fclose(f)
   string err
   BuildLog log
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
-  e := log.LookupByOutput("out")
+  BuildLog::LogEntry* e = log.LookupByOutput("out")
   if 3 != e.mtime { t.FailNow() }
 
   TestDiskInterface testDiskInterface
@@ -253,11 +253,12 @@ func TestBuildLogTest_Restat(t *testing.T) {
 func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
   // Ninja's build log buffer is currently 256kB. Lines longer than that are
   // silently ignored, but don't affect parsing of other lines.
-  f := fopen(kTestFilename, "wb")
+  FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "123\t456\t456\tout\tcommand start")
-  for (size_t i = 0; i < (512 << 10) / strlen(" more_command"); ++i)
+  for i := 0; i < (512 << 10) / strlen(" more_command"); i++ {
     fputs(" more_command", f)
+  }
   fprintf(f, "\n")
   fprintf(f, "456\t789\t789\tout2\tcommand2\n")
   fclose(f)
@@ -267,7 +268,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
   if log.Load(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  e := log.LookupByOutput("out")
+  BuildLog::LogEntry* e = log.LookupByOutput("out")
   if nil != e { t.FailNow() }
 
   e = log.LookupByOutput("out2")
@@ -310,8 +311,9 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
   if "" != err { t.FailNow() }
   // Record the same edge several times, to trigger recompaction
   // the next time the log is opened.
-  for (int i = 0; i < 200; ++i)
+  for i := 0; i < 200; i++ {
     log1.RecordCommand(state_.edges_[0], 15, 18 + i)
+  }
   log1.RecordCommand(state_.edges_[1], 21, 22)
   log1.Close()
 

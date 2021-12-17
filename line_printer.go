@@ -58,7 +58,7 @@ type LinePrinter struct {
 
 
 LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
-  term := getenv("TERM")
+  string term = getenv("TERM")
   smart_terminal_ = isatty(1) && term && string(term) != "dumb"
   if (term && string(term) == "dumb") {
     smart_terminal_ = false
@@ -69,7 +69,7 @@ LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
   }
   supports_color_ = smart_terminal_
   if (!supports_color_) {
-    clicolor_force := getenv("CLICOLOR_FORCE")
+    string clicolor_force = getenv("CLICOLOR_FORCE")
     supports_color_ = clicolor_force && string(clicolor_force) != "0"
   }
   // Try enabling ANSI escape sequence support on Windows 10 terminals.
@@ -111,13 +111,13 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
       // We don't want to have the cursor spamming back and forth, so instead of
       // printf use WriteConsoleOutput which updates the contents of the buffer,
       // but doesn't move the cursor position.
-      buf_size := { csbi.dwSize.X, 1 }
-      zero_zero := { 0, 0 }
+      COORD buf_size = { csbi.dwSize.X, 1 }
+      COORD zero_zero = { 0, 0 }
       SMALL_RECT target = { csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y,
                             static_cast<SHORT>(csbi.dwCursorPosition.X + csbi.dwSize.X - 1),
                             csbi.dwCursorPosition.Y }
       vector<CHAR_INFO> char_data(csbi.dwSize.X)
-      for (size_t i = 0; i < static_cast<size_t>(csbi.dwSize.X); ++i) {
+      for i := 0; i < static_cast<size_t>(csbi.dwSize.X); i++ {
         char_data[i].Char.AsciiChar = i < to_print.size() ? to_print[i] : ' '
         char_data[i].Attributes = csbi.wAttributes
       }

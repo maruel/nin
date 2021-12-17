@@ -50,8 +50,8 @@ func EndsWith(input string, needle string) bool {
 func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {
   const string kDepsPrefixEnglish = "Note: including file: "
   in := line
-  end := in + line.size()
-  prefix := deps_prefix.empty() ? kDepsPrefixEnglish : deps_prefix
+  string end = in + line.size()
+  string prefix = deps_prefix.empty() ? kDepsPrefixEnglish : deps_prefix
   if end - in > (int)prefix.size() && memcmp(in, prefix, (int)prefix.size()) == 0 {
     in += prefix.size()
     while *in == ' ' {
@@ -88,7 +88,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
 
   // Loop over all lines in the output to process them.
   if !&output != filtered_output { panic("oops") }
-  size_t start = 0
+  start := 0
   seen_show_includes := false
   IncludesNormalize normalizer(".")
 
@@ -97,7 +97,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
     if end == string::npos {
       end = output.size()
     }
-    line := output.substr(start, end - start)
+    string line = output.substr(start, end - start)
 
     include := FilterShowIncludes(line, deps_prefix)
     if len(include) != 0 {

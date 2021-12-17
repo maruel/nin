@@ -22,12 +22,12 @@ package ginja
 
 func WriteFakeManifests(dir string, err *string) bool {
   RealDiskInterface disk_interface
-  mtime := disk_interface.Stat(dir + "/build.ninja", err)
+  TimeStamp mtime = disk_interface.Stat(dir + "/build.ninja", err)
   if mtime != 0 {  // 0 means that the file doesn't exist yet.
     return mtime != -1
   }
 
-  command := "python misc/write_fake_manifests.py " + dir
+  string command = "python misc/write_fake_manifests.py " + dir
   printf("Creating manifest data..."); fflush(stdout)
   exit_code := system(command)
   printf("done.\n")
@@ -51,8 +51,9 @@ func LoadManifests(measure_command_evaluation bool) int {
   // evaluation in the perftest by default.
   optimization_guard := 0
   if measure_command_evaluation {
-    for (size_t i = 0; i < state.edges_.size(); ++i)
+    for i := 0; i < state.edges_.size(); i++ {
   }
+    }
       optimization_guard += state.edges_[i].EvaluateCommand().size()
   return optimization_guard
 }
@@ -84,12 +85,12 @@ func main(argc int, argv []*char) int {
     Fatal("chdir: %s", strerror(errno))
   }
 
-  const int kNumRepetitions = 5
+  kNumRepetitions := 5
   vector<int> times
-  for (int i = 0; i < kNumRepetitions; ++i) {
-    int64_t start = GetTimeMillis()
+  for i := 0; i < kNumRepetitions; i++ {
+    start := GetTimeMillis()
     optimization_guard := LoadManifests(measure_command_evaluation)
-    delta := (int)(GetTimeMillis() - start)
+    int delta = (int)(GetTimeMillis() - start)
     printf("%dms (hash: %x)\n", delta, optimization_guard)
     times.push_back(delta)
   }

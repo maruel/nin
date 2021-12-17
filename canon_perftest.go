@@ -25,24 +25,24 @@ func main() int {
   vector<int> times
 
   char buf[200]
-  size_t len = strlen(kPath)
+  len := strlen(kPath)
   strcpy(buf, kPath)
 
-  for (int j = 0; j < 5; ++j) {
-    const int kNumRepetitions = 2000000
-    int64_t start = GetTimeMillis()
+  for j := 0; j < 5; j++ {
+    kNumRepetitions := 2000000
+    start := GetTimeMillis()
     uint64_t slash_bits
-    for (int i = 0; i < kNumRepetitions; ++i) {
+    for i := 0; i < kNumRepetitions; i++ {
       CanonicalizePath(buf, &len, &slash_bits)
     }
-    delta := (int)(GetTimeMillis() - start)
+    int delta = (int)(GetTimeMillis() - start)
     times.push_back(delta)
   }
 
   min := times[0]
   max := times[0]
   total := 0
-  for (size_t i = 0; i < times.size(); ++i) {
+  for i := 0; i < times.size(); i++ {
     total += times[i]
     if times[i] < min {
       min = times[i]

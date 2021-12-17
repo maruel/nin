@@ -20,7 +20,7 @@ package ginja
 func GetCurDir() string {
   char buf[_MAX_PATH]
   _getcwd(buf, sizeof(buf))
-  parts := SplitStringPiece(buf, '\\')
+  vector<StringPiece> parts = SplitStringPiece(buf, '\\')
   return parts[parts.size() - 1].AsString()
 }
 
@@ -103,7 +103,7 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 
   kExactlyMaxPath[cwd_len + 3] = 'a'
 
-  for (int i = cwd_len + 4; i < _MAX_PATH; ++i) {
+  for int i = cwd_len + 4; i < _MAX_PATH; i++ {
     if i > cwd_len + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
       kExactlyMaxPath[i] = '\\'
     } else {
@@ -130,7 +130,7 @@ func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
   char kExactlyMaxPath[_MAX_PATH + 1]
-  for (int i = 0; i < _MAX_PATH; ++i) {
+  for i := 0; i < _MAX_PATH; i++ {
     if i < _MAX_PATH - 1 && i % 10 == 4 {
       kExactlyMaxPath[i] = '\\'
     } else {

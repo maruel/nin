@@ -87,7 +87,7 @@ func IsFullPathName(s StringPiece) bool {
   }
 
   // Check "." or ".." is contained in path.
-  for (size_t i = 2; i < s.size(); ++i) {
+  for i := 2; i < s.size(); i++ {
     if !IsPathSeparator(s[i]) {
       continue
     }
@@ -118,7 +118,7 @@ IncludesNormalize::IncludesNormalize(string relative_to) {
 func (i *IncludesNormalize) AbsPath(s StringPiece, err *string) string {
   if IsFullPathName(s) {
     result := s.AsString()
-    for (size_t i = 0; i < result.size(); ++i) {
+    for i := 0; i < result.size(); i++ {
       if result[i] == '\\' {
         result[i] = '/'
       }
@@ -130,8 +130,9 @@ func (i *IncludesNormalize) AbsPath(s StringPiece, err *string) string {
   if !InternalGetFullPathName(s, result, sizeof(result), err) {
     return ""
   }
-  for (char* c = result; *c; ++c)
+  for c := result; *c; c++ {
     if *c == '\\' {
+  }
       *c = '/'
     }
   return result
@@ -142,9 +143,9 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
   if len(err) != 0 {
     return ""
   }
-  path_list := SplitStringPiece(abs_path, '/')
+  vector<StringPiece> path_list = SplitStringPiece(abs_path, '/')
   int i
-  for (i = 0; i < static_cast<int>(min(start_list.size(), path_list.size())); ++i) {
+  for i = 0; i < static_cast<int>(min(start_list.size(), path_list.size())); i++ {
     if !EqualsCaseInsensitiveASCII(start_list[i], path_list[i]) {
       break
     }
@@ -152,10 +153,12 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
 
   vector<StringPiece> rel_list
   rel_list.reserve(start_list.size() - i + path_list.size() - i)
-  for (int j = 0; j < static_cast<int>(start_list.size() - i); ++j)
+  for j := 0; j < static_cast<int>(start_list.size() - i); j++ {
     rel_list.push_back("..")
-  for (int j = i; j < static_cast<int>(path_list.size()); ++j)
+  }
+  for j := i; j < static_cast<int>(path_list.size()); j++ {
     rel_list.push_back(path_list[j])
+  }
   if rel_list.size() == 0 {
     return "."
   }
@@ -164,7 +167,7 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
 
 func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
   char copy[_MAX_PATH + 1]
-  size_t len = input.size()
+  len := input.size()
   if len > _MAX_PATH {
     *err = "path too long"
     return false

@@ -47,7 +47,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
     deps.push_back(state1.GetNode("bar2.h", 0))
     log1.RecordDeps(state1.GetNode("out2.o", 0), 2, deps)
 
-    log_deps := log1.GetDeps(state1.GetNode("out.o", 0))
+    DepsLog::Deps* log_deps = log1.GetDeps(state1.GetNode("out.o", 0))
     if log_deps { t.FailNow() }
     if 1 != log_deps.mtime { t.FailNow() }
     if 2 != log_deps.node_count { t.FailNow() }
@@ -63,15 +63,15 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
   if "" != err { t.FailNow() }
 
   if log1.nodes().size() != log2.nodes().size() { t.FailNow() }
-  for (int i = 0; i < (int)log1.nodes().size(); ++i) {
-    Node* node1 = log1.nodes()[i]
-    Node* node2 = log2.nodes()[i]
+  for i := 0; i < (int)log1.nodes().size(); i++ {
+    node1 := log1.nodes()[i]
+    node2 := log2.nodes()[i]
     if i != node1.id() { t.FailNow() }
     if node1.id() != node2.id() { t.FailNow() }
   }
 
   // Spot-check the entries in log2.
-  log_deps := log2.GetDeps(state2.GetNode("out2.o", 0))
+  DepsLog::Deps* log_deps = log2.GetDeps(state2.GetNode("out2.o", 0))
   if log_deps { t.FailNow() }
   if 2 != log_deps.mtime { t.FailNow() }
   if 2 != log_deps.node_count { t.FailNow() }
@@ -80,7 +80,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 }
 
 func TestDepsLogTest_LotsOfDeps(t *testing.T) {
-  const int kNumDeps = 100000  // More than 64k.
+  kNumDeps := 100000  // More than 64k.
 
   State state1
   DepsLog log1
@@ -90,14 +90,14 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
   {
     vector<Node*> deps
-    for (int i = 0; i < kNumDeps; ++i) {
+    for i := 0; i < kNumDeps; i++ {
       char buf[32]
       sprintf(buf, "file%d.h", i)
       deps.push_back(state1.GetNode(buf, 0))
     }
     log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps)
 
-    log_deps := log1.GetDeps(state1.GetNode("out.o", 0))
+    DepsLog::Deps* log_deps = log1.GetDeps(state1.GetNode("out.o", 0))
     if kNumDeps != log_deps.node_count { t.FailNow() }
   }
 
@@ -108,7 +108,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
   if log2.Load(kTestFilename, &state2, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  log_deps := log2.GetDeps(state2.GetNode("out.o", 0))
+  DepsLog::Deps* log_deps = log2.GetDeps(state2.GetNode("out.o", 0))
   if kNumDeps != log_deps.node_count { t.FailNow() }
 }
 
@@ -153,7 +153,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 
     struct stat st
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
-    int file_size_2 = (int)st.st_size
+    file_size_2 := (int)st.st_size
     if file_size != file_size_2 { t.FailNow() }
   }
 }
@@ -229,14 +229,14 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     string err
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
-    out := state.GetNode("out.o", 0)
+    Node* out = state.GetNode("out.o", 0)
     deps := log.GetDeps(out)
     if deps { t.FailNow() }
     if 1 != deps.mtime { t.FailNow() }
     if 1 != deps.node_count { t.FailNow() }
     if "foo.h" != deps.nodes[0].path() { t.FailNow() }
 
-    other_out := state.GetNode("other_out.o", 0)
+    Node* other_out = state.GetNode("other_out.o", 0)
     deps = log.GetDeps(other_out)
     if deps { t.FailNow() }
     if 1 != deps.mtime { t.FailNow() }
@@ -278,14 +278,14 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     string err
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
-    out := state.GetNode("out.o", 0)
+    Node* out = state.GetNode("out.o", 0)
     deps := log.GetDeps(out)
     if deps { t.FailNow() }
     if 1 != deps.mtime { t.FailNow() }
     if 1 != deps.node_count { t.FailNow() }
     if "foo.h" != deps.nodes[0].path() { t.FailNow() }
 
-    other_out := state.GetNode("other_out.o", 0)
+    Node* other_out = state.GetNode("other_out.o", 0)
     deps = log.GetDeps(other_out)
     if deps { t.FailNow() }
     if 1 != deps.mtime { t.FailNow() }
@@ -309,7 +309,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     // The file should have shrunk more.
     struct stat st
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
-    int file_size_4 = (int)st.st_size
+    file_size_4 := (int)st.st_size
     if file_size_4 >= file_size_3 { t.FailNow() }
   }
 }
@@ -323,8 +323,8 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
     "# ninjadeps\n\001\002",         // Truncated version int.
     "# ninjadeps\n\001\002\003\004"  // Invalid version int.
   }
-  for (size_t i = 0; i < sizeof(kInvalidHeaders) / sizeof(kInvalidHeaders[0]); ++i) {
-    deps_log := fopen(kTestFilename, "wb")
+  for i := 0; i < sizeof(kInvalidHeaders) / sizeof(kInvalidHeaders[0]); i++ {
+    FILE* deps_log = fopen(kTestFilename, "wb")
     if deps_log != nil { t.FailNow() }
     if  strlen(kInvalidHeaders[i]) != fwrite(kInvalidHeaders[i], 1, strlen(kInvalidHeaders[i]), deps_log) { t.FailNow() }
     ASSERT_EQ(0 ,fclose(deps_log))
@@ -369,7 +369,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
   // smaller sizes.
   node_count := 5
   deps_count := 2
-  for (int size = (int)st.st_size; size > 0; --size) {
+  for size := (int)st.st_size; size > 0; size-- {
     string err
     if Truncate(kTestFilename, size, &err) { t.FailNow() }
 
@@ -386,7 +386,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 
     // Count how many non-NULL deps entries there are.
     new_deps_count := 0
-    for (vector<DepsLog::Deps*>::const_iterator i = log.deps().begin(); i != log.deps().end(); ++i) {
+    for i := log.deps().begin(); i != log.deps().end(); i++ {
       if *i {
         ++new_deps_count
       }
@@ -460,7 +460,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
     if log.Load(kTestFilename, &state, &err) { t.FailNow() }
 
     // The truncated entry should exist.
-    deps := log.GetDeps(state.GetNode("out2.o", 0))
+    DepsLog::Deps* deps = log.GetDeps(state.GetNode("out2.o", 0))
     if deps { t.FailNow() }
   }
 }
@@ -484,7 +484,7 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
 
   log.Close()
 
-  rev_deps := log.GetFirstReverseDepsNode(state.GetNode("foo.h", 0))
+  Node* rev_deps = log.GetFirstReverseDepsNode(state.GetNode("foo.h", 0))
   if rev_deps == state.GetNode("out.o", 0) || rev_deps == state.GetNode("out2.o", 0) { t.FailNow() }
 
   rev_deps = log.GetFirstReverseDepsNode(state.GetNode("bar.h", 0))

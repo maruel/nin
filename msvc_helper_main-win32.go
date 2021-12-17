@@ -34,8 +34,8 @@ func PushPathIntoEnvironment(env_block string) {
 }
 
 func WriteDepFileOrDie(object_path string, parse *CLParser) {
-  depfile_path := string(object_path) + ".d"
-  depfile := fopen(depfile_path, "w")
+  string depfile_path = string(object_path) + ".d"
+  FILE* depfile = fopen(depfile_path, "w")
   if depfile == nil {
     unlink(object_path)
     Fatal("opening %s: %s", depfile_path, GetLastErrorString())
@@ -46,8 +46,8 @@ func WriteDepFileOrDie(object_path string, parse *CLParser) {
     unlink(depfile_path)
     Fatal("writing %s", depfile_path)
   }
-  const set<string>& headers = parse.includes_
-  for (set<string>::const_iterator i = headers.begin(); i != headers.end(); ++i) {
+  headers := parse.includes_
+  for i := headers.begin(); i != headers.end(); i++ {
     if fprintf(depfile, "%s\n", EscapeForDepfile(*i)) < 0 {
       unlink(object_path)
       fclose(depfile)

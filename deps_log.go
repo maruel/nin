@@ -132,7 +132,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
     }
     made_change = true
   }
-  for (int i = 0; i < node_count; ++i) {
+  for i := 0; i < node_count; i++ {
     if nodes[i].id() < 0 {
       if !RecordId(nodes[i]) {
         return false
@@ -147,7 +147,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
     if !deps || deps.mtime != mtime || deps.node_count != node_count {
       made_change = true
     } else {
-      for (int i = 0; i < node_count; ++i) {
+      for i := 0; i < node_count; i++ {
         if deps.nodes[i] != nodes[i] {
           made_change = true
           break
@@ -162,7 +162,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
   }
 
   // Update on-disk representation.
-  size := 4 * (1 + 2 + node_count)
+  unsigned size = 4 * (1 + 2 + node_count)
   if size > kMaxRecordSize {
     errno = ERANGE
     return false
@@ -179,7 +179,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
   if fwrite(&id, 4, 1, file_) < 1 {
     return false
   }
-  uint32_t mtime_part = static_cast<uint32_t>(mtime & 0xffffffff)
+  mtime_part := static_cast<uint32_t>(mtime & 0xffffffff)
   if fwrite(&mtime_part, 4, 1, file_) < 1 {
     return false
   }
@@ -187,7 +187,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
   if fwrite(&mtime_part, 4, 1, file_) < 1 {
     return false
   }
-  for (int i = 0; i < node_count; ++i) {
+  for i := 0; i < node_count; i++ {
     id = nodes[i].id()
     if fwrite(&id, 4, 1, file_) < 1 {
       return false
@@ -199,8 +199,9 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
 
   // Update in-memory representation.
   deps := new Deps(mtime, node_count)
-  for (int i = 0; i < node_count; ++i)
+  for i := 0; i < node_count; i++ {
     deps.nodes[i] = nodes[i]
+  }
   UpdateDeps(node.id(), deps)
 
   return true
@@ -217,7 +218,7 @@ func (d *DepsLog) Close() {
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   METRIC_RECORD(".ninja_deps load")
   char buf[kMaxRecordSize + 1]
-  f := fopen(path, "rb")
+  FILE* f = fopen(path, "rb")
   if f == nil {
     if errno == ENOENT {
       return LOAD_NOT_FOUND
@@ -252,7 +253,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   read_failed := false
   unique_dep_record_count := 0
   total_dep_record_count := 0
-  for (;;) {
+  for ; ;  {
     offset = ftell(f)
 
     unsigned size
@@ -262,7 +263,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       }
       break
     }
-    is_deps := (size >> 31) != 0
+    bool is_deps = (size >> 31) != 0
     size = size & 0x7FFFFFFF
 
     if size > kMaxRecordSize || fread(buf, size, 1, f) < 1 {
@@ -277,10 +278,10 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       TimeStamp mtime
       mtime = (TimeStamp)(((uint64_t)(unsigned int)deps_data[2] << 32) | (uint64_t)(unsigned int)deps_data[1])
       deps_data += 3
-      deps_count := (size / 4) - 3
+      int deps_count = (size / 4) - 3
 
       deps := new Deps(mtime, deps_count)
-      for (int i = 0; i < deps_count; ++i) {
+      for i := 0; i < deps_count; i++ {
         if !deps_data[i] < (int)nodes_.size() { panic("oops") }
         if !nodes_[deps_data[i]] { panic("oops") }
         deps.nodes[i] = nodes_[deps_data[i]]
@@ -291,7 +292,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
         ++unique_dep_record_count
       }
     } else {
-      path_size := size - 4
+      int path_size = size - 4
       if !path_size > 0 { panic("oops") }  // CanonicalizePath() rejects empty paths.
       // There can be up to 3 bytes of padding.
       if buf[path_size - 1] == '\0' {
@@ -315,8 +316,8 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       // happen if two ninja processes write to the same deps log concurrently.
       // (This uses unary complement to make the checksum look less like a
       // dependency record entry.)
-      checksum := *reinterpret_cast<unsigned*>(buf + size - 4)
-      expected_id := ~checksum
+      unsigned checksum = *reinterpret_cast<unsigned*>(buf + size - 4)
+      int expected_id = ~checksum
       id := nodes_.size()
       if id != expected_id {
         read_failed = true
@@ -371,12 +372,12 @@ DepsLog::Deps* DepsLog::GetDeps(Node* node) {
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) Node* {
-  for (size_t id = 0; id < deps_.size(); ++id) {
+  for id := 0; id < deps_.size(); id++ {
     deps := deps_[id]
     if deps == nil {
       continue
     }
-    for (int i = 0; i < deps.node_count; ++i) {
+    for i := 0; i < deps.node_count; i++ {
       if deps.nodes[i] == node {
         return nodes_[id]
       }
@@ -390,7 +391,7 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
   METRIC_RECORD(".ninja_deps recompact")
 
   Close()
-  temp_path := path + ".recompact"
+  string temp_path = path + ".recompact"
 
   // OpenForWrite() opens for append.  Make sure it's not appending to a
   // left-over file from a previous recompaction attempt that crashed somehow.
@@ -403,11 +404,12 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 
   // Clear all known ids so that new ones can be reassigned.  The new indices
   // will refer to the ordering in new_log, not in the current log.
-  for (vector<Node*>::iterator i = nodes_.begin(); i != nodes_.end(); ++i)
+  for i := nodes_.begin(); i != nodes_.end(); i++ {
     (*i).set_id(-1)
+  }
 
   // Write out all deps again.
-  for (int old_id = 0; old_id < (int)deps_.size(); ++old_id) {
+  for old_id := 0; old_id < (int)deps_.size(); old_id++ {
     deps := deps_[old_id]
     if deps == nil {  // If nodes_[old_id] is a leaf, it has no deps.
     	continue
@@ -465,7 +467,7 @@ func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
     deps_.resize(out_id + 1)
   }
 
-  delete_old := deps_[out_id] != nil
+  bool delete_old = deps_[out_id] != nil
   if delete_old {
     delete deps_[out_id]
   }
@@ -476,9 +478,9 @@ func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
 // Write a node name record, assigning it an id.
 func (d *DepsLog) RecordId(node *Node) bool {
   path_size := node.path().size()
-  padding := (4 - path_size % 4) % 4  // Pad path to 4 byte boundary.
+  int padding = (4 - path_size % 4) % 4  // Pad path to 4 byte boundary.
 
-  size := path_size + padding + 4
+  unsigned size = path_size + padding + 4
   if size > kMaxRecordSize {
     errno = ERANGE
     return false
@@ -498,7 +500,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
     return false
   }
   id := nodes_.size()
-  checksum := ~(unsigned)id
+  unsigned checksum = ~(unsigned)id
   if fwrite(&checksum, 4, 1, file_) < 1 {
     return false
   }

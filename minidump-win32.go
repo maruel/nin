@@ -31,7 +31,7 @@ func CreateWin32MiniDump(pep *_EXCEPTION_POINTERS) {
 
   // Load DbgHelp.dll dynamically, as library is not present on all
   // Windows versions.
-  dbghelp := LoadLibraryA("dbghelp.dll")
+  HMODULE dbghelp = LoadLibraryA("dbghelp.dll")
   if dbghelp == nil {
     Error("failed to create minidump: LoadLibrary('dbghelp.dll'): %s", GetLastErrorString())
     return
@@ -44,7 +44,7 @@ func CreateWin32MiniDump(pep *_EXCEPTION_POINTERS) {
     return
   }
 
-  hFile := CreateFileA(temp_file, GENERIC_READ | GENERIC_WRITE, 0, nil, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nil)
+  HANDLE hFile = CreateFileA(temp_file, GENERIC_READ | GENERIC_WRITE, 0, nil, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nil)
   if hFile == nil {
     Error("failed to create minidump: CreateFileA(%s): %s", temp_file, GetLastErrorString())
     return
@@ -56,7 +56,7 @@ func CreateWin32MiniDump(pep *_EXCEPTION_POINTERS) {
   mdei.ClientPointers     = FALSE
   MINIDUMP_TYPE mdt       = (MINIDUMP_TYPE) (MiniDumpWithDataSegs | MiniDumpWithHandleData)
 
-  rv := mini_dump_write_dump(GetCurrentProcess(), GetCurrentProcessId(), hFile, mdt, (pep != 0) ? &mdei : 0, 0, 0)
+  BOOL rv = mini_dump_write_dump(GetCurrentProcess(), GetCurrentProcessId(), hFile, mdt, (pep != 0) ? &mdei : 0, 0, 0)
   CloseHandle(hFile)
 
   if rv == nil {

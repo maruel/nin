@@ -38,7 +38,7 @@ func TestParserTest_Rules(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = cat $in > $out\n" "\n" "rule date\n" "  command = date > $out\n" "\n" "build result: cat in_1.cc in-2.O\n"))
 
   if 3u != state.bindings_.GetRules().size() { t.FailNow() }
-  const Rule* rule = state.bindings_.GetRules().begin().second
+  rule := state.bindings_.GetRules().begin().second
   if "cat" != rule.name() { t.FailNow() }
   if "[cat ][$in][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
 }
@@ -52,9 +52,9 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "  #indented comment\n" "rule cat\n" "  command = cat $in > $out\n" "  #generator = 1\n" "  restat = 1 # comment\n" "  #comment\n" "build result: cat in_1.cc in-2.O\n" "  #comment\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
-  const Rule* rule = state.bindings_.GetRules().begin().second
+  rule := state.bindings_.GetRules().begin().second
   if "cat" != rule.name() { t.FailNow() }
-  edge := state.GetNode("result", 0).in_edge()
+  Edge* edge = state.GetNode("result", 0).in_edge()
   if edge.GetBindingBool("restat") { t.FailNow() }
   if !edge.GetBindingBool("generator") { t.FailNow() }
 }
@@ -71,7 +71,7 @@ func TestParserTest_ResponseFiles(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n" "  command = cat $rspfile > $out\n" "  rspfile = $rspfile\n" "  rspfile_content = $in\n" "\n" "build out: cat_rsp in\n" "  rspfile=out.rsp\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
-  const Rule* rule = state.bindings_.GetRules().begin().second
+  rule := state.bindings_.GetRules().begin().second
   if "cat_rsp" != rule.name() { t.FailNow() }
   if "[cat ][$rspfile][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
   if "[$rspfile]" != rule.GetBinding("rspfile").Serialize() { t.FailNow() }
@@ -82,7 +82,7 @@ func TestParserTest_InNewline(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n" "  command = cat $in_newline > $out\n" "\n" "build out: cat_rsp in in2\n" "  rspfile=out.rsp\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
-  const Rule* rule = state.bindings_.GetRules().begin().second
+  rule := state.bindings_.GetRules().begin().second
   if "cat_rsp" != rule.name() { t.FailNow() }
   if "[cat ][$in_newline][ > ][$out]" != rule.GetBinding("command").Serialize() { t.FailNow() }
 
@@ -114,7 +114,7 @@ func TestParserTest_Continuation(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule link\n" "  command = foo bar $\n" "    baz\n" "\n" "build a: link c $\n" " d e f\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
-  const Rule* rule = state.bindings_.GetRules().begin().second
+  rule := state.bindings_.GetRules().begin().second
   if "link" != rule.name() { t.FailNow() }
   if "[foo bar baz]" != rule.GetBinding("command").Serialize() { t.FailNow() }
 }
@@ -149,5 +149,5 @@ func TestParserTest_EscapeSpaces(t *testing.T) {
 func TestParserTest_CanonicalizeFile(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = cat $in > $out\n" "build out: cat in/1 in "build in/1: cat\n" "build in/2: cat\n"))//2\n"
 
-  if state.LookupNode("in/1") { t.FailNow() }
-  if state.LookupNode("in/2") { t.FailNow() }
+  EXPECT_TRUE(state.LookupNode("in/1"))
+  EXPECT_TRUE(state.LookupNode("in/2"))

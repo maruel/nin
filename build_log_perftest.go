@@ -53,9 +53,9 @@ func WriteTestData(err *string) bool {
   */
 
   // ManifestParser is the only object allowed to create Rules.
-  const size_t kRuleSize = 4000
-  long_rule_command := "gcc "
-  for (int i = 0; long_rule_command.size() < kRuleSize; ++i) {
+  kRuleSize := 4000
+  string long_rule_command = "gcc "
+  for i := 0; long_rule_command.size() < kRuleSize; i++ {
     char buf[80]
     sprintf(buf, "-I../../and/arbitrary/but/fairly/long/path/suffixed/%d ", i)
     long_rule_command += buf
@@ -70,9 +70,9 @@ func WriteTestData(err *string) bool {
 
   // Create build edges. Using ManifestParser is as fast as using the State api
   // for edge creation, so just use that.
-  const int kNumCommands = 30000
+  kNumCommands := 30000
   string build_rules
-  for (int i = 0; i < kNumCommands; ++i) {
+  for i := 0; i < kNumCommands; i++ {
     char buf[80]
     sprintf(buf, "build input%d.o: cxx input%d.cc\n", i, i)
     build_rules += buf
@@ -82,7 +82,7 @@ func WriteTestData(err *string) bool {
     return false
   }
 
-  for (int i = 0; i < kNumCommands; ++i) {
+  for i := 0; i < kNumCommands; i++ {
     log.RecordCommand(state.edges_[i], /*start_time=*/100 * i, /*end_time=*/100 * i + 1, /*mtime=*/0)
   }
 
@@ -106,15 +106,15 @@ func main() int {
       return 1
     }
   }
-  const int kNumRepetitions = 5
-  for (int i = 0; i < kNumRepetitions; ++i) {
-    int64_t start = GetTimeMillis()
+  kNumRepetitions := 5
+  for i := 0; i < kNumRepetitions; i++ {
+    start := GetTimeMillis()
     BuildLog log
     if log.Load(kTestFilename, &err) == LOAD_ERROR {
       fprintf(stderr, "Failed to read test data: %s\n", err)
       return 1
     }
-    delta := (int)(GetTimeMillis() - start)
+    int delta = (int)(GetTimeMillis() - start)
     printf("%dms\n", delta)
     times.push_back(delta)
   }
@@ -122,7 +122,7 @@ func main() int {
   min := times[0]
   max := times[0]
   total := 0
-  for (size_t i = 0; i < times.size(); ++i) {
+  for i := 0; i < times.size(); i++ {
     total += times[i]
     if times[i] < min {
       min = times[i]

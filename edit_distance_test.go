@@ -24,8 +24,8 @@ func TestEditDistanceTest_TestEmpty(t *testing.T) {
 }
 
 func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
-  const bool allow_replacements = true
-  for (int max_distance = 1; max_distance < 7; ++max_distance) {
+  allow_replacements := true
+  for max_distance := 1; max_distance < 7; max_distance++ {
     if max_distance + 1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) { t.FailNow() }
   }
 }

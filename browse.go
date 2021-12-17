@@ -32,7 +32,7 @@ func RunBrowsePython(state *State, ninja_command string, input_file string, argc
     return
   }
 
-  pid_t pid = fork()
+  pid := fork()
   if pid < 0 {
     perror("ninja: fork")
     return
@@ -53,7 +53,7 @@ func RunBrowsePython(state *State, ninja_command string, input_file string, argc
       command.push_back(ninja_command)
       command.push_back("-f")
       command.push_back(input_file)
-      for (int i = 0; i < argc; i++) {
+      for i := 0; i < argc; i++ {
           command.push_back(argv[i])
       }
       command.push_back(nil)
@@ -69,7 +69,7 @@ func RunBrowsePython(state *State, ninja_command string, input_file string, argc
     close(pipefd[0])
 
     // Write the script file into the stdin of the Python process.
-    ssize_t len = write(pipefd[1], kBrowsePy, sizeof(kBrowsePy))
+    len := write(pipefd[1], kBrowsePy, sizeof(kBrowsePy))
     if len < (ssize_t)sizeof(kBrowsePy) {
       perror("ninja: write")
     }

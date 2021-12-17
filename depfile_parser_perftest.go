@@ -24,12 +24,12 @@ func main(argc int, argv []*char) int {
   }
 
   vector<float> times
-  for (int i = 1; i < argc; ++i) {
+  for i := 1; i < argc; i++ {
     filename := argv[i]
 
-    for (int limit = 1 << 10; limit < (1<<20); limit *= 2) {
-      int64_t start = GetTimeMillis()
-      for (int rep = 0; rep < limit; ++rep) {
+    for limit := 1 << 10; limit < (1<<20); limit *= 2 {
+      start := GetTimeMillis()
+      for rep := 0; rep < limit; rep++ {
         string buf
         string err
         if ReadFile(filename, &buf, &err) < 0 {
@@ -43,11 +43,11 @@ func main(argc int, argv []*char) int {
           return 1
         }
       }
-      int64_t end = GetTimeMillis()
+      end := GetTimeMillis()
 
       if end - start > 100 {
-        delta := (int)(end - start)
-        time := delta*1000 / (float)limit
+        int delta = (int)(end - start)
+        float time = delta*1000 / (float)limit
         printf("%s: %.1fus\n", filename, time)
         times.push_back(time)
         break
@@ -59,7 +59,7 @@ func main(argc int, argv []*char) int {
     min := times[0]
     max := times[0]
     total := 0
-    for (size_t i = 0; i < times.size(); ++i) {
+    for i := 0; i < times.size(); i++ {
       total += times[i]
       if times[i] < min {
         min = times[i]

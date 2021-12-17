@@ -37,8 +37,8 @@ type MissingDependencyScanner struct {
   set<const Rule*> generator_rules_
   int missing_dep_path_count_
 
-  InnerAdjacencyMap := unordered_map<Edge*, bool>
-  AdjacencyMap := unordered_map<Edge*, InnerAdjacencyMap>
+  using InnerAdjacencyMap = unordered_map<Edge*, bool>
+  using AdjacencyMap = unordered_map<Edge*, InnerAdjacencyMap>
   typedef map<Edge*, bool> InnerAdjacencyMap
   typedef map<Edge*, InnerAdjacencyMap> AdjacencyMap
   AdjacencyMap adjacency_map_
@@ -56,7 +56,7 @@ type NodeStoringImplicitDepLoader struct {
 }
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<StringPiece>, err *string) bool {
-  for (vector<StringPiece>::iterator i = depfile_ins.begin(); i != depfile_ins.end(); ++i) {
+  for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
     uint64_t slash_bits
     CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
     node := state_.GetNode(*i, slash_bits)
@@ -88,11 +88,11 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
     return
   }
 
-  for (vector<Node*>::iterator in = edge.inputs_.begin(); in != edge.inputs_.end(); ++in) {
+  for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
     ProcessNode(*in)
   }
 
-  deps_type := edge.GetBinding("deps")
+  string deps_type = edge.GetBinding("deps")
   if !deps_type.empty() {
     deps := deps_log_.GetDeps(node)
     if deps != nil {
@@ -113,7 +113,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node, dep_nodes_count int) {
   edge := node.in_edge()
   set<Edge*> deplog_edges
-  for (int i = 0; i < dep_nodes_count; ++i) {
+  for i := 0; i < dep_nodes_count; i++ {
     deplog_node := dep_nodes[i]
     // Special exception: A dep on build.ninja can be used to mean "always
     // rebuild this target when the build is reconfigured", but build.ninja is
@@ -130,7 +130,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
     }
   }
   vector<Edge*> missing_deps
-  for (set<Edge*>::iterator de = deplog_edges.begin(); de != deplog_edges.end(); ++de) {
+  for de := deplog_edges.begin(); de != deplog_edges.end(); de++ {
     if !PathExistsBetween(*de, edge) {
       missing_deps.push_back(*de)
     }
@@ -138,8 +138,8 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
 
   if !missing_deps.empty() {
     set<string> missing_deps_rule_names
-    for (vector<Edge*>::iterator ne = missing_deps.begin(); ne != missing_deps.end(); ++ne) {
-      for (int i = 0; i < dep_nodes_count; ++i) {
+    for ne := missing_deps.begin(); ne != missing_deps.end(); ne++ {
+      for i := 0; i < dep_nodes_count; i++ {
         if dep_nodes[i].in_edge() == *ne {
           generated_nodes_.insert(dep_nodes[i])
           generator_rules_.insert(&(*ne).rule())
@@ -182,7 +182,7 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
     it = adjacency_map_.insert(make_pair(from, InnerAdjacencyMap())).first
   }
   found := false
-  for (size_t i = 0; i < to.inputs_.size(); ++i) {
+  for i := 0; i < to.inputs_.size(); i++ {
     e := to.inputs_[i].in_edge()
     if e && (e == from || PathExistsBetween(from, e)) {
       found = true

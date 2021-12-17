@@ -153,8 +153,8 @@ func (b *BuildLog) OpenForWrite(path string, user *BuildLogUser, err *string) bo
 
 func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime TimeStamp) bool {
   command := edge.EvaluateCommand(true)
-  uint64_t command_hash = LogEntry::HashCommand(command)
-  for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+  command_hash := LogEntry::HashCommand(command)
+  for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
     path := (*out).path()
     i := entries_.find(path)
     LogEntry* log_entry
@@ -232,7 +232,7 @@ type LineReader struct {
   func (l *LineReader) ReadLine(line_start **char, line_end **char) bool {
     if line_start_ >= buf_end_ || !line_end_ {
       // Buffer empty, refill.
-      size_t size_read = fread(buf_, 1, sizeof(buf_), file_)
+      size_read := fread(buf_, 1, sizeof(buf_), file_)
       if !size_read {
         return false
       }
@@ -273,7 +273,7 @@ type LineReader struct {
 // Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
   METRIC_RECORD(".ninja_log load")
-  file := fopen(path, "r")
+  FILE* file = fopen(path, "r")
   if file == nil {
     if errno == ENOENT {
       return LOAD_NOT_FOUND
@@ -311,13 +311,13 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     const char kFieldSeparator = '\t'
 
     start := line_start
-    end := (char*)memchr(start, kFieldSeparator, line_end - start)
+    char* end = (char*)memchr(start, kFieldSeparator, line_end - start)
     if end == nil {
       continue
     }
     *end = 0
 
-    start_time := 0, end_time = 0
+    int start_time = 0, end_time = 0
     restat_mtime := 0
 
     start_time = atoi(start)
@@ -343,7 +343,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     if end == nil {
       continue
     }
-    output := string(start, end - start)
+    string output = string(start, end - start)
 
     start = end + 1
     end = line_end
@@ -363,7 +363,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     entry.end_time = end_time
     entry.mtime = restat_mtime
     if log_version >= 5 {
-      c := *end; *end = '\0'
+      char c = *end; *end = '\0'
       entry.command_hash = (uint64_t)strtoull(start, nil, 16)
       *end = c
     } else {
@@ -408,8 +408,8 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
   METRIC_RECORD(".ninja_log recompact")
 
   Close()
-  temp_path := path + ".recompact"
-  f := fopen(temp_path, "wb")
+  string temp_path = path + ".recompact"
+  FILE* f = fopen(temp_path, "wb")
   if f == nil {
     *err = strerror(errno)
     return false
@@ -422,7 +422,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
   }
 
   vector<StringPiece> dead_outputs
-  for (Entries::iterator i = entries_.begin(); i != entries_.end(); ++i) {
+  for i := entries_.begin(); i != entries_.end(); i++ {
     if user.IsPathDead(i.first) {
       dead_outputs.push_back(i.first)
       continue
@@ -435,8 +435,9 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
     }
   }
 
-  for (size_t i = 0; i < dead_outputs.size(); ++i)
+  for i := 0; i < dead_outputs.size(); i++ {
     entries_.erase(dead_outputs[i])
+  }
 
   fclose(f)
   if unlink(path) < 0 {
@@ -457,8 +458,8 @@ func (b *BuildLog) Restat(path StringPiece, disk_interface *DiskInterface, outpu
   METRIC_RECORD(".ninja_log restat")
 
   Close()
-  temp_path := path.AsString() + ".restat"
-  f := fopen(temp_path, "wb")
+  string temp_path = path.AsString() + ".restat"
+  FILE* f = fopen(temp_path, "wb")
   if f == nil {
     *err = strerror(errno)
     return false
@@ -469,16 +470,16 @@ func (b *BuildLog) Restat(path StringPiece, disk_interface *DiskInterface, outpu
     fclose(f)
     return false
   }
-  for (Entries::iterator i = entries_.begin(); i != entries_.end(); ++i) {
+  for i := entries_.begin(); i != entries_.end(); i++ {
     skip := output_count > 0
-    for (int j = 0; j < output_count; ++j) {
+    for j := 0; j < output_count; j++ {
       if i.second.output == outputs[j] {
         skip = false
         break
       }
     }
     if skip == nil {
-      const TimeStamp mtime = disk_interface.Stat(i.second.output, err)
+      mtime := disk_interface.Stat(i.second.output, err)
       if mtime == -1 {
         fclose(f)
         return false

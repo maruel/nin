@@ -126,7 +126,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 
 func (s *Subprocess) OnPipeReady() {
   char buf[4 << 10]
-  ssize_t len = read(fd_, buf, sizeof(buf))
+  len := read(fd_, buf, sizeof(buf))
   if len > 0 {
     buf_.append(buf, len)
   } else {
@@ -239,7 +239,7 @@ SubprocessSet::~SubprocessSet() {
 }
 
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
-  Subprocess *subprocess = new Subprocess(use_console)
+  subprocess := new Subprocess(use_console)
   if !subprocess.Start(this, command) {
     delete subprocess
     return 0
@@ -250,14 +250,14 @@ Subprocess *SubprocessSet::Add(string command, bool use_console) {
 
 func (s *SubprocessSet) DoWork() bool {
   vector<pollfd> fds
-  nfds_t nfds = 0
+  nfds := 0
 
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i) {
+  for i := running_.begin(); i != running_.end(); i++ {
     fd := (*i).fd_
     if fd < 0 {
       continue
     }
-    pfd := { fd, POLLIN | POLLPRI, 0 }
+    pollfd pfd = { fd, POLLIN | POLLPRI, 0 }
     fds.push_back(pfd)
     ++nfds
   }
@@ -277,8 +277,8 @@ func (s *SubprocessSet) DoWork() bool {
     return true
   }
 
-  nfds_t cur_nfd = 0
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ) {
+  cur_nfd := 0
+  for i := running_.begin(); i != running_.end();  {
     fd := (*i).fd_
     if fd < 0 {
       continue
@@ -303,7 +303,7 @@ func (s *SubprocessSet) DoWork() bool {
   nfds := 0
   FD_ZERO(&set)
 
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i) {
+  for i := running_.begin(); i != running_.end(); i++ {
     fd := (*i).fd_
     if fd >= 0 {
       FD_SET(fd, &set)
@@ -328,7 +328,7 @@ func (s *SubprocessSet) DoWork() bool {
     return true
   }
 
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ) {
+  for i := running_.begin(); i != running_.end();  {
     fd := (*i).fd_
     if fd >= 0 && FD_ISSET(fd, &set) {
       (*i).OnPipeReady()
@@ -354,14 +354,16 @@ func (s *SubprocessSet) NextFinished() Subprocess* {
 }
 
 func (s *SubprocessSet) Clear() {
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i)
+  for i := running_.begin(); i != running_.end(); i++ {
     // Since the foreground process is in our process group, it will receive
+  }
     // the interruption signal (i.e. SIGINT or SIGTERM) at the same time as us.
     if !(*i).use_console_ {
       kill(-(*i).pid_, interrupted_)
     }
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i)
+  for i := running_.begin(); i != running_.end(); i++ {
     delete *i
+  }
   running_ = nil
 }
 

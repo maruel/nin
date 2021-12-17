@@ -96,7 +96,7 @@ void Info(string msg, ...) {
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
 func CanonicalizePath(path *string, slash_bits *uint64_t) {
-  size_t len = path.size()
+  len := path.size()
   str := 0
   if len > 0 {
     str = &(*path)[0]
@@ -120,14 +120,14 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
     return
   }
 
-  const int kMaxPathComponents = 60
+  kMaxPathComponents := 60
   char* components[kMaxPathComponents]
   component_count := 0
 
   start := path
   dst := start
   src := start
-  end := start + *len
+  string end = start + *len
 
   if IsPathSeparator(*src) {
 
@@ -187,10 +187,10 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
   }
 
   *len = dst - start - 1
-  uint64_t bits = 0
-  uint64_t bits_mask = 1
+  bits := 0
+  bits_mask := 1
 
-  for (char* c = start; c < start + *len; ++c) {
+  for c := start; c < start + *len; c++ {
     switch (*c) {
       case '\\':
         bits |= bits_mask
@@ -239,7 +239,7 @@ static inline bool IsKnownWin32SafeCharacter(char ch) {
 }
 
 static inline bool StringNeedsShellEscaping(string input) {
-  for (size_t i = 0; i < input.size(); ++i) {
+  for i := 0; i < input.size(); i++ {
     if !IsKnownShellSafeCharacter(input[i]) {
     	return true
     }
@@ -248,7 +248,7 @@ static inline bool StringNeedsShellEscaping(string input) {
 }
 
 static inline bool StringNeedsWin32Escaping(string input) {
-  for (size_t i = 0; i < input.size(); ++i) {
+  for i := 0; i < input.size(); i++ {
     if !IsKnownWin32SafeCharacter(input[i]) {
     	return true
     }
@@ -273,8 +273,8 @@ func GetShellEscapedString(input string, result *string) {
 
   result.push_back(kQuote)
 
-  string::const_iterator span_begin = input.begin()
-  for (string::const_iterator it = input.begin(), end = input.end(); it != end; ++it) {
+  span_begin := input.begin()
+  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
     if *it == kQuote {
       result.append(span_begin, it)
       result.append(kEscapeSequence)
@@ -296,9 +296,9 @@ func GetWin32EscapedString(input string, result *string) {
   const char kBackslash = '\\'
 
   result.push_back(kQuote)
-  size_t consecutive_backslash_count = 0
-  string::const_iterator span_begin = input.begin()
-  for (string::const_iterator it = input.begin(), end = input.end(); it != end; ++it) {
+  consecutive_backslash_count := 0
+  span_begin := input.begin()
+  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
     switch (*it) {
       case kBackslash:
         ++consecutive_backslash_count
@@ -332,7 +332,7 @@ func ReadFile(path string, contents *string, err *string) int {
     return -ENOENT
   }
 
-  for (;;) {
+  for ; ;  {
     DWORD len
     char buf[64 << 10]
     if !::ReadFile(f, buf, sizeof(buf), &len, nil) {
@@ -347,7 +347,7 @@ func ReadFile(path string, contents *string, err *string) int {
   }
   ::CloseHandle(f)
   return 0
-  f := fopen(path, "rb")
+  FILE* f = fopen(path, "rb")
   if f == nil {
     err.assign(strerror(errno))
     return -errno
@@ -397,12 +397,12 @@ func SetCloseOnExec(fd int) {
 // Given a misspelled string and a list of correct spellings, returns
 // the closest match or NULL if there is no close enough match.
 func SpellcheckStringV(text string, words *vector<string>) string {
-  const bool kAllowReplacements = true
-  const int kMaxValidEditDistance = 3
+  kAllowReplacements := true
+  kMaxValidEditDistance := 3
 
-  min_distance := kMaxValidEditDistance + 1
+  int min_distance = kMaxValidEditDistance + 1
   result := nil
-  for (vector<string>::const_iterator i = words.begin(); i != words.end(); ++i) {
+  for i := words.begin(); i != words.end(); i++ {
     distance := EditDistance(*i, text, kAllowReplacements, kMaxValidEditDistance)
     if distance < min_distance {
       min_distance = distance
@@ -455,7 +455,7 @@ func StripAnsiEscapeCodes(in string) string {
   string stripped
   stripped.reserve(in.size())
 
-  for (size_t i = 0; i < in.size(); ++i) {
+  for i := 0; i < in.size(); i++ {
     if in[i] != '\33' {
       // Not an escape code.
       stripped.push_back(in[i])
@@ -489,10 +489,10 @@ func GetProcessorCount() int {
     vector<char> buf(len)
     cores := 0
     if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len) {
-      for (DWORD i = 0; i < len; ) {
-        info := reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
+      for i := 0; i < len;  {
+        auto info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
         if info.Relationship == RelationProcessorCore && info.Processor.GroupCount == 1 {
-          for (KAFFINITY core_mask = info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1) {
+          for core_mask := info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1 {
             cores += (core_mask & 1)
           }
         }
@@ -521,15 +521,15 @@ func GetProcessorCount() int {
 
 static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
 {
-  static uint64_t previous_idle_ticks = 0
-  static uint64_t previous_total_ticks = 0
+  previous_idle_ticks := 0
+  previous_total_ticks := 0
   static double previous_load = -0.0
 
   uint64_t idle_ticks_since_last_time = idle_ticks - previous_idle_ticks
   uint64_t total_ticks_since_last_time = total_ticks - previous_total_ticks
 
-  first_call := (previous_total_ticks == 0)
-  ticks_not_updated_since_last_call := (total_ticks_since_last_time == 0)
+  bool first_call = (previous_total_ticks == 0)
+  bool ticks_not_updated_since_last_call = (total_ticks_since_last_time == 0)
 
   double load
   if first_call || ticks_not_updated_since_last_call {
@@ -538,7 +538,7 @@ static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
     // Calculate load.
     double idle_to_total_ratio =
         ((double)idle_ticks_since_last_time) / total_ticks_since_last_time
-    load_since_last_call := 1.0 - idle_to_total_ratio
+    double load_since_last_call = 1.0 - idle_to_total_ratio
 
     // Filter/smooth result when possible.
     if(previous_load > 0) {
@@ -557,7 +557,7 @@ static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
 
 static uint64_t FileTimeToTickCount(const FILETIME & ft)
 {
-  uint64_t high = (((uint64_t)(ft.dwHighDateTime)) << 32)
+  high := (((uint64_t)(ft.dwHighDateTime)) << 32)
   uint64_t low  = ft.dwLowDateTime
   return (high | low)
 }
@@ -571,7 +571,7 @@ func GetLoadAverage() double {
 
   double posix_compatible_load
   if get_system_time_succeeded {
-    uint64_t idle_ticks = FileTimeToTickCount(idle_time)
+    idle_ticks := FileTimeToTickCount(idle_time)
 
     // kernel_time from GetSystemTimes already includes idle_time.
     uint64_t total_ticks =
@@ -637,7 +637,7 @@ func ElideMiddle(str string, width size_t) string {
       case 2: return ".."
       case 3: return "..."
   }
-  const int kMargin = 3  // Space for "...".
+  kMargin := 3  // Space for "...".
   result := str
   if result.size() > width {
     size_t elide_size = (width - kMargin) / 2
@@ -650,7 +650,7 @@ func ElideMiddle(str string, width size_t) string {
 
 // Truncates a file to the given size.
 func Truncate(path string, size size_t, err *string) bool {
-  fh := _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)
+  int fh = _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   success := _chsize(fh, size)
   _close(fh)
   success := truncate(path, size)

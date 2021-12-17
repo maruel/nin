@@ -57,7 +57,7 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 func (p *Parser) ExpectToken(expected Lexer::Token, err *string) bool {
   token := lexer_.ReadToken()
   if token != expected {
-    message := string("expected ") + Lexer::TokenName(expected)
+    string message = string("expected ") + Lexer::TokenName(expected)
     message += string(", got ") + Lexer::TokenName(token)
     message += Lexer::TokenErrorHint(expected)
     return lexer_.Error(message, err)

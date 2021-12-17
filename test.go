@@ -97,7 +97,7 @@ namespace {
 
 // Windows has no mkdtemp.  Implement it in terms of _mktemp_s.
 func mkdtemp(name_template *char) char* {
-  err := _mktemp_s(name_template, strlen(name_template) + 1)
+  int err = _mktemp_s(name_template, strlen(name_template) + 1)
   if err < 0 {
     perror("_mktemp_s")
     return nil
@@ -118,7 +118,7 @@ func GetSystemTempDir() string {
     return ""
   }
   return buf
-  tempdir := getenv("TMPDIR")
+  string tempdir = getenv("TMPDIR")
   if tempdir != nil {
     return tempdir
   }
@@ -156,24 +156,24 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64_t)
 }
 
 func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
-  for (vector<Edge*>::const_iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
+  for e := state.edges_.begin(); e != state.edges_.end(); e++ {
     // All edges need at least one output.
     if !(*e).outputs_.empty() { t.FailNow() }
     // Check that the edge's inputs have the edge as out-edge.
-    for (vector<Node*>::const_iterator in_node = (*e).inputs_.begin(); in_node != (*e).inputs_.end(); ++in_node) {
-      const vector<Edge*>& out_edges = (*in_node).out_edges()
+    for in_node := (*e).inputs_.begin(); in_node != (*e).inputs_.end(); in_node++ {
+      out_edges := (*in_node).out_edges()
       if find(out_edges.begin() == out_edges.end(), *e), out_edges.end() { t.FailNow() }
     }
     // Check that the edge's outputs have the edge as in-edge.
-    for (vector<Node*>::const_iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
+    for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
       if (*out_node).in_edge() != *e { t.FailNow() }
     }
   }
 
   // The union of all in- and out-edges of each nodes should be exactly edges_.
   set<const Edge*> node_edge_set
-  for (State::Paths::const_iterator p = state.paths_.begin(); p != state.paths_.end(); ++p) {
-    const Node* n = p.second
+  for p := state.paths_.begin(); p != state.paths_.end(); p++ {
+    n := p.second
     if n.in_edge() {
       node_edge_set.insert(n.in_edge())
     }
@@ -192,7 +192,7 @@ func (v *VirtualFileSystem) Create(path string, contents string) {
 
 // DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
-  FileMap::const_iterator i = files_.find(path)
+  i := files_.find(path)
   if i != files_.end() {
     *err = i.second.stat_error
     return i.second.mtime
@@ -273,8 +273,8 @@ func (s *ScopedTempDir) Cleanup() {
     Fatal("chdir: %s", strerror(errno))
   }
 
-  command := "rmdir /s /q " + temp_dir_name_
-  command := "rm -rf " + temp_dir_name_
+  string command = "rmdir /s /q " + temp_dir_name_
+  string command = "rm -rf " + temp_dir_name_
   if system(command) < 0 {
     Fatal("system: %s", strerror(errno))
   }

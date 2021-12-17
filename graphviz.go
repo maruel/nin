@@ -65,11 +65,11 @@ func (g *GraphViz) AddTarget(node *Node) {
     printf("\"%p\" . \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
   } else {
     printf("\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.rule_.name())
-    for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       printf("\"%p\" . \"%p\"\n", edge, *out)
     }
-    for (vector<Node*>::iterator in = edge.inputs_.begin(); in != edge.inputs_.end(); ++in) {
-      order_only := ""
+    for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
+      string order_only = ""
       if edge.is_order_only(in - edge.inputs_.begin()) {
         order_only = " style=dotted"
       }
@@ -77,7 +77,7 @@ func (g *GraphViz) AddTarget(node *Node) {
     }
   }
 
-  for (vector<Node*>::iterator in = edge.inputs_.begin(); in != edge.inputs_.end(); ++in) {
+  for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
     AddTarget(*in)
   }
 }

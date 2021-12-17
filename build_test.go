@@ -33,7 +33,7 @@ type PlanTest struct {
   // provide a means to get available Edges in order and in a format which is
   // easy to write tests around.
   func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
-    for (int i = 0; i < count; ++i) {
+    for i := 0; i < count; i++ {
       if plan_.more_to_do() { t.FailNow() }
       edge := plan_.FindWork()
       if edge { t.FailNow() }
@@ -229,7 +229,7 @@ func TestPlanTest_ConsolePool(t *testing.T) {
 func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "pool foobar\n" "  depth = 2\n" "pool bazbin\n" "  depth = 2\n" "rule foocat\n" "  command = cat $in > $out\n" "  pool = foobar\n" "rule bazcat\n" "  command = cat $in > $out\n" "  pool = bazbin\n" "build out1: foocat in\n" "build out2: foocat in\n" "build out3: foocat in\n" "build outb1: bazcat in\n" "build outb2: bazcat in\n" "build outb3: bazcat in\n" "  pool =\n" "build allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n" ))
   // Mark all the out* nodes dirty
-  for (int i = 0; i < 3; ++i) {
+  for i := 0; i < 3; i++ {
     GetNode("out" + string(1, '1' + static_cast<char>(i))).MarkDirty()
     GetNode("outb" + string(1, '1' + static_cast<char>(i))).MarkDirty()
   }
@@ -242,8 +242,8 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
   deque<Edge*> edges
   FindWorkSorted(&edges, 5)
 
-  for (int i = 0; i < 4; ++i) {
-    Edge *edge = edges[i]
+  for i := 0; i < 4; i++ {
+    edge := edges[i]
     if "in" !=  edge.inputs_[0].path() { t.FailNow() }
     string base_name(i < 2 ? "out" : "outb")
     if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.FailNow() }
@@ -261,7 +261,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
   edges.pop_front()
 
   // out3 should be available
-  Edge* out3 = plan_.FindWork()
+  out3 := plan_.FindWork()
   if out3 { t.FailNow() }
   if "in" !=  out3.inputs_[0].path() { t.FailNow() }
   if "out3" != out3.outputs_[0].path() { t.FailNow() }
@@ -273,7 +273,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 
   if !plan_.FindWork() { t.FailNow() }
 
-  for (deque<Edge*>::iterator it = edges.begin(); it != edges.end(); ++it) {
+  for it := edges.begin(); it != edges.end(); it++ {
     plan_.EdgeFinished(*it, Plan::kEdgeSucceeded, &err)
     if "" != err { t.FailNow() }
   }
@@ -447,7 +447,7 @@ type BuildTest struct {
 // State of command_runner_ and logs contents (if specified) ARE MODIFIED.
 // Handy to check for NOOP builds, and higher-level rebuild tests.
 func (b *BuildTest) RebuildTarget(target string, manifest string, log_path string, deps_path string, state *State) {
-  State local_state, *pstate = &local_state
+  pstate := &local_state
   if state != nil {
     pstate = state
   }
@@ -455,7 +455,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
   AssertParse(pstate, manifest)
 
   string err
-  BuildLog build_log, *pbuild_log = nil
+  pbuild_log := nil
   if log_path {
     if build_log.Load(log_path, &err) { t.FailNow() }
     if build_log.OpenForWrite(log_path, *this, &err) { t.FailNow() }
@@ -463,7 +463,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
     pbuild_log = &build_log
   }
 
-  DepsLog deps_log, *pdeps_log = nil
+  pdeps_log := nil
   if deps_path {
     if deps_log.Load(deps_path, pstate, &err) { t.FailNow() }
     if deps_log.OpenForWrite(deps_path, &err) { t.FailNow() }
@@ -493,7 +493,7 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
   if !find(active_edges_.begin(), active_edges_.end(), edge) == active_edges_.end() { panic("oops") }
   commands_ran_.push_back(edge.EvaluateCommand())
   if edge.rule().name() == "cat"  || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
-    for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       fs_.Create((*out).path(), "")
     }
   } else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
@@ -507,24 +507,24 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
       fs_.WriteFile(edge.outputs_[0].path(), content)
     }
   } else if edge.rule().name() == "touch-implicit-dep-out" {
-    dep := edge.GetBinding("test_dependency")
+    string dep = edge.GetBinding("test_dependency")
     fs_.Create(dep, "")
     fs_.Tick()
-    for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       fs_.Create((*out).path(), "")
     }
   } else if edge.rule().name() == "touch-out-implicit-dep" {
-    dep := edge.GetBinding("test_dependency")
-    for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+    string dep = edge.GetBinding("test_dependency")
+    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       fs_.Create((*out).path(), "")
     }
     fs_.Tick()
     fs_.Create(dep, "")
   } else if edge.rule().name() == "generate-depfile" {
-    dep := edge.GetBinding("test_dependency")
+    string dep = edge.GetBinding("test_dependency")
     depfile := edge.GetUnescapedDepfile()
     string contents
-    for (vector<Node*>::iterator out = edge.outputs_.begin(); out != edge.outputs_.end(); ++out) {
+    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       contents += (*out).path() + ": " + dep + "\n"
       fs_.Create((*out).path(), "")
     }
@@ -550,7 +550,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
   // All active edges were already completed immediately when started,
   // so we can pick any edge here.  Pick the last edge.  Tests can
   // control the order of edges by the name of the first output.
-  edge_iter := active_edges_.end() - 1
+  vector<Edge*>::iterator edge_iter = active_edges_.end() - 1
 
   edge := *edge_iter
   result.edge = edge
@@ -572,7 +572,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 
   if edge.rule().name() == "cp_multi_msvc" {
     const string prefix = edge.GetBinding("msvc_deps_prefix")
-    for (vector<Node*>::iterator in = edge.inputs_.begin(); in != edge.inputs_.end(); ++in) {
+    for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
       result.output += prefix + (*in).path() + '\n'
     }
   }
@@ -586,10 +586,10 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
   // Provide a way for test cases to verify when an edge finishes that
   // some other edge is still active.  This is useful for test cases
   // covering behavior involving multiple active edges.
-  verify_active_edge := edge.GetBinding("verify_active_edge")
+  string verify_active_edge = edge.GetBinding("verify_active_edge")
   if !verify_active_edge.empty() {
     verify_active_edge_found := false
-    for (vector<Edge*>::iterator i = active_edges_.begin(); i != active_edges_.end(); ++i) {
+    for i := active_edges_.begin(); i != active_edges_.end(); i++ {
       if !(*i).outputs_.empty() && (*i).outputs_[0].path() == verify_active_edge {
         verify_active_edge_found = true
       }
@@ -835,7 +835,7 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
   string err
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build c: touch\n" "build b: touch || c\n" "build a: touch | b || c\n"))
 
-  c_out := GetNode("c").out_edges()
+  vector<Edge*> c_out = GetNode("c").out_edges()
   if 2u != c_out.size() { t.FailNow() }
   if "b" != c_out[0].outputs_[0].path() { t.FailNow() }
   if "a" != c_out[1].outputs_[0].path() { t.FailNow() }
@@ -1080,8 +1080,8 @@ func TestPhonyUseCase(t *BuildTest, i int) {
   // Tests 1, 3, 4, and 6 should rebuild when the input is updated.
   if i != 2 && i != 5 {
     Node* testNode  = t.GetNode("test" + ci)
-    phonyNode := t.GetNode("phony" + ci)
-    inputNode := t.GetNode("blank")
+    Node* phonyNode = t.GetNode("phony" + ci)
+    Node* inputNode = t.GetNode("blank")
 
     state_.Reset()
     startTime := fs_.now_
@@ -1521,7 +1521,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
   // See that an entry in the logfile is created, capturing
   // the right mtime
-  log_entry := build_log_.LookupByOutput("out1")
+  BuildLog::LogEntry* log_entry = build_log_.LookupByOutput("out1")
   if nil != log_entry { t.FailNow() }
   if restat_mtime != log_entry.mtime { t.FailNow() }
 
@@ -1613,8 +1613,8 @@ TEST_F(BuildTest, RspFileSuccess)
   if builder_.AddTarget("out 3", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  size_t files_created = fs_.files_created_.size()
-  size_t files_removed = fs_.files_removed_.size()
+  files_created := fs_.files_created_.size()
+  files_removed := fs_.files_removed_.size()
 
   if builder_.Build(&err) { t.FailNow() }
   if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
@@ -1642,8 +1642,8 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
   if builder_.AddTarget("out", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  size_t files_created = fs_.files_created_.size()
-  size_t files_removed = fs_.files_removed_.size()
+  files_created := fs_.files_created_.size()
+  files_removed := fs_.files_removed_.size()
 
   if !builder_.Build(&err) { t.FailNow() }
   if "subcommand failed" != err { t.FailNow() }
@@ -1687,7 +1687,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 
   // 3. Alter the entry in the logfile
   // (to simulate a change in the command line between 2 builds)
-  log_entry := build_log_.LookupByOutput("out")
+  BuildLog::LogEntry* log_entry = build_log_.LookupByOutput("out")
   if nil != log_entry { t.FailNow() }
   ASSERT_NO_FATAL_FAILURE(AssertHash( "cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash))
   log_entry.command_hash++  // Change the command hash to something else.
@@ -1840,12 +1840,12 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
   if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 1 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 1 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
 }
@@ -1864,13 +1864,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
   if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 2 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 2 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
@@ -1890,13 +1890,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
   if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 2 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 2 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
@@ -1916,13 +1916,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
   if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 2 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 2 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
@@ -1942,13 +1942,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
   if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 2 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 2 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
@@ -1970,13 +1970,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
   if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
 
   Node* out1_node = state_.LookupNode("out1")
-  DepsLog::Deps* out1_deps = log_.GetDeps(out1_node)
+  out1_deps := log_.GetDeps(out1_node)
   if 2 != out1_deps.node_count { t.FailNow() }
   if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
 
   Node* out2_node = state_.LookupNode("out2")
-  DepsLog::Deps* out2_deps = log_.GetDeps(out2_node)
+  out2_deps := log_.GetDeps(out2_node)
   if 2 != out2_deps.node_count { t.FailNow() }
   if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
   if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
@@ -2626,7 +2626,7 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
   if builder_.AddTarget("out", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  size_t files_created = fs_.files_created_.size()
+  files_created := fs_.files_created_.size()
   if builder_.Build(&err) { t.FailNow() }
   if "" != err { t.FailNow() }
 

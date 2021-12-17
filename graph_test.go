@@ -93,7 +93,7 @@ func TestGraphTest_ExplicitImplicit(t *testing.T) {
 func TestGraphTest_ImplicitOutputParse(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out | out.imp: cat in\n"))
 
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   if 2 != edge.outputs_.size() { t.FailNow() }
   if "out" != edge.outputs_[0].path() { t.FailNow() }
   if "out.imp" != edge.outputs_[1].path() { t.FailNow() }
@@ -132,7 +132,7 @@ func TestGraphTest_ImplicitOutputOutOfDate(t *testing.T) {
 func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build | out.imp: cat in\n"))
 
-  edge := GetNode("out.imp").in_edge()
+  Edge* edge = GetNode("out.imp").in_edge()
   if 1 != edge.outputs_.size() { t.FailNow() }
   if "out.imp" != edge.outputs_[0].path() { t.FailNow() }
   if 1 != edge.implicit_outs_ { t.FailNow() }
@@ -182,7 +182,7 @@ func TestGraphTest_RootNodes(t *testing.T) {
   string err
   root_nodes := state_.RootNodes(&err)
   if 4u != root_nodes.size() { t.FailNow() }
-  for (size_t i = 0; i < root_nodes.size(); ++i) {
+  for i := 0; i < root_nodes.size(); i++ {
     name := root_nodes[i].path()
     if "out" != name.substr(0, 3) { t.FailNow() }
   }
@@ -191,7 +191,7 @@ func TestGraphTest_RootNodes(t *testing.T) {
 func TestGraphTest_VarInOutPathEscaping(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a$ b: cat no'space with$ space$$ no\"space2\n"))
 
-  edge := GetNode("a b").in_edge()
+  Edge* edge = GetNode("a b").in_edge()
   if "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\"" != edge.EvaluateCommand() { t.FailNow() }
   if "cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'" != edge.EvaluateCommand() { t.FailNow() }
 }
@@ -234,21 +234,21 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 // Check that rule-level variables are in scope for eval.
 func TestGraphTest_RuleVariablesInScope(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = depfile is $depfile\n" "build out: r in\n"))
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   if "depfile is x" != edge.EvaluateCommand() { t.FailNow() }
 }
 
 // Check that build statements can override rule builtins like depfile.
 func TestGraphTest_DepfileOverride(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = unused\n" "build out: r in\n" "  depfile = y\n"))
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   if "y" != edge.GetBinding("depfile") { t.FailNow() }
 }
 
 // Check that overridden values show up in expansion of rule-level bindings.
 func TestGraphTest_DepfileOverrideParent(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule r\n" "  depfile = x\n" "  command = depfile is $depfile\n" "build out: r in\n" "  depfile = y\n"))
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   if "depfile is y" != edge.GetBinding("command") { t.FailNow() }
 }
 
@@ -326,7 +326,7 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
   // Despite the depfile causing edge to be a cycle (it has outputs a and b,
   // but the depfile also adds b as an input), the deps should have been loaded
   // only once:
-  edge := GetNode("a").in_edge()
+  Edge* edge = GetNode("a").in_edge()
   if 1 != edge.inputs_.size() { t.FailNow() }
   if "b" != edge.inputs_[0].path() { t.FailNow() }
 }
@@ -343,7 +343,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
   // output)), the deps should have been loaded only once:
-  edge := GetNode("a").in_edge()
+  Edge* edge = GetNode("a").in_edge()
   if 1 != edge.inputs_.size() { t.FailNow() }
   if "c" != edge.inputs_[0].path() { t.FailNow() }
 }
@@ -361,7 +361,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
   // output)), the deps should have been loaded only once:
-  edge := GetNode("a").in_edge()
+  Edge* edge = GetNode("a").in_edge()
   if 1 != edge.inputs_.size() { t.FailNow() }
   if "c" != edge.inputs_[0].path() { t.FailNow() }
 }
@@ -392,7 +392,7 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
   if "" != err { t.FailNow() }
   if !GetNode("dd").dyndep_pending() { t.FailNow() }
 
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   if 1u != edge.outputs_.size() { t.FailNow() }
   if "out" != edge.outputs_[0].path() { t.FailNow() }
   if 2u != edge.inputs_.size() { t.FailNow() }
@@ -413,7 +413,7 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
   if "" != err { t.FailNow() }
   if !GetNode("dd").dyndep_pending() { t.FailNow() }
 
-  edge := GetNode("out1").in_edge()
+  Edge* edge = GetNode("out1").in_edge()
   if 1u != edge.outputs_.size() { t.FailNow() }
   if "out1" != edge.outputs_[0].path() { t.FailNow() }
   if 3u != edge.inputs_.size() { t.FailNow() }
@@ -639,7 +639,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out | circ: dyndep\n" )
   fs_.Create("out", "")
 
-  edge := GetNode("out").in_edge()
+  Edge* edge = GetNode("out").in_edge()
   string err
   if !scan_.RecomputeDirty(GetNode("out"), &err) { t.FailNow() }
   if "dependency cycle: circ . in . circ" != err { t.FailNow() }
@@ -669,8 +669,8 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
   // Get the mtime of out1
   if in1.Stat(&fs_, &err) { t.FailNow() }
   if out1.Stat(&fs_, &err) { t.FailNow() }
-  TimeStamp out1Mtime1 = out1.mtime()
-  TimeStamp in1Mtime1 = in1.mtime()
+  out1Mtime1 := out1.mtime()
+  in1Mtime1 := in1.mtime()
 
   // Touch in1. This should cause out1 to be dirty
   state_.Reset()

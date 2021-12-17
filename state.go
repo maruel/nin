@@ -49,7 +49,7 @@ type Pool struct {
     bool operator()(const Edge* a, const Edge* b) const {
       if (!a) return b
       if (!b) return false
-      weight_diff := a.weight() - b.weight()
+      int weight_diff = a.weight() - b.weight()
       return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
     }
   }
@@ -119,8 +119,9 @@ func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
   printf("%s (%d/%d) .\n", name_, current_use_, depth_)
-  for (DelayedEdges::const_iterator it = delayed_.begin(); it != delayed_.end(); ++it)
+  for it := delayed_.begin(); it != delayed_.end(); it++ {
   {
+  }
     printf("\t")
     (*it).Dump()
   }
@@ -142,7 +143,7 @@ func (s *State) AddPool(pool *Pool) {
 }
 
 func (s *State) LookupPool(pool_name string) Pool* {
-  map<string, Pool*>::iterator i = pools_.find(pool_name)
+  i := pools_.find(pool_name)
   if i == pools_.end() {
     return nil
   }
@@ -170,7 +171,7 @@ func (s *State) GetNode(path StringPiece, slash_bits uint64_t) Node* {
 }
 
 func (s *State) LookupNode(path StringPiece) Node* {
-  Paths::const_iterator i = paths_.find(path)
+  i := paths_.find(path)
   if i != paths_.end() {
     return i.second
   }
@@ -178,12 +179,12 @@ func (s *State) LookupNode(path StringPiece) Node* {
 }
 
 func (s *State) SpellcheckNode(path string) Node* {
-  const bool kAllowReplacements = true
-  const int kMaxValidEditDistance = 3
+  kAllowReplacements := true
+  kMaxValidEditDistance := 3
 
-  min_distance := kMaxValidEditDistance + 1
+  int min_distance = kMaxValidEditDistance + 1
   result := nil
-  for (Paths::iterator i = paths_.begin(); i != paths_.end(); ++i) {
+  for i := paths_.begin(); i != paths_.end(); i++ {
     distance := EditDistance( i.first, path, kAllowReplacements, kMaxValidEditDistance)
     if distance < min_distance && i.second {
       min_distance = distance
@@ -224,8 +225,8 @@ func (s *State) AddDefault(path StringPiece, err *string) bool {
 func (s *State) RootNodes(err *string) vector<Node*> {
   vector<Node*> root_nodes
   // Search for nodes with no output.
-  for (vector<Edge*>::const_iterator e = edges_.begin(); e != edges_.end(); ++e) {
-    for (vector<Node*>::const_iterator out = (*e).outputs_.begin(); out != (*e).outputs_.end(); ++out) {
+  for e := edges_.begin(); e != edges_.end(); e++ {
+    for out := (*e).outputs_.begin(); out != (*e).outputs_.end(); out++ {
       if (*out).out_edges().empty() {
         root_nodes.push_back(*out)
       }
@@ -246,9 +247,10 @@ func (s *State) DefaultNodes(err *string) vector<Node*> {
 // Reset state.  Keeps all nodes and edges, but restores them to the
 // state where we haven't yet examined the disk for dirty state.
 func (s *State) Reset() {
-  for (Paths::iterator i = paths_.begin(); i != paths_.end(); ++i)
+  for i := paths_.begin(); i != paths_.end(); i++ {
     i.second.ResetState()
-  for (vector<Edge*>::iterator e = edges_.begin(); e != edges_.end(); ++e) {
+  }
+  for e := edges_.begin(); e != edges_.end(); e++ {
     (*e).outputs_ready_ = false
     (*e).deps_loaded_ = false
     (*e).mark_ = Edge::VisitNone
@@ -257,14 +259,15 @@ func (s *State) Reset() {
 
 // Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
-  for (Paths::iterator i = paths_.begin(); i != paths_.end(); ++i) {
+  for i := paths_.begin(); i != paths_.end(); i++ {
     node := i.second
     printf("%s %s [id:%d]\n", node.path(), node.status_known() ? (node.dirty() ? "dirty" : "clean") : "unknown", node.id())
   }
   if !pools_.empty() {
     printf("resource_pools:\n")
-    for (map<string, Pool*>::const_iterator it = pools_.begin(); it != pools_.end(); ++it)
+    for it := pools_.begin(); it != pools_.end(); it++ {
     {
+    }
       if !it.second.name().empty() {
         it.second.Dump()
       }

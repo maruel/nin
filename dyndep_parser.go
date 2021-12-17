@@ -43,7 +43,7 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
   // we can exit before encountering any syntactic surprises.
   haveDyndepVersion := false
 
-  for (;;) {
+  for ; ;  {
     token := lexer_.ReadToken()
     switch (token) {
     case Lexer::BUILD: {
@@ -160,7 +160,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   // Parse implicit outputs, if any.
   vector<EvalString> outs
   if lexer_.PeekToken(Lexer::PIPE) {
-    for (;;) {
+    for ; ;  {
       EvalString out
       if !lexer_.ReadPath(&out, err) {
         return err
@@ -195,7 +195,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   // Parse implicit inputs, if any.
   vector<EvalString> ins
   if lexer_.PeekToken(Lexer::PIPE) {
-    for (;;) {
+    for ; ;  {
       EvalString in
       if !lexer_.ReadPath(&in, err) {
         return err
@@ -230,7 +230,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   dyndeps.implicit_inputs_.reserve(ins.size())
-  for (vector<EvalString>::iterator i = ins.begin(); i != ins.end(); ++i) {
+  for i := ins.begin(); i != ins.end(); i++ {
     path := i.Evaluate(&env_)
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
@@ -242,7 +242,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   dyndeps.implicit_outputs_.reserve(outs.size())
-  for (vector<EvalString>::iterator i = outs.begin(); i != outs.end(); ++i) {
+  for i := outs.begin(); i != outs.end(); i++ {
     path := i.Evaluate(&env_)
     if len(path) == 0 {
       return lexer_.Error("empty path", err)

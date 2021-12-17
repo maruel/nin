@@ -92,7 +92,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   memset(&process_info, 0, sizeof(process_info))
 
   // Ninja handles ctrl-c, except for subprocesses in console pools.
-  process_flags := use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP
+  DWORD process_flags = use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP
 
   // Do not prepend 'cmd /c' on Windows, this breaks command
   // lines greater than 8,191 chars.
@@ -230,7 +230,7 @@ BOOL WINAPI SubprocessSet::NotifyInterrupted(DWORD dwCtrlType) {
 }
 
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
-  Subprocess *subprocess = new Subprocess(use_console)
+  subprocess := new Subprocess(use_console)
   if !subprocess.Start(this, command) {
     delete subprocess
     return 0
@@ -283,7 +283,7 @@ func (s *SubprocessSet) NextFinished() Subprocess* {
 }
 
 func (s *SubprocessSet) Clear() {
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i) {
+  for i := running_.begin(); i != running_.end(); i++ {
     // Since the foreground process is in our process group, it will receive a
     // CTRL_C_EVENT or CTRL_BREAK_EVENT at the same time as us.
     if (*i).child_ && !(*i).use_console_ {
@@ -292,8 +292,9 @@ func (s *SubprocessSet) Clear() {
       }
     }
   }
-  for (vector<Subprocess*>::iterator i = running_.begin(); i != running_.end(); ++i)
+  for i := running_.begin(); i != running_.end(); i++ {
     delete *i
+  }
   running_ = nil
 }
 

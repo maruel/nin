@@ -347,7 +347,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   }
 
   // Load output mtimes so we can compare them to the most recent input below.
-  for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+  for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
     if !(*o).StatIfNecessary(disk_interface_, err) {
       return false
     }
@@ -368,7 +368,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
 
   // Visit all inputs; we're dirty if any of the inputs are dirty.
   most_recent_input := nil
-  for (vector<Node*>::iterator i = edge.inputs_.begin(); i != edge.inputs_.end(); ++i) {
+  for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
     // Visit this input.
     if !RecomputeDirty(*i, stack, err) {
       return false
@@ -404,7 +404,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   }
 
   // Finally, visit each output and update their dirty state if necessary.
-  for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+  for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
     if dirty != nil {
       (*o).MarkDirty()
     }
@@ -454,7 +454,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string
 
   // Construct the error message rejecting the cycle.
   *err = "dependency cycle: "
-  for (vector<Node*>::const_iterator i = start; i != stack.end(); ++i) {
+  for i := start; i != stack.end(); i++ {
     err.append((*i).path())
     err.append(" . ")
   }
@@ -472,8 +472,8 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
-  command := edge.EvaluateCommand(/*incl_rsp_file=*/true)
-  for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+  string command = edge.EvaluateCommand(/*incl_rsp_file=*/true)
+  for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
     if RecomputeOutputDirty(edge, most_recent_input, command, *o) {
       *outputs_dirty = true
       return true
@@ -532,7 +532,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *const Edge, most_recent_inpu
   }
 
   if build_log() {
-    generator := edge.GetBindingBool("generator")
+    bool generator = edge.GetBindingBool("generator")
     if entry || (entry = build_log().LookupByOutput(output.path())) {
       if !generator && BuildLog::LogEntry::HashCommand(command) != entry.command_hash {
         // May also be dirty due to the command changing since the last build.
@@ -577,7 +577,7 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) b
 
 // Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
-  for (vector<Node*>::const_iterator i = inputs_.begin(); i != inputs_.end(); ++i) {
+  for i := inputs_.begin(); i != inputs_.end(); i++ {
     if (*i).in_edge() && !(*i).in_edge().outputs_ready() {
       return false
     }

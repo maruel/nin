@@ -19,7 +19,7 @@ package ginja
 
 func Replace(input string, find string, replace string) string {
   result := input
-  size_t start_pos = 0
+  start_pos := 0
   while (start_pos = result.find(find, start_pos)) != string::npos {
     result.replace(start_pos, find.length(), replace)
     start_pos += replace.length()
@@ -54,7 +54,7 @@ func (c *CLWrapper) Run(command string, output *string) int {
   }
 
   PROCESS_INFORMATION process_info = {}
-  startup_info := {}
+  STARTUPINFOA startup_info = {}
   startup_info.cb = sizeof(STARTUPINFOA)
   startup_info.hStdInput = nul
   startup_info.hStdError = ::GetStdHandle(STD_ERROR_HANDLE)

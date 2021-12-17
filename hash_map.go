@@ -68,7 +68,7 @@ type StringPieceCmp struct {
     return MurmurHash2(key.str_, key.len_)
   }
   bool operator()(const StringPiece& a, const StringPiece& b) const {
-    cmp := memcmp(a.str_, b.str_, min(a.len_, b.len_))
+    int cmp = memcmp(a.str_, b.str_, min(a.len_, b.len_))
     if (cmp < 0) {
       return true
     } else if (cmp > 0) {

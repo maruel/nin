@@ -29,7 +29,7 @@ type MissingDependencyScannerTest struct {
         scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {
     string err
     deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
-    if "" != err { t.FailNow() }
+    ASSERT_EQ("", err)
   }
 
   MissingDependencyScanner& scanner() { return scanner_; }
@@ -43,7 +43,7 @@ type MissingDependencyScannerTest struct {
     string err
     nodes := state_.RootNodes(&err)
     if "" != err { t.FailNow() }
-    for (vector<Node*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for it := nodes.begin(); it != nodes.end(); it++ {
       scanner().ProcessNode(*it)
     }
   }

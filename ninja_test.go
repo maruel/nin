@@ -66,8 +66,8 @@ func PatternMatchesString(pattern string, str string) bool {
 func TestMatchesFilter(test string, filter string) bool {
   // Split --gtest_filter at '-' into positive and negative filters.
   string const dash = strchr(filter, '-')
-  pos := dash == filter ? "*" : filter //Treat '-test1' as '*-test1'
-  neg := dash ? dash + 1 : ""
+  string pos = dash == filter ? "*" : filter //Treat '-test1' as '*-test1'
+  string neg = dash ? dash + 1 : ""
   return PatternMatchesString(pos, test) && !PatternMatchesString(neg, test)
 }
 
@@ -107,19 +107,20 @@ bool testing::Test::Check(bool condition, string file, int line, string error) {
 func main(argc int, argv **char) int {
   tests_started := 0
 
-  test_filter := "*"
+  string test_filter = "*"
   if !ReadFlags(&argc, &argv, &test_filter) {
     return 1
   }
 
   nactivetests := 0
-  for (int i = 0; i < ntests; i++)
+  for i := 0; i < ntests; i++ {
     if (tests[i].should_run = TestMatchesFilter(tests[i].name, test_filter)) {
+  }
       ++nactivetests
     }
 
   passed := true
-  for (int i = 0; i < ntests; i++) {
+  for i := 0; i < ntests; i++ {
     if !tests[i].should_run {
     	continue
     }

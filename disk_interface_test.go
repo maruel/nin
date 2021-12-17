@@ -103,7 +103,7 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
   if Touch("subdir\\SUBFILE3") { t.FailNow() }
 
   disk_.AllowStatCache(false)
-  parent_stat_uncached := disk_.Stat("..", &err)
+  TimeStamp parent_stat_uncached = disk_.Stat("..", &err)
   disk_.AllowStatCache(true)
 
   if disk_.Stat("FIle1" <= &err), 1 { t.FailNow() }
@@ -154,10 +154,10 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
   if "" == err { t.FailNow() } // actual value is platform-specific
   err = nil
 
-  kTestFile := "testfile"
-  f := fopen(kTestFile, "wb")
+  string kTestFile = "testfile"
+  FILE* f = fopen(kTestFile, "wb")
   if f { t.FailNow() }
-  kTestContent := "test content\nok"
+  string kTestContent = "test content\nok"
   fprintf(f, "%s", kTestContent)
   if 0 != fclose(f) { t.FailNow() }
 
@@ -169,7 +169,7 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
   string path = "path/with/double//slash/";
   if disk_.MakeDirs(path) { t.FailNow() }
-  f := fopen((path + "a_file"), "w")
+  FILE* f = fopen((path + "a_file"), "w")
   if f { t.FailNow() }
   if 0 != fclose(f) { t.FailNow() }
   string path2 = "another\\with\\back\\\\slashes\\"
@@ -180,7 +180,7 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
-  kFileName := "file-to-remove"
+  string kFileName = "file-to-remove"
   if Touch(kFileName) { t.FailNow() }
   if 0 != disk_.RemoveFile(kFileName) { t.FailNow() }
   if 1 != disk_.RemoveFile(kFileName) { t.FailNow() }
@@ -192,7 +192,7 @@ func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
-  kDirectoryName := "directory-to-remove"
+  string kDirectoryName = "directory-to-remove"
   if disk_.MakeDir(kDirectoryName) { t.FailNow() }
   if 0 != disk_.RemoveFile(kDirectoryName) { t.FailNow() }
   if 1 != disk_.RemoveFile(kDirectoryName) { t.FailNow() }
@@ -227,7 +227,7 @@ type StatTest struct {
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {
   stats_.push_back(path)
-  map<string, TimeStamp>::const_iterator i = mtimes_.find(path)
+  i := mtimes_.find(path)
   if i == mtimes_.end() {
     return 0  // File not found.
   }
@@ -237,7 +237,7 @@ func (s *StatTest) Stat(path string, err *string) TimeStamp {
 func TestStatTest_Simple(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in\n"))
 
-  out := GetNode("out")
+  Node* out = GetNode("out")
   string err
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
@@ -251,7 +251,7 @@ func TestStatTest_Simple(t *testing.T) {
 func TestStatTest_TwoStep(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
 
-  out := GetNode("out")
+  Node* out = GetNode("out")
   string err
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
@@ -268,7 +268,7 @@ func TestStatTest_TwoStep(t *testing.T) {
 func TestStatTest_Tree(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\n" "build mid1: cat in11 in12\n" "build mid2: cat in21 in22\n"))
 
-  out := GetNode("out")
+  Node* out = GetNode("out")
   string err
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
@@ -287,7 +287,7 @@ func TestStatTest_Middle(t *testing.T) {
   mtimes_["mid"] = 0  // missing
   mtimes_["out"] = 1
 
-  out := GetNode("out")
+  Node* out = GetNode("out")
   string err
   if out.Stat(this, &err) { t.FailNow() }
   if "" != err { t.FailNow() }

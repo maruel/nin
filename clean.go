@@ -137,7 +137,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
   Reset()
   PrintHeader()
   LoadDyndeps()
-  for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {
+  for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
     // Do not try to remove phony targets
     if (*e).is_phony() {
       continue
@@ -146,7 +146,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
     if !generator && (*e).GetBindingBool("generator") {
       continue
     }
-    for (vector<Node*>::iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
+    for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
       Remove((*out_node).path())
     }
 
@@ -162,7 +162,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 func (c *Cleaner) CleanDead(entries *BuildLog::Entries) int {
   Reset()
   PrintHeader()
-  for (BuildLog::Entries::const_iterator i = entries.begin(); i != entries.end(); ++i) {
+  for i := entries.begin(); i != entries.end(); i++ {
     n := state_.LookupNode(i.first)
     // Detecting stale outputs works as follows:
     //
@@ -189,7 +189,7 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
       Remove(target.path())
       RemoveEdgeFiles(e)
     }
-    for (vector<Node*>::iterator n = e.inputs_.begin(); n != e.inputs_.end(); ++n) {
+    for n := e.inputs_.begin(); n != e.inputs_.end(); n++ {
       next := *n
       // call DoCleanTarget recursively if this node has not been visited
       if cleaned_.count(next) == 0 {
@@ -241,7 +241,7 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
   Reset()
   PrintHeader()
   LoadDyndeps()
-  for (int i = 0; i < target_count; ++i) {
+  for i := 0; i < target_count; i++ {
     target_name := targets[i]
     if target_name.empty() {
       Error("failed to canonicalize '': empty path")
@@ -268,9 +268,9 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
 func (c *Cleaner) DoCleanRule(rule *const Rule) {
   if !rule { panic("oops") }
 
-  for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {
+  for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
     if (*e).rule().name() == rule.name() {
-      for (vector<Node*>::iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
+      for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
         Remove((*out_node).path())
         RemoveEdgeFiles(*e)
       }
@@ -301,7 +301,7 @@ func (c *Cleaner) CleanRule(rule string) int {
   if !rule { panic("oops") }
 
   Reset()
-  const Rule* r = state_.bindings_.LookupRule(rule)
+  r := state_.bindings_.LookupRule(rule)
   if r != nil {
     CleanRule(r)
   } else {
@@ -319,9 +319,9 @@ func (c *Cleaner) CleanRules(rule_count int, rules []*char) int {
   Reset()
   PrintHeader()
   LoadDyndeps()
-  for (int i = 0; i < rule_count; ++i) {
+  for i := 0; i < rule_count; i++ {
     rule_name := rules[i]
-    const Rule* rule = state_.bindings_.LookupRule(rule_name)
+    rule := state_.bindings_.LookupRule(rule_name)
     if rule != nil {
       if IsVerbose() {
         printf("Rule %s\n", rule_name)
@@ -346,7 +346,7 @@ func (c *Cleaner) Reset() {
 // Load dependencies from dyndep bindings.
 func (c *Cleaner) LoadDyndeps() {
   // Load dyndep files that exist, before they are cleaned.
-  for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {
+  for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
     if Node* dyndep = (*e).dyndep_ {
       // Capture and ignore errors loading the dyndep file.
       // We clean as much of the graph as we know.

@@ -26,7 +26,7 @@ func TestState_Basic(t *testing.T) {
   command.AddText(" > ")
   command.AddSpecial("out")
 
-  rule := new Rule("cat")
+  Rule* rule = new Rule("cat")
   rule.AddBinding("command", command)
   state.bindings_.AddRule(rule)
 

@@ -62,7 +62,7 @@ func DirName(path string) string {
   static const char kPathSeparators[] = "/"
   static string const kEnd = kPathSeparators + sizeof(kPathSeparators) - 1
 
-  string::size_type slash_pos = path.find_last_of(kPathSeparators)
+  slash_pos := path.find_last_of(kPathSeparators)
   if slash_pos == string::npos {
     return string()  // Nothing to do.
   }
@@ -111,14 +111,14 @@ func IsWindows7OrLater() bool {
 
 func StatAllFilesInDir(dir string, stamps *map<string, TimeStamp>, err *string) bool {
   // FindExInfoBasic is 30% faster than FindExInfoStandard.
-  static bool can_use_basic_info = IsWindows7OrLater()
+  can_use_basic_info := IsWindows7OrLater()
   // This is not in earlier SDKs.
   const FINDEX_INFO_LEVELS kFindExInfoBasic =
       static_cast<FINDEX_INFO_LEVELS>(1)
   FINDEX_INFO_LEVELS level =
       can_use_basic_info ? kFindExInfoBasic : FindExInfoStandard
   WIN32_FIND_DATAA ffd
-  find_handle := FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)
+  HANDLE find_handle = FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)
 
   if find_handle == INVALID_HANDLE_VALUE {
     win_err := GetLastError()
@@ -228,7 +228,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
-  fp := fopen(path, "w")
+  FILE* fp = fopen(path, "w")
   if fp == nil {
     Error("WriteFile(%s): Unable to create file. %s", path, strerror(errno))
     return false

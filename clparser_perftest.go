@@ -130,9 +130,9 @@ func main(argc int, argv []*char) int {
       "Note: including file:         C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\INCLUDE\\cerrno\r\n"
       "Note: including file:        C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.10240.0\\ucrt\\share.h\r\n"
 
-  for (int limit = 1 << 10; limit < (1<<20); limit *= 2) {
-    int64_t start = GetTimeMillis()
-    for (int rep = 0; rep < limit; ++rep) {
+  for limit := 1 << 10; limit < (1<<20); limit *= 2 {
+    start := GetTimeMillis()
+    for rep := 0; rep < limit; rep++ {
       string output
       string err
 
@@ -142,10 +142,10 @@ func main(argc int, argv []*char) int {
         return 1
       }
     }
-    int64_t end = GetTimeMillis()
+    end := GetTimeMillis()
 
     if end - start > 2000 {
-      delta_ms := (int)(end - start)
+      int delta_ms = (int)(end - start)
       printf("Parse %d times in %dms avg %.1fus\n", limit, delta_ms, float(delta_ms * 1000) / limit)
       break
     }

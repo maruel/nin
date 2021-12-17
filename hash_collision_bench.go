@@ -24,21 +24,22 @@ func random(low int, high int) int {
 func RandomCommand(s **char) {
   len := random(5, 100)
   *s = new char[len+1]
-  for (int i = 0; i < len; ++i)
+  for i := 0; i < len; i++ {
     (*s)[i] = (char)random(32, 127)
+  }
   (*s)[len] = '\0'
 }
 
 func main() int {
-  const int N = 20 * 1000 * 1000
+  N := 20 * 1000 * 1000
 
   // Leak these, else 10% of the runtime is spent destroying strings.
   commands := new char*[N]
-  pair<uint64_t, int>* hashes = new pair<uint64_t, int>[N]
+  hashes := new pair<uint64_t, int>[N]
 
   srand((int)time(nil))
 
-  for (int i = 0; i < N; ++i) {
+  for i := 0; i < N; i++ {
     RandomCommand(&commands[i])
     hashes[i] = make_pair(BuildLog::LogEntry::HashCommand(commands[i]), i)
   }
@@ -46,7 +47,7 @@ func main() int {
   sort(hashes, hashes + N)
 
   collision_count := 0
-  for (int i = 1; i < N; ++i) {
+  for i := 1; i < N; i++ {
     if hashes[i - 1].first == hashes[i].first {
       if strcmp(commands[hashes[i - 1].second], commands[hashes[i].second]) != 0 {
         printf("collision!\n  string 1: '%s'\n  string 2: '%s'\n", commands[hashes[i - 1].second], commands[hashes[i].second])

@@ -61,7 +61,7 @@ ManifestParser::ManifestParser(State* state, FileReader* file_reader, ManifestPa
 func (m *ManifestParser) Parse(filename string, input string, err *string) bool {
   lexer_.Start(filename, input)
 
-  for (;;) {
+  for ; ;  {
     token := lexer_.ReadToken()
     switch (token) {
     case Lexer::POOL:
@@ -139,7 +139,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
     return lexer_.Error("duplicate pool '" + name + "'", err)
   }
 
-  depth := -1
+  int depth = -1
 
   while lexer_.PeekToken(Lexer::INDENT) {
     string key
@@ -275,7 +275,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   // Add all implicit outs, counting how many as we go.
   implicit_outs := 0
   if lexer_.PeekToken(Lexer::PIPE) {
-    for (;;) {
+    for ; ;  {
       EvalString out
       if !lexer_.ReadPath(&out, err) {
         return false
@@ -301,12 +301,12 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     return lexer_.Error("expected build command name", err)
   }
 
-  const Rule* rule = env_.LookupRule(rule_name)
+  rule := env_.LookupRule(rule_name)
   if rule == nil {
     return lexer_.Error("unknown build rule '" + rule_name + "'", err)
   }
 
-  for (;;) {
+  for ; ;  {
     // XXX should we require one path here?
     EvalString in
     if !lexer_.ReadPath(&in, err) {
@@ -321,7 +321,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   // Add all implicit deps, counting how many as we go.
   implicit := 0
   if lexer_.PeekToken(Lexer::PIPE) {
-    for (;;) {
+    for ; ;  {
       EvalString in
       if !lexer_.ReadPath(&in, err) {
         return false
@@ -337,7 +337,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   // Add all order-only deps, counting how many as we go.
   order_only := 0
   if lexer_.PeekToken(Lexer::PIPE2) {
-    for (;;) {
+    for ; ;  {
       EvalString in
       if !lexer_.ReadPath(&in, err) {
         return false
@@ -356,7 +356,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
   // Bindings on edges are rare, so allocate per-edge envs only when needed.
   has_indent_token := lexer_.PeekToken(Lexer::INDENT)
-  env := has_indent_token ? new BindingEnv(env_) : env_
+  BindingEnv* env = has_indent_token ? new BindingEnv(env_) : env_
   while has_indent_token {
     string key
     EvalString val
@@ -371,7 +371,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   edge := state_.AddEdge(rule)
   edge.env_ = env
 
-  pool_name := edge.GetBinding("pool")
+  string pool_name = edge.GetBinding("pool")
   if !pool_name.empty() {
     pool := state_.LookupPool(pool_name)
     if pool == nil {
@@ -381,7 +381,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   }
 
   edge.outputs_.reserve(outs.size())
-  for (size_t i = 0, e = outs.size(); i != e; ++i) {
+  for size_t i = 0, e = outs.size(); i != e; i++ {
     path := outs[i].Evaluate(env)
     if len(path) == 0 {
       return lexer_.Error("empty path", err)
@@ -412,7 +412,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   edge.implicit_outs_ = implicit_outs
 
   edge.inputs_.reserve(ins.size())
-  for (vector<EvalString>::iterator i = ins.begin(); i != ins.end(); ++i) {
+  for i := ins.begin(); i != ins.end(); i++ {
     path := i.Evaluate(env)
     if len(path) == 0 {
       return lexer_.Error("empty path", err)

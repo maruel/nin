@@ -236,7 +236,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
     return err.empty()
   }
 
-  for (int i = 0; i < argc; ++i) {
+  for i := 0; i < argc; i++ {
     node := CollectTarget(argv[i], err)
     if node == nil {
       return false
@@ -257,8 +257,9 @@ func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) in
 
   GraphViz graph(&state_, &disk_interface_)
   graph.Start()
-  for (vector<Node*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n)
+  for n := nodes.begin(); n != nodes.end(); n++ {
     graph.AddTarget(*n)
+  }
   graph.Finish()
 
   return 0
@@ -272,7 +273,7 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
 
   DyndepLoader dyndep_loader(&state_, &disk_interface_)
 
-  for (int i = 0; i < argc; ++i) {
+  for i := 0; i < argc; i++ {
     string err
     node := CollectTarget(argv[i], &err)
     if node == nil {
@@ -288,8 +289,8 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
         }
       }
       printf("  input: %s\n", edge.rule_.name())
-      for (int in = 0; in < (int)edge.inputs_.size(); in++) {
-        label := ""
+      for in := 0; in < (int)edge.inputs_.size(); in++ {
+        string label = ""
         if edge.is_implicit(in) {
           label = "| "
         } else if edge.is_order_only(in) {
@@ -299,8 +300,8 @@ func (n *NinjaMain) ToolQuery(options *const Options, argc int, argv []*char) in
       }
     }
     printf("  outputs:\n")
-    for (vector<Edge*>::const_iterator edge = node.out_edges().begin(); edge != node.out_edges().end(); ++edge) {
-      for (vector<Node*>::iterator out = (*edge).outputs_.begin(); out != (*edge).outputs_.end(); ++out) {
+    for edge := node.out_edges().begin(); edge != node.out_edges().end(); edge++ {
+      for out := (*edge).outputs_.begin(); out != (*edge).outputs_.end(); out++ {
         printf("    %s\n", (*out).path())
       }
     }
@@ -327,9 +328,10 @@ func (n *NinjaMain) ToolMSVC(options *const Options, argc int, argv []*char) int
 }
 
 func ToolTargetsList(nodes *vector<Node*>, depth int, indent int) int {
-  for (vector<Node*>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-    for (int i = 0; i < indent; ++i)
+  for n := nodes.begin(); n != nodes.end(); n++ {
+    for i := 0; i < indent; i++ {
       printf("  ")
+    }
     target := (*n).path()
     if (*n).in_edge() {
       printf("%s: %s\n", target, (*n).in_edge().rule_.name())
@@ -344,8 +346,8 @@ func ToolTargetsList(nodes *vector<Node*>, depth int, indent int) int {
 }
 
 func ToolTargetsSourceList(state *State) int {
-  for (vector<Edge*>::iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
-    for (vector<Node*>::iterator inps = (*e).inputs_.begin(); inps != (*e).inputs_.end(); ++inps) {
+  for e := state.edges_.begin(); e != state.edges_.end(); e++ {
+    for inps := (*e).inputs_.begin(); inps != (*e).inputs_.end(); inps++ {
       if !(*inps).in_edge() {
         printf("%s\n", (*inps).path())
       }
@@ -358,16 +360,16 @@ func ToolTargetsList(state *State, rule_name string) int {
   set<string> rules
 
   // Gather the outputs.
-  for (vector<Edge*>::iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
+  for e := state.edges_.begin(); e != state.edges_.end(); e++ {
     if (*e).rule_.name() == rule_name {
-      for (vector<Node*>::iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
+      for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
         rules.insert((*out_node).path())
       }
     }
   }
 
   // Print them.
-  for (set<string>::const_iterator i = rules.begin(); i != rules.end(); ++i) {
+  for i := rules.begin(); i != rules.end(); i++ {
     printf("%s\n", (*i))
   }
 
@@ -375,8 +377,8 @@ func ToolTargetsList(state *State, rule_name string) int {
 }
 
 func ToolTargetsList(state *State) int {
-  for (vector<Edge*>::iterator e = state.edges_.begin(); e != state.edges_.end(); ++e) {
-    for (vector<Node*>::iterator out_node = (*e).outputs_.begin(); out_node != (*e).outputs_.end(); ++out_node) {
+  for e := state.edges_.begin(); e != state.edges_.end(); e++ {
+    for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
       printf("%s: %s\n", (*out_node).path(), (*e).rule_.name())
     }
   }
@@ -386,7 +388,7 @@ func ToolTargetsList(state *State) int {
 func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int {
   vector<Node*> nodes
   if argc == 0 {
-    for (vector<Node*>::const_iterator ni = deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ++ni) {
+    for ni := deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ni++ {
       if deps_log_.IsDepsEntryLiveFor(*ni) {
         nodes.push_back(*ni)
       }
@@ -400,7 +402,7 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
   }
 
   RealDiskInterface disk_interface
-  for (vector<Node*>::iterator it = nodes.begin(), end = nodes.end(); it != end; ++it) {
+  for vector<Node*>::iterator it = nodes.begin(), end = nodes.end(); it != end; it++ {
     deps := deps_log_.GetDeps(*it)
     if deps == nil {
       printf("%s: deps not found\n", (*it).path())
@@ -413,8 +415,9 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
       Error("%s", err)  // Log and ignore Stat() errors;
     }
     printf("%s: #deps %d, deps mtime %" PRId64 " (%s)\n", (*it).path(), deps.node_count, deps.mtime, (!mtime || mtime > deps.mtime ? "STALE":"VALID"))
-    for (int i = 0; i < deps.node_count; ++i)
+    for i := 0; i < deps.node_count; i++ {
       printf("    %s\n", deps.nodes[i].path())
+    }
     printf("\n")
   }
 
@@ -431,7 +434,7 @@ func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **cha
   RealDiskInterface disk_interface
   MissingDependencyPrinter printer
   MissingDependencyScanner scanner(&printer, &deps_log_, &state_, &disk_interface)
-  for (vector<Node*>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+  for it := nodes.begin(); it != nodes.end(); it++ {
     scanner.ProcessNode(*it)
   }
   scanner.PrintStats()
@@ -512,11 +515,11 @@ func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) in
   // Print rules
 
   typedef map<string, const Rule*> Rules
-  const Rules& rules = state_.bindings_.GetRules()
-  for (Rules::const_iterator i = rules.begin(); i != rules.end(); ++i) {
+  rules := state_.bindings_.GetRules()
+  for i := rules.begin(); i != rules.end(); i++ {
     printf("%s", i.first)
     if print_description {
-      const Rule* rule = i.second
+      rule := i.second
       const EvalString* description = rule.GetBinding("description")
       if description != nil {
         printf(": %s", description.Unparse())
@@ -546,8 +549,9 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
   }
 
   if mode == PCM_All {
-    for (vector<Node*>::iterator in = edge.inputs_.begin(); in != edge.inputs_.end(); ++in)
+    for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
       PrintCommands((*in).in_edge(), seen, mode)
+    }
   }
 
   if !edge.is_phony() {
@@ -587,8 +591,9 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   }
 
   EdgeSet seen
-  for (vector<Node*>::iterator in = nodes.begin(); in != nodes.end(); ++in)
+  for in := nodes.begin(); in != nodes.end(); in++ {
     PrintCommands((*in).in_edge(), &seen, mode)
+  }
 
   return 0
 }
@@ -658,13 +663,13 @@ func EvaluateCommandWithRspfile(edge *const Edge, mode EvaluateCommandMode) stri
     return command
   }
 
-  size_t index = command.find(rspfile)
+  index := command.find(rspfile)
   if index == 0 || index == string::npos || command[index - 1] != '@' {
     return command
   }
 
-  rspfile_content := edge.GetBinding("rspfile_content")
-  size_t newline_index = 0
+  string rspfile_content = edge.GetBinding("rspfile_content")
+  newline_index := 0
   while (newline_index = rspfile_content.find('\n', newline_index)) != string::npos {
     rspfile_content.replace(newline_index, 1, 1, ' ')
     ++newline_index
@@ -725,7 +730,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
   }
 
   putchar('[')
-  for (vector<Edge*>::iterator e = state_.edges_.begin(); e != state_.edges_.end(); ++e) {
+  for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
     if (*e).inputs_.empty() {
       continue
     }
@@ -736,7 +741,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
       printCompdb(&cwd[0], *e, eval_mode)
       first = false
     } else {
-      for (int i = 0; i != argc; ++i) {
+      for i := 0; i != argc; i++ {
         if (*e).rule_.name() == argv[i] {
           if first == nil {
             putchar(',')
@@ -787,13 +792,13 @@ func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) i
     return 1
   }
 
-  log_path := ".ninja_log"
+  string log_path = ".ninja_log"
   if !build_dir_.empty() {
     log_path = build_dir_ + "/" + log_path
   }
 
   string err
-  const LoadStatus status = build_log_.Load(log_path, &err)
+  status := build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
     return EXIT_FAILURE
@@ -834,12 +839,13 @@ func (n *NinjaMain) ToolUrtle(options *const Options, argc int, argv **char) int
 "?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P"
 "\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
   count := 0
-  for (string p = urtle; *p; p++) {
+  for p := urtle; *p; p++ {
     if '0' <= *p && *p <= '9' {
       count = count*10 + *p - '0'
     } else {
-      for (int i = 0; i < max(count, 1); ++i)
+      for i := 0; i < max(count, 1); i++ {
         printf("%c", *p)
+      }
       count = 0
     }
   }
@@ -887,7 +893,7 @@ const Tool* ChooseTool(string tool_name) {
 
   if tool_name == "list" {
     printf("ninja subtools:\n")
-    for (const Tool* tool = &kTools[0]; tool.name; ++tool) {
+    for tool := &kTools[0]; tool.name; tool++ {
       if tool.desc {
         printf("%11s  %s\n", tool.name, tool.desc)
       }
@@ -895,15 +901,16 @@ const Tool* ChooseTool(string tool_name) {
     return nil
   }
 
-  for (const Tool* tool = &kTools[0]; tool.name; ++tool) {
+  for tool := &kTools[0]; tool.name; tool++ {
     if tool.name == tool_name {
       return tool
     }
   }
 
   vector<string> words
-  for (const Tool* tool = &kTools[0]; tool.name; ++tool)
+  for tool := &kTools[0]; tool.name; tool++ {
     words.push_back(tool.name)
+  }
   suggestion := SpellcheckStringV(tool_name, words)
   if suggestion != nil {
     Fatal("unknown tool '%s', did you mean '%s'?", tool_name, suggestion)
@@ -982,13 +989,13 @@ func WarningEnable(name string, options *Options) bool {
 // Open the build log.
 // @return false on error.
 func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
-  log_path := ".ninja_log"
+  string log_path = ".ninja_log"
   if !build_dir_.empty() {
     log_path = build_dir_ + "/" + log_path
   }
 
   string err
-  const LoadStatus status = build_log_.Load(log_path, &err)
+  status := build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
     return false
@@ -1025,13 +1032,13 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 // Open the deps log: load it, then open for writing.
 // @return false on error.
 func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
-  path := ".ninja_deps"
+  string path = ".ninja_deps"
   if !build_dir_.empty() {
     path = build_dir_ + "/" + path
   }
 
   string err
-  const LoadStatus status = deps_log_.Load(path, &state_, &err)
+  status := deps_log_.Load(path, &state_, &err)
   if status == LOAD_ERROR {
     Error("loading deps log %s: %s", path, err)
     return false
@@ -1099,7 +1106,7 @@ func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
   disk_interface_.AllowStatCache(g_experimental_statcache)
 
   Builder builder(&state_, config_, &build_log_, &deps_log_, &disk_interface_, status, start_time_millis_)
-  for (size_t i = 0; i < targets.size(); ++i) {
+  for i := 0; i < targets.size(); i++ {
     if !builder.AddTarget(targets[i], &err) {
       if len(err) != 0 {
         status.Error("%s", err)
@@ -1250,7 +1257,7 @@ NORETURN void real_main(int argc, char** argv) {
   // Use exit() instead of return in this function to avoid potentially
   // expensive cleanup when destructing NinjaMain.
   BuildConfig config
-  options := {}
+  Options options = {}
   options.input_file = "build.ninja"
   options.dupe_edges_should_err = true
 
@@ -1296,8 +1303,8 @@ NORETURN void real_main(int argc, char** argv) {
   }
 
   // Limit number of rebuilds, to prevent infinite loops.
-  const int kCycleLimit = 100
-  for (int cycle = 1; cycle <= kCycleLimit; ++cycle) {
+  kCycleLimit := 100
+  for cycle := 1; cycle <= kCycleLimit; cycle++ {
     NinjaMain ninja(ninja_command, config)
 
     ManifestParserOptions parser_opts

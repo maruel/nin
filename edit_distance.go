@@ -35,15 +35,16 @@ func EditDistance(s1 *StringPiece, s2 *StringPiece, allow_replacements bool, max
   n := s2.len_
 
   vector<int> row(n + 1)
-  for (int i = 1; i <= n; ++i)
+  for i := 1; i <= n; i++ {
     row[i] = i
+  }
 
-  for (int y = 1; y <= m; ++y) {
+  for y := 1; y <= m; y++ {
     row[0] = y
     best_this_row := row[0]
 
-    previous := y - 1
-    for (int x = 1; x <= n; ++x) {
+    int previous = y - 1
+    for x := 1; x <= n; x++ {
       old_row := row[x]
       if allow_replacements {
         row[x] = min(previous + (s1.str_[y - 1] == s2.str_[x - 1] ? 0 : 1), min(row[x - 1], row[x]) + 1)
