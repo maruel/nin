@@ -158,7 +158,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   // Parse implicit outputs, if any.
-  var outs vector<EvalString>
+  var outs []EvalString
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
       var out EvalString
@@ -193,7 +193,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   // Parse implicit inputs, if any.
-  var ins vector<EvalString>
+  var ins []EvalString
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
       var in EvalString

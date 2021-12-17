@@ -55,7 +55,7 @@ type NodeStoringImplicitDepLoader struct {
   dep_nodes_output_ *vector<Node*>
 }
 
-func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<StringPiece>, err *string) bool {
+func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<string>, err *string) bool {
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
     var slash_bits uint64
     CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
@@ -100,7 +100,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
     }
   } else {
     var parser_opts DepfileParserOptions
-    var depfile_deps vector<Node*>
+    var depfile_deps []*Node
     NodeStoringImplicitDepLoader dep_loader(state_, deps_log_, disk_interface_, &parser_opts, &depfile_deps)
     err := ""
     dep_loader.LoadDeps(edge, &err)
@@ -129,7 +129,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
       deplog_edges.insert(deplog_edge)
     }
   }
-  var missing_deps vector<Edge*>
+  var missing_deps []*Edge
   for de := deplog_edges.begin(); de != deplog_edges.end(); de++ {
     if !PathExistsBetween(*de, edge) {
       missing_deps.push_back(*de)

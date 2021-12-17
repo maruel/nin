@@ -86,7 +86,7 @@ func main(argc int, argv []*char) int {
   }
 
   kNumRepetitions := 5
-  var times vector<int>
+  var times []int
   for i := 0; i < kNumRepetitions; i++ {
     start := GetTimeMillis()
     optimization_guard := LoadManifests(measure_command_evaluation)

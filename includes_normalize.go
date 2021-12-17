@@ -22,6 +22,6 @@ package ginja
 type IncludesNormalize struct {
 
   relative_to_ string
-  split_relative_to_ vector<StringPiece>
+  split_relative_to_ vector<string>
 }
 

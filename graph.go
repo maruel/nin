@@ -265,7 +265,7 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 // state accordingly.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
-  var stack vector<Node*>
+  var stack []*Node
   return RecomputeDirty(node, &stack, err)
 }
 

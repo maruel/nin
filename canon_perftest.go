@@ -22,7 +22,7 @@ const char kPath[] =
     "platform/leveldb/LevelDBWriteBatch.cpp"
 
 func main() int {
-  var times vector<int>
+  var times []int
 
   char buf[200]
   len := strlen(kPath)

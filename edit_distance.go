@@ -18,7 +18,7 @@ package ginja
 
 
 
-func EditDistance(s1 *StringPiece, s2 *StringPiece, allow_replacements bool, max_edit_distance int) int {
+func EditDistance(s1 *string, s2 *string, allow_replacements bool, max_edit_distance int) int {
   // The algorithm implemented below is the "classic"
   // dynamic-programming algorithm for computing the Levenshtein
   // distance, which is described here:

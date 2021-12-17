@@ -159,7 +159,7 @@ func (s *State) AddEdge(rule *const Rule) Edge* {
   return edge
 }
 
-func (s *State) GetNode(path StringPiece, slash_bits uint64_t) Node* {
+func (s *State) GetNode(path string, slash_bits uint64_t) Node* {
   node := LookupNode(path)
   if node != nil {
     return node
@@ -169,7 +169,7 @@ func (s *State) GetNode(path StringPiece, slash_bits uint64_t) Node* {
   return node
 }
 
-func (s *State) LookupNode(path StringPiece) Node* {
+func (s *State) LookupNode(path string) Node* {
   i := paths_.find(path)
   if i != paths_.end() {
     return i.second
@@ -193,13 +193,13 @@ func (s *State) SpellcheckNode(path string) Node* {
   return result
 }
 
-func (s *State) AddIn(edge *Edge, path StringPiece, slash_bits uint64_t) {
+func (s *State) AddIn(edge *Edge, path string, slash_bits uint64_t) {
   node := GetNode(path, slash_bits)
   edge.inputs_.push_back(node)
   node.AddOutEdge(edge)
 }
 
-func (s *State) AddOut(edge *Edge, path StringPiece, slash_bits uint64_t) bool {
+func (s *State) AddOut(edge *Edge, path string, slash_bits uint64_t) bool {
   node := GetNode(path, slash_bits)
   if node.in_edge() {
     return false
@@ -209,7 +209,7 @@ func (s *State) AddOut(edge *Edge, path StringPiece, slash_bits uint64_t) bool {
   return true
 }
 
-func (s *State) AddDefault(path StringPiece, err *string) bool {
+func (s *State) AddDefault(path string, err *string) bool {
   node := LookupNode(path)
   if node == nil {
     *err = "unknown target '" + path.AsString() + "'"
@@ -222,7 +222,7 @@ func (s *State) AddDefault(path StringPiece, err *string) bool {
 // @return the root node(s) of the graph. (Root nodes have no output edges).
 // @param error where to write the error message if somethings went wrong.
 func (s *State) RootNodes(err *string) vector<Node*> {
-  var root_nodes vector<Node*>
+  var root_nodes []*Node
   // Search for nodes with no output.
   for e := edges_.begin(); e != edges_.end(); e++ {
     for out := (*e).outputs_.begin(); out != (*e).outputs_.end(); out++ {

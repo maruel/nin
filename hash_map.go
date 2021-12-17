@@ -52,10 +52,10 @@ func MurmurHash2(key *const void, len size_t) unsigned int {
 
 template<>
 type hash struct {
-  argument_type typedef StringPiece
+  argument_type typedef string
   result_type typedef size_t
 
-  size_t operator()(StringPiece key) const {
+  size_t operator()(string key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 }
@@ -64,10 +64,10 @@ using stdext::hash_map
 using stdext::hash_compare
 
 type StringPieceCmp struct {
-  size_t operator()(const StringPiece& key) const {
+  size_t operator()(const string& key) const {
     return MurmurHash2(key.str_, key.len_)
   }
-  bool operator()(const StringPiece& a, const StringPiece& b) const {
+  bool operator()(const string& a, const string& b) const {
     int cmp = memcmp(a.str_, b.str_, min(a.len_, b.len_))
     if (cmp < 0) {
       return true
@@ -83,7 +83,7 @@ using __gnu_cxx::hash_map
 
 template<>
 type hash struct {
-  size_t operator()(StringPiece key) const {
+  size_t operator()(string key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 }
@@ -94,8 +94,8 @@ type hash struct {
 // mapping StringPiece => Foo*.
 template<typename V>
 type ExternalStringHashMap struct {
-  Type typedef unordered_map<StringPiece, V>
-  Type typedef hash_map<StringPiece, V, StringPieceCmp>
-  Type typedef hash_map<StringPiece, V>
+  Type typedef unordered_map<string, V>
+  Type typedef hash_map<string, V, StringPieceCmp>
+  Type typedef hash_map<string, V>
 }
 

@@ -37,7 +37,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
   if "" != err { t.FailNow() }
 
   {
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state1.GetNode("foo.h", 0))
     deps.push_back(state1.GetNode("bar.h", 0))
     log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps)
@@ -89,7 +89,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
   if "" != err { t.FailNow() }
 
   {
-    var deps vector<Node*>
+    var deps []*Node
     for i := 0; i < kNumDeps; i++ {
       char buf[32]
       sprintf(buf, "file%d.h", i)
@@ -123,7 +123,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -145,7 +145,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -177,7 +177,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -207,7 +207,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
     log.Close()
@@ -347,7 +347,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -406,7 +406,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -443,7 +443,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
     if "" != err { t.FailNow() }
 
     // Add a new entry.
-    var deps vector<Node*>
+    var deps []*Node
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar2.h", 0))
     log.RecordDeps(state.GetNode("out2.o", 0), 3, deps)
@@ -472,7 +472,7 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
   if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  var deps vector<Node*>
+  var deps []*Node
   deps.push_back(state.GetNode("foo.h", 0))
   deps.push_back(state.GetNode("bar.h", 0))
   log.RecordDeps(state.GetNode("out.o", 0), 1, deps)

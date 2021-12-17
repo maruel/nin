@@ -114,7 +114,7 @@ func MurmurHash64A(key *const void, len size_t) uint64_t {
 }
 
 // static
-uint64_t BuildLog::LogEntry::HashCommand(StringPiece command) {
+uint64_t BuildLog::LogEntry::HashCommand(string command) {
   return MurmurHash64A(command.str_, command.len_)
 }
 
@@ -364,7 +364,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
       entry.command_hash = (uint64_t)strtoull(start, nil, 16)
       *end = c
     } else {
-      entry.command_hash = LogEntry::HashCommand(StringPiece(start, end - start))
+      entry.command_hash = LogEntry::HashCommand(string(start, end - start))
     }
   }
   fclose(file)
@@ -419,7 +419,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
     return false
   }
 
-  var dead_outputs vector<StringPiece>
+  var dead_outputs []string
   for i := entries_.begin(); i != entries_.end(); i++ {
     if user.IsPathDead(i.first) {
       dead_outputs.push_back(i.first)
@@ -452,7 +452,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path StringPiece, disk_interface *DiskInterface, output_count int, outputs **char, err string* const) bool {
+func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs **char, err string* const) bool {
   METRIC_RECORD(".ninja_log restat")
 
   Close()

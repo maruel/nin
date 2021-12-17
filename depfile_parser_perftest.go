@@ -23,7 +23,7 @@ func main(argc int, argv []*char) int {
     return 1
   }
 
-  var times vector<float>
+  var times []float32
   for i := 1; i < argc; i++ {
     filename := argv[i]
 

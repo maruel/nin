@@ -241,7 +241,7 @@ Subprocess *SubprocessSet::Add(string command, bool use_console) {
 }
 
 func (s *SubprocessSet) DoWork() bool {
-  var fds vector<pollfd>
+  var fds []pollfd
   nfds := 0
 
   for i := running_.begin(); i != running_.end(); i++ {

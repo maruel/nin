@@ -20,7 +20,7 @@ package ginja
 func GetCurDir() string {
   char buf[_MAX_PATH]
   _getcwd(buf, sizeof(buf))
-  vector<StringPiece> parts = SplitStringPiece(buf, '\\')
+  vector<string> parts = SplitStringPiece(buf, '\\')
   return parts[parts.size() - 1].AsString()
 }
 

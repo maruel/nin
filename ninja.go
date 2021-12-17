@@ -65,7 +65,7 @@ type NinjaMain struct {
 
   start_time_millis_ int64
 }
-  func (n *NinjaMain) IsPathDead(s StringPiece) bool {
+  func (n *NinjaMain) IsPathDead(s string) bool {
     n := state_.LookupNode(s)
     if n && n.in_edge() {
       return false
@@ -247,7 +247,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
 
 // The various subcommands, run via "-t XXX".
 func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) int {
-  var nodes vector<Node*>
+  var nodes []*Node
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -385,7 +385,7 @@ func ToolTargetsList(state *State) int {
 }
 
 func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int {
-  var nodes vector<Node*>
+  var nodes []*Node
   if argc == 0 {
     for ni := deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ni++ {
       if deps_log_.IsDepsEntryLiveFor(*ni) {
@@ -424,7 +424,7 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
 }
 
 func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **char) int {
-  var nodes vector<Node*>
+  var nodes []*Node
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -582,7 +582,7 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   argv += optind
   argc -= optind
 
-  var nodes vector<Node*>
+  var nodes []*Node
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -715,7 +715,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
   argc -= optind
 
   first := true
-  var cwd vector<char>
+  var cwd []char
   success := nil
 
   do {
@@ -906,7 +906,7 @@ func ChooseTool(tool_name string) const Tool* {
     }
   }
 
-  var words vector<string>
+  var words []string
   for tool := &kTools[0]; tool.name; tool++ {
     words.push_back(tool.name)
   }
@@ -1096,7 +1096,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 // @return an exit code.
 func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
   err := ""
-  var targets vector<Node*>
+  var targets []*Node
   if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
     status.Error("%s", err)
     return 1

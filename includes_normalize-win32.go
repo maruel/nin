@@ -17,7 +17,7 @@
 package ginja
 
 
-func InternalGetFullPathName(file_name *StringPiece, buffer *char, buffer_length size_t, err *string) bool {
+func InternalGetFullPathName(file_name *string, buffer *char, buffer_length size_t, err *string) bool {
   result_size := GetFullPathNameA(file_name.AsString(), buffer_length, buffer, nil)
   if result_size == 0 {
     *err = "GetFullPathNameA(" + file_name.AsString() + "): " +
@@ -37,7 +37,7 @@ func IsPathSeparator(c char) bool {
 // Return true if paths a and b are on the same windows drive.
 // Return false if this function cannot check
 // whether or not on the same windows drive.
-func SameDriveFast(a StringPiece, b StringPiece) bool {
+func SameDriveFast(a string, b string) bool {
   if a.size() < 3 || b.size() < 3 {
     return false
   }
@@ -58,7 +58,7 @@ func SameDriveFast(a StringPiece, b StringPiece) bool {
 }
 
 // Return true if paths a and b are on the same Windows drive.
-func SameDrive(a StringPiece, b StringPiece, err *string) bool {
+func SameDrive(a string, b string, err *string) bool {
   if SameDriveFast(a, b) {
     return true
   }
@@ -81,7 +81,7 @@ func SameDrive(a StringPiece, b StringPiece, err *string) bool {
 // Check path |s| is FullPath style returned by GetFullPathName.
 // This ignores difference of path separator.
 // This is used not to call very slow GetFullPathName API.
-func IsFullPathName(s StringPiece) bool {
+func IsFullPathName(s string) bool {
   if s.size() < 3 || !islatinalpha(s[0]) || s[1] != ':' || !IsPathSeparator(s[2]) {
     return false
   }
@@ -115,7 +115,7 @@ IncludesNormalize::IncludesNormalize(string relative_to) {
   split_relative_to_ = SplitStringPiece(relative_to_, '/')
 }
 
-func (i *IncludesNormalize) AbsPath(s StringPiece, err *string) string {
+func (i *IncludesNormalize) AbsPath(s string, err *string) string {
   if IsFullPathName(s) {
     result := s.AsString()
     for i := 0; i < result.size(); i++ {
@@ -138,12 +138,12 @@ func (i *IncludesNormalize) AbsPath(s StringPiece, err *string) string {
   return result
 }
 
-func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<StringPiece>, err *string) string {
+func (i *IncludesNormalize) Relativize(path string, start_list *vector<string>, err *string) string {
   abs_path := AbsPath(path, err)
   if len(err) != 0 {
     return ""
   }
-  vector<StringPiece> path_list = SplitStringPiece(abs_path, '/')
+  vector<string> path_list = SplitStringPiece(abs_path, '/')
   i := 0
   for i = 0; i < static_cast<int>(min(start_list.size(), path_list.size())); i++ {
     if !EqualsCaseInsensitiveASCII(start_list[i], path_list[i]) {
@@ -151,7 +151,7 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
     }
   }
 
-  var rel_list vector<StringPiece>
+  var rel_list []string
   rel_list.reserve(start_list.size() - i + path_list.size() - i)
   for j := 0; j < static_cast<int>(start_list.size() - i); j++ {
     rel_list.push_back("..")
@@ -175,7 +175,7 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
   strncpy(copy, input, input.size() + 1)
   var slash_bits uint64
   CanonicalizePath(copy, &len, &slash_bits)
-  StringPiece partially_fixed(copy, len)
+  string partially_fixed(copy, len)
   abs_input := AbsPath(partially_fixed, err)
   if len(err) != 0 {
     return false

@@ -418,7 +418,7 @@ type BuildTest struct {
     builder_.command_runner_.release()
   }
 
-  virtual bool IsPathDead(StringPiece s) const { return false; }
+  virtual bool IsPathDead(string s) const { return false; }
 
   config_ BuildConfig
   command_runner_ FakeCommandRunner
