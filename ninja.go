@@ -96,6 +96,10 @@ type Tool struct {
   desc string
 
   // When to run the tool.
+
+  // Implementation of the tool.
+  func NinjaMain::ToolFunc
+}
   enum {
     // Run after parsing the command-line flags and potentially changing
     // the current working directory (as early as possible).
@@ -107,10 +111,6 @@ type Tool struct {
     // Run after loading the build/deps logs.
     RUN_AFTER_LOGS,
   } when
-
-  // Implementation of the tool.
-  func NinjaMain::ToolFunc
-}
 
 // Print usage information.
 func Usage(config *BuildConfig) {

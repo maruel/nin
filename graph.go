@@ -72,14 +72,6 @@ type Node struct {
   //   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
   mtime_ TimeStamp
 
-  enum ExistenceStatus {
-    // The file hasn't been examined.
-    ExistenceStatusUnknown,
-    // The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
-    ExistenceStatusMissing,
-    // The path is an actual file. mtime_ will be the file's mtime.
-    ExistenceStatusExists
-  }
   exists_ ExistenceStatus
 
   // Dirty is true when the underlying file is out-of-date.
@@ -127,14 +119,17 @@ type Node struct {
   func (n *Node) PathDecanonicalized() string {
     return PathDecanonicalized(path_, slash_bits_)
   }
+  enum ExistenceStatus {
+    // The file hasn't been examined.
+    ExistenceStatusUnknown,
+    // The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
+    ExistenceStatusMissing,
+    // The path is an actual file. mtime_ will be the file's mtime.
+    ExistenceStatusExists
+  }
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
-  enum VisitMark {
-    VisitNone,
-    VisitInStack,
-    VisitDone
-  }
 
   Edge()
       : rule_(nil), pool_(nil), dyndep_(nil), env_(nil), mark_(VisitNone),
@@ -181,6 +176,11 @@ type Edge struct {
   implicit_outs_ int
 
 }
+  enum VisitMark {
+    VisitNone,
+    VisitInStack,
+    VisitDone
+  }
   func (e *Edge) is_implicit(index uint) bool {
     return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
         !is_order_only(index)
@@ -577,7 +577,6 @@ func (e *Edge) AllInputsReady() bool {
 
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
-  enum EscapeKind { kShellEscape, kDoNotEscape }
 
   EdgeEnv(const Edge* const edge, const EscapeKind escape)
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
@@ -587,6 +586,7 @@ type EdgeEnv struct {
   escape_in_out_ EscapeKind
   recursive_ bool
 }
+  enum EscapeKind { kShellEscape, kDoNotEscape }
 
 func (e *EdgeEnv) LookupVariable(var string) string {
   if var == "in" || var == "in_newline" {

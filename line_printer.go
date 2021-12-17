@@ -26,11 +26,6 @@ type LinePrinter struct {
 
   bool supports_color() const { return supports_color_; }
 
-  enum LineType {
-    FULL,
-    ELIDE
-  }
-
   // Whether we can do fancy terminal control codes.
   smart_terminal_ bool
 
@@ -55,6 +50,10 @@ type LinePrinter struct {
   console_ *void
 
 }
+  enum LineType {
+    FULL,
+    ELIDE
+  }
 
 
 LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {

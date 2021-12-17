@@ -23,13 +23,13 @@ type FileReader struct {
   virtual ~FileReader() {}
 
   // Result of ReadFile.
+
+}
   enum Status {
     Okay,
     NotFound,
     OtherError
   }
-
-}
 
 // Interface for accessing the disk.
 //
