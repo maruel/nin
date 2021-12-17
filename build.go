@@ -192,6 +192,7 @@ func (p *Plan) Reset() {
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
 func (p *Plan) AddTarget(target *const Node, err *string) bool {
+  return AddSubTarget(target, nil, err, nil)
 }
 
 func (p *Plan) AddSubTarget(node *const Node, dependent *const Node, err *string, dyndep_walk *set<Edge*>) bool {
@@ -240,7 +241,7 @@ func (p *Plan) AddSubTarget(node *const Node, dependent *const Node, err *string
     return true  // We've already processed the inputs.
   }
 
-  for (vector<Node*>::iterator i = edge.inputs_.begin(); i != edge.inputs_.end(); ++i) {
+  for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
     if !AddSubTarget(*i, node, err, dyndep_walk) && !err.empty() {
       return false
     }
@@ -250,9 +251,9 @@ func (p *Plan) AddSubTarget(node *const Node, dependent *const Node, err *string
 }
 
 func (p *Plan) EdgeWanted(edge *const Edge) {
-  ++wanted_edges_
+  wanted_edges_++
   if !edge.is_phony() {
-    ++command_edges_
+    command_edges_++
   }
 }
 
@@ -279,7 +280,7 @@ func (p *Plan) ScheduleWork(want_e map<Edge*, Want>::iterator) {
     // Avoid scheduling the work again.
     return
   }
-  assert(want_e.second == kWantToStart)
+  if !want_e.second == kWantToStart { panic("oops") }
   want_e.second = kWantToFinish
 
   edge := want_e.first
@@ -298,9 +299,9 @@ func (p *Plan) ScheduleWork(want_e map<Edge*, Want>::iterator) {
 // this loads dynamic dependencies from the nodes' paths.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
-  map<Edge*, Want>::iterator e = want_.find(edge)
-  assert(e != want_.end())
-  directly_wanted := e.second != kWantNothing
+  e := want_.find(edge)
+  if !e != want_.end() { panic("oops") }
+  bool directly_wanted = e.second != kWantNothing
 
   // See if this job frees up any delayed jobs.
   if directly_wanted {
@@ -314,13 +315,13 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
   }
 
   if directly_wanted {
-    --wanted_edges_
+    wanted_edges_--
   }
   want_.erase(e)
   edge.outputs_ready_ = true
 
   // Check off any nodes we were waiting for with this edge.
-  for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+  for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
     if !NodeFinished(*o, err) {
       return false
     }
@@ -335,15 +336,15 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 func (p *Plan) NodeFinished(node *Node, err *string) bool {
   // If this node provides dyndep info, load it now.
   if node.dyndep_pending() {
-    assert(builder_ && "dyndep requires Plan to have a Builder")
+    if !builder_ && "dyndep requires Plan to have a Builder" { panic("oops") }
     // Load the now-clean dyndep file.  This will also update the
     // build plan and schedule any new work that is ready.
     return builder_.LoadDyndeps(node, err)
   }
 
   // See if we we want any edges from this node.
-  for (vector<Edge*>::const_iterator oe = node.out_edges().begin(); oe != node.out_edges().end(); ++oe) {
-    map<Edge*, Want>::iterator want_e = want_.find(*oe)
+  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
+    want_e := want_.find(*oe)
     if want_e == want_.end() {
       continue
     }
@@ -377,9 +378,9 @@ func (p *Plan) EdgeMaybeReady(want_e map<Edge*, Want>::iterator, err *string) bo
 func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
   node.set_dirty(false)
 
-  for (vector<Edge*>::const_iterator oe = node.out_edges().begin(); oe != node.out_edges().end(); ++oe) {
+  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
     // Don't process edges that we don't actually want.
-    map<Edge*, Want>::iterator want_e = want_.find(*oe)
+    want_e := want_.find(*oe)
     if want_e == want_.end() || want_e.second == kWantNothing {
       continue
     }
@@ -397,7 +398,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
     if find_if(begin, end, MEM_FN(&Node::dirty)) == end {
       // Recompute most_recent_input.
       most_recent_input := nil
-      for (vector<Node*>::iterator i = begin; i != end; ++i) {
+      for i := begin; i != end; i++ {
         if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
           most_recent_input = *i
         }
@@ -411,16 +412,16 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
         return false
       }
       if !outputs_dirty {
-        for (vector<Node*>::iterator o = (*oe).outputs_.begin(); o != (*oe).outputs_.end(); ++o) {
+        for o := (*oe).outputs_.begin(); o != (*oe).outputs_.end(); o++ {
           if !CleanNode(scan, *o, err) {
             return false
           }
         }
 
         want_e.second = kWantNothing
-        --wanted_edges_
+        wanted_edges_--
         if !(*oe).is_phony() {
-          --command_edges_
+          command_edges_--
         }
       }
     }
@@ -444,7 +445,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
 
   // Find edges in the the build plan for which we have new dyndep info.
   vector<DyndepFile::const_iterator> dyndep_roots
-  for (DyndepFile::const_iterator oe = ddf.begin(); oe != ddf.end(); ++oe) {
+  for oe := ddf.begin(); oe != ddf.end(); oe++ {
     edge := oe.first
 
     // If the edge outputs are ready we do not need to consider it here.
@@ -452,7 +453,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
       continue
     }
 
-    map<Edge*, Want>::iterator want_e = want_.find(edge)
+    want_e := want_.find(edge)
 
     // If the edge has not been encountered before then nothing already in the
     // plan depends on it so we do not need to consider the edge yet either.
@@ -466,9 +467,9 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
 
   // Walk dyndep-discovered portion of the graph to add it to the build plan.
   set<Edge*> dyndep_walk
-  for (vector<DyndepFile::const_iterator>::iterator oei = dyndep_roots.begin(); oei != dyndep_roots.end(); ++oei) {
-    DyndepFile::const_iterator oe = *oei
-    for (vector<Node*>::const_iterator i = oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); ++i) {
+  for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
+    oe := *oei
+    for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
       if !AddSubTarget(*i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
         return false
       }
@@ -477,8 +478,8 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
 
   // Add out edges from this node that are in the plan (just as
   // Plan::NodeFinished would have without taking the dyndep code path).
-  for (vector<Edge*>::const_iterator oe = node.out_edges().begin(); oe != node.out_edges().end(); ++oe) {
-    map<Edge*, Want>::iterator want_e = want_.find(*oe)
+  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
+    want_e := want_.find(*oe)
     if want_e == want_.end() {
       continue
     }
@@ -486,8 +487,8 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
   }
 
   // See if any encountered edges are now ready.
-  for (set<Edge*>::iterator wi = dyndep_walk.begin(); wi != dyndep_walk.end(); ++wi) {
-    map<Edge*, Want>::iterator want_e = want_.find(*wi)
+  for wi := dyndep_walk.begin(); wi != dyndep_walk.end(); wi++ {
+    want_e := want_.find(*wi)
     if want_e == want_.end() {
       continue
     }
@@ -507,7 +508,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *const Node, e
 
   // Update the dirty state of all dependents and check if their edges
   // have become wanted.
-  for (set<Node*>::iterator i = dependents.begin(); i != dependents.end(); ++i) {
+  for i := dependents.begin(); i != dependents.end(); i++ {
     n := *i
 
     // Check if this dependent node is now dirty.  Also checks for new cycles.
@@ -522,9 +523,9 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *const Node, e
     // build it if the outputs were not known to be dirty.  With dyndep
     // information an output is now known to be dirty, so we want the edge.
     edge := n.in_edge()
-    assert(edge && !edge.outputs_ready())
-    map<Edge*, Want>::iterator want_e = want_.find(edge)
-    assert(want_e != want_.end())
+    if !edge && !edge.outputs_ready() { panic("oops") }
+    want_e := want_.find(edge)
+    if !want_e != want_.end() { panic("oops") }
     if want_e.second == kWantNothing {
       want_e.second = kWantToStart
       EdgeWanted(edge)
@@ -534,17 +535,17 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *const Node, e
 }
 
 func (p *Plan) UnmarkDependents(node *const Node, dependents *set<Node*>) {
-  for (vector<Edge*>::const_iterator oe = node.out_edges().begin(); oe != node.out_edges().end(); ++oe) {
+  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
     edge := *oe
 
-    map<Edge*, Want>::iterator want_e = want_.find(edge)
+    want_e := want_.find(edge)
     if want_e == want_.end() {
       continue
     }
 
     if edge.mark_ != Edge::VisitNone {
       edge.mark_ = Edge::VisitNone
-      for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+      for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
         if dependents.insert(*o).second {
           UnmarkDependents(*o, dependents)
         }
@@ -556,7 +557,7 @@ func (p *Plan) UnmarkDependents(node *const Node, dependents *set<Node*>) {
 // Dumps the current state of the plan.
 func (p *Plan) Dump() {
   printf("pending: %d\n", (int)want_.size())
-  for (map<Edge*, Want>::const_iterator e = want_.begin(); e != want_.end(); ++e) {
+  for e := want_.begin(); e != want_.end(); e++ {
     if e.second != kWantNothing {
       printf("want ")
     }
@@ -576,8 +577,9 @@ type RealCommandRunner struct {
 
 func (r *RealCommandRunner) GetActiveEdges() vector<Edge*> {
   vector<Edge*> edges
-  for (map<const Subprocess*, Edge*>::iterator e = subproc_to_edge_.begin(); e != subproc_to_edge_.end(); ++e)
+  for e := subproc_to_edge_.begin(); e != subproc_to_edge_.end(); e++ {
     edges.push_back(e.second)
+  }
   return edges
 }
 
@@ -605,7 +607,7 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
   Subprocess* subproc
-  while ((subproc = subprocs_.NextFinished()) == nil) {
+  while (subproc = subprocs_.NextFinished()) == nil {
     interrupted := subprocs_.DoWork()
     if interrupted != nil {
       return false
@@ -615,7 +617,7 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
   result.status = subproc.Finish()
   result.output = subproc.GetOutput()
 
-  map<const Subprocess*, Edge*>::iterator e = subproc_to_edge_.find(subproc)
+  e := subproc_to_edge_.find(subproc)
   result.edge = e.second
   subproc_to_edge_.erase(e)
 
@@ -639,9 +641,9 @@ func (b *Builder) Cleanup() {
     active_edges := command_runner_.GetActiveEdges()
     command_runner_.Abort()
 
-    for (vector<Edge*>::iterator e = active_edges.begin(); e != active_edges.end(); ++e) {
+    for e := active_edges.begin(); e != active_edges.end(); e++ {
       depfile := (*e).GetUnescapedDepfile()
-      for (vector<Node*>::iterator o = (*e).outputs_.begin(); o != (*e).outputs_.end(); ++o) {
+      for o := (*e).outputs_.begin(); o != (*e).outputs_.end(); o++ {
         // Only delete this output if it was actually modified.  This is
         // important for things like the generator where we don't want to
         // delete the manifest file if we can avoid it.  But if the rule
@@ -707,7 +709,7 @@ func (b *Builder) AlreadyUpToDate() bool {
 // Run the build.  Returns false on error.
 // It is an error to call this function when AlreadyUpToDate() is true.
 func (b *Builder) Build(err *string) bool {
-  assert(!AlreadyUpToDate())
+  if !!AlreadyUpToDate() { panic("oops") }
 
   status_.PlanHasTotalEdges(plan_.command_edge_count())
   pending_commands := 0
@@ -730,7 +732,7 @@ func (b *Builder) Build(err *string) bool {
   // First, we attempt to start as many commands as allowed by the
   // command runner.
   // Second, we attempt to wait for / reap the next finished command.
-  while (plan_.more_to_do()) {
+  while plan_.more_to_do() {
     // See if we can start any more commands.
     if failures_allowed && command_runner_.CanRunMore() {
       if Edge* edge = plan_.FindWork() {
@@ -751,7 +753,7 @@ func (b *Builder) Build(err *string) bool {
             return false
           }
         } else {
-          ++pending_commands
+          pending_commands++
         }
 
         // We made some progress; go back to the main loop.
@@ -769,7 +771,7 @@ func (b *Builder) Build(err *string) bool {
         return false
       }
 
-      --pending_commands
+      pending_commands--
       if !FinishCommand(&result, err) {
         Cleanup()
         status_.BuildFinished()
@@ -820,7 +822,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 
   // Create directories necessary for outputs.
   // XXX: this will block; do we care?
-  for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+  for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
     if !disk_interface_.MakeDirs((*o).path()) {
       return false
     }
@@ -830,7 +832,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
   // XXX: this may also block; do we care?
   rspfile := edge.GetUnescapedRspfile()
   if len(rspfile) != 0 {
-    content := edge.GetBinding("rspfile_content")
+    string content = edge.GetBinding("rspfile_content")
     if !disk_interface_.WriteFile(rspfile, content) {
       return false
     }
@@ -858,7 +860,7 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
   // extraction itself can fail, which makes the command fail from a
   // build perspective.
   vector<Node*> deps_nodes
-  deps_type := edge.GetBinding("deps")
+  string deps_type = edge.GetBinding("deps")
   const string deps_prefix = edge.GetBinding("msvc_deps_prefix")
   if !deps_type.empty() {
     string extract_err
@@ -886,11 +888,11 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
 
   // Restat the edge outputs
   output_mtime := 0
-  restat := edge.GetBindingBool("restat")
+  bool restat = edge.GetBindingBool("restat")
   if !config_.dry_run {
     node_cleaned := false
 
-    for (vector<Node*>::iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+    for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
       new_mtime := disk_interface_.Stat((*o).path(), err)
       if new_mtime == -1 {
         return false
@@ -913,7 +915,7 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
       restat_mtime := 0
       // If any output was cleaned, find the most recent mtime of any
       // (existing) non-order-only input or the depfile.
-      for (vector<Node*>::iterator i = edge.inputs_.begin(); i != edge.inputs_.end() - edge.order_only_deps_; ++i) {
+      for i := edge.inputs_.begin(); i != edge.inputs_.end() - edge.order_only_deps_; i++ {
         input_mtime := disk_interface_.Stat((*i).path(), err)
         if input_mtime == -1 {
           return false
@@ -960,8 +962,8 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
   }
 
   if !deps_type.empty() && !config_.dry_run {
-    assert(!edge.outputs_.empty() && "should have been rejected by parser")
-    for (vector<Node*>::const_iterator o = edge.outputs_.begin(); o != edge.outputs_.end(); ++o) {
+    if !!edge.outputs_.empty() && "should have been rejected by parser" { panic("oops") }
+    for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
       deps_mtime := disk_interface_.Stat((*o).path(), err)
       if deps_mtime == -1 {
         return false
@@ -983,7 +985,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
       return false
     }
     result.output = output
-    for (set<string>::iterator i = parser.includes_.begin(); i != parser.includes_.end(); ++i) {
+    for i := parser.includes_.begin(); i != parser.includes_.end(); i++ {
       // ~0 is assuming that with MSVC-parsed headers, it's ok to always make
       // all backslashes (as some of the slashes will certainly be backslashes
       // anyway). This could be fixed if necessary with some additional
@@ -1019,7 +1021,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
 
     // XXX check depfile matches expected output.
     deps_nodes.reserve(deps.ins_.size())
-    for (vector<StringPiece>::iterator i = deps.ins_.begin(); i != deps.ins_.end(); ++i) {
+    for i := deps.ins_.begin(); i != deps.ins_.end(); i++ {
       uint64_t slash_bits
       CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
       deps_nodes.push_back(state_.GetNode(*i, slash_bits))
