@@ -136,11 +136,11 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
       src += 2
       dst += 2
     } else {
-      ++src
-      ++dst
+      src++
+      dst++
     }
-    ++src
-    ++dst
+    src++
+    dst++
   }
 
   while src < end {
@@ -154,7 +154,7 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
         if component_count > 0 {
           dst = components[component_count - 1]
           src += 3
-          --component_count
+          component_count--
         } else {
           *dst++ = *src++
           *dst++ = *src++
@@ -173,7 +173,7 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
       Fatal("path has too many components : %s", path)
     }
     components[component_count] = dst
-    ++component_count
+    component_count++
 
     while src != end && !IsPathSeparator(*src) {
       *dst++ = *src++
@@ -301,7 +301,7 @@ func GetWin32EscapedString(input string, result *string) {
   for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
     switch (*it) {
       case kBackslash:
-        ++consecutive_backslash_count
+        consecutive_backslash_count++
         break
       case kQuote:
         result.append(span_begin, it)
@@ -473,7 +473,7 @@ func StripAnsiEscapeCodes(in string) string {
 
     // Skip everything up to and including the next [a-zA-Z].
     while i < in.size() && !islatinalpha(in[i]) {
-      ++i
+      i++
     }
   }
   return stripped

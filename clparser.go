@@ -55,7 +55,7 @@ func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {
   if end - in > (int)prefix.size() && memcmp(in, prefix, (int)prefix.size()) == 0 {
     in += prefix.size()
     while *in == ' ' {
-      ++in
+      in++
     }
     return line.substr(in - line)
   }
@@ -123,10 +123,10 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
     }
 
     if end < output.size() && output[end] == '\r' {
-      ++end
+      end++
     }
     if end < output.size() && output[end] == '\n' {
-      ++end
+      end++
     }
     start = end
   }

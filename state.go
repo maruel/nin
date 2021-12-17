@@ -111,7 +111,7 @@ func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
     }
     ready_queue.insert(edge)
     EdgeScheduled(*edge)
-    ++it
+    it++
   }
   delayed_.erase(delayed_.begin(), it)
 }

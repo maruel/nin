@@ -259,7 +259,7 @@ func (s *SubprocessSet) DoWork() bool {
     }
     pollfd pfd = { fd, POLLIN | POLLPRI, 0 }
     fds.push_back(pfd)
-    ++nfds
+    nfds++
   }
 
   interrupted_ = 0
@@ -292,7 +292,7 @@ func (s *SubprocessSet) DoWork() bool {
         continue
       }
     }
-    ++i
+    i++
   }
 
   return IsInterrupted()
@@ -338,7 +338,7 @@ func (s *SubprocessSet) DoWork() bool {
         continue
       }
     }
-    ++i
+    i++
   }
 
   return IsInterrupted()

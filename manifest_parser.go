@@ -284,7 +284,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
         break
       }
       outs.push_back(out)
-      ++implicit_outs
+      implicit_outs++
     }
   }
 
@@ -330,7 +330,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
         break
       }
       ins.push_back(in)
-      ++implicit
+      implicit++
     }
   }
 
@@ -346,7 +346,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
         break
       }
       ins.push_back(in)
-      ++order_only
+      order_only++
     }
   }
 
@@ -397,7 +397,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
           Warning( "multiple rules generate %s. builds involving this target will " "not be correct; continuing anyway", path)
         }
         if e - i <= static_cast<size_t>(implicit_outs) {
-          --implicit_outs
+          implicit_outs--
         }
       }
     }

@@ -289,20 +289,20 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
       total_dep_record_count++
       if !UpdateDeps(out_id, deps) {
-        ++unique_dep_record_count
+        unique_dep_record_count++
       }
     } else {
       int path_size = size - 4
       if !path_size > 0 { panic("oops") }  // CanonicalizePath() rejects empty paths.
       // There can be up to 3 bytes of padding.
       if buf[path_size - 1] == '\0' {
-      	--path_size
+      	path_size--
       }
       if buf[path_size - 1] == '\0' {
-      	--path_size
+      	path_size--
       }
       if buf[path_size - 1] == '\0' {
-      	--path_size
+      	path_size--
       }
       StringPiece subpath(buf, path_size)
       // It is not necessary to pass in a correct slash_bits here. It will

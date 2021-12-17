@@ -66,7 +66,7 @@ func (c *Cleaner) FileExists(path string) bool {
 }
 
 func (c *Cleaner) Report(path string) {
-  ++cleaned_files_count_
+  cleaned_files_count_++
   if IsVerbose() {
     printf("Remove %s\n", path)
   }

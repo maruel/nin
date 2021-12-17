@@ -116,7 +116,7 @@ func main(argc int, argv **char) int {
   for i := 0; i < ntests; i++ {
     if (tests[i].should_run = TestMatchesFilter(tests[i].name, test_filter)) {
   }
-      ++nactivetests
+      nactivetests++
     }
 
   passed := true
@@ -125,7 +125,7 @@ func main(argc int, argv **char) int {
     	continue
     }
 
-    ++tests_started
+    tests_started++
     test := tests[i].factory()
     printer.Print( StringPrintf("[%d/%d] %s", tests_started, nactivetests, tests[i].name), LinePrinter::ELIDE)
     test.SetUp()

@@ -388,7 +388,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
     new_deps_count := 0
     for i := log.deps().begin(); i != log.deps().end(); i++ {
       if *i {
-        ++new_deps_count
+        new_deps_count++
       }
     }
     if deps_count < new_deps_count { t.FailNow() }

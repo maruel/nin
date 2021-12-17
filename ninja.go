@@ -562,8 +562,8 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char) int {
   // The clean tool uses getopt, and expects argv[0] to contain the name of
   // the tool, i.e. "commands".
-  ++argc
-  --argv
+  argc++
+  argv--
 
   mode := PCM_All
 
@@ -672,7 +672,7 @@ func EvaluateCommandWithRspfile(edge *const Edge, mode EvaluateCommandMode) stri
   newline_index := 0
   while (newline_index = rspfile_content.find('\n', newline_index)) != string::npos {
     rspfile_content.replace(newline_index, 1, 1, ' ')
-    ++newline_index
+    newline_index++
   }
   command.replace(index - 1, rspfile.length() + 1, rspfile_content)
   return command

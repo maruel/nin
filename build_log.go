@@ -355,9 +355,9 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     } else {
       entry = new LogEntry(output)
       entries_.insert(Entries::value_type(entry.output, entry))
-      ++unique_entry_count
+      unique_entry_count++
     }
-    ++total_entry_count
+    total_entry_count++
 
     entry.start_time = start_time
     entry.end_time = end_time
