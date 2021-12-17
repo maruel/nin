@@ -24,15 +24,31 @@ type Plan struct {
   // Returns true if there's more work to be done.
   bool more_to_do() const { return wanted_edges_ > 0 && command_edges_ > 0; }
 
-  enum EdgeResult {
-    kEdgeFailed,
-    kEdgeSucceeded
-  }
-
   // Number of edges with commands to run.
   int command_edge_count() const { return command_edges_; }
 
   // Enumerate possible steps we want for an edge.
+
+  // Keep track of which edges we want to build in this plan.  If this map does
+  // not contain an entry for an edge, we do not want to build the entry or its
+  // dependents.  If it does contain an entry, the enumeration indicates what
+  // we want for the edge.
+  want_ map[*Edge]Want
+
+  ready_ EdgeSet
+
+  builder_ *Builder
+
+  // Total number of edges that have commands (not phony).
+  command_edges_ int
+
+  // Total remaining number of wanted edges.
+  wanted_edges_ int
+}
+  enum EdgeResult {
+    kEdgeFailed,
+    kEdgeSucceeded
+  }
   enum Want
   {
     // We do not want to build the edge, but we might want to build one of
@@ -45,23 +61,6 @@ type Plan struct {
     kWantToFinish
   }
 
-  // Keep track of which edges we want to build in this plan.  If this map does
-  // not contain an entry for an edge, we do not want to build the entry or its
-  // dependents.  If it does contain an entry, the enumeration indicates what
-  // we want for the edge.
-  map<Edge*, Want> want_
-
-  EdgeSet ready_
-
-  Builder* builder_
-
-  // Total number of edges that have commands (not phony).
-  int command_edges_
-
-  // Total remaining number of wanted edges.
-  int wanted_edges_
-}
-
 // CommandRunner is an interface that wraps running the build
 // subcommands.  This allows tests to abstract out running commands.
 // RealCommandRunner is an implementation that actually runs commands.
@@ -69,88 +68,75 @@ type CommandRunner struct {
   virtual ~CommandRunner() {}
 
   // The result of waiting for a command.
-  type Result struct {
-    Result() : edge(nil) {}
-    Edge* edge
-    ExitStatus status
-    string output
-    bool success() const { return status == ExitSuccess; }
-  }
 
   virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
-  func (c *CommandRunner) Abort() {}
 }
-*/
-type Verbosity int
-
-const (
-	// No output -- used when testing.
-	QUIET Verbosity = iota
-	// just regular output but suppress status update
-	NO_STATUS_UPDATE
-	// regular output and status update
-	NORMAL
-	VERBOSE
-)
+  type Result struct {
+    Result() : edge(nil) {}
+    edge *Edge
+    status ExitStatus
+    output string
+    bool success() const { return status == ExitSuccess; }
+  }
+  func (c *CommandRunner) Abort() {}
 
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
-	verbosity        Verbosity
-	dry_run          bool
-	parallelism      int
-	failures_allowed int
-	// The maximum load average we must not exceed. A negative value
-	// means that we do not have any limit.
-	max_load_average       float64
-	depfile_parser_options DepfileParserOptions
-}
+  BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
+                  failures_allowed(1), max_load_average(-0.0f) {}
 
-func NewBuildConfig() BuildConfig {
-	return BuildConfig{
-		verbosity:        NORMAL,
-		parallelism:      1,
-		failures_allowed: 1,
-		max_load_average: -0.,
-	}
+  verbosity Verbosity
+  dry_run bool
+  parallelism int
+  failures_allowed int
+  // The maximum load average we must not exceed. A negative value
+  // means that we do not have any limit.
+  max_load_average float64
+  depfile_parser_options DepfileParserOptions
 }
+  enum Verbosity {
+    QUIET,  // No output -- used when testing.
+    NO_STATUS_UPDATE,  // just regular output but suppress status update
+    NORMAL,  // regular output and status update
+    VERBOSE
+  }
 
-/*
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
   Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
   ~Builder()
 
   // Used for tests.
-  func (b *Builder) SetBuildLog(log *BuildLog) {
-    scan_.set_build_log(log)
-  }
 
-  State* state_
-  const BuildConfig& config_
-  Plan plan_
-  auto_ptr<CommandRunner> command_runner_
-  unique_ptr<CommandRunner> command_runner_  // auto_ptr was removed in C++17.
-  Status* status_
+  state_ *State
+  config_ *BuildConfig
+  plan_ Plan
+  command_runner_ auto_ptr<CommandRunner>
+  command_runner_ unique_ptr<CommandRunner>  // auto_ptr was removed in C++17.
+  status_ *Status
 
   // Map of running edge to time the edge started running.
-  typedef map<const Edge*, int> RunningEdgeMap
-  RunningEdgeMap running_edges_
+  RunningEdgeMap typedef map<const Edge*, int>
+  running_edges_ RunningEdgeMap
 
   // Time the build started.
-  int64_t start_time_millis_
+  start_time_millis_ int64
 
-  DiskInterface* disk_interface_
-  DependencyScan scan_
+  disk_interface_ *DiskInterface
+  scan_ DependencyScan
 
   void operator=(const Builder &other) // DO NOT IMPLEMENT
 }
+  func (b *Builder) SetBuildLog(log *BuildLog) {
+    scan_.set_build_log(log)
+  }
 
 
 // A CommandRunner that doesn't actually run the commands.
 type DryRunCommandRunner struct {
   virtual ~DryRunCommandRunner() {}
 
-  queue<Edge*> finished_
+  finished_ [...]*Edge
 }
 
 // Overridden from CommandRunner:
@@ -191,15 +177,15 @@ func (p *Plan) Reset() {
 // Add a target to our plan (including all its dependencies).
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
-func (p *Plan) AddTarget(target *const Node, err *string) bool {
+func (p *Plan) AddTarget(target *Node, err *string) bool {
   return AddSubTarget(target, nil, err, nil)
 }
 
-func (p *Plan) AddSubTarget(node *const Node, dependent *const Node, err *string, dyndep_walk *set<Edge*>) bool {
+func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk *set<Edge*>) bool {
   edge := node.in_edge()
   if edge == nil {  // Leaf node.
     if node.dirty() {
-      string referenced
+      referenced := ""
       if dependent != nil {
         referenced = ", needed by '" + dependent.path() + "',"
       }
@@ -250,7 +236,7 @@ func (p *Plan) AddSubTarget(node *const Node, dependent *const Node, err *string
   return true
 }
 
-func (p *Plan) EdgeWanted(edge *const Edge) {
+func (p *Plan) EdgeWanted(edge *Edge) {
   wanted_edges_++
   if !edge.is_phony() {
     command_edges_++
@@ -259,7 +245,7 @@ func (p *Plan) EdgeWanted(edge *const Edge) {
 
 // Pop a ready edge off the queue of edges to build.
 // Returns NULL if there's no work to do.
-func (p *Plan) FindWork() Edge* {
+func (p *Plan) FindWork() *Edge {
   if ready_.empty() {
     return nil
   }
@@ -431,7 +417,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 
 // Update the build plan to account for modifications made to the graph
 // by information loaded from a dyndep file.
-func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *DyndepFile, err *string) bool {
+func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf *DyndepFile, err *string) bool {
   // Recompute the dirty state of all our direct and indirect dependents now
   // that our dyndep information has been loaded.
   if !RefreshDyndepDependents(scan, node, err) {
@@ -444,7 +430,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
   // of the graph through the dyndep-discovered dependencies.
 
   // Find edges in the the build plan for which we have new dyndep info.
-  vector<DyndepFile::const_iterator> dyndep_roots
+  var dyndep_roots []DyndepFile::const_iterator
   for oe := ddf.begin(); oe != ddf.end(); oe++ {
     edge := oe.first
 
@@ -466,7 +452,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
   }
 
   // Walk dyndep-discovered portion of the graph to add it to the build plan.
-  set<Edge*> dyndep_walk
+  var dyndep_walk map[*Edge]struct{}
   for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
     oe := *oei
     for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
@@ -500,10 +486,10 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *const Node, ddf *Dyndep
   return true
 }
 
-func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *const Node, err *string) bool {
+func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *string) bool {
   // Collect the transitive closure of dependents and mark their edges
   // as not yet visited by RecomputeDirty.
-  set<Node*> dependents
+  var dependents map[*Node]struct{}
   UnmarkDependents(node, &dependents)
 
   // Update the dirty state of all dependents and check if their edges
@@ -534,7 +520,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *const Node, e
   return true
 }
 
-func (p *Plan) UnmarkDependents(node *const Node, dependents *set<Node*>) {
+func (p *Plan) UnmarkDependents(node *Node, dependents *set<Node*>) {
   for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
     edge := *oe
 
@@ -570,13 +556,13 @@ type RealCommandRunner struct {
   explicit RealCommandRunner(const BuildConfig& config) : config_(config) {}
   virtual ~RealCommandRunner() {}
 
-  const BuildConfig& config_
-  SubprocessSet subprocs_
-  map<const Subprocess*, Edge*> subproc_to_edge_
+  config_ *BuildConfig
+  subprocs_ SubprocessSet
+  subproc_to_edge_ map[*Subprocess]*Edge
 }
 
-func (r *RealCommandRunner) GetActiveEdges() vector<Edge*> {
-  vector<Edge*> edges
+func (r *RealCommandRunner) GetActiveEdges() []*Edge {
+  var edges []*Edge
   for e := subproc_to_edge_.begin(); e != subproc_to_edge_.end(); e++ {
     edges.push_back(e.second)
   }
@@ -606,7 +592,7 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 }
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-  Subprocess* subproc
+  var subproc *Subprocess
   while (subproc = subprocs_.NextFinished()) == nil {
     interrupted := subprocs_.DoWork()
     if interrupted != nil {
@@ -621,7 +607,7 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
   result.edge = e.second
   subproc_to_edge_.erase(e)
 
-  delete subproc
+  var subproc delete
   return true
 }
 
@@ -651,7 +637,7 @@ func (b *Builder) Cleanup() {
         // need to rebuild an output because of a modified header file
         // mentioned in a depfile, and the command touches its depfile
         // but is interrupted before it touches its output file.)
-        string err
+        err := ""
         new_mtime := disk_interface_.Stat((*o).path(), &err)
         if new_mtime == -1 {  // Log and ignore Stat() errors.
           status_.Error("%s", err)
@@ -669,7 +655,7 @@ func (b *Builder) Cleanup() {
 
 // Add a target to the build, scanning dependencies.
 // @return false on error.
-func (b *Builder) AddTarget(name string, err *string) Node* {
+func (b *Builder) AddTarget(name string, err *string) *Node {
   node := state_.LookupNode(name)
   if node == nil {
     *err = "unknown target: '" + name + "'"
@@ -763,7 +749,7 @@ func (b *Builder) Build(err *string) bool {
 
     // See if we can reap any finished commands.
     if pending_commands {
-      CommandRunner::Result result
+      var result CommandRunner::Result
       if !command_runner_.WaitForCommand(&result) || result.status == ExitInterrupted {
         Cleanup()
         status_.BuildFinished()
@@ -859,11 +845,11 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
   // to filter /showIncludes output, even on compile failure) and
   // extraction itself can fail, which makes the command fail from a
   // build perspective.
-  vector<Node*> deps_nodes
+  var deps_nodes []*Node
   string deps_type = edge.GetBinding("deps")
   const string deps_prefix = edge.GetBinding("msvc_deps_prefix")
   if !deps_type.empty() {
-    string extract_err
+    extract_err := ""
     if !ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.success() {
       if !result.output.empty() {
         result.output.append("\n")
@@ -979,8 +965,8 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
 
 func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, deps_prefix string, deps_nodes *vector<Node*>, err *string) bool {
   if deps_type == "msvc" {
-    CLParser parser
-    string output
+    var parser CLParser
+    output := ""
     if !parser.Parse(result.output, deps_prefix, &output, err) {
       return false
     }
@@ -1000,7 +986,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
     }
 
     // Read depfile content.  Treat a missing depfile as empty.
-    string content
+    content := ""
     switch (disk_interface_.ReadFile(depfile, &content, err)) {
     case DiskInterface::Okay:
       break
@@ -1022,7 +1008,7 @@ func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, d
     // XXX check depfile matches expected output.
     deps_nodes.reserve(deps.ins_.size())
     for i := deps.ins_.begin(); i != deps.ins_.end(); i++ {
-      uint64_t slash_bits
+      var slash_bits uint64
       CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
       deps_nodes.push_back(state_.GetNode(*i, slash_bits))
     }
@@ -1045,7 +1031,7 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
   status_.BuildLoadDyndeps()
 
   // Load the dyndep information provided by this node.
-  DyndepFile ddf
+  var ddf DyndepFile
   if !scan_.LoadDyndeps(node, &ddf, err) {
     return false
   }
