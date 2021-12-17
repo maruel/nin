@@ -46,7 +46,7 @@ func RunBrowsePython(state *State, ninja_command string, input_file string, argc
         break
       }
 
-      vector<string> command
+      var command vector<string>
       command.push_back(NINJA_PYTHON)
       command.push_back("-")
       command.push_back("--ninja-command")

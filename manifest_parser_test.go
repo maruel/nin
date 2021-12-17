@@ -18,6 +18,10 @@ package ginja
 
 
 type ParserTest struct {
+
+  state State
+  fs_ VirtualFileSystem
+}
   func (p *ParserTest) AssertParse(input string) {
     ManifestParser parser(&state, &fs_)
     err := ""
@@ -25,10 +29,6 @@ type ParserTest struct {
     if "" != err { t.FailNow() }
     VerifyGraph(state)
   }
-
-  var state State
-  fs_ VirtualFileSystem
-}
 
 func TestParserTest_Empty(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(""))
@@ -149,5 +149,5 @@ func TestParserTest_EscapeSpaces(t *testing.T) {
 func TestParserTest_CanonicalizeFile(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = cat $in > $out\n" "build out: cat in/1 in "build in/1: cat\n" "build in/2: cat\n"))//2\n"
 
-  EXPECT_TRUE(state.LookupNode("in/1"))
+  if state.LookupNode("in/1") { t.FailNow() }
   EXPECT_TRUE(state.LookupNode("in/2"))

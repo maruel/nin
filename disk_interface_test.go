@@ -18,15 +18,17 @@ package ginja
 
 
 type DiskInterfaceTest struct {
+
+  temp_dir_ ScopedTempDir
+  disk_ RealDiskInterface
+}
   func (d *DiskInterfaceTest) SetUp() {
     // These tests do real disk accesses, so create a temp dir.
     temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
   }
-
   func (d *DiskInterfaceTest) TearDown() {
     temp_dir_.Cleanup()
   }
-
   func (d *DiskInterfaceTest) Touch(path string) bool {
     FILE *f = fopen(path, "w")
     if f == nil {
@@ -34,10 +36,6 @@ type DiskInterfaceTest struct {
     }
     return fclose(f) == 0
   }
-
-  var temp_dir_ ScopedTempDir
-  disk_ RealDiskInterface
-}
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
   err := ""
@@ -202,6 +200,10 @@ func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
 type StatTest struct {
   StatTest() : scan_(&state_, nil, nil, this, nil) {}
 
+  scan_ DependencyScan
+  mtimes_ map<string, TimeStamp>
+  stats_ mutable vector<string>
+}
   func (s *StatTest) WriteFile(path string, contents string) bool {
     if !false { panic("oops") }
     return true
@@ -218,11 +220,6 @@ type StatTest struct {
     if !false { panic("oops") }
     return 0
   }
-
-  var scan_ DependencyScan
-  map<string, TimeStamp> mtimes_
-  mutable vector<string> stats_
-}
 
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {

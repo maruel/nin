@@ -20,6 +20,7 @@ package ginja
 const char kTestFilename[] = "DepsLogTest-tempfile"
 
 type DepsLogTest struct {
+}
   func (d *DepsLogTest) SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
@@ -27,7 +28,6 @@ type DepsLogTest struct {
   func (d *DepsLogTest) TearDown() {
     unlink(kTestFilename)
   }
-}
 
 func TestDepsLogTest_WriteRead(t *testing.T) {
   var state1 State
@@ -37,7 +37,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
   if "" != err { t.FailNow() }
 
   {
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state1.GetNode("foo.h", 0))
     deps.push_back(state1.GetNode("bar.h", 0))
     log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps)
@@ -89,7 +89,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
   if "" != err { t.FailNow() }
 
   {
-    vector<Node*> deps
+    var deps vector<Node*>
     for i := 0; i < kNumDeps; i++ {
       char buf[32]
       sprintf(buf, "file%d.h", i)
@@ -123,13 +123,13 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
     log.Close()
 
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size = (int)st.st_size
     if file_size <= 0 { t.FailNow() }
@@ -145,13 +145,13 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
     log.Close()
 
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size_2 := (int)st.st_size
     if file_size != file_size_2 { t.FailNow() }
@@ -177,7 +177,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -189,7 +189,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 
     log.Close()
 
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size = (int)st.st_size
     if file_size <= 0 { t.FailNow() }
@@ -207,12 +207,12 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
     log.Close()
 
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size_2 = (int)st.st_size
     // The file should grow to record the new deps.
@@ -263,7 +263,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if other_out != log.nodes()[other_out.id()] { t.FailNow() }
 
     // The file should have shrunk a bit for the smaller deps.
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size_3 = (int)st.st_size
     if file_size_3 >= file_size_2 { t.FailNow() }
@@ -307,7 +307,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
     if -1 != state.LookupNode("baz.h").id() { t.FailNow() }
 
     // The file should have shrunk more.
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     file_size_4 := (int)st.st_size
     if file_size_4 >= file_size_3 { t.FailNow() }
@@ -347,7 +347,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -361,7 +361,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
   }
 
   // Get the file size.
-  struct stat st
+  var st stat
   if 0 != stat(kTestFilename, &st) { t.FailNow() }
 
   // Try reloading at truncated sizes.
@@ -406,7 +406,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
     if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
 
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar.h", 0))
     log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
@@ -421,7 +421,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 
   // Shorten the file, corrupting the last record.
   {
-    struct stat st
+    var st stat
     if 0 != stat(kTestFilename, &st) { t.FailNow() }
     err := ""
     if Truncate(kTestFilename, st.st_size - 2, &err) { t.FailNow() }
@@ -443,7 +443,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
     if "" != err { t.FailNow() }
 
     // Add a new entry.
-    vector<Node*> deps
+    var deps vector<Node*>
     deps.push_back(state.GetNode("foo.h", 0))
     deps.push_back(state.GetNode("bar2.h", 0))
     log.RecordDeps(state.GetNode("out2.o", 0), 3, deps)
@@ -472,7 +472,7 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
   if log.OpenForWrite(kTestFilename, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  vector<Node*> deps
+  var deps vector<Node*>
   deps.push_back(state.GetNode("foo.h", 0))
   deps.push_back(state.GetNode("bar.h", 0))
   log.RecordDeps(state.GetNode("out.o", 0), 1, deps)

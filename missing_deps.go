@@ -31,16 +31,16 @@ type MissingDependencyScanner struct {
   deps_log_ *DepsLog
   state_ *State
   disk_interface_ *DiskInterface
-  set<Node*> seen_
-  set<Node*> nodes_missing_deps_
-  set<Node*> generated_nodes_
-  set<const Rule*> generator_rules_
+  seen_ set<Node*>
+  nodes_missing_deps_ set<Node*>
+  generated_nodes_ set<Node*>
+  generator_rules_ set<const Rule*>
   missing_dep_path_count_ int
 
   using InnerAdjacencyMap = unordered_map<Edge*, bool>
   using AdjacencyMap = unordered_map<Edge*, InnerAdjacencyMap>
-  typedef map<Edge*, bool> InnerAdjacencyMap
-  typedef map<Edge*, InnerAdjacencyMap> AdjacencyMap
+  InnerAdjacencyMap typedef map<Edge*, bool>
+  AdjacencyMap typedef map<Edge*, InnerAdjacencyMap>
   adjacency_map_ AdjacencyMap
 }
 
@@ -52,7 +52,7 @@ type NodeStoringImplicitDepLoader struct {
       : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
         dep_nodes_output_(dep_nodes_output) {}
 
-  vector<Node*>* dep_nodes_output_
+  dep_nodes_output_ *vector<Node*>
 }
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<StringPiece>, err *string) bool {
@@ -100,7 +100,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
     }
   } else {
     var parser_opts DepfileParserOptions
-    vector<Node*> depfile_deps
+    var depfile_deps vector<Node*>
     NodeStoringImplicitDepLoader dep_loader(state_, deps_log_, disk_interface_, &parser_opts, &depfile_deps)
     err := ""
     dep_loader.LoadDeps(edge, &err)
@@ -112,7 +112,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 
 func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node, dep_nodes_count int) {
   edge := node.in_edge()
-  set<Edge*> deplog_edges
+  var deplog_edges set<Edge*>
   for i := 0; i < dep_nodes_count; i++ {
     deplog_node := dep_nodes[i]
     // Special exception: A dep on build.ninja can be used to mean "always
@@ -129,7 +129,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
       deplog_edges.insert(deplog_edge)
     }
   }
-  vector<Edge*> missing_deps
+  var missing_deps vector<Edge*>
   for de := deplog_edges.begin(); de != deplog_edges.end(); de++ {
     if !PathExistsBetween(*de, edge) {
       missing_deps.push_back(*de)
@@ -137,7 +137,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes **Node,
   }
 
   if !missing_deps.empty() {
-    set<string> missing_deps_rule_names
+    var missing_deps_rule_names set<string>
     for ne := missing_deps.begin(); ne != missing_deps.end(); ne++ {
       for i := 0; i < dep_nodes_count; i++ {
         if dep_nodes[i].in_edge() == *ne {

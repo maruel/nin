@@ -198,50 +198,42 @@ func (s *SubprocessSet) HandlePendingInterruption() {
 }
 
 SubprocessSet::SubprocessSet() {
-  var set sigset_t
+  sigset_t set
   sigemptyset(&set)
   sigaddset(&set, SIGINT)
   sigaddset(&set, SIGTERM)
   sigaddset(&set, SIGHUP)
-  if sigprocmask(SIG_BLOCK, &set, &old_mask_) < 0 {
+  if (sigprocmask(SIG_BLOCK, &set, &old_mask_) < 0)
     Fatal("sigprocmask: %s", strerror(errno))
-  }
 
   struct sigaction act
   memset(&act, 0, sizeof(act))
   act.sa_handler = SetInterruptedFlag
-  if sigaction(SIGINT, &act, &old_int_act_) < 0 {
+  if (sigaction(SIGINT, &act, &old_int_act_) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
-  if sigaction(SIGTERM, &act, &old_term_act_) < 0 {
+  if (sigaction(SIGTERM, &act, &old_term_act_) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
-  if sigaction(SIGHUP, &act, &old_hup_act_) < 0 {
+  if (sigaction(SIGHUP, &act, &old_hup_act_) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
 }
 
 SubprocessSet::~SubprocessSet() {
   Clear()
 
-  if sigaction(SIGINT, &old_int_act_, 0) < 0 {
+  if (sigaction(SIGINT, &old_int_act_, 0) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
-  if sigaction(SIGTERM, &old_term_act_, 0) < 0 {
+  if (sigaction(SIGTERM, &old_term_act_, 0) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
-  if sigaction(SIGHUP, &old_hup_act_, 0) < 0 {
+  if (sigaction(SIGHUP, &old_hup_act_, 0) < 0)
     Fatal("sigaction: %s", strerror(errno))
-  }
-  if sigprocmask(SIG_SETMASK, &old_mask_, 0) < 0 {
+  if (sigprocmask(SIG_SETMASK, &old_mask_, 0) < 0)
     Fatal("sigprocmask: %s", strerror(errno))
-  }
 }
 
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
-  subprocess := new Subprocess(use_console)
-  if !subprocess.Start(this, command) {
-    var subprocess delete
+  Subprocess *subprocess = new Subprocess(use_console)
+  if (!subprocess.Start(this, command)) {
+    delete subprocess
     return 0
   }
   running_.push_back(subprocess)
@@ -249,7 +241,7 @@ Subprocess *SubprocessSet::Add(string command, bool use_console) {
 }
 
 func (s *SubprocessSet) DoWork() bool {
-  vector<pollfd> fds
+  var fds vector<pollfd>
   nfds := 0
 
   for i := running_.begin(); i != running_.end(); i++ {

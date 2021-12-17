@@ -31,42 +31,13 @@ type Node struct {
         id_(-1) {}
 
   // Return false on error.
-  func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
-    if status_known() {
-      return true
-    }
-    return Stat(disk_interface, err)
-  }
 
   // Mark as not-yet-stat()ed and not dirty.
-  func (n *Node) ResetState() {
-    mtime_ = -1
-    exists_ = ExistenceStatusUnknown
-    dirty_ = false
-  }
 
   // Mark the Node as already-stat()ed and missing.
-  func (n *Node) MarkMissing() {
-    if mtime_ == -1 {
-      mtime_ = 0
-    }
-    exists_ = ExistenceStatusMissing
-  }
-
-  func (n *Node) exists() bool {
-    return exists_ == ExistenceStatusExists
-  }
-
-  func (n *Node) status_known() bool {
-    return exists_ != ExistenceStatusUnknown
-  }
 
   string path() const { return path_; }
   // Get |path()| but use slash_bits to convert back to original slash styles.
-  func (n *Node) PathDecanonicalized() string {
-    return PathDecanonicalized(path_, slash_bits_)
-  }
-  static string PathDecanonicalized(string path, uint64_t slash_bits)
   uint64_t slash_bits() const { return slash_bits_; }
 
   TimeStamp mtime() const { return mtime_; }
@@ -89,17 +60,17 @@ type Node struct {
 
   void Dump(string prefix="") const
 
-  path_ := ""
+  path_ string
 
   // Set bits starting from lowest for backslashes that were normalized to
   // forward slashes by CanonicalizePath. See |PathDecanonicalized|.
-  var slash_bits_ uint64
+  slash_bits_ uint64
 
   // Possible values of mtime_:
   //   -1: file hasn't been examined
   //   0:  we looked, and file doesn't exist
   //   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
-  var mtime_ TimeStamp
+  mtime_ TimeStamp
 
   enum ExistenceStatus {
     // The file hasn't been examined.
@@ -109,27 +80,53 @@ type Node struct {
     // The path is an actual file. mtime_ will be the file's mtime.
     ExistenceStatusExists
   }
-  var exists_ ExistenceStatus
+  exists_ ExistenceStatus
 
   // Dirty is true when the underlying file is out-of-date.
   // But note that Edge::outputs_ready_ is also used in judging which
   // edges to build.
-  var dirty_ bool
+  dirty_ bool
 
   // Store whether dyndep information is expected from this node but
   // has not yet been loaded.
-  var dyndep_pending_ bool
+  dyndep_pending_ bool
 
   // The Edge that produces this Node, or NULL when there is no
   // known edge to produce it.
-  var in_edge_ *Edge
+  in_edge_ *Edge
 
   // All Edges that use this Node as an input.
-  vector<Edge*> out_edges_
+  out_edges_ vector<Edge*>
 
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
 }
+  func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
+    if status_known() {
+      return true
+    }
+    return Stat(disk_interface, err)
+  }
+  func (n *Node) ResetState() {
+    mtime_ = -1
+    exists_ = ExistenceStatusUnknown
+    dirty_ = false
+  }
+  func (n *Node) MarkMissing() {
+    if mtime_ == -1 {
+      mtime_ = 0
+    }
+    exists_ = ExistenceStatusMissing
+  }
+  func (n *Node) exists() bool {
+    return exists_ == ExistenceStatusExists
+  }
+  func (n *Node) status_known() bool {
+    return exists_ != ExistenceStatusUnknown
+  }
+  func (n *Node) PathDecanonicalized() string {
+    return PathDecanonicalized(path_, slash_bits_)
+  }
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
@@ -147,10 +144,10 @@ type Edge struct {
 
   void Dump(string prefix="") const
 
-  const Rule* rule_
+  rule_ *Rule
   pool_ *Pool
-  vector<Node*> inputs_
-  vector<Node*> outputs_
+  inputs_ vector<Node*>
+  outputs_ vector<Node*>
   dyndep_ *Node
   env_ *BindingEnv
   mark_ VisitMark
@@ -175,6 +172,15 @@ type Edge struct {
   // #2 and #3 when we need to access the various subsets.
   implicit_deps_ int
   order_only_deps_ int
+
+  // There are two types of outputs.
+  // 1) explicit outs, which show up as $out on the command line;
+  // 2) implicit outs, which the target generates but are not part of $out.
+  // These are stored in outputs_ in that order, and we keep a count of
+  // #2 to use when we need to access the various subsets.
+  implicit_outs_ int
+
+}
   func (e *Edge) is_implicit(index size_t) bool {
     return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
         !is_order_only(index)
@@ -182,18 +188,9 @@ type Edge struct {
   func (e *Edge) is_order_only(index size_t) bool {
     return index >= inputs_.size() - order_only_deps_
   }
-
-  // There are two types of outputs.
-  // 1) explicit outs, which show up as $out on the command line;
-  // 2) implicit outs, which the target generates but are not part of $out.
-  // These are stored in outputs_ in that order, and we keep a count of
-  // #2 to use when we need to access the various subsets.
-  implicit_outs_ := 0
   func (e *Edge) is_implicit_out(index size_t) bool {
     return index >= outputs_.size() - implicit_outs_
   }
-
-}
 
 type EdgeCmp struct {
   bool operator()(const Edge* a, const Edge* b) const {
@@ -210,19 +207,14 @@ type ImplicitDepLoader struct {
       : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
         depfile_parser_options_(depfile_parser_options) {}
 
+  state_ *State
+  disk_interface_ *DiskInterface
+  deps_log_ *DepsLog
+  depfile_parser_options_ *DepfileParserOptions const
+}
   func (i *ImplicitDepLoader) deps_log() DepsLog* {
     return deps_log_
   }
-
-  // Preallocate \a count spaces in the input array on \a edge, returning
-  // an iterator pointing at the first new space.
-  vector<Node*>::iterator PreallocateSpace(Edge* edge, int count)
-
-  var state_ *State
-  var disk_interface_ *DiskInterface
-  var deps_log_ *DepsLog
-  DepfileParserOptions const* depfile_parser_options_
-}
 
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
@@ -233,22 +225,20 @@ type DependencyScan struct {
         dep_loader_(state, deps_log, disk_interface, depfile_parser_options),
         dyndep_loader_(state, disk_interface) {}
 
+  build_log_ *BuildLog
+  disk_interface_ *DiskInterface
+  dep_loader_ ImplicitDepLoader
+  dyndep_loader_ DyndepLoader
+}
   func (d *DependencyScan) build_log() BuildLog* {
     return build_log_
   }
   func (d *DependencyScan) set_build_log(log *BuildLog) {
     build_log_ = log
   }
-
   func (d *DependencyScan) deps_log() DepsLog* {
     return dep_loader_.deps_log()
   }
-
-  var build_log_ *BuildLog
-  var disk_interface_ *DiskInterface
-  var dep_loader_ ImplicitDepLoader
-  dyndep_loader_ DyndepLoader
-}
 
 
 // Return false on error.
@@ -275,7 +265,7 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 // state accordingly.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
-  vector<Node*> stack
+  var stack vector<Node*>
   return RecomputeDirty(node, &stack, err)
 }
 
@@ -592,10 +582,10 @@ type EdgeEnv struct {
   EdgeEnv(const Edge* const edge, const EscapeKind escape)
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 
-  vector<string> lookups_
-  const Edge* const edge_
-  var escape_in_out_ EscapeKind
-  var recursive_ bool
+  lookups_ vector<string>
+  edge_ Edge* const
+  escape_in_out_ EscapeKind
+  recursive_ bool
 }
 
 func (e *EdgeEnv) LookupVariable(var string) string {

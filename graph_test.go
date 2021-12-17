@@ -285,28 +285,28 @@ func TestGraphTest_DependencyCycle(t *testing.T) {
   if "dependency cycle: out . mid . in . pre . out" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, CycleInEdgesButNotInNodes1) {
+func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
   err := ""
   AssertParse(&state_, "build a b: cat a\n")
   if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
   if "dependency cycle: a . a" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, CycleInEdgesButNotInNodes2) {
+func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build b a: cat a\n"))
   if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
   if "dependency cycle: a . a" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, CycleInEdgesButNotInNodes3) {
+func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a b: cat c\n" "build c: cat a\n"))
   if !scan_.RecomputeDirty(GetNode("b"), &err) { t.FailNow() }
   if "dependency cycle: a . c . a" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, CycleInEdgesButNotInNodes4) {
+func TestGraphTest_CycleInEdgesButNotInNodes4(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build d: cat c\n" "build c: cat b\n" "build b: cat a\n" "build a e: cat d\n" "build f: cat e\n"))
   if !scan_.RecomputeDirty(GetNode("f"), &err) { t.FailNow() }
@@ -454,7 +454,7 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
   if "dyndep file 'dd' mentions output 'out2' whose build statement " "does not have a dyndep binding for the file" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules1) {
+func TestGraphTest_DyndepLoadOutputWithMultipleRules1(t *testing.T) {
   AssertParse(&state_, "rule r\n" "  command = unused\n" "build out1 | out-twice.imp: r in1\n" "build out2: r in2 || dd\n" "  dyndep = dd\n" )
   fs_.Create("dd", "ninja_dyndep_version = 1\n" "build out2 | out-twice.imp: dyndep\n" )
 
@@ -464,7 +464,7 @@ TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules1) {
   if "multiple rules generate out-twice.imp" != err { t.FailNow() }
 }
 
-TEST_F(GraphTest, DyndepLoadOutputWithMultipleRules2) {
+func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
   AssertParse(&state_, "rule r\n" "  command = unused\n" "build out1: r in1 || dd1\n" "  dyndep = dd1\n" "build out2: r in2 || dd2\n" "  dyndep = dd2\n" )
   fs_.Create("dd1", "ninja_dyndep_version = 1\n" "build out1 | out-twice.imp: dyndep\n" )
   fs_.Create("dd2", "ninja_dyndep_version = 1\n" "build out2 | out-twice.imp: dyndep\n" )

@@ -45,6 +45,9 @@ type Pool struct {
   current_use_ int
   depth_ int
 
+  DelayedEdges typedef set<Edge*, WeightedEdgeCmp>
+  delayed_ DelayedEdges
+}
   type WeightedEdgeCmp struct {
     bool operator()(const Edge* a, const Edge* b) const {
       if (!a) return b
@@ -54,28 +57,24 @@ type Pool struct {
     }
   }
 
-  typedef set<Edge*, WeightedEdgeCmp> DelayedEdges
-  delayed_ DelayedEdges
-}
-
 // Global state (file status) for a single run.
 type State struct {
-  static Pool kDefaultPool
-  static Pool kConsolePool
-  static const Rule kPhonyRule
+  kDefaultPool static Pool
+  kConsolePool static Pool
+  kPhonyRule static const Rule
 
   // Mapping of path -> Node.
-  typedef ExternalStringHashMap<Node*>::Type Paths
+  Paths typedef ExternalStringHashMap<Node*>::Type
   paths_ Paths
 
   // All the pools used in the graph.
-  map<string, Pool*> pools_
+  pools_ map<string, Pool*>
 
   // All the edges of the graph.
-  vector<Edge*> edges_
+  edges_ vector<Edge*>
 
   bindings_ BindingEnv
-  vector<Node*> defaults_
+  defaults_ vector<Node*>
 }
 
 
@@ -223,7 +222,7 @@ func (s *State) AddDefault(path StringPiece, err *string) bool {
 // @return the root node(s) of the graph. (Root nodes have no output edges).
 // @param error where to write the error message if somethings went wrong.
 func (s *State) RootNodes(err *string) vector<Node*> {
-  vector<Node*> root_nodes
+  var root_nodes vector<Node*>
   // Search for nodes with no output.
   for e := edges_.begin(); e != edges_.end(); e++ {
     for out := (*e).outputs_.begin(); out != (*e).outputs_.end(); out++ {

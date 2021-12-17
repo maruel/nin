@@ -20,24 +20,24 @@ package ginja
 type Cleaner struct {
 
   // @return the number of file cleaned.
+
+  // @return whether the cleaner is in verbose mode.
+
+  state_ *State
+  config_ *BuildConfig
+  dyndep_loader_ DyndepLoader
+  removed_ set<string>
+  cleaned_ set<Node*>
+  cleaned_files_count_ int
+  disk_interface_ *DiskInterface
+  status_ int
+}
   func (c *Cleaner) cleaned_files_count() int {
     return cleaned_files_count_
   }
-
-  // @return whether the cleaner is in verbose mode.
   func (c *Cleaner) IsVerbose() bool {
     return (config_.verbosity != BuildConfig::QUIET && (config_.verbosity == BuildConfig::VERBOSE || config_.dry_run))
   }
-
-  var state_ *State
-  const BuildConfig& config_
-  var dyndep_loader_ DyndepLoader
-  set<string> removed_
-  set<Node*> cleaned_
-  cleaned_files_count_ := 0
-  var disk_interface_ *DiskInterface
-  status_ int
-}
 
 
 Cleaner::Cleaner(State* state, const BuildConfig& config, DiskInterface* disk_interface)

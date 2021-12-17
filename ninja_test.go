@@ -40,7 +40,7 @@ string StringPrintf(string format, ...) {
   const int N = 1024
   char buf[N]
 
-  ap va_list
+  va_list ap
   va_start(ap, format)
   vsnprintf(buf, N, format, ap)
   va_end(ap)
@@ -97,7 +97,7 @@ func ReadFlags(argc *int, argv ***char, test_filter *string) bool {
 }
 
 bool testing::Test::Check(bool condition, string file, int line, string error) {
-  if condition == nil {
+  if (!condition) {
     printer.PrintOnNewLine( StringPrintf("*** Failure in %s:%d\n%s\n", file, line, error))
     failed_ = true
   }

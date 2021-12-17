@@ -18,21 +18,20 @@ package ginja
 
 
 type DyndepParserTest struct {
+
+  state_ State
+  fs_ VirtualFileSystem
+  dyndep_file_ DyndepFile
+}
   func (d *DyndepParserTest) AssertParse(input string) {
     DyndepParser parser(&state_, &fs_, &dyndep_file_)
     err := ""
     if parser.ParseTest(input, &err) { t.FailNow() }
     if "" != err { t.FailNow() }
   }
-
   func (d *DyndepParserTest) SetUp() {
     ::AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
   }
-
-  var state_ State
-  var fs_ VirtualFileSystem
-  dyndep_file_ DyndepFile
-}
 
 func TestDyndepParserTest_Empty(t *testing.T) {
   const char kInput[] =
@@ -43,19 +42,19 @@ func TestDyndepParserTest_Empty(t *testing.T) {
   if "input:1: expected 'ninja_dyndep_version = ...'\n" != err { t.FailNow() }
 }
 
-TEST_F(DyndepParserTest, Version1) {
+func TestDyndepParserTest_Version1(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n"))
 }
 
-TEST_F(DyndepParserTest, Version1Extra) {
+func TestDyndepParserTest_Version1Extra(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1-extra\n"))
 }
 
-TEST_F(DyndepParserTest, Version1_0) {
+func TestDyndepParserTest_Version1_0(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1.0\n"))
 }
 
-TEST_F(DyndepParserTest, Version1_0Extra) {
+func TestDyndepParserTest_Version1_0Extra(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1.0-extra\n"))
 }
 
@@ -88,7 +87,7 @@ func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
   if "input:1: unexpected EOF\n" "ninja_dyndep_version = 1.0\n" "                          ^ near here" != err { t.FailNow() }
 }
 
-TEST_F(DyndepParserTest, UnsupportedVersion0) {
+func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 0\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
@@ -97,7 +96,7 @@ TEST_F(DyndepParserTest, UnsupportedVersion0) {
   if "input:1: unsupported 'ninja_dyndep_version = 0'\n" "ninja_dyndep_version = 0\n" "                        ^ near here" != err { t.FailNow() }
 }
 
-TEST_F(DyndepParserTest, UnsupportedVersion1_1) {
+func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
   const char kInput[] =
 "ninja_dyndep_version = 1.1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)

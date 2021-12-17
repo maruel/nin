@@ -21,13 +21,13 @@ package ginja
 type DyndepParser struct {
 
   // Parse a text string of input.  Used by tests.
+
+  dyndep_file_ *DyndepFile
+  env_ BindingEnv
+}
   func (d *DyndepParser) ParseTest(input string, err *string) bool {
     return Parse("input", input, err)
   }
-
-  var dyndep_file_ *DyndepFile
-  env_ BindingEnv
-}
 
 
 DyndepParser::DyndepParser(State* state, FileReader* file_reader, DyndepFile* dyndep_file)
@@ -158,7 +158,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   // Parse implicit outputs, if any.
-  vector<EvalString> outs
+  var outs vector<EvalString>
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
       var out EvalString
@@ -193,7 +193,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
   }
 
   // Parse implicit inputs, if any.
-  vector<EvalString> ins
+  var ins vector<EvalString>
   if lexer_.PeekToken(Lexer::PIPE) {
     for ; ;  {
       var in EvalString

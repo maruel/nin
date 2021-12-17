@@ -43,12 +43,8 @@ type ScopedMetric struct {
 // The singleton that stores metrics and prints the report.
 type Metrics struct {
 
-  vector<Metric*> metrics_
+  metrics_ vector<Metric*>
 }
-
-// Get the current time as relative to some epoch.
-// Epoch varies between platforms; only useful for measuring elapsed time.
-int64_t GetTimeMillis()
 
 // A simple stopwatch which returns the time
 // in seconds since Restart() was called.
@@ -56,15 +52,14 @@ type Stopwatch struct {
   Stopwatch() : started_(0) {}
 
   // Seconds since Restart() call.
-  func (s *Stopwatch) Elapsed() double {
-    return 1e-6 * static_cast<double>(Now() - started_)
-  }
 
   void Restart() { started_ = Now(); }
 
-  var started_ uint64
-  uint64_t Now() const
+  started_ uint64
 }
+  func (s *Stopwatch) Elapsed() double {
+    return 1e-6 * static_cast<double>(Now() - started_)
+  }
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.
@@ -75,35 +70,38 @@ type Stopwatch struct {
 Metrics* g_metrics = nil
 
 // Compute a platform-specific high-res timer value that fits into an int64.
-int64_t HighResTimer() {
-  timeval tv
-  if (gettimeofday(&tv, nil) < 0)
+func HighResTimer() int64_t {
+  var tv timeval
+  if gettimeofday(&tv, nil) < 0 {
     Fatal("gettimeofday: %s", strerror(errno))
+  }
   return (int64_t)tv.tv_sec * 1000*1000 + tv.tv_usec
 }
 
 // Convert a delta of HighResTimer() values to microseconds.
-int64_t TimerToMicros(int64_t dt) {
+func TimerToMicros(dt int64_t) int64_t {
   // No conversion necessary.
   return dt
 }
-int64_t LargeIntegerToInt64(const LARGE_INTEGER& i) {
+func LargeIntegerToInt64(i *LARGE_INTEGER) int64_t {
   return ((int64_t)i.HighPart) << 32 | i.LowPart
 }
 
-int64_t HighResTimer() {
-  LARGE_INTEGER counter
-  if (!QueryPerformanceCounter(&counter))
+func HighResTimer() int64_t {
+  var counter LARGE_INTEGER
+  if !QueryPerformanceCounter(&counter) {
     Fatal("QueryPerformanceCounter: %s", GetLastErrorString())
+  }
   return LargeIntegerToInt64(counter)
 }
 
-int64_t TimerToMicros(int64_t dt) {
-  static int64_t ticks_per_sec = 0
-  if (!ticks_per_sec) {
-    LARGE_INTEGER freq
-    if (!QueryPerformanceFrequency(&freq))
+func TimerToMicros(dt int64_t) int64_t {
+  ticks_per_sec := 0
+  if !ticks_per_sec {
+    var freq LARGE_INTEGER
+    if !QueryPerformanceFrequency(&freq) {
       Fatal("QueryPerformanceFrequency: %s", GetLastErrorString())
+    }
     ticks_per_sec = LargeIntegerToInt64(freq)
   }
 
@@ -150,11 +148,13 @@ func (m *Metrics) Report() {
   }
 }
 
-uint64_t Stopwatch::Now() const {
+func (s *Stopwatch) Now() uint64_t {
   return TimerToMicros(HighResTimer())
 }
 
-int64_t GetTimeMillis() {
+// Get the current time as relative to some epoch.
+// Epoch varies between platforms; only useful for measuring elapsed time.
+func GetTimeMillis() int64_t {
   return TimerToMicros(HighResTimer()) / 1000
 }
 

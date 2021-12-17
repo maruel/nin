@@ -107,9 +107,9 @@ func IsFullPathName(s StringPiece) bool {
 }
 
 IncludesNormalize::IncludesNormalize(string relative_to) {
-  err := ""
+  string err
   relative_to_ = AbsPath(relative_to, &err)
-  if len(err) != 0 {
+  if (!err.empty()) {
     Fatal("Initializing IncludesNormalize(): %s", err)
   }
   split_relative_to_ = SplitStringPiece(relative_to_, '/')
@@ -151,7 +151,7 @@ func (i *IncludesNormalize) Relativize(path StringPiece, start_list *vector<Stri
     }
   }
 
-  vector<StringPiece> rel_list
+  var rel_list vector<StringPiece>
   rel_list.reserve(start_list.size() - i + path_list.size() - i)
   for j := 0; j < static_cast<int>(start_list.size() - i); j++ {
     rel_list.push_back("..")

@@ -32,7 +32,7 @@ func TestJSONTest_ControlChars(t *testing.T) {
 
 // Leave them alone as JSON accepts unicode literals
 // out of control character range
-TEST(JSONTest, UTF8) {
+func TestJSONTest_UTF8(t *testing.T) {
   string utf8str = "\xe4\xbd\xa0\xe5\xa5\xbd"
   if EncodeJSONString(utf8str) != utf8str { t.FailNow() }
 }

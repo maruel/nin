@@ -20,6 +20,8 @@ package ginja
 const char kTestFilename[] = "BuildLogTest-tempfile"
 
 type BuildLogTest struct {
+  virtual bool IsPathDead(StringPiece s) const { return false; }
+}
   func (b *BuildLogTest) SetUp() {
     // In case a crashing test left a stale file behind.
     unlink(kTestFilename)
@@ -27,8 +29,6 @@ type BuildLogTest struct {
   func (b *BuildLogTest) TearDown() {
     unlink(kTestFilename)
   }
-  virtual bool IsPathDead(StringPiece s) const { return false; }
-}
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
@@ -118,7 +118,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
     log1.Close()
   }
 
-  struct stat statbuf
+  var statbuf stat
   if 0 != stat(kTestFilename, &statbuf) { t.FailNow() }
   if statbuf.st_size <= 0 { t.FailNow() }
 
@@ -153,7 +153,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
   if err.find("version") == string::npos { t.FailNow() }
 }
 
-TEST_F(BuildLogTest, SpacesInOutputV4) {
+func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
   FILE* f = fopen(kTestFilename, "wb")
   fprintf(f, "# ninja log v4\n")
   fprintf(f, "123\t456\t456\tout with space\tcommand\n")
@@ -204,6 +204,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 }
 
 type TestDiskInterface struct {
+}
   func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
     return 4
   }
@@ -223,7 +224,6 @@ type TestDiskInterface struct {
     if !false { panic("oops") }
     return 0
   }
-}
 
 func TestBuildLogTest_Restat(t *testing.T) {
   FILE* f = fopen(kTestFilename, "wb")

@@ -90,7 +90,7 @@ func WriteTestData(err *string) bool {
 }
 
 func main() int {
-  vector<int> times
+  var times vector<int>
   err := ""
 
   if !WriteTestData(&err) {

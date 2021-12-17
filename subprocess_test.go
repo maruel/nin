@@ -207,7 +207,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
     return
   }
 
-  vector<Subprocess*> procs
+  var procs vector<Subprocess*>
   for i := 0; i < kNumProcs; i++ {
     Subprocess* subproc = subprocs_.Add("/bin/echo")
     if (Subprocess *) 0 == subproc { t.FailNow() }

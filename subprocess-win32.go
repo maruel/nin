@@ -203,12 +203,10 @@ HANDLE SubprocessSet::ioport_
 
 SubprocessSet::SubprocessSet() {
   ioport_ = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, nil, 0, 1)
-  if !ioport_ {
+  if (!ioport_)
     Win32Fatal("CreateIoCompletionPort")
-  }
-  if !SetConsoleCtrlHandler(NotifyInterrupted, TRUE) {
+  if (!SetConsoleCtrlHandler(NotifyInterrupted, TRUE))
     Win32Fatal("SetConsoleCtrlHandler")
-  }
 }
 
 SubprocessSet::~SubprocessSet() {
@@ -218,7 +216,7 @@ SubprocessSet::~SubprocessSet() {
   CloseHandle(ioport_)
 }
 
-BOOL WINAPI SubprocessSet::NotifyInterrupted(DWORD dwCtrlType) {
+func (s *SubprocessSet) NotifyInterrupted(dwCtrlType DWORD) BOOL WINAPI {
   if dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT {
     if !PostQueuedCompletionStatus(ioport_, 0, 0, nil) {
       Win32Fatal("PostQueuedCompletionStatus")
@@ -230,16 +228,15 @@ BOOL WINAPI SubprocessSet::NotifyInterrupted(DWORD dwCtrlType) {
 }
 
 Subprocess *SubprocessSet::Add(string command, bool use_console) {
-  subprocess := new Subprocess(use_console)
-  if !subprocess.Start(this, command) {
-    var subprocess delete
+  Subprocess *subprocess = new Subprocess(use_console)
+  if (!subprocess.Start(this, command)) {
+    delete subprocess
     return 0
   }
-  if subprocess.child_ {
+  if (subprocess.child_)
     running_.push_back(subprocess)
-  } else {
+  else
     finished_.push(subprocess)
-  }
   return subprocess
 }
 

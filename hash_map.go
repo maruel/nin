@@ -19,14 +19,14 @@ package ginja
 
 // MurmurHash2, by Austin Appleby
 static inline
-unsigned int MurmurHash2(const void* key, size_t len) {
-  static const unsigned int seed = 0xDECAFBAD
-  const unsigned int m = 0x5bd1e995
-  const int r = 24
+func MurmurHash2(key *const void, len size_t) unsigned int {
+  seed := 0xDECAFBAD
+  m := 0x5bd1e995
+  r := 24
   unsigned int h = seed ^ len
-  const unsigned char* data = (const unsigned char*)key
-  while (len >= 4) {
-    unsigned int k
+  data := (const unsigned char*)key
+  while len >= 4 {
+    var k unsigned int
     memcpy(&k, data, sizeof k)
     k *= m
     k ^= k >> r
@@ -52,8 +52,8 @@ unsigned int MurmurHash2(const void* key, size_t len) {
 
 template<>
 type hash struct {
-  typedef StringPiece argument_type
-  typedef size_t result_type
+  argument_type typedef StringPiece
+  result_type typedef size_t
 
   size_t operator()(StringPiece key) const {
     return MurmurHash2(key.str_, key.len_)
@@ -94,8 +94,8 @@ type hash struct {
 // mapping StringPiece => Foo*.
 template<typename V>
 type ExternalStringHashMap struct {
-  typedef unordered_map<StringPiece, V> Type
-  typedef hash_map<StringPiece, V, StringPieceCmp> Type
-  typedef hash_map<StringPiece, V> Type
+  Type typedef unordered_map<StringPiece, V>
+  Type typedef hash_map<StringPiece, V, StringPieceCmp>
+  Type typedef hash_map<StringPiece, V>
 }
 

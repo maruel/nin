@@ -61,14 +61,6 @@ type DepsLog struct {
   ~DepsLog()
 
   // Reading (startup-time) interface.
-  type Deps struct {
-    Deps(int64_t mtime, int node_count)
-        : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
-    ~Deps() { delete [] nodes; }
-    mtime TimeStamp
-    node_count int
-    nodes *Node*
-  }
 
   // Used for tests.
   const vector<Node*>& nodes() const { return nodes_; }
@@ -79,12 +71,20 @@ type DepsLog struct {
   file_path_ string
 
   // Maps id -> Node.
-  vector<Node*> nodes_
+  nodes_ vector<Node*>
   // Maps id -> deps of that id.
-  vector<Deps*> deps_
+  deps_ vector<Deps*>
 
-  friend struct DepsLogTest
+  DepsLogTest friend struct
 }
+  type Deps struct {
+    Deps(int64_t mtime, int node_count)
+        : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
+    ~Deps() { delete [] nodes; }
+    mtime TimeStamp
+    node_count int
+    nodes *Node*
+  }
 
 
 typedef __int32 int32_t
@@ -362,7 +362,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   return LOAD_SUCCESS
 }
 
-DepsLog::Deps* DepsLog::GetDeps(Node* node) {
+func (d *DepsLog) GetDeps(node *Node) DepsLog::Deps* {
   // Abort if the node has no id (never referenced in the deps) or if
   // there's no deps recorded for the node.
   if node.id() < 0 || node.id() >= (int)deps_.size() {

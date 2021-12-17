@@ -49,11 +49,11 @@ type RealDiskInterface struct {
   // Whether stat information can be cached.
   use_cache_ bool
 
-  typedef map<string, TimeStamp> DirCache
+  DirCache typedef map<string, TimeStamp>
   // TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
   // works out, come up with a better data structure.
-  typedef map<string, DirCache> Cache
-  mutable Cache cache_
+  Cache typedef map<string, DirCache>
+  cache_ mutable Cache
 }
 
 
@@ -207,7 +207,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
   }
   di := ci.second.find(base)
   return di != ci.second.end() ? di.second : 0
-  struct stat st
+  var st stat
   if stat(path, &st) < 0 {
     if errno == ENOENT || errno == ENOTDIR {
       return 0
@@ -259,11 +259,11 @@ func (r *RealDiskInterface) MakeDir(path string) bool {
   return true
 }
 
-FileReader::Status RealDiskInterface::ReadFile(string path, string* contents, string* err) {
+func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string) FileReader::Status {
   switch (::ReadFile(path, contents, err)) {
-  case 0:       return Okay
+  var Okay case 0:       return
   case -ENOENT: return NotFound
-  default:      return OtherError
+  var OtherError default:      return
   }
 }
 

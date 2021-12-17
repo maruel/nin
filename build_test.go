@@ -18,10 +18,10 @@ package ginja
 
 
 type CompareEdgesByOutput struct {
-  static bool cmp(const Edge* a, const Edge* b) {
+}
+  func (c *CompareEdgesByOutput) cmp(a *const Edge, b *const Edge) bool {
     return a.outputs_[0].path() < b.outputs_[0].path()
   }
-}
 
 // Fixture for tests involving Plan.
 // Though Plan doesn't use State, it's useful to have one around
@@ -32,6 +32,9 @@ type PlanTest struct {
   // Because FindWork does not return Edges in any sort of predictable order,
   // provide a means to get available Edges in order and in a format which is
   // easy to write tests around.
+
+  void TestPoolWithDepthOne(stringtest_case)
+}
   func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
     for i := 0; i < count; i++ {
       if plan_.more_to_do() { t.FailNow() }
@@ -42,9 +45,6 @@ type PlanTest struct {
     if !plan_.FindWork() { t.FailNow() }
     sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
   }
-
-  void TestPoolWithDepthOne(stringtest_case)
-}
 
 func TestPlanTest_Basic(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
@@ -239,7 +239,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
   if plan_.AddTarget(GetNode("allTheThings"), &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 
-  deque<Edge*> edges
+  var edges deque<Edge*>
   FindWorkSorted(&edges, 5)
 
   for i := 0; i < 4; i++ {
@@ -304,7 +304,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 
   edge := nil
 
-  deque<Edge*> initial_edges
+  var initial_edges deque<Edge*>
   FindWorkSorted(&initial_edges, 2)
 
   edge = initial_edges[1]  // Foo first
@@ -399,10 +399,10 @@ type FakeCommandRunner struct {
   explicit FakeCommandRunner(VirtualFileSystem* fs) :
       max_active_edges_(1), fs_(fs) {}
 
-  vector<string> commands_ran_
-  vector<Edge*> active_edges_
-  var max_active_edges_ uint
-  var fs_ *VirtualFileSystem
+  commands_ran_ vector<string>
+  active_edges_ vector<Edge*>
+  max_active_edges_ uint
+  fs_ *VirtualFileSystem
 }
 
 type BuildTest struct {
@@ -414,6 +414,18 @@ type BuildTest struct {
       : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
         builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
 
+  ~BuildTest() {
+    builder_.command_runner_.release()
+  }
+
+  virtual bool IsPathDead(StringPiece s) const { return false; }
+
+  config_ BuildConfig
+  command_runner_ FakeCommandRunner
+  fs_ VirtualFileSystem
+  status_ StatusPrinter
+  builder_ Builder
+}
   func (b *BuildTest) SetUp() {
     StateTestWithBuiltinRules::SetUp()
 
@@ -423,31 +435,17 @@ type BuildTest struct {
     fs_.Create("in1", "")
     fs_.Create("in2", "")
   }
-
-  ~BuildTest() {
-    builder_.command_runner_.release()
-  }
-
-  virtual bool IsPathDead(StringPiece s) const { return false; }
-
   func (b *BuildTest) MakeConfig() BuildConfig {
     var config BuildConfig
     config.verbosity = BuildConfig::QUIET
     return config
   }
 
-  var config_ BuildConfig
-  var command_runner_ FakeCommandRunner
-  var fs_ VirtualFileSystem
-  var status_ StatusPrinter
-  var builder_ Builder
-}
-
 // Rebuild target in the 'working tree' (fs_).
 // State of command_runner_ and logs contents (if specified) ARE MODIFIED.
 // Handy to check for NOOP builds, and higher-level rebuild tests.
 func (b *BuildTest) RebuildTarget(target string, manifest string, log_path string, deps_path string, state *State) {
-  pstate := &local_state
+  State local_state, *pstate = &local_state
   if state != nil {
     pstate = state
   }
@@ -455,7 +453,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
   AssertParse(pstate, manifest)
 
   err := ""
-  pbuild_log := nil
+  BuildLog build_log, *pbuild_log = nil
   if log_path {
     if build_log.Load(log_path, &err) { t.FailNow() }
     if build_log.OpenForWrite(log_path, *this, &err) { t.FailNow() }
@@ -463,7 +461,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
     pbuild_log = &build_log
   }
 
-  pdeps_log := nil
+  DepsLog deps_log, *pdeps_log = nil
   if deps_path {
     if deps_log.Load(deps_path, pstate, &err) { t.FailNow() }
     if deps_log.OpenForWrite(deps_path, &err) { t.FailNow() }
@@ -640,7 +638,7 @@ func TestBuildTest_OneStep(t *testing.T) {
   if "cat in1 > cat1" != command_runner_.commands_ran_[0] { t.FailNow() }
 }
 
-TEST_F(BuildTest, OneStep2) {
+func TestBuildTest_OneStep2(t *testing.T) {
   // Given a target with one dirty input,
   // we should rebuild the target.
   Dirty("cat1")
@@ -1242,7 +1240,7 @@ type BuildWithLogTest struct {
     builder_.SetBuildLog(&build_log_)
   }
 
-  var build_log_ BuildLog
+  build_log_ BuildLog
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
@@ -1259,7 +1257,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
   if GetNode("out.imp").dirty() { t.FailNow() }
 }
 
-TEST_F(BuildWithLogTest, ImplicitGeneratedOutOfDate2) {
+func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule touch-implicit-dep-out\n" "  command = touch $test_dependency ; sleep 1 ; touch $out\n" "  generator = 1\n" "build out.imp: touch-implicit-dep-out | inimp inimp2\n" "  test_dependency = inimp\n"))
   fs_.Create("inimp", "")
   fs_.Create("out.imp", "")
@@ -1605,29 +1603,29 @@ TEST_F(BuildTest, RspFileSuccess)
 
   fs_.Create("in", "")
 
-  err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("out 3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  string err
+  EXPECT_TRUE(builder_.AddTarget("out1", &err))
+  ASSERT_EQ("", err)
+  EXPECT_TRUE(builder_.AddTarget("out2", &err))
+  ASSERT_EQ("", err)
+  EXPECT_TRUE(builder_.AddTarget("out 3", &err))
+  ASSERT_EQ("", err)
 
-  files_created := fs_.files_created_.size()
-  files_removed := fs_.files_removed_.size()
+  size_t files_created = fs_.files_created_.size()
+  size_t files_removed = fs_.files_removed_.size()
 
-  if builder_.Build(&err) { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  EXPECT_TRUE(builder_.Build(&err))
+  ASSERT_EQ(3u, command_runner_.commands_ran_.size())
 
   // The RSP files were created
-  if files_created + 2 != fs_.files_created_.size() { t.FailNow() }
-  if 1u != fs_.files_created_.count("out 2.rsp") { t.FailNow() }
-  if 1u != fs_.files_created_.count("out 3.rsp") { t.FailNow() }
+  ASSERT_EQ(files_created + 2, fs_.files_created_.size())
+  ASSERT_EQ(1u, fs_.files_created_.count("out 2.rsp"))
+  ASSERT_EQ(1u, fs_.files_created_.count("out 3.rsp"))
 
   // The RSP files were removed
-  if files_removed + 2 != fs_.files_removed_.size() { t.FailNow() }
-  if 1u != fs_.files_removed_.count("out 2.rsp") { t.FailNow() }
-  if 1u != fs_.files_removed_.count("out 3.rsp") { t.FailNow() }
+  ASSERT_EQ(files_removed + 2, fs_.files_removed_.size())
+  ASSERT_EQ(1u, fs_.files_removed_.count("out 2.rsp"))
+  ASSERT_EQ(1u, fs_.files_removed_.count("out 3.rsp"))
 }
 
 // Test that RSP file is created but not removed for commands, which fail
@@ -1812,6 +1810,10 @@ type BuildWithQueryDepsLogTest struct {
     log_.Close()
   }
 
+  temp_dir_ ScopedTempDir
+
+  log_ DepsLog
+}
   func (b *BuildWithQueryDepsLogTest) SetUp() {
     BuildTest::SetUp()
 
@@ -1821,11 +1823,6 @@ type BuildWithQueryDepsLogTest struct {
     if log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
     if "" != err { t.FailNow() }
   }
-
-  var temp_dir_ ScopedTempDir
-
-  var log_ DepsLog
-}
 
 // Test a MSVC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
@@ -1989,21 +1986,19 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 type BuildWithDepsLogTest struct {
   BuildWithDepsLogTest() {}
 
+  temp_dir_ ScopedTempDir
+
+  // Shadow parent class builder_ so we don't accidentally use it.
+  builder_ *void
+}
   func (b *BuildWithDepsLogTest) SetUp() {
     BuildTest::SetUp()
 
     temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
   }
-
   func (b *BuildWithDepsLogTest) TearDown() {
     temp_dir_.Cleanup()
   }
-
-  var temp_dir_ ScopedTempDir
-
-  // Shadow parent class builder_ so we don't accidentally use it.
-  var builder_ *void
-}
 
 // Run a straightforwad build where the deps log is used.
 func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
@@ -2695,7 +2690,7 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
   if "touch out out.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
 }
 
-TEST_F(BuildTest, DyndepBuildDiscoverNewOutputWithMultipleRules1) {
+func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) {
   // Verify that a dyndep file can be built and loaded to discover
   // a new output of an edge that is already the output of another edge.
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule touch\n" "  command = touch $out $out.imp\n" "rule cp\n" "  command = cp $in $out\n" "build dd: cp dd-in\n" "build out1 | out-twice.imp: touch in\n" "build out2: touch in || dd\n" "  dyndep = dd\n" ))
@@ -2714,7 +2709,7 @@ TEST_F(BuildTest, DyndepBuildDiscoverNewOutputWithMultipleRules1) {
   if "multiple rules generate out-twice.imp" != err { t.FailNow() }
 }
 
-TEST_F(BuildTest, DyndepBuildDiscoverNewOutputWithMultipleRules2) {
+func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) {
   // Verify that a dyndep file can be built and loaded to discover
   // a new output of an edge that is already the output of another
   // edge also discovered by dyndep.

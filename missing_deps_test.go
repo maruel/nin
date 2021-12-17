@@ -34,11 +34,18 @@ type MissingDependencyScannerTest struct {
 
   MissingDependencyScanner& scanner() { return scanner_; }
 
+  delegate_ MissingDependencyTestDelegate
+  generator_rule_ Rule
+  compile_rule_ Rule
+  deps_log_ DepsLog
+  state_ State
+  filesystem_ VirtualFileSystem
+  scanner_ MissingDependencyScanner
+}
   func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
     Node* node_deps[] = { state_.LookupNode(to) }
     deps_log_.RecordDeps(state_.LookupNode(from), 0, 1, node_deps)
   }
-
   func (m *MissingDependencyScannerTest) ProcessAllNodes() {
     err := ""
     nodes := state_.RootNodes(&err)
@@ -47,7 +54,6 @@ type MissingDependencyScannerTest struct {
       scanner().ProcessNode(*it)
     }
   }
-
   func (m *MissingDependencyScannerTest) CreateInitialState() {
     var deps_type EvalString
     deps_type.AddText("gcc")
@@ -58,13 +64,11 @@ type MissingDependencyScannerTest struct {
     compile_edge := state_.AddEdge(&compile_rule_)
     state_.AddOut(compile_edge, "compiled_object", 0)
   }
-
   func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
     from_node := state_.LookupNode(from)
     from_edge := from_node.in_edge()
     state_.AddIn(from_edge, to, 0)
   }
-
   func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
     flaky_node := state_.LookupNode(flaky)
     if 1u != scanner().nodes_missing_deps_.count(flaky_node) { t.FailNow() }
@@ -72,15 +76,6 @@ type MissingDependencyScannerTest struct {
     if 1u != scanner().generated_nodes_.count(generated_node) { t.FailNow() }
     if 1u != scanner().generator_rules_.count(rule) { t.FailNow() }
   }
-
-  var delegate_ MissingDependencyTestDelegate
-  var generator_rule_ Rule
-  var compile_rule_ Rule
-  var deps_log_ DepsLog
-  var state_ State
-  var filesystem_ VirtualFileSystem
-  scanner_ MissingDependencyScanner
-}
 
 func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
   ProcessAllNodes()

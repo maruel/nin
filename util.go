@@ -34,9 +34,6 @@ void Info(string msg, ...)
 // Like SpellcheckStringV, but takes a NULL-terminated list.
 string SpellcheckString(string text, ...)
 
-// Calls Fatal() with a function name and GetLastErrorString.
-NORETURN void Win32Fatal(string function, string hint = nil)
-
 
 void Fatal(string msg, ...) {
   va_list ap
@@ -60,7 +57,7 @@ func Warning(msg string, ap va_list) {
 }
 
 void Warning(string msg, ...) {
-  var ap va_list
+  va_list ap
   va_start(ap, msg)
   Warning(msg, ap)
   va_end(ap)
@@ -73,7 +70,7 @@ func Error(msg string, ap va_list) {
 }
 
 void Error(string msg, ...) {
-  var ap va_list
+  va_list ap
   va_start(ap, msg)
   Error(msg, ap)
   va_end(ap)
@@ -86,7 +83,7 @@ func Info(msg string, ap va_list) {
 }
 
 void Info(string msg, ...) {
-  var ap va_list
+  va_list ap
   va_start(ap, msg)
   Info(msg, ap)
   va_end(ap)
@@ -105,7 +102,7 @@ func CanonicalizePath(path *string, slash_bits *uint64_t) {
   path.resize(len)
 }
 
-static bool IsPathSeparator(char c) {
+func IsPathSeparator(c char) bool {
   return c == '/' || c == '\\'
   return c == '/'
 }
@@ -205,7 +202,7 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
   *slash_bits = 0
 }
 
-static inline bool IsKnownShellSafeCharacter(char ch) {
+func IsKnownShellSafeCharacter(ch char) inline bool {
   if 'A' <= ch && ch <= 'Z' {
   	return true
   }
@@ -228,7 +225,7 @@ static inline bool IsKnownShellSafeCharacter(char ch) {
   }
 }
 
-static inline bool IsKnownWin32SafeCharacter(char ch) {
+func IsKnownWin32SafeCharacter(ch char) inline bool {
   switch (ch) {
     case ' ':
     case '"':
@@ -238,7 +235,7 @@ static inline bool IsKnownWin32SafeCharacter(char ch) {
   }
 }
 
-static inline bool StringNeedsShellEscaping(string input) {
+func StringNeedsShellEscaping(input string) inline bool {
   for i := 0; i < input.size(); i++ {
     if !IsKnownShellSafeCharacter(input[i]) {
     	return true
@@ -247,7 +244,7 @@ static inline bool StringNeedsShellEscaping(string input) {
   return false
 }
 
-static inline bool StringNeedsWin32Escaping(string input) {
+func StringNeedsWin32Escaping(input string) inline bool {
   for i := 0; i < input.size(); i++ {
     if !IsKnownWin32SafeCharacter(input[i]) {
     	return true
@@ -353,7 +350,7 @@ func ReadFile(path string, contents *string, err *string) int {
     return -errno
   }
 
-  struct stat st
+  var st stat
   if fstat(fileno(f), &st) < 0 {
     err.assign(strerror(errno))
     fclose(f)
@@ -415,13 +412,12 @@ func SpellcheckStringV(text string, words *vector<string>) string {
 string SpellcheckString(string text, ...) {
   // Note: This takes a const char* instead of a string& because using
   // va_start() with a reference parameter is undefined behavior.
-  var ap va_list
+  va_list ap
   va_start(ap, text)
   vector<string> words
-  word := ""
-  while (word = va_arg(ap, string)) {
+  string word
+  while ((word = va_arg(ap, string)))
     words.push_back(word)
-  }
   va_end(ap)
   return SpellcheckStringV(text, words)
 }
@@ -437,6 +433,7 @@ func GetLastErrorString() string {
   return msg
 }
 
+// Calls Fatal() with a function name and GetLastErrorString.
 func Win32Fatal(function string, hint string) {
   if hint != nil {
     Fatal("%s: %s (%s)", function, GetLastErrorString(), hint)
@@ -521,8 +518,8 @@ func GetProcessorCount() int {
 
 static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
 {
-  previous_idle_ticks := 0
-  previous_total_ticks := 0
+  static uint64_t previous_idle_ticks = 0
+  static uint64_t previous_total_ticks = 0
   static double previous_load = -0.0
 
   uint64_t idle_ticks_since_last_time = idle_ticks - previous_idle_ticks
@@ -531,8 +528,8 @@ static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
   bool first_call = (previous_total_ticks == 0)
   bool ticks_not_updated_since_last_call = (total_ticks_since_last_time == 0)
 
-  load := 0.
-  if first_call || ticks_not_updated_since_last_call {
+  double load
+  if (first_call || ticks_not_updated_since_last_call) {
     load = previous_load
   } else {
     // Calculate load.
@@ -557,7 +554,7 @@ static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
 
 static uint64_t FileTimeToTickCount(const FILETIME & ft)
 {
-  high := (((uint64_t)(ft.dwHighDateTime)) << 32)
+  uint64_t high = (((uint64_t)(ft.dwHighDateTime)) << 32)
   uint64_t low  = ft.dwLowDateTime
   return (high | low)
 }
@@ -605,7 +602,7 @@ func GetLoadAverage() double {
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() double {
-  struct sysinfo si
+  var si sysinfo
   if sysinfo(&si) != 0 {
     return -0.0f
   }

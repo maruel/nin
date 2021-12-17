@@ -23,7 +23,7 @@ type GraphViz struct {
       : dyndep_loader_(state, disk_interface) {}
 
   dyndep_loader_ DyndepLoader
-  set<Node*> visited_nodes_
+  visited_nodes_ set<Node*>
   visited_edges_ EdgeSet
 }
 

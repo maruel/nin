@@ -40,15 +40,15 @@ type ManifestParser struct {
   ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options = ManifestParserOptions())
 
   // Parse a text string of input.  Used by tests.
+
+  env_ *BindingEnv
+  options_ ManifestParserOptions
+  quiet_ bool
+}
   func (m *ManifestParser) ParseTest(input string, err *string) bool {
     quiet_ = true
     return Parse("input", input, err)
   }
-
-  var env_ *BindingEnv
-  var options_ ManifestParserOptions
-  quiet_ bool
-}
 
 
 ManifestParser::ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options)

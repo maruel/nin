@@ -22,22 +22,8 @@ package ginja
 // format when building with /showIncludes.  This class parses this
 // output.
 type CLParser struct {
-  // Parse a line of cl.exe output and extract /showIncludes info.
-  // If a dependency is extracted, returns a nonempty string.
-  // Exposed for testing.
-  static string FilterShowIncludes(string line, string deps_prefix)
 
-  // Return true if a mentioned include file is a system path.
-  // Filtering these out reduces dependency information considerably.
-  static bool IsSystemInclude(string path)
-
-  // Parse a line of cl.exe output and return true if it looks like
-  // it's printing an input filename.  This is a heuristic but it appears
-  // to be the best we can do.
-  // Exposed for testing.
-  static bool FilterInputFilename(string line)
-
-  set<string> includes_
+  includes_ set<string>
 }
 
 
@@ -47,6 +33,9 @@ func EndsWith(input string, needle string) bool {
 }
 
 // static
+// Parse a line of cl.exe output and extract /showIncludes info.
+// If a dependency is extracted, returns a nonempty string.
+// Exposed for testing.
 func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {
   const string kDepsPrefixEnglish = "Note: including file: "
   in := line
@@ -63,6 +52,8 @@ func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {
 }
 
 // static
+// Return true if a mentioned include file is a system path.
+// Filtering these out reduces dependency information considerably.
 func (c *CLParser) IsSystemInclude(path string) bool {
   transform(path.begin(), path.end(), path.begin(), ToLowerASCII)
   // TODO: this is a heuristic, perhaps there's a better way?
@@ -70,6 +61,10 @@ func (c *CLParser) IsSystemInclude(path string) bool {
 }
 
 // static
+// Parse a line of cl.exe output and return true if it looks like
+// it's printing an input filename.  This is a heuristic but it appears
+// to be the best we can do.
+// Exposed for testing.
 func (c *CLParser) FilterInputFilename(line string) bool {
   transform(line.begin(), line.end(), line.begin(), ToLowerASCII)
   // TODO: other extensions, like .asm?

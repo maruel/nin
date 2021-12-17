@@ -31,14 +31,20 @@ type BuildLogUser struct {
 type BuildLog struct {
   ~BuildLog()
 
+  Entries typedef ExternalStringHashMap<LogEntry*>::Type
+  const Entries& entries() const { return entries_; }
+
+  entries_ Entries
+  log_file_ *FILE
+  log_file_path_ string
+  needs_recompaction_ bool
+}
   type LogEntry struct {
     output string
     command_hash uint64
     start_time int
     end_time int
     mtime TimeStamp
-
-    static uint64_t HashCommand(StringPiece command)
 
     // Used by tests.
     bool operator==(const LogEntry& o) {
@@ -49,15 +55,6 @@ type BuildLog struct {
 
     LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   }
-
-  typedef ExternalStringHashMap<LogEntry*>::Type Entries
-  const Entries& entries() const { return entries_; }
-
-  entries_ Entries
-  log_file_ *FILE
-  log_file_path_ string
-  needs_recompaction_ bool
-}
 
 
 // On AIX, inttypes.h gets indirectly included by build_log.h.
@@ -76,14 +73,14 @@ const int kCurrentVersion = 5
 
 // 64bit MurmurHash2, by Austin Appleby
 inline
-uint64_t MurmurHash64A(const void* key, size_t len) {
-  static const uint64_t seed = 0xDECAFBADDECAFBADull
-  const uint64_t m = BIG_CONSTANT(0xc6a4a7935bd1e995)
-  const int r = 47
+func MurmurHash64A(key *const void, len size_t) uint64_t {
+  seed := 0xDECAFBADDECAFBADull
+  m := BIG_CONSTANT(0xc6a4a7935bd1e995)
+  r := 47
   uint64_t h = seed ^ (len * m)
-  const unsigned char* data = (const unsigned char*)key
-  while (len >= 8) {
-    uint64_t k
+  data := (const unsigned char*)key
+  while len >= 8 {
+    var k uint64
     memcpy(&k, data, sizeof k)
     k *= m
     k ^= k >> r
@@ -229,6 +226,15 @@ type LineReader struct {
   // On return, *line_start points to the beginning of the next line, and
   // *line_end points to the \n at the end of the line. If no newline is seen
   // in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
+
+  file_ *FILE
+  char buf_[256 << 10]
+  buf_end_ *char  // Points one past the last valid byte in |buf_|.
+
+  line_start_ *char
+  // Points at the next \n in buf_ after line_start, or NULL.
+  line_end_ *char
+}
   func (l *LineReader) ReadLine(line_start **char, line_end **char) bool {
     if line_start_ >= buf_end_ || !line_end_ {
       // Buffer empty, refill.
@@ -260,15 +266,6 @@ type LineReader struct {
     *line_end = line_end_
     return true
   }
-
-  var file_ *FILE
-  char buf_[256 << 10]
-  var buf_end_ *char  // Points one past the last valid byte in |buf_|.
-
-  var line_start_ *char
-  // Points at the next \n in buf_ after line_start, or NULL.
-  var line_end_ *char
-}
 
 // Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
@@ -390,7 +387,8 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   return LOAD_SUCCESS
 }
 
-BuildLog::LogEntry* BuildLog::LookupByOutput(string path) {
+// Lookup a previously-run command by its output path.
+func (b *BuildLog) LookupByOutput(path string) BuildLog::LogEntry* {
   i := entries_.find(path)
   if i != entries_.end() {
     return i.second
@@ -421,7 +419,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
     return false
   }
 
-  vector<StringPiece> dead_outputs
+  var dead_outputs vector<StringPiece>
   for i := entries_.begin(); i != entries_.end(); i++ {
     if user.IsPathDead(i.first) {
       dead_outputs.push_back(i.first)

@@ -59,27 +59,27 @@ type VirtualFileSystem struct {
 
   // Tick "time" forwards; subsequent file operations will be newer than
   // previous ones.
-  func (v *VirtualFileSystem) Tick() int {
-    return ++now_
-  }
 
   // An entry for a single in-memory file.
-  type Entry struct {
-    mtime := 0
-    stat_error := ""  // If mtime is -1.
-    contents := ""
-  }
 
-  vector<string> directories_made_
-  vector<string> files_read_
-  typedef map<string, Entry> FileMap
-  var files_ FileMap
-  set<string> files_removed_
-  set<string> files_created_
+  directories_made_ vector<string>
+  files_read_ vector<string>
+  FileMap typedef map<string, Entry>
+  files_ FileMap
+  files_removed_ set<string>
+  files_created_ set<string>
 
   // A simple fake timestamp for file operations.
   now_ int
 }
+  func (v *VirtualFileSystem) Tick() int {
+    return ++now_
+  }
+  type Entry struct {
+    mtime int
+    stat_error string  // If mtime is -1.
+    contents string
+  }
 
 type ScopedTempDir struct {
 
@@ -171,7 +171,7 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
   }
 
   // The union of all in- and out-edges of each nodes should be exactly edges_.
-  set<const Edge*> node_edge_set
+  var node_edge_set set<const Edge*>
   for p := state.paths_.begin(); p != state.paths_.end(); p++ {
     n := p.second
     if n.in_edge() {
@@ -210,7 +210,7 @@ func (v *VirtualFileSystem) MakeDir(path string) bool {
   return true  // success
 }
 
-FileReader::Status VirtualFileSystem::ReadFile(string path, string* contents, string* err) {
+func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) FileReader::Status {
   files_read_.push_back(path)
   i := files_.find(path)
   if i != files_.end() {

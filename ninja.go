@@ -26,7 +26,7 @@ type Options struct {
   working_dir string
 
   // Tool to run rather than building.
-  const Tool* tool
+  tool *Tool
 
   // Whether duplicate rules for one target should warn or print an error.
   dupe_edges_should_err bool
@@ -46,7 +46,7 @@ type NinjaMain struct {
   ninja_command_ string
 
   // Build configuration set from flags (e.g. parallelism).
-  const BuildConfig& config_
+  config_ *BuildConfig
 
   // Loaded state (rules, nodes).
   state_ State
@@ -63,6 +63,8 @@ type NinjaMain struct {
   // The type of functions that are the entry points to tools (subcommands).
   typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 
+  start_time_millis_ int64
+}
   func (n *NinjaMain) IsPathDead(s StringPiece) bool {
     n := state_.LookupNode(s)
     if n && n.in_edge() {
@@ -84,9 +86,6 @@ type NinjaMain struct {
     }
     return mtime == 0
   }
-
-  start_time_millis_ int64
-}
 
 // Subtools, accessible via "-t foo".
 type Tool struct {
@@ -110,7 +109,7 @@ type Tool struct {
   } when
 
   // Implementation of the tool.
-  NinjaMain::ToolFunc func
+  func NinjaMain::ToolFunc
 }
 
 // Print usage information.
@@ -248,7 +247,7 @@ func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vect
 
 // The various subcommands, run via "-t XXX".
 func (n *NinjaMain) ToolGraph(options *const Options, argc int, argv []*char) int {
-  vector<Node*> nodes
+  var nodes vector<Node*>
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -357,7 +356,7 @@ func ToolTargetsSourceList(state *State) int {
 }
 
 func ToolTargetsList(state *State, rule_name string) int {
-  set<string> rules
+  var rules set<string>
 
   // Gather the outputs.
   for e := state.edges_.begin(); e != state.edges_.end(); e++ {
@@ -386,7 +385,7 @@ func ToolTargetsList(state *State) int {
 }
 
 func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int {
-  vector<Node*> nodes
+  var nodes vector<Node*>
   if argc == 0 {
     for ni := deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ni++ {
       if deps_log_.IsDepsEntryLiveFor(*ni) {
@@ -425,7 +424,7 @@ func (n *NinjaMain) ToolDeps(options *const Options, argc int, argv **char) int 
 }
 
 func (n *NinjaMain) ToolMissingDeps(options *const Options, argc int, argv **char) int {
-  vector<Node*> nodes
+  var nodes vector<Node*>
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -514,7 +513,7 @@ func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) in
 
   // Print rules
 
-  typedef map<string, const Rule*> Rules
+  var Rules typedef map<string, const Rule*>
   rules := state_.bindings_.GetRules()
   for i := rules.begin(); i != rules.end(); i++ {
     printf("%s", i.first)
@@ -583,7 +582,7 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
   argv += optind
   argc -= optind
 
-  vector<Node*> nodes
+  var nodes vector<Node*>
   err := ""
   if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
     Error("%s", err)
@@ -716,7 +715,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
   argc -= optind
 
   first := true
-  vector<char> cwd
+  var cwd vector<char>
   success := nil
 
   do {
@@ -854,7 +853,7 @@ func (n *NinjaMain) ToolUrtle(options *const Options, argc int, argv **char) int
 
 // Find the function to execute for \a tool_name and return it via \a func.
 // Returns a Tool, or NULL if Ninja should exit.
-const Tool* ChooseTool(string tool_name) {
+func ChooseTool(tool_name string) const Tool* {
   static const Tool kTools[] = {
     { "browse", "browse dependency graph in a web browser",
       Tool::RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
@@ -907,7 +906,7 @@ const Tool* ChooseTool(string tool_name) {
     }
   }
 
-  vector<string> words
+  var words vector<string>
   for tool := &kTools[0]; tool.name; tool++ {
     words.push_back(tool.name)
   }
@@ -1097,7 +1096,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 // @return an exit code.
 func (n *NinjaMain) RunBuild(argc int, argv **char, status *Status) int {
   err := ""
-  vector<Node*> targets
+  var targets vector<Node*>
   if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
     status.Error("%s", err)
     return 1
@@ -1253,7 +1252,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
   return -1
 }
 
-NORETURN void real_main(int argc, char** argv) {
+func real_main(argc int, argv **char) NORETURN void {
   // Use exit() instead of return in this function to avoid potentially
   // expensive cleanup when destructing NinjaMain.
   var config BuildConfig
