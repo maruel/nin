@@ -104,7 +104,7 @@ func (p *Pool) DelayEdge(edge *Edge) {
 // Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
   it := delayed_.begin()
-  while (it != delayed_.end()) {
+  while it != delayed_.end() {
     edge := *it
     if current_use_ + edge.weight() > depth_ {
       break

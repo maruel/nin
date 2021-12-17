@@ -495,7 +495,7 @@ func (n *NinjaMain) ToolRules(options *const Options, argc int, argv []*char) in
 
   optind = 1
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("hd"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("hd"))) != -1 {
     switch (opt) {
     case 'd':
       print_description = true
@@ -565,7 +565,7 @@ func (n *NinjaMain) ToolCommands(options *const Options, argc int, argv []*char)
 
   optind = 1
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("hs"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("hs"))) != -1 {
     switch (opt) {
     case 's':
       mode = PCM_Single
@@ -604,7 +604,7 @@ func (n *NinjaMain) ToolClean(options *const Options, argc int, argv []*char) in
 
   optind = 1
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("hgr"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("hgr"))) != -1 {
     switch (opt) {
     case 'g':
       generator = true
@@ -665,7 +665,7 @@ func EvaluateCommandWithRspfile(edge *const Edge, mode EvaluateCommandMode) stri
 
   rspfile_content := edge.GetBinding("rspfile_content")
   size_t newline_index = 0
-  while ((newline_index = rspfile_content.find('\n', newline_index)) != string::npos) {
+  while (newline_index = rspfile_content.find('\n', newline_index)) != string::npos {
     rspfile_content.replace(newline_index, 1, 1, ' ')
     ++newline_index
   }
@@ -695,7 +695,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *const Options, argc int, ar
 
   optind = 1
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("hx"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("hx"))) != -1 {
     switch(opt) {
       case 'x':
         eval_mode = ECM_EXPAND_RSPFILE
@@ -772,7 +772,7 @@ func (n *NinjaMain) ToolRestat(options *const Options, argc int, argv []*char) i
 
   optind = 1
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("h"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("h"))) != -1 {
     switch (opt) {
     case 'h':
     default:
@@ -1164,7 +1164,7 @@ func ReadFlags(argc *int, argv ***char, options *Options, config *BuildConfig) i
   }
 
   int opt
-  while (!options.tool && (opt = getopt_long(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", kLongOptions, nil)) != -1) {
+  while !options.tool && (opt = getopt_long(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", kLongOptions, nil)) != -1 {
     switch (opt) {
       case 'd':
         if !DebugEnable(optarg) {

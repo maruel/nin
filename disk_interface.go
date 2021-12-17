@@ -66,8 +66,9 @@ func DirName(path string) string {
   if slash_pos == string::npos {
     return string()  // Nothing to do.
   }
-  while (slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos - 1]) != kEnd)
+  while slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos - 1]) != kEnd {
     --slash_pos
+  }
   return path.substr(0, slash_pos)
 }
 

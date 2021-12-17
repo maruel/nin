@@ -143,7 +143,7 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
     ++dst
   }
 
-  while (src < end) {
+  while src < end {
     if *src == '.' {
       if src + 1 == end || IsPathSeparator(src[1]) {
         // '.' component; eliminate.
@@ -175,8 +175,9 @@ func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
     components[component_count] = dst
     ++component_count
 
-    while (src != end && !IsPathSeparator(*src))
+    while src != end && !IsPathSeparator(*src) {
       *dst++ = *src++
+    }
     *dst++ = *src++  // Copy '/' or final \0 character as well.
   }
 
@@ -364,7 +365,7 @@ func ReadFile(path string, contents *string, err *string) int {
 
   char buf[64 << 10]
   size_t len
-  while (!feof(f) && (len = fread(buf, 1, sizeof(buf), f)) > 0) {
+  while !feof(f) && (len = fread(buf, 1, sizeof(buf), f)) > 0 {
     contents.append(buf, len)
   }
   if ferror(f) {
@@ -418,8 +419,9 @@ string SpellcheckString(string text, ...) {
   va_start(ap, text)
   vector<string> words
   string word
-  while ((word = va_arg(ap, string)))
+  while (word = va_arg(ap, string)) {
     words.push_back(word)
+  }
   va_end(ap)
   return SpellcheckStringV(text, words)
 }
@@ -470,8 +472,9 @@ func StripAnsiEscapeCodes(in string) string {
     i += 2
 
     // Skip everything up to and including the next [a-zA-Z].
-    while (i < in.size() && !islatinalpha(in[i]))
+    while i < in.size() && !islatinalpha(in[i]) {
       ++i
+    }
   }
   return stripped
 }

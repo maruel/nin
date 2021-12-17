@@ -31,7 +31,7 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
   subproc := subprocs_.Add("cmd /c ninja_no_such_command")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     // Pretend we discovered that stderr was ready for writing.
     subprocs_.DoWork()
   }
@@ -45,7 +45,7 @@ func TestSubprocessTest_NoSuchCommand(t *testing.T) {
   subproc := subprocs_.Add("ninja_no_such_command")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     // Pretend we discovered that stderr was ready for writing.
     subprocs_.DoWork()
   }
@@ -59,7 +59,7 @@ func TestSubprocessTest_InterruptChild(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $$")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     subprocs_.DoWork()
   }
 
@@ -70,7 +70,7 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
   subproc := subprocs_.Add("kill -INT $PPID ; sleep 1")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     interrupted := subprocs_.DoWork()
     if interrupted != nil {
       return
@@ -84,7 +84,7 @@ func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $$")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     subprocs_.DoWork()
   }
 
@@ -95,7 +95,7 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
   subproc := subprocs_.Add("kill -TERM $PPID ; sleep 1")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     interrupted := subprocs_.DoWork()
     if interrupted != nil {
       return
@@ -109,7 +109,7 @@ func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $$")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     subprocs_.DoWork()
   }
 
@@ -120,7 +120,7 @@ func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
   subproc := subprocs_.Add("kill -HUP $PPID ; sleep 1")
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     interrupted := subprocs_.DoWork()
     if interrupted != nil {
       return
@@ -137,7 +137,7 @@ func TestSubprocessTest_Console(t *testing.T) {
         subprocs_.Add("test -t 0 -a -t 1 -a -t 2", /*use_console=*/true)
     if (Subprocess*)0 == subproc { t.FailNow() }
 
-    while (!subproc.Done()) {
+    while !subproc.Done() {
       subprocs_.DoWork()
     }
 
@@ -149,7 +149,7 @@ func TestSubprocessTest_SetWithSingle(t *testing.T) {
   subproc := subprocs_.Add(kSimpleCommand)
   if (Subprocess *) 0 == subproc { t.FailNow() }
 
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     subprocs_.DoWork()
   }
   if ExitSuccess != subproc.Finish() { t.FailNow() }
@@ -179,7 +179,7 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
     if "" != processes[i].GetOutput() { t.FailNow() }
   }
 
-  while (!processes[0].Done() || !processes[1].Done() || !processes[2].Done()) {
+  while !processes[0].Done() || !processes[1].Done() || !processes[2].Done() {
     if subprocs_.running_.size() <= 0u { t.FailNow() }
     subprocs_.DoWork()
   }
@@ -213,8 +213,9 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
     if (Subprocess *) 0 == subproc { t.FailNow() }
     procs.push_back(subproc)
   }
-  while (!subprocs_.running_.empty())
+  while !subprocs_.running_.empty() {
     subprocs_.DoWork()
+  }
   for (size_t i = 0; i < procs.size(); ++i) {
     if ExitSuccess != procs[i].Finish() { t.FailNow() }
     if "" == procs[i].GetOutput() { t.FailNow() }
@@ -228,7 +229,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 // that stdin is closed.
 func TestSubprocessTest_ReadStdin(t *testing.T) {
   subproc := subprocs_.Add("cat -")
-  while (!subproc.Done()) {
+  while !subproc.Done() {
     subprocs_.DoWork()
   }
   if ExitSuccess != subproc.Finish() { t.FailNow() }

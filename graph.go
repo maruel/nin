@@ -439,8 +439,9 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string
 
   // We have this edge earlier in the call stack.  Find it.
   start := stack.begin()
-  while (start != stack.end() && (*start).in_edge() != edge)
+  while start != stack.end() && (*start).in_edge() != edge {
     ++start
+  }
   if !start != stack.end() { panic("oops") }
 
   // Make the cycle clear by reporting its start as the node at its end

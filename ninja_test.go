@@ -79,7 +79,7 @@ func ReadFlags(argc *int, argv ***char, test_filter *string) bool {
   }
 
   int opt
-  while ((opt = getopt_long(*argc, *argv, "h", kLongOptions, nil)) != -1) {
+  while (opt = getopt_long(*argc, *argv, "h", kLongOptions, nil)) != -1 {
     switch (opt) {
     case OPT_GTEST_FILTER:
       if strchr(optarg, '?') == nil && strchr(optarg, ':') == nil {

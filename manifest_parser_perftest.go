@@ -60,7 +60,7 @@ func LoadManifests(measure_command_evaluation bool) int {
 func main(argc int, argv []*char) int {
   measure_command_evaluation := true
   int opt
-  while ((opt = getopt(argc, argv, const_cast<char*>("fh"))) != -1) {
+  while (opt = getopt(argc, argv, const_cast<char*>("fh"))) != -1 {
     switch (opt) {
     case 'f':
       measure_command_evaluation = false

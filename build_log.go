@@ -289,7 +289,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   LineReader reader(file)
   line_start := 0
   line_end := 0
-  while (reader.ReadLine(&line_start, &line_end)) {
+  while reader.ReadLine(&line_start, &line_end) {
     if !log_version {
       sscanf(line_start, kFileSignature, &log_version)
 

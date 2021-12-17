@@ -54,8 +54,9 @@ func (c *CLParser) FilterShowIncludes(line string, deps_prefix string) string {
   prefix := deps_prefix.empty() ? kDepsPrefixEnglish : deps_prefix
   if end - in > (int)prefix.size() && memcmp(in, prefix, (int)prefix.size()) == 0 {
     in += prefix.size()
-    while (*in == ' ')
+    while *in == ' ' {
       ++in
+    }
     return line.substr(in - line)
   }
   return ""
@@ -91,7 +92,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
   seen_show_includes := false
   IncludesNormalize normalizer(".")
 
-  while (start < output.size()) {
+  while start < output.size() {
     size_t end = output.find_first_of("\r\n", start)
     if end == string::npos {
       end = output.size()
