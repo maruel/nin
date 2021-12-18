@@ -413,10 +413,6 @@ type BuildTest struct {
       : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
         builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
 
-  ~BuildTest() {
-    builder_.command_runner_.release()
-  }
-
   config_ BuildConfig
   command_runner_ FakeCommandRunner
   fs_ VirtualFileSystem
@@ -431,6 +427,9 @@ func (b *BuildTest) SetUp() {
 
   b.fs_.Create("in1", "")
   b.fs_.Create("in2", "")
+}
+~BuildTest() {
+  builder_.command_runner_.release()
 }
 func (b *BuildTest) IsPathDead(s string) bool {
 	return false
@@ -1806,13 +1805,12 @@ type BuildWithQueryDepsLogTest struct {
   BuildWithQueryDepsLogTest() : BuildTest(&log_) {
   }
 
-  ~BuildWithQueryDepsLogTest() {
-    log_.Close()
-  }
-
   temp_dir_ ScopedTempDir
 
   log_ DepsLog
+}
+~BuildWithQueryDepsLogTest() {
+  log_.Close()
 }
 func (b *BuildWithQueryDepsLogTest) SetUp() {
   BuildTest::SetUp()

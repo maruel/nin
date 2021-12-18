@@ -74,11 +74,11 @@ type DepsLog struct {
 type Deps struct {
   Deps(int64_t mtime, int node_count)
       : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
-  ~Deps() { delete [] nodes; }
   mtime TimeStamp
   node_count int
   nodes *Node*
   }
+~Deps() { delete [] nodes; }
 // Used for tests.
 func (d *DepsLog) nodes() *[]*Node {
 	return d.nodes_
