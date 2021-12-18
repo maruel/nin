@@ -186,7 +186,7 @@ func (p *Plan) AddTarget(target *Node, err *string) bool {
   return AddSubTarget(target, nil, err, nil)
 }
 
-func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk *set<Edge*>) bool {
+func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk *map[*Edge]struct{}) bool {
   edge := node.in_edge()
   if edge == nil {  // Leaf node.
     if node.dirty() {
@@ -525,7 +525,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
   return true
 }
 
-func (p *Plan) UnmarkDependents(node *Node, dependents *set<Node*>) {
+func (p *Plan) UnmarkDependents(node *Node, dependents *map[*Node]struct{}) {
   for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
     edge := *oe
 
@@ -968,7 +968,7 @@ func (b *Builder) FinishCommand(result *CommandRunner::Result, err *string) bool
   return true
 }
 
-func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, deps_prefix string, deps_nodes *vector<Node*>, err *string) bool {
+func (b *Builder) ExtractDeps(result *CommandRunner::Result, deps_type string, deps_prefix string, deps_nodes *[]*Node, err *string) bool {
   if deps_type == "msvc" {
     var parser CLParser
     output := ""

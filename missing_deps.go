@@ -54,10 +54,10 @@ type NodeStoringImplicitDepLoader struct {
       : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
         dep_nodes_output_(dep_nodes_output) {}
 
-  dep_nodes_output_ *vector<Node*>
+  dep_nodes_output_ *[]*Node
 }
 
-func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *vector<string>, err *string) bool {
+func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *[]string, err *string) bool {
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
     var slash_bits uint64
     CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)

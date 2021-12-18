@@ -81,10 +81,10 @@ type Deps struct {
   nodes *Node*
   }
 // Used for tests.
-func (d *DepsLog) nodes() *vector<Node*> {
+func (d *DepsLog) nodes() *[]*Node {
 	return d.nodes_
 }
-func (d *DepsLog) deps() *vector<Deps*> {
+func (d *DepsLog) deps() *[]*Deps {
 	return d.deps_
 }
 
@@ -119,7 +119,7 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
   return true
 }
 
-func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes *vector<Node*>) bool {
+func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes *[]*Node) bool {
   return RecordDeps(node, mtime, nodes.size(), nodes.empty() ? nil : (Node**)&nodes.front())
 }
 

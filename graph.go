@@ -129,7 +129,7 @@ func (n *Node) id() int {
 func (n *Node) set_id(id int) {
 	n.id_ = id
 }
-func (n *Node) out_edges() *vector<Edge*> {
+func (n *Node) out_edges() *[]*Edge {
 	return n.out_edges_
 }
 func (n *Node) AddOutEdge(edge *Edge) {
@@ -297,7 +297,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
 // needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
 // state accordingly.
 // Returns false on failure.
-func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *string) bool {
+func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string) bool {
   edge := node.in_edge()
   if edge == nil {
     // If we already visited this leaf node then we are done.
@@ -441,7 +441,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   return true
 }
 
-func (d *DependencyScan) VerifyDAG(node *Node, stack *vector<Node*>, err *string) bool {
+func (d *DependencyScan) VerifyDAG(node *Node, stack *[]*Node, err *string) bool {
   edge := node.in_edge()
   if !edge != nil { panic("oops") }
 

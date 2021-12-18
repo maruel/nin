@@ -109,7 +109,7 @@ func IsWindows7OrLater() bool {
   return VerifyVersionInfo( &version_info, VER_MAJORVERSION | VER_MINORVERSION, comparison)
 }
 
-func StatAllFilesInDir(dir string, stamps *map<string, TimeStamp>, err *string) bool {
+func StatAllFilesInDir(dir string, stamps *map[string]TimeStamp, err *string) bool {
   // FindExInfoBasic is 30% faster than FindExInfoStandard.
   can_use_basic_info := IsWindows7OrLater()
   // This is not in earlier SDKs.

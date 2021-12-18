@@ -92,7 +92,7 @@ void Info(string msg, ...) {
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path *string, slash_bits *uint64_t) {
+func CanonicalizePath(path *string, slash_bits *uint64) {
   len := path.size()
   str := 0
   if len > 0 {
@@ -110,7 +110,7 @@ func IsPathSeparator(c char) bool {
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path *char, len *size_t, slash_bits *uint64_t) {
+func CanonicalizePath(path *char, len *uint, slash_bits *uint64) {
   // WARNING: this function is performance-critical; please benchmark
   // any changes you make to it.
   if *len == 0 {
@@ -393,7 +393,7 @@ func SetCloseOnExec(fd int) {
 
 // Given a misspelled string and a list of correct spellings, returns
 // the closest match or NULL if there is no close enough match.
-func SpellcheckStringV(text string, words *vector<string>) string {
+func SpellcheckStringV(text string, words *[]string) string {
   kAllowReplacements := true
   kMaxValidEditDistance := 3
 

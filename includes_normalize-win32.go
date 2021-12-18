@@ -138,7 +138,7 @@ func (i *IncludesNormalize) AbsPath(s string, err *string) string {
   return result
 }
 
-func (i *IncludesNormalize) Relativize(path string, start_list *vector<string>, err *string) string {
+func (i *IncludesNormalize) Relativize(path string, start_list *[]string, err *string) string {
   abs_path := AbsPath(path, err)
   if len(err) != 0 {
     return ""

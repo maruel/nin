@@ -228,7 +228,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 }
 
 // CollectTarget for all command-line arguments, filling in \a targets.
-func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vector<Node*>, err *string) bool {
+func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *[]*Node, err *string) bool {
   if argc == 0 {
     *targets = n.state_.DefaultNodes(err)
     return err.empty()
@@ -325,7 +325,7 @@ func (n *NinjaMain) ToolMSVC(options *Options, argc int, argv []*char) int {
   return MSVCHelperMain(argc, argv)
 }
 
-func ToolTargetsList(nodes *vector<Node*>, depth int, indent int) int {
+func ToolTargetsList(nodes *[]*Node, depth int, indent int) int {
   for n := nodes.begin(); n != nodes.end(); n++ {
     for i := 0; i < indent; i++ {
       printf("  ")
