@@ -52,13 +52,13 @@ func MurmurHash2(key *void, len2 uint) unsigned int {
 
 template<>
 type hash struct {
-  argument_type typedef string
-  result_type typedef size_t
 
   size_t operator()(string key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 }
+type argument_type string
+type result_type uint
 
 using stdext::hash_map
 using stdext::hash_compare
@@ -94,8 +94,8 @@ type hash struct {
 // mapping StringPiece => Foo*.
 template<typename V>
 type ExternalStringHashMap struct {
-  Type typedef unordered_map<string, V>
-  Type typedef hash_map<string, V, StringPieceCmp>
-  Type typedef hash_map<string, V>
 }
+type Type unordered_map<string, V>
+type Type hash_map<string, V, StringPieceCmp>
+type Type hash_map<string, V>
 

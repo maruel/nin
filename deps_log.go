@@ -89,7 +89,7 @@ func (d *DepsLog) deps() *[]*Deps {
 
 
 typedef __int32 int32_t
-typedef unsigned __int32 uint32_t
+type uint32_t unsigned __int32
 
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.

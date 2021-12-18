@@ -36,7 +36,6 @@ type Pool struct {
   current_use_ int
   depth_ int
 
-  DelayedEdges typedef set<Edge*, WeightedEdgeCmp>
   delayed_ DelayedEdges
 }
 // A depth of 0 is infinite
@@ -64,6 +63,7 @@ type WeightedEdgeCmp struct {
     return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
   }
   }
+type DelayedEdges map[Edge*, WeightedEdgeCmp]struct{}
 
 // Global state (file status) for a single run.
 type State struct {
@@ -72,7 +72,6 @@ type State struct {
   kPhonyRule static const Rule
 
   // Mapping of path -> Node.
-  Paths typedef ExternalStringHashMap<Node*>::Type
   paths_ Paths
 
   // All the pools used in the graph.
@@ -84,6 +83,7 @@ type State struct {
   bindings_ BindingEnv
   defaults_ []*Node
 }
+type Paths ExternalStringHashMap<Node*>::Type
 
 
 // informs this Pool that the given edge is committed to be run.

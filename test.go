@@ -65,7 +65,6 @@ type VirtualFileSystem struct {
 
   directories_made_ []string
   files_read_ []string
-  FileMap typedef map<string, Entry>
   files_ FileMap
   files_removed_ map[string]struct{}
   files_created_ map[string]struct{}
@@ -84,6 +83,7 @@ type Entry struct {
   stat_error string  // If mtime is -1.
   contents string
   }
+type FileMap map[string]Entry
 
 type ScopedTempDir struct {
 

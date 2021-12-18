@@ -117,7 +117,6 @@ type Builder struct {
   status_ *Status
 
   // Map of running edge to time the edge started running.
-  RunningEdgeMap typedef map<const Edge*, int>
   running_edges_ RunningEdgeMap
 
   // Time the build started.
@@ -132,6 +131,7 @@ type Builder struct {
 func (b *Builder) SetBuildLog(log *BuildLog) {
   b.scan_.set_build_log(log)
 }
+type RunningEdgeMap map[*Edge]int
 
 
 // A CommandRunner that doesn't actually run the commands.

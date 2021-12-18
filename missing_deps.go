@@ -38,13 +38,13 @@ type MissingDependencyScanner struct {
 
   using InnerAdjacencyMap = unordered_map<Edge*, bool>
   using AdjacencyMap = unordered_map<Edge*, InnerAdjacencyMap>
-  InnerAdjacencyMap typedef map<Edge*, bool>
-  AdjacencyMap typedef map<Edge*, InnerAdjacencyMap>
   adjacency_map_ AdjacencyMap
 }
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
 	return !m.nodes_missing_deps_.empty()
 }
+type InnerAdjacencyMap map[*Edge]bool
+type AdjacencyMap map[*Edge]InnerAdjacencyMap
 
 
 // ImplicitDepLoader variant that stores dep nodes into the given output

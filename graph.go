@@ -221,7 +221,7 @@ type EdgeCmp struct {
   }
 }
 
-typedef set<Edge*, EdgeCmp> EdgeSet
+type EdgeSet map[Edge*, EdgeCmp]struct{}
 
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.

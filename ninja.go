@@ -61,10 +61,10 @@ type NinjaMain struct {
   deps_log_ DepsLog
 
   // The type of functions that are the entry points to tools (subcommands).
-  typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 
   start_time_millis_ int64
 }
+typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 func (n *NinjaMain) IsPathDead(s string) bool {
   n := n.state_.LookupNode(s)
   if n && n.in_edge() {

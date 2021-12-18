@@ -30,8 +30,6 @@ type BuildLogUser struct {
 // 3) restat information
 type BuildLog struct {
 
-  Entries typedef ExternalStringHashMap<LogEntry*>::Type
-
   entries_ Entries
   log_file_ *FILE
   log_file_path_ string
@@ -52,6 +50,7 @@ type LogEntry struct {
   }
 
   }
+type Entries ExternalStringHashMap<LogEntry*>::Type
 func (b *BuildLog) entries() *Entries {
 	return b.entries_
 }

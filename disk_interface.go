@@ -47,12 +47,12 @@ type RealDiskInterface struct {
   // Whether stat information can be cached.
   use_cache_ bool
 
-  DirCache typedef map<string, TimeStamp>
   // TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
   // works out, come up with a better data structure.
-  Cache typedef map<string, DirCache>
   cache_ mutable Cache
 }
+type DirCache map[string]TimeStamp
+type Cache map[string]DirCache
 
 
 func DirName(path string) string {
