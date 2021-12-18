@@ -600,6 +600,7 @@ func (e *Edge) AllInputsReady() bool {
 
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
+
   EdgeEnv(const Edge* const edge, const EscapeKind escape)
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 
