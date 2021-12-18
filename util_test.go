@@ -23,58 +23,58 @@ func CanonicalizePath(path *string) {
 }
 
 func TestCanonicalizePath_PathSamples(t *testing.T) {
-  path := ""
+  string path
 
   CanonicalizePath(&path)
-  if "" != path { t.FailNow() }
+  EXPECT_EQ("", path)
 
   path = "foo.h"
   CanonicalizePath(&path)
-  if "foo.h" != path { t.FailNow() }
+  EXPECT_EQ("foo.h", path)
 
   path = "./foo.h"
   CanonicalizePath(&path)
-  if "foo.h" != path { t.FailNow() }
+  EXPECT_EQ("foo.h", path)
 
   path = "./foo/./bar.h"
   CanonicalizePath(&path)
-  if "foo/bar.h" != path { t.FailNow() }
+  EXPECT_EQ("foo/bar.h", path)
 
   path = "./x/foo/../bar.h"
   CanonicalizePath(&path)
-  if "x/bar.h" != path { t.FailNow() }
+  EXPECT_EQ("x/bar.h", path)
 
   path = "./x/foo/../../bar.h"
   CanonicalizePath(&path)
-  if "bar.h" != path { t.FailNow() }
+  EXPECT_EQ("bar.h", path)
 
   path = "foo//bar";
   CanonicalizePath(&path)
-  if "foo/bar" != path { t.FailNow() }
+  EXPECT_EQ("foo/bar", path)
 
   path = "foo//.//..///bar";
   CanonicalizePath(&path)
-  if "bar" != path { t.FailNow() }
+  EXPECT_EQ("bar", path)
 
   path = "./x/../foo/../../bar.h"
   CanonicalizePath(&path)
-  if "../bar.h" != path { t.FailNow() }
+  EXPECT_EQ("../bar.h", path)
 
   path = "foo/./."
   CanonicalizePath(&path)
-  if "foo" != path { t.FailNow() }
+  EXPECT_EQ("foo", path)
 
   path = "foo/bar/.."
   CanonicalizePath(&path)
-  if "foo" != path { t.FailNow() }
+  EXPECT_EQ("foo", path)
 
   path = "foo/.hidden_bar"
   CanonicalizePath(&path)
-  if "foo/.hidden_bar" != path { t.FailNow() }
+  EXPECT_EQ("foo/.hidden_bar", path)
 
   path = "/foo"
   CanonicalizePath(&path)
-  if "/foo" != path { t.FailNow() }
+  EXPECT_EQ("/foo", path)
 
   path = "//foo";
   CanonicalizePath(&path)

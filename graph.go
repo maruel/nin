@@ -616,6 +616,6 @@ const (
 )
 
 func (e *EdgeEnv) LookupVariable(var string) string {
-  if var == "in" || var == "in_newline" {
-    int explicit_deps_count = e.edge_.inputs_.size() - e.edge_.implicit_deps_ -
-      e.edge_.order_only_deps_
+  if (var == "in" || var == "in_newline") {
+    int explicit_deps_count = edge_.inputs_.size() - edge_.implicit_deps_ -
+      edge_.order_only_deps_
