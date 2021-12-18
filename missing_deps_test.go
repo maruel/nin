@@ -24,13 +24,6 @@ class MissingDependencyTestDelegate : public MissingDependencyScannerDelegate {
 }
 
 type MissingDependencyScannerTest struct {
-  MissingDependencyScannerTest()
-      : generator_rule_("generator_rule"), compile_rule_("compile_rule"),
-        scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {
-    err string
-    deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
-    ASSERT_EQ("", err)
-  }
 
   delegate_ MissingDependencyTestDelegate
   generator_rule_ Rule
@@ -39,6 +32,13 @@ type MissingDependencyScannerTest struct {
   state_ State
   filesystem_ VirtualFileSystem
   scanner_ MissingDependencyScanner
+}
+MissingDependencyScannerTest()
+    : generator_rule_("generator_rule"), compile_rule_("compile_rule"),
+      scanner_(&delegate_, &deps_log_, &state_, &filesystem_) {
+  string err
+  deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
+  ASSERT_EQ("", err)
 }
 func (m *MissingDependencyScannerTest) scanner() *MissingDependencyScanner {
 	return m.scanner_

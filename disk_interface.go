@@ -40,9 +40,6 @@ type DiskInterface struct {
 
 // Implementation of DiskInterface that actually hits the disk.
 type RealDiskInterface struct {
-  RealDiskInterface()
-                      : use_cache_(false)
-                      {}
 
   // Whether stat information can be cached.
   use_cache_ bool
@@ -51,6 +48,9 @@ type RealDiskInterface struct {
   // works out, come up with a better data structure.
   cache_ mutable Cache
 }
+RealDiskInterface()
+                    : use_cache_(false)
+                    {}
 type DirCache map[string]TimeStamp
 type Cache map[string]DirCache
 

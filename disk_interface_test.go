@@ -198,12 +198,12 @@ func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
 }
 
 type StatTest struct {
-  StatTest() : scan_(&state_, nil, nil, this, nil) {}
 
   scan_ DependencyScan
   mtimes_ map[string]TimeStamp
   stats_ mutable vector<string>
 }
+StatTest() : scan_(&state_, nil, nil, this, nil) {}
 func (s *StatTest) WriteFile(path string, contents string) bool {
   if !false { panic("oops") }
   return true

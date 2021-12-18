@@ -50,12 +50,12 @@ type AdjacencyMap map[*Edge]InnerAdjacencyMap
 // ImplicitDepLoader variant that stores dep nodes into the given output
 // without updating graph deps like the base loader does.
 type NodeStoringImplicitDepLoader struct {
-  NodeStoringImplicitDepLoader( State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options, vector<Node*>* dep_nodes_output)
-      : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
-        dep_nodes_output_(dep_nodes_output) {}
 
   dep_nodes_output_ *[]*Node
 }
+NodeStoringImplicitDepLoader( State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options, vector<Node*>* dep_nodes_output)
+    : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
+      dep_nodes_output_(dep_nodes_output) {}
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *[]string, err *string) bool {
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {

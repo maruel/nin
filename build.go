@@ -71,11 +71,11 @@ type CommandRunner struct {
 }
 // The result of waiting for a command.
 type Result struct {
-  Result() : edge(nil) {}
   edge *Edge
   status ExitStatus
   output string
   }
+Result() : edge(nil) {}
 func (c *CommandRunner) success() bool {
 	return status == ExitSuccess
 }
@@ -86,8 +86,6 @@ func (c *CommandRunner) Abort() {}
 
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
-  BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
-                  failures_allowed(1), max_load_average(-0.0f) {}
 
   verbosity Verbosity
   dry_run bool
@@ -98,6 +96,8 @@ type BuildConfig struct {
   max_load_average float64
   depfile_parser_options DepfileParserOptions
 }
+BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
+                failures_allowed(1), max_load_average(-0.0f) {}
 type Verbosity int
 const (
   QUIET Verbosity = iota  // No output -- used when testing.
@@ -553,12 +553,12 @@ func (p *Plan) Dump() {
 }
 
 type RealCommandRunner struct {
-  explicit RealCommandRunner(const BuildConfig& config) : config_(config) {}
 
   config_ *BuildConfig
   subprocs_ SubprocessSet
   subproc_to_edge_ map[*Subprocess]*Edge
 }
+RealCommandRunner(const BuildConfig& config) : config_(config) {}
 
 func (r *RealCommandRunner) GetActiveEdges() []*Edge {
   var edges []*Edge

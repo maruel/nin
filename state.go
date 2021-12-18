@@ -26,8 +26,6 @@ package ginja
 // the total scheduled weight diminishes enough (i.e. when a scheduled edge
 // completes).
 type Pool struct {
-  Pool(string name, int depth)
-    : name_(name), current_use_(0), depth_(depth), delayed_() {}
 
   name_ string
 
@@ -38,6 +36,8 @@ type Pool struct {
 
   delayed_ DelayedEdges
 }
+Pool(string name, int depth)
+  : name_(name), current_use_(0), depth_(depth), delayed_() {}
 // A depth of 0 is infinite
 func (p *Pool) is_valid() bool {
 	return p.depth_ >= 0

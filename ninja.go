@@ -38,9 +38,6 @@ type Options struct {
 // The Ninja main() loads up a series of data structures; various tools need
 // to poke into these, so store them as fields on an object.
 type NinjaMain struct {
-  NinjaMain(string ninja_command, const BuildConfig& config) :
-      ninja_command_(ninja_command), config_(config),
-      start_time_millis_(GetTimeMillis()) {}
 
   // Command line used to run Ninja.
   ninja_command_ string
@@ -64,6 +61,9 @@ type NinjaMain struct {
 
   start_time_millis_ int64
 }
+NinjaMain(string ninja_command, const BuildConfig& config) :
+    ninja_command_(ninja_command), config_(config),
+    start_time_millis_(GetTimeMillis()) {}
 typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 func (n *NinjaMain) IsPathDead(s string) bool {
   n := n.state_.LookupNode(s)

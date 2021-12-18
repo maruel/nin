@@ -19,13 +19,13 @@ package ginja
 
 // Runs the process of creating GraphViz .dot file output.
 type GraphViz struct {
-  GraphViz(State* state, DiskInterface* disk_interface)
-      : dyndep_loader_(state, disk_interface) {}
 
   dyndep_loader_ DyndepLoader
   visited_nodes_ map[*Node]struct{}
   visited_edges_ EdgeSet
 }
+GraphViz(State* state, DiskInterface* disk_interface)
+    : dyndep_loader_(state, disk_interface) {}
 
 
 func (g *GraphViz) AddTarget(node *Node) {

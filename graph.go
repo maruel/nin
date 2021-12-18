@@ -20,15 +20,6 @@ package ginja
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
 type Node struct {
-  Node(string path, uint64_t slash_bits)
-      : path_(path),
-        slash_bits_(slash_bits),
-        mtime_(-1),
-        exists_(ExistenceStatusUnknown),
-        dirty_(false),
-        dyndep_pending_(false),
-        in_edge_(nil),
-        id_(-1) {}
 
   path_ string
 
@@ -63,6 +54,15 @@ type Node struct {
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
 }
+Node(string path, uint64_t slash_bits)
+    : path_(path),
+      slash_bits_(slash_bits),
+      mtime_(-1),
+      exists_(ExistenceStatusUnknown),
+      dirty_(false),
+      dyndep_pending_(false),
+      in_edge_(nil),
+      id_(-1) {}
 // Return false on error.
 func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
   if status_known() {
@@ -148,12 +148,6 @@ const (
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
 
-  Edge()
-      : rule_(nil), pool_(nil), dyndep_(nil), env_(nil), mark_(VisitNone),
-        id_(0), outputs_ready_(false), deps_loaded_(false),
-        deps_missing_(false), generated_by_dep_loader_(false),
-        implicit_deps_(0), order_only_deps_(0), implicit_outs_(0) {}
-
   rule_ *Rule
   pool_ *Pool
   inputs_ []*Node
@@ -192,6 +186,11 @@ const (
   VisitInStack
   VisitDone
 )
+Edge()
+    : rule_(nil), pool_(nil), dyndep_(nil), env_(nil), mark_(VisitNone),
+      id_(0), outputs_ready_(false), deps_loaded_(false),
+      deps_missing_(false), generated_by_dep_loader_(false),
+      implicit_deps_(0), order_only_deps_(0), implicit_outs_(0) {}
 func (e *Edge) rule() *Rule {
 	return *e.rule_
 }
@@ -226,15 +225,15 @@ type EdgeSet map[Edge*, EdgeCmp]struct{}
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
-  ImplicitDepLoader(State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
-      : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
-        depfile_parser_options_(depfile_parser_options) {}
 
   state_ *State
   disk_interface_ *DiskInterface
   deps_log_ *DepsLog
   depfile_parser_options_ *DepfileParserOptions const
 }
+ImplicitDepLoader(State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
+    : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
+      depfile_parser_options_(depfile_parser_options) {}
 func (i *ImplicitDepLoader) deps_log() *DepsLog {
   return i.deps_log_
 }
@@ -242,17 +241,17 @@ func (i *ImplicitDepLoader) deps_log() *DepsLog {
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
 type DependencyScan struct {
-  DependencyScan(State* state, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
-      : build_log_(build_log),
-        disk_interface_(disk_interface),
-        dep_loader_(state, deps_log, disk_interface, depfile_parser_options),
-        dyndep_loader_(state, disk_interface) {}
 
   build_log_ *BuildLog
   disk_interface_ *DiskInterface
   dep_loader_ ImplicitDepLoader
   dyndep_loader_ DyndepLoader
 }
+DependencyScan(State* state, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
+    : build_log_(build_log),
+      disk_interface_(disk_interface),
+      dep_loader_(state, deps_log, disk_interface, depfile_parser_options),
+      dyndep_loader_(state, disk_interface) {}
 func (d *DependencyScan) build_log() *BuildLog {
   return d.build_log_
 }
@@ -601,9 +600,6 @@ func (e *Edge) AllInputsReady() bool {
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
 
-  EdgeEnv(const Edge* const edge, const EscapeKind escape)
-      : edge_(edge), escape_in_out_(escape), recursive_(false) {}
-
   lookups_ []string
   edge_ *Edge
   escape_in_out_ EscapeKind
@@ -614,6 +610,8 @@ const (
 	kShellEscape EscapeKind = iota
 	kDoNotEscape
 )
+EdgeEnv(const Edge* const edge, const EscapeKind escape)
+    : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
   if (var2 == "in" || var2 == "in_newline") {

@@ -30,12 +30,12 @@ const (
 )
 
 type ManifestParserOptions struct {
-  ManifestParserOptions()
-      : dupe_edge_action_(kDupeEdgeActionWarn),
-        phony_cycle_action_(kPhonyCycleActionWarn) {}
   dupe_edge_action_ DupeEdgeAction
   phony_cycle_action_ PhonyCycleAction
 }
+ManifestParserOptions()
+    : dupe_edge_action_(kDupeEdgeActionWarn),
+      phony_cycle_action_(kPhonyCycleActionWarn) {}
 
 // Parses .ninja files.
 type ManifestParser struct {

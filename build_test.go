@@ -395,23 +395,16 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 
 // Fake implementation of CommandRunner, useful for tests.
 type FakeCommandRunner struct {
-  explicit FakeCommandRunner(VirtualFileSystem* fs) :
-      max_active_edges_(1), fs_(fs) {}
 
   commands_ran_ []string
   active_edges_ []*Edge
   max_active_edges_ uint
   fs_ *VirtualFileSystem
 }
+FakeCommandRunner(VirtualFileSystem* fs) :
+    max_active_edges_(1), fs_(fs) {}
 
 type BuildTest struct {
-  BuildTest() : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
-                builder_(&state_, config_, nil, nil, &fs_, &status_, 0) {
-  }
-
-  explicit BuildTest(DepsLog* log)
-      : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
-        builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
 
   config_ BuildConfig
   command_runner_ FakeCommandRunner
@@ -419,6 +412,12 @@ type BuildTest struct {
   status_ StatusPrinter
   builder_ Builder
 }
+BuildTest() : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
+              builder_(&state_, config_, nil, nil, &fs_, &status_, 0) {
+}
+BuildTest(DepsLog* log)
+    : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
+      builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
 func (b *BuildTest) SetUp() {
   StateTestWithBuiltinRules::SetUp()
 
@@ -1225,11 +1224,11 @@ func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
 }
 
 type BuildWithLogTest struct {
-  BuildWithLogTest() {
-    builder_.SetBuildLog(&build_log_)
-  }
 
   build_log_ BuildLog
+}
+BuildWithLogTest() {
+  builder_.SetBuildLog(&build_log_)
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
@@ -1553,9 +1552,9 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 }
 
 type BuildDryRun struct {
-  BuildDryRun() {
-    config_.dry_run = true
-  }
+}
+BuildDryRun() {
+  config_.dry_run = true
 }
 
 func TestBuildDryRun_AllCommandsShown(t *testing.T) {
@@ -1792,12 +1791,12 @@ func TestBuildTest_FailedDepsParse(t *testing.T) {
 }
 
 type BuildWithQueryDepsLogTest struct {
-  BuildWithQueryDepsLogTest() : BuildTest(&log_) {
-  }
 
   temp_dir_ ScopedTempDir
 
   log_ DepsLog
+}
+BuildWithQueryDepsLogTest() : BuildTest(&log_) {
 }
 ~BuildWithQueryDepsLogTest() {
   log_.Close()
@@ -1972,13 +1971,13 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 // builder_ it sets up, because we want pristine objects for
 // each build.
 type BuildWithDepsLogTest struct {
-  BuildWithDepsLogTest() {}
 
   temp_dir_ ScopedTempDir
 
   // Shadow parent class builder_ so we don't accidentally use it.
   builder_ *void
 }
+BuildWithDepsLogTest() {}
 func (b *BuildWithDepsLogTest) SetUp() {
   BuildTest::SetUp()
 

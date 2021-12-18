@@ -18,11 +18,11 @@ package ginja
 
 
 type GraphTest struct {
-  GraphTest() : scan_(&state_, nil, nil, &fs_, nil) {}
 
   fs_ VirtualFileSystem
   scan_ DependencyScan
 }
+GraphTest() : scan_(&state_, nil, nil, &fs_, nil) {}
 
 func TestGraphTest_MissingImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in | implicit\n"))

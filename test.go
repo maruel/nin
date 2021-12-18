@@ -61,7 +61,6 @@ void AssertParse(State* state, string input, ManifestParserOptions = ManifestPar
 // of disk state.  It also logs file accesses and directory creations
 // so it can be used by tests to verify disk access patterns.
 type VirtualFileSystem struct {
-  VirtualFileSystem() : now_(1) {}
 
   directories_made_ []string
   files_read_ []string
@@ -72,6 +71,7 @@ type VirtualFileSystem struct {
   // A simple fake timestamp for file operations.
   now_ int
 }
+VirtualFileSystem() : now_(1) {}
 // Tick "time" forwards; subsequent file operations will be newer than
 // previous ones.
 func (v *VirtualFileSystem) Tick() int {

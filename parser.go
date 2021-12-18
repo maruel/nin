@@ -19,14 +19,14 @@ package ginja
 
 // Base class for parsers.
 type Parser struct {
-  Parser(State* state, FileReader* file_reader)
-      : state_(state), file_reader_(file_reader) {}
 
   state_ *State
   file_reader_ *FileReader
   lexer_ Lexer
 
 }
+Parser(State* state, FileReader* file_reader)
+    : state_(state), file_reader_(file_reader) {}
 
 
 // Load and parse a file.

@@ -48,10 +48,10 @@ type Metrics struct {
 // A simple stopwatch which returns the time
 // in seconds since Restart() was called.
 type Stopwatch struct {
-  Stopwatch() : started_(0) {}
 
   started_ uint64
 }
+Stopwatch() : started_(0) {}
 // Seconds since Restart() call.
 func (s *Stopwatch) Elapsed() float64 {
   return 1e-6 * static_cast<double>(Now() - s.started_)

@@ -57,7 +57,6 @@ package ginja
 // wins, allowing updates to just be appended to the file.  A separate
 // repacking step can run occasionally to remove dead records.
 type DepsLog struct {
-  DepsLog() : needs_recompaction_(false), file_(nil) {}
 
   needs_recompaction_ bool
   file_ *FILE
@@ -70,14 +69,15 @@ type DepsLog struct {
 
   DepsLogTest friend struct
 }
+DepsLog() : needs_recompaction_(false), file_(nil) {}
 // Reading (startup-time) interface.
 type Deps struct {
-  Deps(int64_t mtime, int node_count)
-      : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
   mtime TimeStamp
   node_count int
   nodes *Node*
   }
+Deps(int64_t mtime, int node_count)
+  : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
 ~Deps() { delete [] nodes; }
 // Used for tests.
 func (d *DepsLog) nodes() *[]*Node {
