@@ -93,13 +93,13 @@ void Info(string msg, ...) {
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
 func CanonicalizePath(path *string, slash_bits *uint64) {
-  len := path.size()
+  len2 := path.size()
   str := 0
-  if len > 0 {
+  if len2 > 0 {
     str = &(*path)[0]
   }
-  CanonicalizePath(str, &len, slash_bits)
-  path.resize(len)
+  CanonicalizePath(str, &len2, slash_bits)
+  path.resize(len2)
 }
 
 func IsPathSeparator(c char) bool {
@@ -110,10 +110,10 @@ func IsPathSeparator(c char) bool {
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path *char, len *uint, slash_bits *uint64) {
+func CanonicalizePath(path *char, len2 *uint, slash_bits *uint64) {
   // WARNING: this function is performance-critical; please benchmark
   // any changes you make to it.
-  if *len == 0 {
+  if *len2 == 0 {
     return
   }
 
@@ -124,12 +124,12 @@ func CanonicalizePath(path *char, len *uint, slash_bits *uint64) {
   start := path
   dst := start
   src := start
-  string end = start + *len
+  string end = start + *len2
 
   if IsPathSeparator(*src) {
 
     // network path starts with //
-    if *len > 1 && IsPathSeparator(*(src + 1)) {
+    if *len2 > 1 && IsPathSeparator(*(src + 1)) {
       src += 2
       dst += 2
     } else {
@@ -183,11 +183,11 @@ func CanonicalizePath(path *char, len *uint, slash_bits *uint64) {
     *dst++ = '\0'
   }
 
-  *len = dst - start - 1
+  *len2 = dst - start - 1
   bits := 0
   bits_mask := 1
 
-  for c := start; c < start + *len; c++ {
+  for c := start; c < start + *len2; c++ {
     switch (*c) {
       case '\\':
         bits |= bits_mask
@@ -330,17 +330,17 @@ func ReadFile(path string, contents *string, err *string) int {
   }
 
   for ; ;  {
-    var len DWORD
+    var len2 DWORD
     char buf[64 << 10]
-    if !::ReadFile(f, buf, sizeof(buf), &len, nil) {
+    if !::ReadFile(f, buf, sizeof(buf), &len2, nil) {
       err.assign(GetLastErrorString())
       contents = nil
       return -1
     }
-    if len == 0 {
+    if len2 == 0 {
       break
     }
-    contents.append(buf, len)
+    contents.append(buf, len2)
   }
   ::CloseHandle(f)
   return 0
@@ -361,9 +361,9 @@ func ReadFile(path string, contents *string, err *string) int {
   contents.reserve(st.st_size + 1)
 
   char buf[64 << 10]
-  var len uint
-  while !feof(f) && (len = fread(buf, 1, sizeof(buf), f)) > 0 {
-    contents.append(buf, len)
+  var len2 uint
+  while !feof(f) && (len2 = fread(buf, 1, sizeof(buf), f)) > 0 {
+    contents.append(buf, len2)
   }
   if ferror(f) {
     err.assign(strerror(errno))  // XXX errno?
@@ -481,12 +481,12 @@ func StripAnsiEscapeCodes(in string) string {
 func GetProcessorCount() int {
   // Need to use GetLogicalProcessorInformationEx to get real core count on
   // machines with >64 cores. See https://stackoverflow.com/a/31209344/21475
-  len := 0
-  if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
-    vector<char> buf(len)
+  len2 := 0
+  if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len2) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+    vector<char> buf(len2)
     cores := 0
-    if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len) {
-      for i := 0; i < len;  {
+    if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len2) {
+      for i := 0; i < len2;  {
         auto info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
         if info.Relationship == RelationProcessorCore && info.Processor.GroupCount == 1 {
           for core_mask := info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1 {

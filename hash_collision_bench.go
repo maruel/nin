@@ -22,12 +22,12 @@ func random(low int, high int) int {
 }
 
 func RandomCommand(s *char*) {
-  len := random(5, 100)
-  *s = new char[len+1]
-  for i := 0; i < len; i++ {
+  len2 := random(5, 100)
+  *s = new char[len2+1]
+  for i := 0; i < len2; i++ {
     (*s)[i] = (char)random(32, 127)
   }
-  (*s)[len] = '\0'
+  (*s)[len2] = '\0'
 }
 
 func main() int {

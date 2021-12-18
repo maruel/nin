@@ -167,15 +167,15 @@ func (i *IncludesNormalize) Relativize(path string, start_list *[]string, err *s
 
 func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
   char copy[_MAX_PATH + 1]
-  len := input.size()
-  if len > _MAX_PATH {
+  len2 := input.size()
+  if len2 > _MAX_PATH {
     *err = "path too long"
     return false
   }
   strncpy(copy, input, input.size() + 1)
   var slash_bits uint64
-  CanonicalizePath(copy, &len, &slash_bits)
-  string partially_fixed(copy, len)
+  CanonicalizePath(copy, &len2, &slash_bits)
+  string partially_fixed(copy, len2)
   abs_input := AbsPath(partially_fixed, err)
   if len(err) != 0 {
     return false

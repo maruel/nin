@@ -73,13 +73,13 @@ const int kCurrentVersion = 5
 
 // 64bit MurmurHash2, by Austin Appleby
 inline
-func MurmurHash64A(key *void, len uint) uint64 {
+func MurmurHash64A(key *void, len2 uint) uint64 {
   seed := 0xDECAFBADDECAFBADull
   m := BIG_CONSTANT(0xc6a4a7935bd1e995)
   r := 47
-  uint64_t h = seed ^ (len * m)
+  uint64_t h = seed ^ (len2 * m)
   data := (const unsigned char*)key
-  while len >= 8 {
+  while len2 >= 8 {
     var k uint64
     memcpy(&k, data, sizeof k)
     k *= m
@@ -88,9 +88,9 @@ func MurmurHash64A(key *void, len uint) uint64 {
     h ^= k
     h *= m
     data += 8
-    len -= 8
+    len2 -= 8
   }
-  switch (len & 7)
+  switch (len2 & 7)
   {
   case 7: h ^= uint64_t(data[6]) << 48
           NINJA_FALLTHROUGH

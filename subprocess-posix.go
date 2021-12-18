@@ -126,11 +126,11 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 
 func (s *Subprocess) OnPipeReady() {
   char buf[4 << 10]
-  len := read(s.fd_, buf, sizeof(buf))
-  if len > 0 {
-    s.buf_.append(buf, len)
+  len2 := read(s.fd_, buf, sizeof(buf))
+  if len2 > 0 {
+    s.buf_.append(buf, len2)
   } else {
-    if len < 0 {
+    if len2 < 0 {
       Fatal("read: %s", strerror(errno))
     }
     close(s.fd_)

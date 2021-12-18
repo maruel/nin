@@ -19,13 +19,13 @@ package ginja
 
 // MurmurHash2, by Austin Appleby
 static inline
-func MurmurHash2(key *void, len uint) unsigned int {
+func MurmurHash2(key *void, len2 uint) unsigned int {
   seed := 0xDECAFBAD
   m := 0x5bd1e995
   r := 24
-  unsigned int h = seed ^ len
+  unsigned int h = seed ^ len2
   data := (const unsigned char*)key
-  while len >= 4 {
+  while len2 >= 4 {
     var k unsigned int
     memcpy(&k, data, sizeof k)
     k *= m
@@ -34,9 +34,9 @@ func MurmurHash2(key *void, len uint) unsigned int {
     h *= m
     h ^= k
     data += 4
-    len -= 4
+    len2 -= 4
   }
-  switch (len) {
+  switch (len2) {
   case 3: h ^= data[2] << 16
           NINJA_FALLTHROUGH
   case 2: h ^= data[1] << 8

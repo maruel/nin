@@ -25,7 +25,7 @@ func main() int {
   var times []int
 
   char buf[200]
-  len := strlen(kPath)
+  len2 := strlen(kPath)
   strcpy(buf, kPath)
 
   for j := 0; j < 5; j++ {
@@ -33,7 +33,7 @@ func main() int {
     start := GetTimeMillis()
     var slash_bits uint64
     for i := 0; i < kNumRepetitions; i++ {
-      CanonicalizePath(buf, &len, &slash_bits)
+      CanonicalizePath(buf, &len2, &slash_bits)
     }
     int delta = (int)(GetTimeMillis() - start)
     times.push_back(delta)

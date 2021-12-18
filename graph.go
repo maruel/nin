@@ -615,7 +615,7 @@ const (
 	kDoNotEscape
 )
 
-func (e *EdgeEnv) LookupVariable(var string) string {
-  if (var == "in" || var == "in_newline") {
+func (e *EdgeEnv) LookupVariable(var2 string) string {
+  if (var2 == "in" || var2 == "in_newline") {
     int explicit_deps_count = edge_.inputs_.size() - edge_.implicit_deps_ -
       edge_.order_only_deps_
