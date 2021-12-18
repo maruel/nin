@@ -20,7 +20,6 @@ package ginja
 // SetWithLots need setrlimit.
 
 string kSimpleCommand = "cmd /c dir \\"
-string kSimpleCommand = "ls /"
 
 type SubprocessTest struct {
   subprocs_ SubprocessSet
@@ -164,8 +163,6 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
     kSimpleCommand,
     "cmd /c echo hi",
     "cmd /c time /t",
-    "id -u",
-    "pwd",
   }
 
   for i := 0; i < 3; i++ {

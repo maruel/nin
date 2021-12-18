@@ -33,7 +33,6 @@ func Fatal(msg string, ...) {
   fflush(stderr)
   fflush(stdout)
   ExitProcess(1)
-  exit(1)
 }
 
 // Log a warning message.
@@ -96,7 +95,6 @@ func CanonicalizePath(path *string, slash_bits *uint64) {
 
 func IsPathSeparator(c char) bool {
   return c == '/' || c == '\\'
-  return c == '/'
 }
 
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
@@ -128,8 +126,6 @@ func CanonicalizePath(path *char, len2 *uint, slash_bits *uint64) {
       src++
       dst++
     }
-    src++
-    dst++
   }
 
   while src < end {
@@ -191,7 +187,6 @@ func CanonicalizePath(path *char, len2 *uint, slash_bits *uint64) {
   }
 
   *slash_bits = bits
-  *slash_bits = 0
 }
 
 func IsKnownShellSafeCharacter(ch char) inline bool {
@@ -336,35 +331,6 @@ func ReadFile(path string, contents *string, err *string) int {
   }
   ::CloseHandle(f)
   return 0
-  FILE* f = fopen(path, "rb")
-  if f == nil {
-    err.assign(strerror(errno))
-    return -errno
-  }
-
-  var st stat
-  if fstat(fileno(f), &st) < 0 {
-    err.assign(strerror(errno))
-    fclose(f)
-    return -errno
-  }
-
-  // +1 is for the resize in ManifestParser::Load
-  contents.reserve(st.st_size + 1)
-
-  char buf[64 << 10]
-  var len2 uint
-  while !feof(f) && (len2 = fread(buf, 1, sizeof(buf), f)) > 0 {
-    contents.append(buf, len2)
-  }
-  if ferror(f) {
-    err.assign(strerror(errno))  // XXX errno?
-    contents = nil
-    fclose(f)
-    return -errno
-  }
-  fclose(f)
-  return 0
 }
 
 // Mark a file descriptor to not be inherited on exec()s.
@@ -376,10 +342,6 @@ func SetCloseOnExec(fd int) {
     if fcntl(fd, F_SETFD, flags | FD_CLOEXEC) < 0 {
       perror("fcntl(F_SETFD)")
     }
-  }
-  hd := (HANDLE) _get_osfhandle(fd)
-  if ! SetHandleInformation(hd, HANDLE_FLAG_INHERIT, 0) {
-    fprintf(stderr, "SetHandleInformation(): %s", GetLastErrorString())
   }
 }
 
@@ -495,18 +457,6 @@ func GetProcessorCount() int {
     }
   }
   return GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)
-  // The number of exposed processors might not represent the actual number of
-  // processors threads can run on. This happens when a CPU set limitation is
-  // active, see https://github.com/ninja-build/ninja/issues/1278
-  var mask cpuset_t
-  CPU_ZERO(&mask)
-  if cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, sizeof(mask), &mask) == 0 {
-    return CPU_COUNT(&mask)
-  }
-  var set cpu_set_t
-  if sched_getaffinity(getpid(), sizeof(set), &set) == 0 {
-    return CPU_COUNT(&set)
-  }
   return sysconf(_SC_NPROCESSORS_ONLN)
 }
 
@@ -607,17 +557,6 @@ func GetLoadAverage() float64 {
 func GetLoadAverage() float64 {
     return -0.0f
 }
-// @return the load average of the machine. A negative value is returned
-// on error.
-func GetLoadAverage() float64 {
-  double loadavg[3] = { 0.0f, 0.0f, 0.0f }
-  if getloadavg(loadavg, 3) < 0 {
-    // Maybe we should return an error here or the availability of
-    // getloadavg(3) should be checked when ninja is configured.
-    return -0.0f
-  }
-  return loadavg[0]
-}
 
 // Elide the given string @a str with '...' in the middle if the length
 // exceeds @a width.
@@ -644,7 +583,6 @@ func Truncate(path string, size uint, err *string) bool {
   int fh = _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   success := _chsize(fh, size)
   _close(fh)
-  success := truncate(path, size)
   // Both truncate() and _chsize() return 0 on success and set errno and return
   // -1 on failure.
   if success < 0 {

@@ -787,7 +787,6 @@ func TestBuildTest_MakeDirs(t *testing.T) {
   err := ""
 
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build subdir\\dir2\\file: cat in1\n"))
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build subdir/dir2/file: cat in1\n"))
   if builder_.AddTarget("subdir/dir2/file", &err) { t.FailNow() }
 
   if "" != err { t.FailNow() }

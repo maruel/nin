@@ -58,7 +58,6 @@ type Cache map[string]DirCache
 
 func DirName(path string) string {
   static const char kPathSeparators[] = "\\/"
-  static const char kPathSeparators[] = "/"
   static string const kEnd = kPathSeparators + sizeof(kPathSeparators) - 1
 
   slash_pos := path.find_last_of(kPathSeparators)
@@ -73,7 +72,6 @@ func DirName(path string) string {
 
 func MakeDir(path string) int {
   return _mkdir(path)
-  return mkdir(path, 0777)
 }
 
 func TimeStampFromFileTime(filetime *FILETIME) TimeStamp {
@@ -206,24 +204,6 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
   }
   di := ci.second.find(base)
   return di != ci.second.end() ? di.second : 0
-  var st stat
-  if stat(path, &st) < 0 {
-    if errno == ENOENT || errno == ENOTDIR {
-      return 0
-    }
-    *err = "stat(" + path + "): " + strerror(errno)
-    return -1
-  }
-  // Some users (Flatpak) set mtime to 0, this should be harmless
-  // and avoids conflicting with our return value of 0 meaning
-  // that it doesn't exist.
-  if st.st_mtime == 0 {
-    return 1
-  }
-  return (int64_t)st.st_mtime * 1000000000LL + st.st_mtime_n
-  return ((int64_t)st.st_mtimespec.tv_sec * 1000000000LL + st.st_mtimespec.tv_nsec)
-  return (int64_t)st.st_mtim.tv_sec * 1000000000LL + st.st_mtim.tv_nsec
-  return (int64_t)st.st_mtime * 1000000000LL + st.st_mtimensec
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
@@ -304,15 +284,6 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
       // Report as remove(), not DeleteFile(), for cross-platform consistency.
       Error("remove(%s): %s", path, GetLastErrorString())
       return -1
-    }
-  }
-  if remove(path) < 0 {
-    switch (errno) {
-      case ENOENT:
-        return 1
-      default:
-        Error("remove(%s): %s", path, strerror(errno))
-        return -1
     }
   }
   return 0

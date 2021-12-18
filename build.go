@@ -123,7 +123,6 @@ type Builder struct {
   config_ *BuildConfig
   plan_ Plan
   command_runner_ auto_ptr<CommandRunner>
-  command_runner_ unique_ptr<CommandRunner>  // auto_ptr was removed in C++17.
   status_ *Status
 
   // Map of running edge to time the edge started running.

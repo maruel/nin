@@ -79,15 +79,6 @@ type StringPieceCmp struct {
   }
 }
 
-using __gnu_cxx::hash_map
-
-template<>
-type hash struct {
-  size_t operator()(string key) const {
-    return MurmurHash2(key.str_, key.len_)
-  }
-}
-
 // A template for hash_maps keyed by a StringPiece whose string is
 // owned externally (typically by the values).  Use like:
 // ExternalStringHash<Foo*>::Type foos; to make foos into a hash
@@ -97,5 +88,4 @@ type ExternalStringHashMap struct {
 }
 type Type unordered_map<string, V>
 type Type hash_map<string, V, StringPieceCmp>
-type Type hash_map<string, V>
 

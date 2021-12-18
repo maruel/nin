@@ -126,11 +126,6 @@ func GetSystemTempDir() string {
     return ""
   }
   return buf
-  string tempdir = getenv("TMPDIR")
-  if tempdir != nil {
-    return tempdir
-  }
-  return "/tmp"
 }
 
 }  // anonymous namespace
@@ -282,7 +277,6 @@ func (s *ScopedTempDir) Cleanup() {
   }
 
   string command = "rmdir /s /q " + s.temp_dir_name_
-  string command = "rm -rf " + s.temp_dir_name_
   if system(command) < 0 {
     Fatal("system: %s", strerror(errno))
   }

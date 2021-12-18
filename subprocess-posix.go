@@ -290,52 +290,6 @@ func (s *SubprocessSet) DoWork() bool {
   return IsInterrupted()
 }
 
-func (s *SubprocessSet) DoWork() bool {
-  var set fd_set
-  nfds := 0
-  FD_ZERO(&set)
-
-  for i := s.running_.begin(); i != s.running_.end(); i++ {
-    fd := (*i).fd_
-    if fd >= 0 {
-      FD_SET(fd, &set)
-      if nfds < fd+1 {
-        nfds = fd+1
-      }
-    }
-  }
-
-  s.interrupted_ = 0
-  ret := pselect(nfds, &set, 0, 0, 0, &s.old_mask_)
-  if ret == -1 {
-    if errno != EINTR {
-      perror("ninja: pselect")
-      return false
-    }
-    return IsInterrupted()
-  }
-
-  HandlePendingInterruption()
-  if IsInterrupted() {
-    return true
-  }
-
-  for i := s.running_.begin(); i != s.running_.end();  {
-    fd := (*i).fd_
-    if fd >= 0 && FD_ISSET(fd, &set) {
-      (*i).OnPipeReady()
-      if (*i).Done() {
-        s.finished_.push(*i)
-        i = s.running_.erase(i)
-        continue
-      }
-    }
-    i++
-  }
-
-  return IsInterrupted()
-}
-
 func (s *SubprocessSet) NextFinished() *Subprocess {
   if s.finished_.empty() {
     return nil

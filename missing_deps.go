@@ -43,8 +43,6 @@ type MissingDependencyScanner struct {
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
 	return !m.nodes_missing_deps_.empty()
 }
-type InnerAdjacencyMap map[*Edge]bool
-type AdjacencyMap map[*Edge]InnerAdjacencyMap
 
 
 // ImplicitDepLoader variant that stores dep nodes into the given output

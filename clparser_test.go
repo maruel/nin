@@ -88,7 +88,6 @@ func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
   const char kInput[] =
       "Note: including file: sub/./foo.h\r\nNote: including file: bar.h\r\n"
       "Note: including file: sub\\foo.h\r\n"
-      "Note: including file: sub/foo.h\r\n"
   if parser.Parse(kInput, "", &output, &err) { t.FailNow() }
   // We should have dropped one copy of foo.h.
   if "" != output { t.FailNow() }

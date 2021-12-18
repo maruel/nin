@@ -316,10 +316,6 @@ func (n *NinjaMain) ToolBrowse(options *Options, argc int, argv []*char) int {
   // If we get here, the browse failed.
   return 1
 }
-func (n *NinjaMain) ToolBrowse(Options* const, int, char**) int {
-  Fatal("browse tool not supported on this platform")
-  return 1
-}
 
 func (n *NinjaMain) ToolMSVC(options *Options, argc int, argv []*char) int {
   // Reset getopt: push one argument onto the front of argv, reset optind.
@@ -1378,6 +1374,5 @@ func main(argc int, argv *char*) int {
     // indicate a more serious problem.
     return 2
   }
-  real_main(argc, argv)
 }
 

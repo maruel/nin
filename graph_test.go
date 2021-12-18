@@ -197,7 +197,6 @@ func TestGraphTest_VarInOutPathEscaping(t *testing.T) {
 
   Edge* edge = GetNode("a b").in_edge()
   if "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\"" != edge.EvaluateCommand() { t.FailNow() }
-  if "cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'" != edge.EvaluateCommand() { t.FailNow() }
 }
 
 // Regression test for https://github.com/ninja-build/ninja/issues/380

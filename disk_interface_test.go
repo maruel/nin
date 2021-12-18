@@ -59,9 +59,6 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
   string bad_path("cc:\\foo")
   if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
   if "" == err { t.FailNow() }
-  string too_long_name(512, 'x')
-  if -1 != disk_.Stat(too_long_name, &err) { t.FailNow() }
-  if "" == err { t.FailNow() }
 }
 
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {

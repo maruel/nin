@@ -631,6 +631,328 @@ func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 }
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
-  if (var2 == "in" || var2 == "in_newline") {
-    int explicit_deps_count = edge_.inputs_.size() - edge_.implicit_deps_ -
-      edge_.order_only_deps_
+  if var2 == "in" || var2 == "in_newline" {
+    int explicit_deps_count = e.edge_.inputs_.size() - e.edge_.implicit_deps_ -
+      e.edge_.order_only_deps_
+    return MakePathList(e.edge_.inputs_.data(), explicit_deps_count,    var2 == "in" ? ' ' : '\n')//#else//return MakePathList(&edge_.inputs_[0], explicit_deps_count,//#endif
+  } else if var2 == "out" {
+    int explicit_outs_count = e.edge_.outputs_.size() - e.edge_.implicit_outs_
+    return MakePathList(&e.edge_.outputs_[0], explicit_outs_count, ' ')
+  }
+
+  if e.recursive_ {
+    var it vector<string>::const_iterator
+    if (it = find(e.lookups_.begin(), e.lookups_.end(), var2)) != e.lookups_.end() {
+      cycle := ""
+      for ; it != e.lookups_.end(); it++ {
+        cycle.append(*it + " . ")
+      }
+      cycle.append(var2)
+      Fatal(("cycle in rule variables: " + cycle))
+    }
+  }
+
+  // See notes on BindingEnv::LookupWithFallback.
+  eval := e.edge_.rule_.GetBinding(var2)
+  if e.recursive_ && eval {
+    e.lookups_.push_back(var2)
+  }
+
+  // In practice, variables defined on rules never use another rule variable.
+  // For performance, only start checking for cycles after the first lookup.
+  e.recursive_ = true
+  return e.edge_.env_.LookupWithFallback(var2, eval, this)
+}
+
+// Given a span of Nodes, construct a list of paths suitable for a command
+// line.
+func (e *EdgeEnv) MakePathList(span *Node* const, size uint, sep char) string {
+  result := ""
+  for i := span; i != span + size; i++ {
+    if len(result) != 0 {
+      result.push_back(sep)
+    }
+    path := (*i).PathDecanonicalized()
+    if e.escape_in_out_ == kShellEscape {
+      GetWin32EscapedString(path, &result)
+    } else {
+      result.append(path)
+    }
+  }
+  return result
+}
+
+// Expand all variables in a command and return it as a string.
+// If incl_rsp_file is enabled, the string will also contain the
+// full contents of a response file (if applicable)
+func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
+  string command = GetBinding("command")
+  if incl_rsp_file {
+    string rspfile_content = GetBinding("rspfile_content")
+    if !rspfile_content.empty() {
+      command += ";rspfile=" + rspfile_content
+    }
+  }
+  return command
+}
+
+// Returns the shell-escaped value of |key|.
+func (e *Edge) GetBinding(key string) string {
+  EdgeEnv env(this, EdgeEnv::kShellEscape)
+  return env.LookupVariable(key)
+}
+
+func (e *Edge) GetBindingBool(key string) bool {
+  return !GetBinding(key).empty()
+}
+
+// Like GetBinding("depfile"), but without shell escaping.
+func (e *Edge) GetUnescapedDepfile() string {
+  EdgeEnv env(this, EdgeEnv::kDoNotEscape)
+  return env.LookupVariable("depfile")
+}
+
+// Like GetBinding("dyndep"), but without shell escaping.
+func (e *Edge) GetUnescapedDyndep() string {
+  EdgeEnv env(this, EdgeEnv::kDoNotEscape)
+  return env.LookupVariable("dyndep")
+}
+
+// Like GetBinding("rspfile"), but without shell escaping.
+func (e *Edge) GetUnescapedRspfile() string {
+  EdgeEnv env(this, EdgeEnv::kDoNotEscape)
+  return env.LookupVariable("rspfile")
+}
+
+func (e *Edge) Dump(prefix string) {
+  printf("%s[ ", prefix)
+  for i := e.inputs_.begin(); i != e.inputs_.end() && *i != nil; i++ {
+    printf("%s ", (*i).path())
+  }
+  printf("--%s. ", e.rule_.name())
+  for i := e.outputs_.begin(); i != e.outputs_.end() && *i != nil; i++ {
+    printf("%s ", (*i).path())
+  }
+  if e.pool_ {
+    if !e.pool_.name().empty() {
+      printf("(in pool '%s')", e.pool_.name())
+    }
+  } else {
+    printf("(null pool?)")
+  }
+  printf("] 0x%p\n", this)
+}
+
+func (e *Edge) is_phony() bool {
+  return e.rule_ == &State::kPhonyRule
+}
+
+func (e *Edge) use_console() bool {
+  return pool() == &State::kConsolePool
+}
+
+func (e *Edge) maybe_phonycycle_diagnostic() bool {
+  // CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
+  // of the form "build a: phony ... a ...".   Restrict our
+  // "phonycycle" diagnostic option to the form it used.
+  return is_phony() && e.outputs_.size() == 1 && e.implicit_outs_ == 0 &&
+      e.implicit_deps_ == 0
+}
+
+// static
+func (n *Node) PathDecanonicalized(path string, slash_bits uint64) string {
+  result := path
+  mask := 1
+  for c := &result[0]; (c = strchr(c, '/')) != nil;  {
+    if slash_bits & mask {
+      *c = '\\'
+    }
+    c++
+    mask <<= 1
+  }
+  return result
+}
+
+func (n *Node) Dump(prefix string) {
+  printf("%s <%s 0x%p> mtime: %" PRId64 "%s, (:%s), ", prefix, path(), this, mtime(), exists() ? "" : " (:missing)", dirty() ? " dirty" : " clean")
+  if in_edge() {
+    in_edge().Dump("in-edge: ")
+  } else {
+    printf("no in-edge\n")
+  }
+  printf(" out edges:\n")
+  for e := out_edges().begin(); e != out_edges().end() && *e != nil; e++ {
+    (*e).Dump(" +- ")
+  }
+}
+
+// Load implicit dependencies for \a edge.
+// @return false on error (without filling \a err if info is just missing
+//                          or out of date).
+func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
+  string deps_type = edge.GetBinding("deps")
+  if !deps_type.empty() {
+    return LoadDepsFromLog(edge, err)
+  }
+
+  depfile := edge.GetUnescapedDepfile()
+  if len(depfile) != 0 {
+    return LoadDepFile(edge, depfile, err)
+  }
+
+  // No deps to load.
+  return true
+}
+
+type matches struct {
+
+  bool operator()(const Node* node) const {
+    string opath = string(node.path())
+    return *i_ == opath
+  }
+
+  i_ vector<string>::iterator
+}
+func Newmatches(i vector<string>::iterator) matches {
+	return matches{
+		i_: i,
+	}
+}
+
+// Load implicit dependencies for \a edge from a depfile attribute.
+// @return false on error (without filling \a err if info is just missing).
+func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
+  METRIC_RECORD("depfile load")
+  // Read depfile content.  Treat a missing depfile as empty.
+  content := ""
+  switch (i.disk_interface_.ReadFile(path, &content, err)) {
+  case DiskInterface::Okay:
+    break
+  case DiskInterface::NotFound:
+    err = nil
+    break
+  case DiskInterface::OtherError:
+    *err = "loading '" + path + "': " + *err
+    return false
+  }
+  // On a missing depfile: return false and empty *err.
+  if len(content) == 0 {
+    EXPLAIN("depfile '%s' is missing", path)
+    return false
+  }
+
+  DepfileParser depfile(i.depfile_parser_options_ ? *i.depfile_parser_options_ : DepfileParserOptions())
+  depfile_err := ""
+  if !depfile.Parse(&content, &depfile_err) {
+    *err = path + ": " + depfile_err
+    return false
+  }
+
+  if depfile.outs_.empty() {
+    *err = path + ": no outputs declared"
+    return false
+  }
+
+  var unused uint64
+  primary_out := depfile.outs_.begin()
+  CanonicalizePath(const_cast<char*>(primary_out.str_), &primary_out.len_, &unused)
+
+  // Check that this depfile matches the edge's output, if not return false to
+  // mark the edge as dirty.
+  first_output := edge.outputs_[0]
+  opath := string(first_output.path())
+  if opath != *primary_out {
+    EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out.AsString())
+    return false
+  }
+
+  // Ensure that all mentioned outputs are outputs of the edge.
+  for o := depfile.outs_.begin(); o != depfile.outs_.end(); o++ {
+    matches m(o)
+    if find_if(edge.outputs_.begin(), edge.outputs_.end(), m) == edge.outputs_.end() {
+      *err = path + ": depfile mentions '" + o.AsString() + "' as an output, but no such output was declared"
+      return false
+    }
+  }
+
+  return ProcessDepfileDeps(edge, &depfile.ins_, err)
+}
+
+// Process loaded implicit dependencies for \a edge and update the graph
+// @return false on error (without filling \a err if info is just missing)
+func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *[]string, err *string) bool {
+  // Preallocate space in edge->inputs_ to be filled in below.
+  vector<Node*>::iterator implicit_dep =
+      PreallocateSpace(edge, depfile_ins.size())
+
+  // Add all its in-edges.
+  for i := depfile_ins.begin(); i != depfile_ins.end(); i, ++implicit_dep++ {
+    var slash_bits uint64
+    CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
+    node := i.state_.GetNode(*i, slash_bits)
+    *implicit_dep = node
+    node.AddOutEdge(edge)
+    CreatePhonyInEdge(node)
+  }
+
+  return true
+}
+
+// Load implicit dependencies for \a edge from the DepsLog.
+// @return false on error (without filling \a err if info is just missing).
+func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
+  // NOTE: deps are only supported for single-target edges.
+  output := edge.outputs_[0]
+  DepsLog::Deps* deps = i.deps_log_ ? i.deps_log_.GetDeps(output) : nil
+  if deps == nil {
+    EXPLAIN("deps for '%s' are missing", output.path())
+    return false
+  }
+
+  // Deps are invalid if the output is newer than the deps.
+  if output.mtime() > deps.mtime {
+    EXPLAIN("stored deps info out of date for '%s' (%" PRId64 " vs %" PRId64 ")", output.path(), deps.mtime, output.mtime())
+    return false
+  }
+
+  vector<Node*>::iterator implicit_dep =
+      PreallocateSpace(edge, deps.node_count)
+  for i := 0; i < deps.node_count; i, ++implicit_dep++ {
+    node := deps.nodes[i]
+    *implicit_dep = node
+    node.AddOutEdge(edge)
+    CreatePhonyInEdge(node)
+  }
+  return true
+}
+
+// Preallocate \a count spaces in the input array on \a edge, returning
+// an iterator pointing at the first new space.
+func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) vector<Node*>::iterator {
+  edge.inputs_.insert(edge.inputs_.end() - edge.order_only_deps_, (size_t)count, 0)
+  edge.implicit_deps_ += count
+  return edge.inputs_.end() - edge.order_only_deps_ - count
+}
+
+// If we don't have a edge that generates this input already,
+// create one; this makes us not abort if the input is missing,
+// but instead will rebuild in that circumstance.
+func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
+  if node.in_edge() {
+    return
+  }
+
+  phony_edge := i.state_.AddEdge(&State::kPhonyRule)
+  phony_edge.generated_by_dep_loader_ = true
+  node.set_in_edge(phony_edge)
+  phony_edge.outputs_.push_back(node)
+
+  // RecomputeDirty might not be called for phony_edge if a previous call
+  // to RecomputeDirty had caused the file to be stat'ed.  Because previous
+  // invocations of RecomputeDirty would have seen this node without an
+  // input edge (and therefore ready), we have to set outputs_ready_ to true
+  // to avoid a potential stuck build.  If we do call RecomputeDirty for
+  // this node, it will simply set outputs_ready_ to the correct value.
+  phony_edge.outputs_ready_ = true
+}
+

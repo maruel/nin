@@ -64,13 +64,6 @@ const (
 LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
   string term = getenv("TERM")
   smart_terminal_ = isatty(1) && term && string(term) != "dumb"
-  if (term && string(term) == "dumb") {
-    smart_terminal_ = false
-  } else {
-    console_ = GetStdHandle(STD_OUTPUT_HANDLE)
-    CONSOLE_SCREEN_BUFFER_INFO csbi
-    smart_terminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
-  }
   supports_color_ = smart_terminal_
   if (!supports_color_) {
     string clicolor_force = getenv("CLICOLOR_FORCE")
@@ -127,15 +120,6 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
       }
       WriteConsoleOutput(l.console_, &char_data[0], buf_size, zero_zero, &target)
     }
-    // Limit output to width of the terminal if provided so we don't cause
-    // line-wrapping.
-    var size winsize
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0) && size.ws_col {
-      to_print = ElideMiddle(to_print, size.ws_col)
-    }
-    printf("%s", to_print)
-    printf("\x1B[K")  // Clear to end of line.
-    fflush(stdout)
 
     l.have_blank_line_ = false
   } else {

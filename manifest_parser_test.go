@@ -134,7 +134,6 @@ func TestParserTest_Dollars(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n" ))
   if "$dollar" != state.bindings_.LookupVariable("x") { t.FailNow() }
   if "$dollarbar$baz$blah" != state.edges_[0].EvaluateCommand() { t.FailNow() }
-  if "'$dollar'bar$baz$blah" != state.edges_[0].EvaluateCommand() { t.FailNow() }
 }
 
 func TestParserTest_EscapeSpaces(t *testing.T) {

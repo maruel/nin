@@ -85,31 +85,6 @@ func TimerToMicros(dt int64) int64 {
   // No conversion necessary.
   return dt
 }
-func LargeIntegerToInt64(i *LARGE_INTEGER) int64 {
-  return ((int64_t)i.HighPart) << 32 | i.LowPart
-}
-
-func HighResTimer() int64 {
-  var counter LARGE_INTEGER
-  if !QueryPerformanceCounter(&counter) {
-    Fatal("QueryPerformanceCounter: %s", GetLastErrorString())
-  }
-  return LargeIntegerToInt64(counter)
-}
-
-func TimerToMicros(dt int64) int64 {
-  ticks_per_sec := 0
-  if !ticks_per_sec {
-    var freq LARGE_INTEGER
-    if !QueryPerformanceFrequency(&freq) {
-      Fatal("QueryPerformanceFrequency: %s", GetLastErrorString())
-    }
-    ticks_per_sec = LargeIntegerToInt64(freq)
-  }
-
-  // dt is in ticks.  We want microseconds.
-  return (dt * 1000000) / ticks_per_sec
-}
 
 ScopedMetric::ScopedMetric(Metric* metric) {
   metric_ = metric
