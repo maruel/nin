@@ -401,8 +401,12 @@ type FakeCommandRunner struct {
   max_active_edges_ uint
   fs_ *VirtualFileSystem
 }
-FakeCommandRunner(VirtualFileSystem* fs) :
+func NewFakeCommandRunner(fs *VirtualFileSystem) FakeCommandRunner {
+	return FakeCommandRunner{
+	 :
     max_active_edges_(1), fs_(fs) {}
+	}
+}
 
 type BuildTest struct {
 
@@ -412,12 +416,20 @@ type BuildTest struct {
   status_ StatusPrinter
   builder_ Builder
 }
-BuildTest() : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
+func NewBuildTest() BuildTest {
+	return BuildTest{
+	 : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
               builder_(&state_, config_, nil, nil, &fs_, &status_, 0) {
 }
-BuildTest(DepsLog* log)
+	}
+}
+func NewBuildTest(log *DepsLog) BuildTest {
+	return BuildTest{
+
     : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
       builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
+	}
+}
 func (b *BuildTest) SetUp() {
   StateTestWithBuiltinRules::SetUp()
 
@@ -1227,8 +1239,12 @@ type BuildWithLogTest struct {
 
   build_log_ BuildLog
 }
-BuildWithLogTest() {
+func NewBuildWithLogTest() BuildWithLogTest {
+	return BuildWithLogTest{
+	 {
   builder_.SetBuildLog(&build_log_)
+}
+	}
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
@@ -1553,8 +1569,12 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 
 type BuildDryRun struct {
 }
-BuildDryRun() {
+func NewBuildDryRun() BuildDryRun {
+	return BuildDryRun{
+	 {
   config_.dry_run = true
+}
+	}
 }
 
 func TestBuildDryRun_AllCommandsShown(t *testing.T) {
@@ -1796,7 +1816,11 @@ type BuildWithQueryDepsLogTest struct {
 
   log_ DepsLog
 }
-BuildWithQueryDepsLogTest() : BuildTest(&log_) {
+func NewBuildWithQueryDepsLogTest() BuildWithQueryDepsLogTest {
+	return BuildWithQueryDepsLogTest{
+	 : BuildTest(&log_) {
+}
+	}
 }
 ~BuildWithQueryDepsLogTest() {
   log_.Close()
@@ -1977,7 +2001,11 @@ type BuildWithDepsLogTest struct {
   // Shadow parent class builder_ so we don't accidentally use it.
   builder_ *void
 }
-BuildWithDepsLogTest() {}
+func NewBuildWithDepsLogTest() BuildWithDepsLogTest {
+	return BuildWithDepsLogTest{
+	 {}
+	}
+}
 func (b *BuildWithDepsLogTest) SetUp() {
   BuildTest::SetUp()
 

@@ -71,7 +71,11 @@ type VirtualFileSystem struct {
   // A simple fake timestamp for file operations.
   now_ int
 }
-VirtualFileSystem() : now_(1) {}
+func NewVirtualFileSystem() VirtualFileSystem {
+	return VirtualFileSystem{
+	 : now_(1) {}
+	}
+}
 // Tick "time" forwards; subsequent file operations will be newer than
 // previous ones.
 func (v *VirtualFileSystem) Tick() int {

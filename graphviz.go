@@ -24,8 +24,12 @@ type GraphViz struct {
   visited_nodes_ map[*Node]struct{}
   visited_edges_ EdgeSet
 }
-GraphViz(State* state, DiskInterface* disk_interface)
+func NewGraphViz(state *State, disk_interface *DiskInterface) GraphViz {
+	return GraphViz{
+
     : dyndep_loader_(state, disk_interface) {}
+	}
+}
 
 
 func (g *GraphViz) AddTarget(node *Node) {

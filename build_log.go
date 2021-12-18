@@ -225,9 +225,13 @@ type LineReader struct {
   // Points at the next \n in buf_ after line_start, or NULL.
   line_end_ *char
 }
-LineReader(FILE* file)
+func NewLineReader(file *FILE) LineReader {
+	return LineReader{
+
   : file_(file), buf_end_(buf_), line_start_(buf_), line_end_(nil) {
     memset(buf_, 0, sizeof(buf_))
+}
+	}
 }
 // Reads a \n-terminated line from the file passed to the constructor.
 // On return, *line_start points to the beginning of the next line, and

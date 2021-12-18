@@ -53,9 +53,13 @@ type NodeStoringImplicitDepLoader struct {
 
   dep_nodes_output_ *[]*Node
 }
-NodeStoringImplicitDepLoader( State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options, vector<Node*>* dep_nodes_output)
+func NewNodeStoringImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions const, dep_nodes_output *[]*Node) NodeStoringImplicitDepLoader {
+	return NodeStoringImplicitDepLoader{
+
     : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
       dep_nodes_output_(dep_nodes_output) {}
+	}
+}
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *[]string, err *string) bool {
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {

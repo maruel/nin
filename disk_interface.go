@@ -48,9 +48,13 @@ type RealDiskInterface struct {
   // works out, come up with a better data structure.
   cache_ mutable Cache
 }
-RealDiskInterface()
+func NewRealDiskInterface() RealDiskInterface {
+	return RealDiskInterface{
+
                     : use_cache_(false)
                     {}
+	}
+}
 type DirCache map[string]TimeStamp
 type Cache map[string]DirCache
 

@@ -75,7 +75,11 @@ type Result struct {
   status ExitStatus
   output string
   }
-Result() : edge(nil) {}
+func NewResult() Result {
+	return Result{
+	 : edge(nil) {}
+	}
+}
 func (c *CommandRunner) success() bool {
 	return status == ExitSuccess
 }
@@ -96,8 +100,12 @@ type BuildConfig struct {
   max_load_average float64
   depfile_parser_options DepfileParserOptions
 }
-BuildConfig() : verbosity(NORMAL), dry_run(false), parallelism(1),
+func NewBuildConfig() BuildConfig {
+	return BuildConfig{
+	 : verbosity(NORMAL), dry_run(false), parallelism(1),
                 failures_allowed(1), max_load_average(-0.0f) {}
+	}
+}
 type Verbosity int
 const (
   QUIET Verbosity = iota  // No output -- used when testing.
@@ -558,7 +566,11 @@ type RealCommandRunner struct {
   subprocs_ SubprocessSet
   subproc_to_edge_ map[*Subprocess]*Edge
 }
-RealCommandRunner(const BuildConfig& config) : config_(config) {}
+func NewRealCommandRunner(config *BuildConfig) RealCommandRunner {
+	return RealCommandRunner{
+	 : config_(config) {}
+	}
+}
 
 func (r *RealCommandRunner) GetActiveEdges() []*Edge {
   var edges []*Edge

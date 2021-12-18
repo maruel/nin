@@ -25,8 +25,12 @@ type Parser struct {
   lexer_ Lexer
 
 }
-Parser(State* state, FileReader* file_reader)
+func NewParser(state *State, file_reader *FileReader) Parser {
+	return Parser{
+
     : state_(state), file_reader_(file_reader) {}
+	}
+}
 
 
 // Load and parse a file.

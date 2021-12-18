@@ -69,15 +69,23 @@ type DepsLog struct {
 
   DepsLogTest friend struct
 }
-DepsLog() : needs_recompaction_(false), file_(nil) {}
+func NewDepsLog() DepsLog {
+	return DepsLog{
+	 : needs_recompaction_(false), file_(nil) {}
+	}
+}
 // Reading (startup-time) interface.
 type Deps struct {
   mtime TimeStamp
   node_count int
   nodes *Node*
   }
-Deps(int64_t mtime, int node_count)
+func NewDeps(mtime int64, node_count int) Deps {
+	return Deps{
+
   : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
+	}
+}
 ~Deps() { delete [] nodes; }
 // Used for tests.
 func (d *DepsLog) nodes() *[]*Node {

@@ -24,7 +24,11 @@ type Dyndeps struct {
   implicit_inputs_ []*Node
   implicit_outputs_ []*Node
 }
-Dyndeps() : used_(false), restat_(false) {}
+func NewDyndeps() Dyndeps {
+	return Dyndeps{
+	 : used_(false), restat_(false) {}
+	}
+}
 
 // Store data loaded from one dyndep file.  Map from an edge
 // to its dynamically-discovered dependency information.
@@ -39,8 +43,12 @@ type DyndepLoader struct {
   state_ *State
   disk_interface_ *DiskInterface
 }
-DyndepLoader(State* state, DiskInterface* disk_interface)
+func NewDyndepLoader(state *State, disk_interface *DiskInterface) DyndepLoader {
+	return DyndepLoader{
+
     : state_(state), disk_interface_(disk_interface) {}
+	}
+}
 
 
 // Load a dyndep file from the given node's path and update the

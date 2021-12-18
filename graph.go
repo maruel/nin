@@ -54,7 +54,9 @@ type Node struct {
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
 }
-Node(string path, uint64_t slash_bits)
+func NewNode(path string, slash_bits uint64) Node {
+	return Node{
+
     : path_(path),
       slash_bits_(slash_bits),
       mtime_(-1),
@@ -63,6 +65,8 @@ Node(string path, uint64_t slash_bits)
       dyndep_pending_(false),
       in_edge_(nil),
       id_(-1) {}
+	}
+}
 // Return false on error.
 func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
   if status_known() {
@@ -186,11 +190,15 @@ const (
   VisitInStack
   VisitDone
 )
-Edge()
+func NewEdge() Edge {
+	return Edge{
+
     : rule_(nil), pool_(nil), dyndep_(nil), env_(nil), mark_(VisitNone),
       id_(0), outputs_ready_(false), deps_loaded_(false),
       deps_missing_(false), generated_by_dep_loader_(false),
       implicit_deps_(0), order_only_deps_(0), implicit_outs_(0) {}
+	}
+}
 func (e *Edge) rule() *Rule {
 	return *e.rule_
 }
@@ -231,9 +239,13 @@ type ImplicitDepLoader struct {
   deps_log_ *DepsLog
   depfile_parser_options_ *DepfileParserOptions const
 }
-ImplicitDepLoader(State* state, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
+func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions const) ImplicitDepLoader {
+	return ImplicitDepLoader{
+
     : state_(state), disk_interface_(disk_interface), deps_log_(deps_log),
       depfile_parser_options_(depfile_parser_options) {}
+	}
+}
 func (i *ImplicitDepLoader) deps_log() *DepsLog {
   return i.deps_log_
 }
@@ -247,11 +259,15 @@ type DependencyScan struct {
   dep_loader_ ImplicitDepLoader
   dyndep_loader_ DyndepLoader
 }
-DependencyScan(State* state, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, DepfileParserOptions const* depfile_parser_options)
+func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions const) DependencyScan {
+	return DependencyScan{
+
     : build_log_(build_log),
       disk_interface_(disk_interface),
       dep_loader_(state, deps_log, disk_interface, depfile_parser_options),
       dyndep_loader_(state, disk_interface) {}
+	}
+}
 func (d *DependencyScan) build_log() *BuildLog {
   return d.build_log_
 }
@@ -610,8 +626,12 @@ const (
 	kShellEscape EscapeKind = iota
 	kDoNotEscape
 )
-EdgeEnv(const Edge* const edge, const EscapeKind escape)
+func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
+	return EdgeEnv{
+
     : edge_(edge), escape_in_out_(escape), recursive_(false) {}
+	}
+}
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
   if (var2 == "in" || var2 == "in_newline") {

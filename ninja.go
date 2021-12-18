@@ -61,9 +61,13 @@ type NinjaMain struct {
 
   start_time_millis_ int64
 }
-NinjaMain(string ninja_command, const BuildConfig& config) :
+func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
+	return NinjaMain{
+	 :
     ninja_command_(ninja_command), config_(config),
     start_time_millis_(GetTimeMillis()) {}
+	}
+}
 typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 func (n *NinjaMain) IsPathDead(s string) bool {
   n := n.state_.LookupNode(s)

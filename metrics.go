@@ -51,7 +51,11 @@ type Stopwatch struct {
 
   started_ uint64
 }
-Stopwatch() : started_(0) {}
+func NewStopwatch() Stopwatch {
+	return Stopwatch{
+	 : started_(0) {}
+	}
+}
 // Seconds since Restart() call.
 func (s *Stopwatch) Elapsed() float64 {
   return 1e-6 * static_cast<double>(Now() - s.started_)
