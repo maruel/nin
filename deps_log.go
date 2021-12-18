@@ -58,7 +58,6 @@ package ginja
 // repacking step can run occasionally to remove dead records.
 type DepsLog struct {
   DepsLog() : needs_recompaction_(false), file_(nil) {}
-  ~DepsLog()
 
   needs_recompaction_ bool
   file_ *FILE

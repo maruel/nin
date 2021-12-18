@@ -109,7 +109,6 @@ const (
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
   Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
-  ~Builder()
 
   state_ *State
   config_ *BuildConfig

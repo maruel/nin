@@ -29,7 +29,6 @@ type BuildLogUser struct {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-  ~BuildLog()
 
   Entries typedef ExternalStringHashMap<LogEntry*>::Type
 
