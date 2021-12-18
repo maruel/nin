@@ -60,8 +60,6 @@ type DepsLog struct {
   DepsLog() : needs_recompaction_(false), file_(nil) {}
   ~DepsLog()
 
-  // Reading (startup-time) interface.
-
   // Used for tests.
   const vector<Node*>& nodes() const { return nodes_; }
   const vector<Deps*>& deps() const { return deps_; }

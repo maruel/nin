@@ -95,8 +95,6 @@ type Tool struct {
   // Description (shown in "-t list").
   desc string
 
-  // When to run the tool.
-
   // Implementation of the tool.
   func NinjaMain::ToolFunc
 }

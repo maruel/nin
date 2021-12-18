@@ -57,11 +57,6 @@ void AssertParse(State* state, string input, ManifestParserOptions = ManifestPar
 type VirtualFileSystem struct {
   VirtualFileSystem() : now_(1) {}
 
-  // Tick "time" forwards; subsequent file operations will be newer than
-  // previous ones.
-
-  // An entry for a single in-memory file.
-
   directories_made_ []string
   files_read_ []string
   FileMap typedef map<string, Entry>

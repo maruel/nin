@@ -20,8 +20,6 @@ package ginja
 // Parses dyndep files.
 type DyndepParser struct {
 
-  // Parse a text string of input.  Used by tests.
-
   dyndep_file_ *DyndepFile
   env_ BindingEnv
 }

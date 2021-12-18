@@ -41,8 +41,6 @@ type ManifestParserOptions struct {
 type ManifestParser struct {
   ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options = ManifestParserOptions())
 
-  // Parse a text string of input.  Used by tests.
-
   env_ *BindingEnv
   options_ ManifestParserOptions
   quiet_ bool

@@ -29,10 +29,6 @@ func (c *CompareEdgesByOutput) cmp(a *Edge, b *Edge) bool {
 type PlanTest struct {
   plan_ Plan
 
-  // Because FindWork does not return Edges in any sort of predictable order,
-  // provide a means to get available Edges in order and in a format which is
-  // easy to write tests around.
-
   void TestPoolWithDepthOne(stringtest_case)
 }
 // Because FindWork does not return Edges in any sort of predictable order,

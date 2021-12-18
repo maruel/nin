@@ -51,8 +51,6 @@ type Metrics struct {
 type Stopwatch struct {
   Stopwatch() : started_(0) {}
 
-  // Seconds since Restart() call.
-
   void Restart() { started_ = Now(); }
 
   started_ uint64

@@ -22,8 +22,6 @@ package ginja
 type FileReader struct {
   virtual ~FileReader() {}
 
-  // Result of ReadFile.
-
 }
 // Result of ReadFile.
 type Status int

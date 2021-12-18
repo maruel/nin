@@ -19,10 +19,6 @@ package ginja
 
 type Cleaner struct {
 
-  // @return the number of file cleaned.
-
-  // @return whether the cleaner is in verbose mode.
-
   state_ *State
   config_ *BuildConfig
   dyndep_loader_ DyndepLoader

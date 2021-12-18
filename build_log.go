@@ -222,11 +222,6 @@ type LineReader struct {
       memset(buf_, 0, sizeof(buf_))
   }
 
-  // Reads a \n-terminated line from the file passed to the constructor.
-  // On return, *line_start points to the beginning of the next line, and
-  // *line_end points to the \n at the end of the line. If no newline is seen
-  // in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
-
   file_ *FILE
   char buf_[256 << 10]
   buf_end_ *char  // Points one past the last valid byte in |buf_|.
