@@ -25,6 +25,7 @@ type FileReader struct {
   // Result of ReadFile.
 
 }
+  // Result of ReadFile.
   enum Status {
     Okay,
     NotFound,

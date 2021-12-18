@@ -100,6 +100,7 @@ type Tool struct {
   // Implementation of the tool.
   func NinjaMain::ToolFunc
 }
+  // When to run the tool.
   enum {
     // Run after parsing the command-line flags and potentially changing
     // the current working directory (as early as possible).

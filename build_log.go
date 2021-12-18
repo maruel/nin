@@ -235,6 +235,10 @@ type LineReader struct {
   // Points at the next \n in buf_ after line_start, or NULL.
   line_end_ *char
 }
+  // Reads a \n-terminated line from the file passed to the constructor.
+  // On return, *line_start points to the beginning of the next line, and
+  // *line_end points to the \n at the end of the line. If no newline is seen
+  // in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
   func (l *LineReader) ReadLine(line_start *char*, line_end *char*) bool {
     if line_start_ >= buf_end_ || !line_end_ {
       // Buffer empty, refill.

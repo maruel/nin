@@ -93,17 +93,20 @@ type Node struct {
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
 }
+  // Return false on error.
   func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
     if status_known() {
       return true
     }
     return Stat(disk_interface, err)
   }
+  // Mark as not-yet-stat()ed and not dirty.
   func (n *Node) ResetState() {
     mtime_ = -1
     exists_ = ExistenceStatusUnknown
     dirty_ = false
   }
+  // Mark the Node as already-stat()ed and missing.
   func (n *Node) MarkMissing() {
     if mtime_ == -1 {
       mtime_ = 0
@@ -116,6 +119,7 @@ type Node struct {
   func (n *Node) status_known() bool {
     return exists_ != ExistenceStatusUnknown
   }
+  // Get |path()| but use slash_bits to convert back to original slash styles.
   func (n *Node) PathDecanonicalized() string {
     return PathDecanonicalized(path_, slash_bits_)
   }

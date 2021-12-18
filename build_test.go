@@ -35,6 +35,9 @@ type PlanTest struct {
 
   void TestPoolWithDepthOne(stringtest_case)
 }
+  // Because FindWork does not return Edges in any sort of predictable order,
+  // provide a means to get available Edges in order and in a format which is
+  // easy to write tests around.
   func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
     for i := 0; i < count; i++ {
       if plan_.more_to_do() { t.FailNow() }

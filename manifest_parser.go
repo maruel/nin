@@ -45,6 +45,7 @@ type ManifestParser struct {
   options_ ManifestParserOptions
   quiet_ bool
 }
+  // Parse a text string of input.  Used by tests.
   func (m *ManifestParser) ParseTest(input string, err *string) bool {
     quiet_ = true
     return Parse("input", input, err)
