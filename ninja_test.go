@@ -49,7 +49,7 @@ string StringPrintf(string format, ...) {
 }
 
 func Usage() {
-  fprintf(stderr, "usage: ninja_tests [options]\n" "\n" "options:\n" "  --gtest_filter=POSTIVE_PATTERN[-NEGATIVE_PATTERN]\n" "      Run tests whose names match the positive but not the negative pattern.\n" "      '*' matches any substring. (gtest's ':', '?' are not implemented).\n")
+  fprintf(stderr, "usage: ninja_tests [options]\n\noptions:\n  --gtest_filter=POSTIVE_PATTERN[-NEGATIVE_PATTERN]\n      Run tests whose names match the positive but not the negative pattern.\n      '*' matches any substring. (gtest's ':', '?' are not implemented).\n")
 }
 
 func PatternMatchesString(pattern string, str string) bool {

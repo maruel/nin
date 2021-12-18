@@ -200,7 +200,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
   }
 
   if rule.bindings_["rspfile"].empty() != rule.bindings_["rspfile_content"].empty() {
-    return m.lexer_.Error("rspfile and rspfile_content need to be " "both specified", err)
+    return m.lexer_.Error("rspfile and rspfile_content need to be both specified", err)
   }
 
   if rule.bindings_["command"].empty() {
@@ -394,7 +394,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
         return false
       } else {
         if !m.quiet_ {
-          Warning( "multiple rules generate %s. builds involving this target will " "not be correct; continuing anyway", path)
+          Warning( "multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
         }
         if e - i <= static_cast<size_t>(implicit_outs) {
           implicit_outs--
@@ -435,7 +435,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     if new_end != edge.inputs_.end() {
       edge.inputs_.erase(new_end, edge.inputs_.end())
       if !m.quiet_ {
-        Warning("phony target '%s' names itself as an input; " "ignoring [-w phonycycle=warn]", out.path())
+        Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.path())
       }
     }
   }

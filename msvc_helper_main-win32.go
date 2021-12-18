@@ -18,7 +18,7 @@ package ginja
 
 
 func Usage() {
-  printf( "usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\n" "options:\n" "  -e ENVFILE load environment block from ENVFILE as environment\n" "  -o FILE    write output dependency information to FILE.d\n" "  -p STRING  localized prefix of msvc's /showIncludes output\n" )
+  printf( "usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n" )
 }
 
 func PushPathIntoEnvironment(env_block string) {

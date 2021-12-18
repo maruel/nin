@@ -246,7 +246,7 @@ func TestStatTest_Simple(t *testing.T) {
 }
 
 func TestStatTest_TwoStep(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
 
   Node* out = GetNode("out")
   err := ""
@@ -263,7 +263,7 @@ func TestStatTest_TwoStep(t *testing.T) {
 }
 
 func TestStatTest_Tree(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\n" "build mid1: cat in11 in12\n" "build mid2: cat in21 in22\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n"))
 
   Node* out = GetNode("out")
   err := ""
@@ -278,7 +278,7 @@ func TestStatTest_Tree(t *testing.T) {
 }
 
 func TestStatTest_Middle(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
 
   mtimes_["in"] = 1
   mtimes_["mid"] = 0  // missing

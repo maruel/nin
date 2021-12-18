@@ -190,8 +190,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
       if dependent != nil {
         referenced = ", needed by '" + dependent.path() + "',"
       }
-      *err = "'" + node.path() + "'" + referenced + " missing "
-             "and no known rule to make it"
+      *err = "'" + node.path() + "'" + referenced + " missing and no known rule to make it"
     }
     return false
   }

@@ -22,7 +22,7 @@ func TestJSONTest_RegularAscii(t *testing.T) {
 }
 
 func TestJSONTest_EscapedChars(t *testing.T) {
-  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"" "\\\\" "\\b\\f\\n\\r\\t" { t.FailNow() }
+  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"\\\\\\b\\f\\n\\r\\t" { t.FailNow() }
 }
 
 // codepoints between 0 and 0x1f should be escaped

@@ -161,11 +161,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 // Verify that adding the new deps works and can be compacted away.
 func TestDepsLogTest_Recompact(t *testing.T) {
   const char kManifest[] =
-"rule cc\n"
-"  command = cc\n"
-"  deps = gcc\n"
-"build out.o: cc\n"
-"build other_out.o: cc\n"
+"rule cc\n  command = cc\n  deps = gcc\nbuild out.o: cc\nbuild other_out.o: cc\n"
 
   // Write some deps to the file and grab its size.
   file_size := 0

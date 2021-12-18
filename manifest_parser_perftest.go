@@ -68,7 +68,7 @@ func main(argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: manifest_parser_perftest\n" "\n" "options:\n" "  -f     only measure manifest load time, not command evaluation time\n" )
+      printf("usage: manifest_parser_perftest\n\noptions:\n  -f     only measure manifest load time, not command evaluation time\n" )
     return 1
     }
   }

@@ -290,7 +290,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
       sscanf(line_start, kFileSignature, &log_version)
 
       if log_version < kOldestSupportedVersion {
-        *err = ("build log version invalid, perhaps due to being too old; " "starting over")
+        *err = ("build log version invalid, perhaps due to being too old; starting over")
         fclose(file)
         unlink(path)
         // Don't report this as a failure.  An empty build log will cause

@@ -539,7 +539,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
     }
 
     if output_mtime < most_recent_input.mtime() {
-      EXPLAIN("%soutput %s older than most recent input %s " "(%" PRId64 " vs %" PRId64 ")", used_restat ? "restat of " : "", output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
+      EXPLAIN("%soutput %s older than most recent input %s (%" PRId64 " vs %" PRId64 ")", used_restat ? "restat of " : "", output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
       return true
     }
   }

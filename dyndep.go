@@ -76,7 +76,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) boo
 
     ddi := ddf.find(edge)
     if ddi == ddf.end() {
-      *err = ("'" + edge.outputs_[0].path() + "' " "not mentioned in its dyndep file " "'" + node.path() + "'")
+      *err = ("'" + edge.outputs_[0].path() + "' not mentioned in its dyndep file '" + node.path() + "'")
       return false
     }
 
@@ -91,7 +91,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) boo
   for oe := ddf.begin(); oe != ddf.end(); oe++ {
     if !oe.second.used_ {
       edge := oe.first
-      *err = ("dyndep file '" + node.path() + "' mentions output " "'" + edge.outputs_[0].path() + "' whose build statement " "does not have a dyndep binding for the file")
+      *err = ("dyndep file '" + node.path() + "' mentions output '" + edge.outputs_[0].path() + "' whose build statement does not have a dyndep binding for the file")
       return false
     }
   }

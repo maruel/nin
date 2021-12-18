@@ -33,7 +33,7 @@ func (b *BuildLogTest) IsPathDead(s string) bool {
 }
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
-  AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
+  AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n")
 
   var log1 BuildLog
   err := ""
@@ -108,7 +108,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 }
 
 func TestBuildLogTest_Truncate(t *testing.T) {
-  AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
+  AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n")
 
   {
     var log1 BuildLog
@@ -229,7 +229,7 @@ func (t *TestDiskInterface) RemoveFile(path string) int {
 
 func TestBuildLogTest_Restat(t *testing.T) {
   FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n" "1\t2\t3\tout\tcommand\n")
+  fprintf(f, "# ninja log v4\n1\t2\t3\tout\tcommand\n")
   fclose(f)
   err := ""
   var log BuildLog
@@ -307,7 +307,7 @@ func (b *BuildLogRecompactTest) IsPathDead(s string) bool {
 }
 
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
-  AssertParse(&state_, "build out: cat in\n" "build out2: cat in\n")
+  AssertParse(&state_, "build out: cat in\nbuild out2: cat in\n")
 
   var log1 BuildLog
   err := ""

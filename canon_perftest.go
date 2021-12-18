@@ -18,8 +18,7 @@ package ginja
 
 
 const char kPath[] =
-    "../../third_party/WebKit/Source/WebCore/"
-    "platform/leveldb/LevelDBWriteBatch.cpp"
+    "../../third_party/WebKit/Source/WebCore/platform/leveldb/LevelDBWriteBatch.cpp"
 
 func main() int {
   var times []int

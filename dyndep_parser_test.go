@@ -30,7 +30,7 @@ func (d *DyndepParserTest) AssertParse(input string) {
   if "" != err { t.FailNow() }
 }
 func (d *DyndepParserTest) SetUp() {
-  ::AssertParse(&d.state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
+  ::AssertParse(&d.state_, "rule touch\n  command = touch $out\nbuild out otherout: touch\n")
 }
 
 func TestDyndepParserTest_Empty(t *testing.T) {
@@ -59,11 +59,11 @@ func TestDyndepParserTest_Version1_0Extra(t *testing.T) {
 }
 
 func TestDyndepParserTest_CommentVersion(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\n" "ninja_dyndep_version = 1\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\nninja_dyndep_version = 1\n"))
 }
 
 func TestDyndepParserTest_BlankLineVersion(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "\n" "ninja_dyndep_version = 1\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "\nninja_dyndep_version = 1\n"))
 }
 
 func TestDyndepParserTest_VersionCRLF(t *testing.T) {
@@ -71,11 +71,11 @@ func TestDyndepParserTest_VersionCRLF(t *testing.T) {
 }
 
 func TestDyndepParserTest_CommentVersionCRLF(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\r\n" "ninja_dyndep_version = 1\r\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "# comment\r\nninja_dyndep_version = 1\r\n"))
 }
 
 func TestDyndepParserTest_BlankLineVersionCRLF(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "\r\n" "ninja_dyndep_version = 1\r\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "\r\nninja_dyndep_version = 1\r\n"))
 }
 
 func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
@@ -84,7 +84,7 @@ func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unexpected EOF\n" "ninja_dyndep_version = 1.0\n" "                          ^ near here" != err { t.FailNow() }
+  if "input:1: unexpected EOF\nninja_dyndep_version = 1.0\n                          ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
@@ -93,7 +93,7 @@ func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unsupported 'ninja_dyndep_version = 0'\n" "ninja_dyndep_version = 0\n" "                        ^ near here" != err { t.FailNow() }
+  if "input:1: unsupported 'ninja_dyndep_version = 0'\nninja_dyndep_version = 0\n                        ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
@@ -102,13 +102,12 @@ func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unsupported 'ninja_dyndep_version = 1.1'\n" "ninja_dyndep_version = 1.1\n" "                          ^ near here" != err { t.FailNow() }
+  if "input:1: unsupported 'ninja_dyndep_version = 1.1'\nninja_dyndep_version = 1.1\n                          ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"ninja_dyndep_version = 1\n"
+"ninja_dyndep_version = 1\nninja_dyndep_version = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
@@ -121,7 +120,7 @@ func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: expected 'ninja_dyndep_version = ...'\n" "not_ninja_dyndep_version = 1\n" "                            ^ near here" != err { t.FailNow() }
+  if "input:1: expected 'ninja_dyndep_version = ...'\nnot_ninja_dyndep_version = 1\n                            ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
@@ -153,143 +152,124 @@ func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
 
 func TestDyndepParserTest_OutDuplicate(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep\n"
-"build out: dyndep\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: multiple statements for 'out'\n" "build out: dyndep\n" "         ^ near here" != err { t.FailNow() }
+  if "input:3: multiple statements for 'out'\nbuild out: dyndep\n         ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep\n"
-"build otherout: dyndep\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep\nbuild otherout: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: multiple statements for 'otherout'\n" "build otherout: dyndep\n" "              ^ near here" != err { t.FailNow() }
+  if "input:3: multiple statements for 'otherout'\nbuild otherout: dyndep\n              ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_NoOutEOF(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build"
+"ninja_dyndep_version = 1\nbuild"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\n" "build\n" "     ^ near here" != err { t.FailNow() }
+  if "input:2: unexpected EOF\nbuild\n     ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_NoOutColon(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build :\n"
+"ninja_dyndep_version = 1\nbuild :\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected path\n" "build :\n" "      ^ near here" != err { t.FailNow() }
+  if "input:2: expected path\nbuild :\n      ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutNoStatement(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build missing: dyndep\n"
+"ninja_dyndep_version = 1\nbuild missing: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: no build statement exists for 'missing'\n" "build missing: dyndep\n" "             ^ near here" != err { t.FailNow() }
+  if "input:2: no build statement exists for 'missing'\nbuild missing: dyndep\n             ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutEOF(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out"
+"ninja_dyndep_version = 1\nbuild out"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\n" "build out\n" "         ^ near here" != err { t.FailNow() }
+  if "input:2: unexpected EOF\nbuild out\n         ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutNoRule(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out:"
+"ninja_dyndep_version = 1\nbuild out:"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected build command name 'dyndep'\n" "build out:\n" "          ^ near here" != err { t.FailNow() }
+  if "input:2: expected build command name 'dyndep'\nbuild out:\n          ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OutBadRule(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: touch"
+"ninja_dyndep_version = 1\nbuild out: touch"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected build command name 'dyndep'\n" "build out: touch\n" "           ^ near here" != err { t.FailNow() }
+  if "input:2: expected build command name 'dyndep'\nbuild out: touch\n           ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_BuildEOF(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep"
+"ninja_dyndep_version = 1\nbuild out: dyndep"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\n" "build out: dyndep\n" "                 ^ near here" != err { t.FailNow() }
+  if "input:2: unexpected EOF\nbuild out: dyndep\n                 ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_ExplicitOut(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out exp: dyndep\n"
+"ninja_dyndep_version = 1\nbuild out exp: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: explicit outputs not supported\n" "build out exp: dyndep\n" "             ^ near here" != err { t.FailNow() }
+  if "input:2: explicit outputs not supported\nbuild out exp: dyndep\n             ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_ExplicitIn(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep exp\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep exp\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: explicit inputs not supported\n" "build out: dyndep exp\n" "                     ^ near here" != err { t.FailNow() }
+  if "input:2: explicit inputs not supported\nbuild out: dyndep exp\n                     ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep ||\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep ||\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: order-only inputs not supported\n" "build out: dyndep ||\n" "                  ^ near here" != err { t.FailNow() }
+  if "input:2: order-only inputs not supported\nbuild out: dyndep ||\n                  ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_BadBinding(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep\n"
-"  not_restat = 1\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep\n  not_restat = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: binding is not 'restat'\n" "  not_restat = 1\n" "                ^ near here" != err { t.FailNow() }
+  if "input:3: binding is not 'restat'\n  not_restat = 1\n                ^ near here" != err { t.FailNow() }
 }
 
 func TestDyndepParserTest_RestatTwice(t *testing.T) {
   const char kInput[] =
-"ninja_dyndep_version = 1\n"
-"build out: dyndep\n"
-"  restat = 1\n"
-"  restat = 1\n"
+"ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n  restat = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
   if !parser.ParseTest(kInput, &err) { t.FailNow() }
@@ -297,7 +277,7 @@ func TestDyndepParserTest_RestatTwice(t *testing.T) {
 }
 
 func TestDyndepParserTest_NoImplicit(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -308,7 +288,7 @@ func TestDyndepParserTest_NoImplicit(t *testing.T) {
 }
 
 func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | : dyndep |\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | : dyndep |\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -319,7 +299,7 @@ func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitIn(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep | impin\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep | impin\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -331,7 +311,7 @@ func TestDyndepParserTest_ImplicitIn(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitIns(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep | impin1 impin2\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep | impin1 impin2\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -344,7 +324,7 @@ func TestDyndepParserTest_ImplicitIns(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitOut(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout: dyndep\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout: dyndep\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -356,7 +336,7 @@ func TestDyndepParserTest_ImplicitOut(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout1 impout2 : dyndep\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout1 impout2 : dyndep\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -369,7 +349,7 @@ func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out | impout1 impout2: dyndep | impin1 impin2\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout1 impout2: dyndep | impin1 impin2\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -384,7 +364,7 @@ func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
 }
 
 func TestDyndepParserTest_Restat(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep\n" "  restat = 1\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -395,7 +375,7 @@ func TestDyndepParserTest_Restat(t *testing.T) {
 }
 
 func TestDyndepParserTest_OtherOutput(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build otherout: dyndep\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild otherout: dyndep\n"))
 
   if 1u != dyndep_file_.size() { t.FailNow() }
   i := dyndep_file_.find(state_.edges_[0])
@@ -412,7 +392,7 @@ func TestDyndepParserTest_MultipleEdges(t *testing.T) {
   if "out2" != state_.edges_[1].outputs_[0].path() { t.FailNow() }
   if 0u != state_.edges_[0].inputs_.size() { t.FailNow() }
 
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\n" "build out: dyndep\n" "build out2: dyndep\n" "  restat = 1\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out2: dyndep\n  restat = 1\n"))
 
   if 2u != dyndep_file_.size() { t.FailNow() }
   {

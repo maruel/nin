@@ -108,8 +108,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
       CloseHandle(nul)
       s.pipe_ = nil
       // child_ is already NULL;
-      s.buf_ = "CreateProcess failed: The system cannot find the file "
-          "specified.\n"
+      s.buf_ = "CreateProcess failed: The system cannot find the file specified.\n"
       return true
     } else {
       fprintf(stderr, "\nCreateProcess failed. Command attempted:\n\"%s\"\n", command)

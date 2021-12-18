@@ -138,7 +138,7 @@ StateTestWithBuiltinRules::StateTestWithBuiltinRules() {
 // Add a "cat" rule to \a state.  Used by some tests; it's
 // otherwise done by the ctor to state_.
 func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
-  AssertParse(state, "rule cat\n" "  command = cat $in > $out\n")
+  AssertParse(state, "rule cat\n  command = cat $in > $out\n")
 }
 
 // Short way to get a Node by its path from state_.

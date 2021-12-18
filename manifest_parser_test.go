@@ -35,7 +35,7 @@ func TestParserTest_Empty(t *testing.T) {
 }
 
 func TestParserTest_Rules(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = cat $in > $out\n" "\n" "rule date\n" "  command = date > $out\n" "\n" "build result: cat in_1.cc in-2.O\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n  command = cat $in > $out\n\nrule date\n  command = date > $out\n\nbuild result: cat in_1.cc in-2.O\n"))
 
   if 3u != state.bindings_.GetRules().size() { t.FailNow() }
   rule := state.bindings_.GetRules().begin().second
@@ -45,11 +45,11 @@ func TestParserTest_Rules(t *testing.T) {
 
 func TestParserTest_RuleAttributes(t *testing.T) {
   // Check that all of the allowed rule attributes are parsed ok.
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = a\n" "  depfile = a\n" "  deps = a\n" "  description = a\n" "  generator = a\n" "  restat = a\n" "  rspfile = a\n" "  rspfile_content = a\n" ))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n  command = a\n  depfile = a\n  deps = a\n  description = a\n  generator = a\n  restat = a\n  rspfile = a\n  rspfile_content = a\n" ))
 }
 
 func TestParserTest_IgnoreIndentedComments(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "  #indented comment\n" "rule cat\n" "  command = cat $in > $out\n" "  #generator = 1\n" "  restat = 1 # comment\n" "  #comment\n" "build result: cat in_1.cc in-2.O\n" "  #comment\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "  #indented comment\nrule cat\n  command = cat $in > $out\n  #generator = 1\n  restat = 1 # comment\n  #comment\nbuild result: cat in_1.cc in-2.O\n  #comment\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   rule := state.bindings_.GetRules().begin().second
@@ -61,14 +61,14 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 
 func TestParserTest_IgnoreIndentedBlankLines(t *testing.T) {
   // the indented blanks used to cause parse errors
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "  \n" "rule cat\n" "  command = cat $in > $out\n" "  \n" "build result: cat in_1.cc in-2.O\n" "  \n" "variable=1\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "  \nrule cat\n  command = cat $in > $out\n  \nbuild result: cat in_1.cc in-2.O\n  \nvariable=1\n"))
 
   // the variable must be in the top level environment
   if "1" != state.bindings_.LookupVariable("variable") { t.FailNow() }
 }
 
 func TestParserTest_ResponseFiles(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n" "  command = cat $rspfile > $out\n" "  rspfile = $rspfile\n" "  rspfile_content = $in\n" "\n" "build out: cat_rsp in\n" "  rspfile=out.rsp\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\n\nbuild out: cat_rsp in\n  rspfile=out.rsp\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   rule := state.bindings_.GetRules().begin().second
@@ -79,7 +79,7 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 }
 
 func TestParserTest_InNewline(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n" "  command = cat $in_newline > $out\n" "\n" "build out: cat_rsp in in2\n" "  rspfile=out.rsp\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat_rsp\n  command = cat $in_newline > $out\n\nbuild out: cat_rsp in in2\n  rspfile=out.rsp\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   rule := state.bindings_.GetRules().begin().second
@@ -91,7 +91,7 @@ func TestParserTest_InNewline(t *testing.T) {
 }
 
 func TestParserTest_Variables(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "l = one-letter-test\n" "rule link\n" "  command = ld $l $extra $with_under -o $out $in\n" "\n" "extra = -pthread\n" "with_under = -under\n" "build a: link b c\n" "nested1 = 1\n" "nested2 = $nested1/2\n" "build supernested: link x\n" "  extra = $nested2/3\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "l = one-letter-test\nrule link\n  command = ld $l $extra $with_under -o $out $in\n\nextra = -pthread\nwith_under = -under\nbuild a: link b c\nnested1 = 1\nnested2 = $nested1/2\nbuild supernested: link x\n  extra = $nested2/3\n"))
 
   if 2u != state.edges_.size() { t.FailNow() }
   edge := state.edges_[0]
@@ -103,7 +103,7 @@ func TestParserTest_Variables(t *testing.T) {
 }
 
 func TestParserTest_VariableScope(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "foo = bar\n" "rule cmd\n" "  command = cmd $foo $in $out\n" "\n" "build inner: cmd a\n" "  foo = baz\n" "build outer: cmd b\n" "\n" ))  // Extra newline after build line tickles a regression.
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "foo = bar\nrule cmd\n  command = cmd $foo $in $out\n\nbuild inner: cmd a\n  foo = baz\nbuild outer: cmd b\n\n" ))  // Extra newline after build line tickles a regression.
 
   if 2u != state.edges_.size() { t.FailNow() }
   if "cmd baz a inner" != state.edges_[0].EvaluateCommand() { t.FailNow() }
@@ -111,7 +111,7 @@ func TestParserTest_VariableScope(t *testing.T) {
 }
 
 func TestParserTest_Continuation(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule link\n" "  command = foo bar $\n" "    baz\n" "\n" "build a: link c $\n" " d e f\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule link\n  command = foo bar $\n    baz\n\nbuild a: link c $\n d e f\n"))
 
   if 2u != state.bindings_.GetRules().size() { t.FailNow() }
   rule := state.bindings_.GetRules().begin().second
@@ -120,25 +120,25 @@ func TestParserTest_Continuation(t *testing.T) {
 }
 
 func TestParserTest_Backslash(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "foo = bar\\baz\n" "foo2 = bar\\ baz\n" ))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "foo = bar\\baz\nfoo2 = bar\\ baz\n" ))
   if "bar\\baz" != state.bindings_.LookupVariable("foo") { t.FailNow() }
   if "bar\\ baz" != state.bindings_.LookupVariable("foo2") { t.FailNow() }
 }
 
 func TestParserTest_Comment(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "# this is a comment\n" "foo = not # a comment\n"))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "# this is a comment\nfoo = not # a comment\n"))
   if "not # a comment" != state.bindings_.LookupVariable("foo") { t.FailNow() }
 }
 
 func TestParserTest_Dollars(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule foo\n" "  command = ${out}bar$$baz$$$\n" "blah\n" "x = $$dollar\n" "build $x: foo y\n" ))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n" ))
   if "$dollar" != state.bindings_.LookupVariable("x") { t.FailNow() }
   if "$dollarbar$baz$blah" != state.edges_[0].EvaluateCommand() { t.FailNow() }
   if "'$dollar'bar$baz$blah" != state.edges_[0].EvaluateCommand() { t.FailNow() }
 }
 
 func TestParserTest_EscapeSpaces(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule spaces\n" "  command = something\n" "build foo$ bar: spaces $$one two$$$ three\n" ))
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule spaces\n  command = something\nbuild foo$ bar: spaces $$one two$$$ three\n" ))
   if state.LookupNode("foo bar") { t.FailNow() }
   if state.edges_[0].outputs_[0].path() != "foo bar" { t.FailNow() }
   if state.edges_[0].inputs_[0].path() != "$one" { t.FailNow() }
@@ -147,7 +147,7 @@ func TestParserTest_EscapeSpaces(t *testing.T) {
 }
 
 func TestParserTest_CanonicalizeFile(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n" "  command = cat $in > $out\n" "build out: cat in/1 in "build in/1: cat\n" "build in/2: cat\n"))//2\n"
+  ASSERT_NO_FATAL_FAILURE(AssertParse( "rule cat\n  command = cat $in > $out\nbuild out: cat in/1 in "build in/1: cat\nbuild in/2: cat\n"))//2\n"
 
   EXPECT_TRUE(state.LookupNode("in/1"))
   EXPECT_TRUE(state.LookupNode("in/2"))

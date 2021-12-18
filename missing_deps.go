@@ -165,9 +165,7 @@ func (m *MissingDependencyScanner) PrintStats() {
               << m.generated_nodes_.size() << " distinct generated inputs "
               << "(from " << m.generator_rules_.size() << " rules) "
               << " without a non-depfile dep path to the generator.\n"
-    cout << "There might be build flakiness if any of the targets listed "
-                 "above are built alone, or not late enough, in a clean output "
-                 "directory.\n"
+    cout << "There might be build flakiness if any of the targets listed above are built alone, or not late enough, in a clean output directory.\n"
   } else {
     cout << "No missing dependencies on generated files found.\n"
   }

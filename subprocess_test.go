@@ -52,7 +52,7 @@ func TestSubprocessTest_NoSuchCommand(t *testing.T) {
 
   if ExitFailure != subproc.Finish() { t.FailNow() }
   if "" == subproc.GetOutput() { t.FailNow() }
-  if "CreateProcess failed: The system cannot find the file " "specified.\n" != subproc.GetOutput() { t.FailNow() }
+  if "CreateProcess failed: The system cannot find the file specified.\n" != subproc.GetOutput() { t.FailNow() }
 }
 
 func TestSubprocessTest_InterruptChild(t *testing.T) {

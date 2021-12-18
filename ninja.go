@@ -113,7 +113,7 @@ enum {
 
 // Print usage information.
 func Usage(config *BuildConfig) {
-  fprintf(stderr, "usage: ninja [options] [targets...]\n" "\n" "if targets are unspecified, builds the 'default' target (see manual).\n" "\n" "options:\n" "  --version      print ninja version (\"%s\")\n" "  -v, --verbose  show all command lines while building\n" "  --quiet        don't show progress status, just command output\n" "\n" "  -C DIR   change to DIR before doing anything else\n" "  -f FILE  specify input build file [default=build.ninja]\n" "\n" "  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n" "  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n" "  -l N     do not start new jobs if the load average is greater than N\n" "  -n       dry run (don't run commands but act like they succeeded)\n" "\n" "  -d MODE  enable debugging (use '-d list' to list modes)\n" "  -t TOOL  run a subtool (use '-t list' to list subtools)\n" "    terminates toplevel options; further flags are passed to the tool\n" "  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
+  fprintf(stderr, "usage: ninja [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print ninja version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
 }
 
 // Choose a default value for the -j (parallelism) flag.
@@ -503,7 +503,7 @@ func (n *NinjaMain) ToolRules(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t rules [options]\n" "\n" "options:\n" "  -d     also print the description of the rule\n" "  -h     print this message\n" )
+      printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n" )
     return 1
     }
   }
@@ -578,7 +578,7 @@ func (n *NinjaMain) ToolCommands(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t commands [options] [targets]\n" "\n" "options:\n" "  -s     only print the final command to build [target], not the whole chain\n" )
+      printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n" )
     return 1
     }
   }
@@ -621,7 +621,7 @@ func (n *NinjaMain) ToolClean(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t clean [options] [targets]\n" "\n" "options:\n" "  -g     also clean files marked as ninja generator output\n" "  -r     interpret targets as a list of rules to clean instead\n" )
+      printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
     return 1
     }
   }
@@ -711,7 +711,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*
 
       case 'h':
       default:
-        printf( "usage: ninja -t compdb [options] [rules]\n" "\n" "options:\n" "  -x     expand @rspfile style response file invocations\n" )
+        printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
         return 1
     }
   }
@@ -835,12 +835,7 @@ func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
 func (n *NinjaMain) ToolUrtle(options *Options, argc int, argv *char*) int {
   // RLE encoded.
   string urtle =
-" 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 " ",2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<" "; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5" "'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"" "2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e"
-"14$,26$.\n21 z45$c .\n20 J50$c\n20 14$P\"`?34$b\n20 14$ dbc `2\"?22$?7$c"
-"\n20 ?18$c.6 4\"8?4\" c8$P\n9 .2,.8 \"20$c.3 ._14 J9$\n .2,2c9$bec,.2 `?"
-"21$c.3`4%,3%,3 c8$P\"\n22$c2 2\"?21$bc2,.2` .2,c7$P2\",cb\n23$b bc,.2\"2"
-"?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P"
-"\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
+" 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 ,2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e14$,26$.\n21 z45$c .\n20 J50$c\n20 14$P\"`?34$b\n20 14$ dbc `2\"?22$?7$c\n20 ?18$c.6 4\"8?4\" c8$P\n9 .2,.8 \"20$c.3 ._14 J9$\n .2,2c9$bec,.2 `?21$c.3`4%,3%,3 c8$P\"\n22$c2 2\"?21$bc2,.2` .2,c7$P2\",cb\n23$b bc,.2\"2?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
   count := 0
   for p := urtle; *p; p++ {
     if '0' <= *p && *p <= '9' {
@@ -927,7 +922,7 @@ func ChooseTool(tool_name string) *Tool {
 // of continuing.
 func DebugEnable(name string) bool {
   if name == "list" {
-    printf("debugging modes:\n" "  stats        print operation counts/timing info\n" "  explain      explain what caused a command to execute\n" "  keepdepfile  don't delete depfiles after they're read by ninja\n" "  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
+    printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
     return false
   } else if name == "stats" {
     g_metrics = new Metrics
@@ -960,7 +955,7 @@ func DebugEnable(name string) bool {
 // continuing.
 func WarningEnable(name string, options *Options) bool {
   if name == "list" {
-    printf("warning flags:\n" "  phonycycle={err,warn}  phony build statement references itself\n" )
+    printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n" )
     return false
   } else if name == "dupbuild=err" {
     options.dupe_edges_should_err = true

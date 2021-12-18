@@ -79,11 +79,7 @@ func TestIncludesNormalize_DifferentDrive(t *testing.T) {
 
 func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
   const char kLongInputString[] =
-      "C:\\Program Files (x86)\\Microsoft Visual Studio "
-      "12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the "
-      "pdb (for example, mspdb110.dll) could not be found on your path. This "
-      "is usually a configuration error. Compilation will continue using /Z7 "
-      "instead of /Zi, but expect a similar error when you link your program."
+      "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the pdb (for example, mspdb110.dll) could not be found on your path. This is usually a configuration error. Compilation will continue using /Z7 instead of /Zi, but expect a similar error when you link your program."
   // Too long, won't be canonicalized. Ensure doesn't crash.
   string result, err
   IncludesNormalize normalizer(".")
