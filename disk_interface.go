@@ -20,7 +20,6 @@ package ginja
 // Interface for reading files from disk.  See DiskInterface for details.
 // This base offers the minimum interface needed just to read files.
 type FileReader struct {
-  virtual ~FileReader() {}
 
 }
 // Result of ReadFile.
@@ -44,7 +43,6 @@ type RealDiskInterface struct {
   RealDiskInterface()
                       : use_cache_(false)
                       {}
-  virtual ~RealDiskInterface() {}
 
   // Whether stat information can be cached.
   use_cache_ bool

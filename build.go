@@ -67,7 +67,6 @@ const (
 // subcommands.  This allows tests to abstract out running commands.
 // RealCommandRunner is an implementation that actually runs commands.
 type CommandRunner struct {
-  virtual ~CommandRunner() {}
 
 }
 // The result of waiting for a command.
@@ -139,7 +138,6 @@ func (b *Builder) SetBuildLog(log *BuildLog) {
 
 // A CommandRunner that doesn't actually run the commands.
 type DryRunCommandRunner struct {
-  virtual ~DryRunCommandRunner() {}
 
   finished_ [...]*Edge
 }
@@ -559,7 +557,6 @@ func (p *Plan) Dump() {
 
 type RealCommandRunner struct {
   explicit RealCommandRunner(const BuildConfig& config) : config_(config) {}
-  virtual ~RealCommandRunner() {}
 
   config_ *BuildConfig
   subprocs_ SubprocessSet
