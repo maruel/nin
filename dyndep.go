@@ -26,7 +26,6 @@ type Dyndeps struct {
 }
 func NewDyndeps() Dyndeps {
 	return Dyndeps{
-	 : used_(false), restat_(false) {}
 	}
 }
 
@@ -45,8 +44,8 @@ type DyndepLoader struct {
 }
 func NewDyndepLoader(state *State, disk_interface *DiskInterface) DyndepLoader {
 	return DyndepLoader{
-
-    : state_(state), disk_interface_(disk_interface) {}
+		state_: state,
+		disk_interface_: disk_interface,
 	}
 }
 

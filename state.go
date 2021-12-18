@@ -38,8 +38,9 @@ type Pool struct {
 }
 func NewPool(name string, depth int) Pool {
 	return Pool{
-
-  : name_(name), current_use_(0), depth_(depth), delayed_() {}
+		name_: name,
+		depth_: depth,
+		delayed_: ,
 	}
 }
 // A depth of 0 is infinite

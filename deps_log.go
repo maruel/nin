@@ -71,7 +71,7 @@ type DepsLog struct {
 }
 func NewDepsLog() DepsLog {
 	return DepsLog{
-	 : needs_recompaction_(false), file_(nil) {}
+		file_: nil,
 	}
 }
 // Reading (startup-time) interface.
@@ -82,8 +82,9 @@ type Deps struct {
   }
 func NewDeps(mtime int64, node_count int) Deps {
 	return Deps{
-
-  : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
+		mtime: mtime,
+		node_count: node_count,
+		nodes: new Node*[node_count],
 	}
 }
 ~Deps() { delete [] nodes; }

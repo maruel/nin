@@ -73,7 +73,7 @@ type VirtualFileSystem struct {
 }
 func NewVirtualFileSystem() VirtualFileSystem {
 	return VirtualFileSystem{
-	 : now_(1) {}
+		now_: 1,
 	}
 }
 // Tick "time" forwards; subsequent file operations will be newer than

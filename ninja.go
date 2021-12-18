@@ -63,9 +63,9 @@ type NinjaMain struct {
 }
 func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	return NinjaMain{
-	 :
-    ninja_command_(ninja_command), config_(config),
-    start_time_millis_(GetTimeMillis()) {}
+		ninja_command_: ninja_command,
+		config_: config,
+		start_time_millis_: GetTimeMillis(),
 	}
 }
 typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)

@@ -26,8 +26,7 @@ type GraphViz struct {
 }
 func NewGraphViz(state *State, disk_interface *DiskInterface) GraphViz {
 	return GraphViz{
-
-    : dyndep_loader_(state, disk_interface) {}
+		dyndep_loader_: state, disk_interface,
 	}
 }
 

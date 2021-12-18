@@ -403,8 +403,8 @@ type FakeCommandRunner struct {
 }
 func NewFakeCommandRunner(fs *VirtualFileSystem) FakeCommandRunner {
 	return FakeCommandRunner{
-	 :
-    max_active_edges_(1), fs_(fs) {}
+		max_active_edges_: 1,
+		fs_: fs,
 	}
 }
 
@@ -418,16 +418,19 @@ type BuildTest struct {
 }
 func NewBuildTest() BuildTest {
 	return BuildTest{
-	 : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
-              builder_(&state_, config_, nil, nil, &fs_, &status_, 0) {
-}
+		config_: MakeConfig(),
+		command_runner_: &fs_,
+		status_: config_,
+		builder_: &state_, config_, nil, nil, &fs_, &status_, 0,
 	}
+	{ }
 }
 func NewBuildTest(log *DepsLog) BuildTest {
 	return BuildTest{
-
-    : config_(MakeConfig()), command_runner_(&fs_), status_(config_),
-      builder_(&state_, config_, nil, log, &fs_, &status_, 0) {}
+		config_: MakeConfig(),
+		command_runner_: &fs_,
+		status_: config_,
+		builder_: &state_, config_, nil, log, &fs_, &status_, 0,
 	}
 }
 func (b *BuildTest) SetUp() {
@@ -1241,10 +1244,8 @@ type BuildWithLogTest struct {
 }
 func NewBuildWithLogTest() BuildWithLogTest {
 	return BuildWithLogTest{
-	 {
-  builder_.SetBuildLog(&build_log_)
-}
 	}
+	{ builder_.SetBuildLog(&build_log_); }
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
@@ -1571,10 +1572,8 @@ type BuildDryRun struct {
 }
 func NewBuildDryRun() BuildDryRun {
 	return BuildDryRun{
-	 {
-  config_.dry_run = true
-}
 	}
+	{ config_.dry_run = true; }
 }
 
 func TestBuildDryRun_AllCommandsShown(t *testing.T) {
@@ -1818,9 +1817,9 @@ type BuildWithQueryDepsLogTest struct {
 }
 func NewBuildWithQueryDepsLogTest() BuildWithQueryDepsLogTest {
 	return BuildWithQueryDepsLogTest{
-	 : BuildTest(&log_) {
-}
+		BuildTest: &log_,
 	}
+	{ }
 }
 ~BuildWithQueryDepsLogTest() {
   log_.Close()
@@ -2003,7 +2002,6 @@ type BuildWithDepsLogTest struct {
 }
 func NewBuildWithDepsLogTest() BuildWithDepsLogTest {
 	return BuildWithDepsLogTest{
-	 {}
 	}
 }
 func (b *BuildWithDepsLogTest) SetUp() {

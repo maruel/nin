@@ -36,11 +36,11 @@ void RegisterTest(testing::Test* (*factory)(), string name) {
   tests[ntests++].name = name
 }
 
-string StringPrintf(string format, ...) {
-  const int N = 1024
+func StringPrintf(format string, ...) string {
+  N := 1024
   char buf[N]
 
-  va_list ap
+  var ap va_list
   va_start(ap, format)
   vsnprintf(buf, N, format, ap)
   va_end(ap)

@@ -77,7 +77,7 @@ type Result struct {
   }
 func NewResult() Result {
 	return Result{
-	 : edge(nil) {}
+		edge: nil,
 	}
 }
 func (c *CommandRunner) success() bool {
@@ -102,8 +102,10 @@ type BuildConfig struct {
 }
 func NewBuildConfig() BuildConfig {
 	return BuildConfig{
-	 : verbosity(NORMAL), dry_run(false), parallelism(1),
-                failures_allowed(1), max_load_average(-0.0f) {}
+		verbosity: NORMAL,
+		parallelism: 1,
+		failures_allowed: 1,
+		max_load_average: -0.0f,
 	}
 }
 type Verbosity int
@@ -568,7 +570,7 @@ type RealCommandRunner struct {
 }
 func NewRealCommandRunner(config *BuildConfig) RealCommandRunner {
 	return RealCommandRunner{
-	 : config_(config) {}
+		config_: config,
 	}
 }
 

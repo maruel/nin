@@ -17,26 +17,12 @@
 package ginja
 
 
-// Log a fatal message and exit.
-NORETURN void Fatal(string msg, ...)
-
 // Have a generic fall-through for different versions of C/C++.
 
-// Log a warning message.
-void Warning(string msg, ...)
 
-// Log an error message.
-void Error(string msg, ...)
-
-// Log an informational message.
-void Info(string msg, ...)
-
-// Like SpellcheckStringV, but takes a NULL-terminated list.
-string SpellcheckString(string text, ...)
-
-
-void Fatal(string msg, ...) {
-  va_list ap
+// Log a fatal message and exit.
+func Fatal(msg string, ...) {
+  var ap va_list
   fprintf(stderr, "ninja: fatal: ")
   va_start(ap, msg)
   vfprintf(stderr, msg, ap)
@@ -50,40 +36,46 @@ void Fatal(string msg, ...) {
   exit(1)
 }
 
+// Log a warning message.
 func Warning(msg string, ap va_list) {
   fprintf(stderr, "ninja: warning: ")
   vfprintf(stderr, msg, ap)
   fprintf(stderr, "\n")
 }
 
-void Warning(string msg, ...) {
-  va_list ap
+// Log a warning message.
+func Warning(msg string, ...) {
+  var ap va_list
   va_start(ap, msg)
   Warning(msg, ap)
   va_end(ap)
 }
 
+// Log an error message.
 func Error(msg string, ap va_list) {
   fprintf(stderr, "ninja: error: ")
   vfprintf(stderr, msg, ap)
   fprintf(stderr, "\n")
 }
 
-void Error(string msg, ...) {
-  va_list ap
+// Log an error message.
+func Error(msg string, ...) {
+  var ap va_list
   va_start(ap, msg)
   Error(msg, ap)
   va_end(ap)
 }
 
+// Log an informational message.
 func Info(msg string, ap va_list) {
   fprintf(stdout, "ninja: ")
   vfprintf(stdout, msg, ap)
   fprintf(stdout, "\n")
 }
 
-void Info(string msg, ...) {
-  va_list ap
+// Log an informational message.
+func Info(msg string, ...) {
+  var ap va_list
   va_start(ap, msg)
   Info(msg, ap)
   va_end(ap)
@@ -409,15 +401,17 @@ func SpellcheckStringV(text string, words *[]string) string {
   return result
 }
 
-string SpellcheckString(string text, ...) {
+// Like SpellcheckStringV, but takes a NULL-terminated list.
+func SpellcheckString(text string, ...) string {
   // Note: This takes a const char* instead of a string& because using
   // va_start() with a reference parameter is undefined behavior.
-  va_list ap
+  var ap va_list
   va_start(ap, text)
-  vector<string> words
-  string word
-  while ((word = va_arg(ap, string)))
+  var words []string
+  word := ""
+  while (word = va_arg(ap, string)) {
     words.push_back(word)
+  }
   va_end(ap)
   return SpellcheckStringV(text, words)
 }

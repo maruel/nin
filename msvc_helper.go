@@ -24,7 +24,7 @@ type CLWrapper struct {
 }
 func NewCLWrapper() CLWrapper {
 	return CLWrapper{
-	 : env_block_(nil) {}
+		env_block_: nil,
 	}
 }
 // Set the environment block (as suitable for CreateProcess) to be used

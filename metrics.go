@@ -53,7 +53,6 @@ type Stopwatch struct {
 }
 func NewStopwatch() Stopwatch {
 	return Stopwatch{
-	 : started_(0) {}
 	}
 }
 // Seconds since Restart() call.

@@ -50,9 +50,6 @@ type RealDiskInterface struct {
 }
 func NewRealDiskInterface() RealDiskInterface {
 	return RealDiskInterface{
-
-                    : use_cache_(false)
-                    {}
 	}
 }
 type DirCache map[string]TimeStamp

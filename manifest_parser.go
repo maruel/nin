@@ -35,9 +35,8 @@ type ManifestParserOptions struct {
 }
 func NewManifestParserOptions() ManifestParserOptions {
 	return ManifestParserOptions{
-
-    : dupe_edge_action_(kDupeEdgeActionWarn),
-      phony_cycle_action_(kPhonyCycleActionWarn) {}
+		dupe_edge_action_: kDupeEdgeActionWarn,
+		phony_cycle_action_: kPhonyCycleActionWarn,
 	}
 }
 

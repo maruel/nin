@@ -55,9 +55,8 @@ type NodeStoringImplicitDepLoader struct {
 }
 func NewNodeStoringImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions const, dep_nodes_output *[]*Node) NodeStoringImplicitDepLoader {
 	return NodeStoringImplicitDepLoader{
-
-    : ImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
-      dep_nodes_output_(dep_nodes_output) {}
+		ImplicitDepLoader: state, deps_log, disk_interface, depfile_parser_options,
+		dep_nodes_output_: dep_nodes_output,
 	}
 }
 

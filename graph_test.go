@@ -24,7 +24,7 @@ type GraphTest struct {
 }
 func NewGraphTest() GraphTest {
 	return GraphTest{
-	 : scan_(&state_, nil, nil, &fs_, nil) {}
+		scan_: &state_, nil, nil, &fs_, nil,
 	}
 }
 
