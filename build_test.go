@@ -19,9 +19,9 @@ package ginja
 
 type CompareEdgesByOutput struct {
 }
-  func (c *CompareEdgesByOutput) cmp(a *Edge, b *Edge) bool {
-    return a.outputs_[0].path() < b.outputs_[0].path()
-  }
+func (c *CompareEdgesByOutput) cmp(a *Edge, b *Edge) bool {
+  return a.outputs_[0].path() < b.outputs_[0].path()
+}
 
 // Fixture for tests involving Plan.
 // Though Plan doesn't use State, it's useful to have one around
@@ -35,19 +35,19 @@ type PlanTest struct {
 
   void TestPoolWithDepthOne(stringtest_case)
 }
-  // Because FindWork does not return Edges in any sort of predictable order,
-  // provide a means to get available Edges in order and in a format which is
-  // easy to write tests around.
-  func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
-    for i := 0; i < count; i++ {
-      if plan_.more_to_do() { t.FailNow() }
-      edge := plan_.FindWork()
-      if edge { t.FailNow() }
-      ret.push_back(edge)
-    }
-    if !plan_.FindWork() { t.FailNow() }
-    sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
+// Because FindWork does not return Edges in any sort of predictable order,
+// provide a means to get available Edges in order and in a format which is
+// easy to write tests around.
+func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
+  for i := 0; i < count; i++ {
+    if plan_.more_to_do() { t.FailNow() }
+    edge := plan_.FindWork()
+    if edge { t.FailNow() }
+    ret.push_back(edge)
   }
+  if !plan_.FindWork() { t.FailNow() }
+  sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
+}
 
 func TestPlanTest_Basic(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n"))
@@ -429,20 +429,20 @@ type BuildTest struct {
   status_ StatusPrinter
   builder_ Builder
 }
-  func (b *BuildTest) SetUp() {
-    StateTestWithBuiltinRules::SetUp()
+func (b *BuildTest) SetUp() {
+  StateTestWithBuiltinRules::SetUp()
 
-    builder_.command_runner_.reset(&command_runner_)
-    AssertParse(&state_, "build cat1: cat in1\n" "build cat2: cat in1 in2\n" "build cat12: cat cat1 cat2\n")
+  builder_.command_runner_.reset(&command_runner_)
+  AssertParse(&state_, "build cat1: cat in1\n" "build cat2: cat in1 in2\n" "build cat12: cat cat1 cat2\n")
 
-    fs_.Create("in1", "")
-    fs_.Create("in2", "")
-  }
-  func (b *BuildTest) MakeConfig() BuildConfig {
-    var config BuildConfig
-    config.verbosity = BuildConfig::QUIET
-    return config
-  }
+  fs_.Create("in1", "")
+  fs_.Create("in2", "")
+}
+func (b *BuildTest) MakeConfig() BuildConfig {
+  var config BuildConfig
+  config.verbosity = BuildConfig::QUIET
+  return config
+}
 
 // Rebuild target in the 'working tree' (fs_).
 // State of command_runner_ and logs contents (if specified) ARE MODIFIED.
@@ -1817,15 +1817,15 @@ type BuildWithQueryDepsLogTest struct {
 
   log_ DepsLog
 }
-  func (b *BuildWithQueryDepsLogTest) SetUp() {
-    BuildTest::SetUp()
+func (b *BuildWithQueryDepsLogTest) SetUp() {
+  BuildTest::SetUp()
 
-    temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
+  temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
 
-    err := ""
-    if log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-  }
+  err := ""
+  if log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+}
 
 // Test a MSVC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
@@ -1994,14 +1994,14 @@ type BuildWithDepsLogTest struct {
   // Shadow parent class builder_ so we don't accidentally use it.
   builder_ *void
 }
-  func (b *BuildWithDepsLogTest) SetUp() {
-    BuildTest::SetUp()
+func (b *BuildWithDepsLogTest) SetUp() {
+  BuildTest::SetUp()
 
-    temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
-  }
-  func (b *BuildWithDepsLogTest) TearDown() {
-    temp_dir_.Cleanup()
-  }
+  temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
+}
+func (b *BuildWithDepsLogTest) TearDown() {
+  temp_dir_.Cleanup()
+}
 
 // Run a straightforwad build where the deps log is used.
 func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {

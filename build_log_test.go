@@ -22,13 +22,13 @@ const char kTestFilename[] = "BuildLogTest-tempfile"
 type BuildLogTest struct {
   virtual bool IsPathDead(string s) const { return false; }
 }
-  func (b *BuildLogTest) SetUp() {
-    // In case a crashing test left a stale file behind.
-    unlink(kTestFilename)
-  }
-  func (b *BuildLogTest) TearDown() {
-    unlink(kTestFilename)
-  }
+func (b *BuildLogTest) SetUp() {
+  // In case a crashing test left a stale file behind.
+  unlink(kTestFilename)
+}
+func (b *BuildLogTest) TearDown() {
+  unlink(kTestFilename)
+}
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
   AssertParse(&state_, "build out: cat mid\n" "build mid: cat in\n")
@@ -205,25 +205,25 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 
 type TestDiskInterface struct {
 }
-  func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
-    return 4
-  }
-  func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
-    if !false { panic("oops") }
-    return true
-  }
-  func (t *TestDiskInterface) MakeDir(path string) bool {
-    if !false { panic("oops") }
-    return false
-  }
-  func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) Status {
-    if !false { panic("oops") }
-    return NotFound
-  }
-  func (t *TestDiskInterface) RemoveFile(path string) int {
-    if !false { panic("oops") }
-    return 0
-  }
+func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
+  return 4
+}
+func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
+  if !false { panic("oops") }
+  return true
+}
+func (t *TestDiskInterface) MakeDir(path string) bool {
+  if !false { panic("oops") }
+  return false
+}
+func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) Status {
+  if !false { panic("oops") }
+  return NotFound
+}
+func (t *TestDiskInterface) RemoveFile(path string) int {
+  if !false { panic("oops") }
+  return 0
+}
 
 func TestBuildLogTest_Restat(t *testing.T) {
   FILE* f = fopen(kTestFilename, "wb")

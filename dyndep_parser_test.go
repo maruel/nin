@@ -23,15 +23,15 @@ type DyndepParserTest struct {
   fs_ VirtualFileSystem
   dyndep_file_ DyndepFile
 }
-  func (d *DyndepParserTest) AssertParse(input string) {
-    DyndepParser parser(&state_, &fs_, &dyndep_file_)
-    err := ""
-    if parser.ParseTest(input, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-  }
-  func (d *DyndepParserTest) SetUp() {
-    ::AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
-  }
+func (d *DyndepParserTest) AssertParse(input string) {
+  DyndepParser parser(&state_, &fs_, &dyndep_file_)
+  err := ""
+  if parser.ParseTest(input, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+}
+func (d *DyndepParserTest) SetUp() {
+  ::AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
+}
 
 func TestDyndepParserTest_Empty(t *testing.T) {
   const char kInput[] =

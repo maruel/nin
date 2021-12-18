@@ -48,13 +48,13 @@ type Pool struct {
   DelayedEdges typedef set<Edge*, WeightedEdgeCmp>
   delayed_ DelayedEdges
 }
-  type WeightedEdgeCmp struct {
-    bool operator()(const Edge* a, const Edge* b) const {
-      if (!a) return b
-      if (!b) return false
-      int weight_diff = a.weight() - b.weight()
-      return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
-    }
+type WeightedEdgeCmp struct {
+  bool operator()(const Edge* a, const Edge* b) const {
+    if (!a) return b
+    if (!b) return false
+    int weight_diff = a.weight() - b.weight()
+    return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
+  }
   }
 
 // Global state (file status) for a single run.

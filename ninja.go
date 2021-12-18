@@ -65,27 +65,27 @@ type NinjaMain struct {
 
   start_time_millis_ int64
 }
-  func (n *NinjaMain) IsPathDead(s string) bool {
-    n := state_.LookupNode(s)
-    if n && n.in_edge() {
-      return false
-    }
-    // Just checking n isn't enough: If an old output is both in the build log
-    // and in the deps log, it will have a Node object in state_.  (It will also
-    // have an in edge if one of its inputs is another output that's in the deps
-    // log, but having a deps edge product an output that's input to another deps
-    // edge is rare, and the first recompaction will delete all old outputs from
-    // the deps log, and then a second recompaction will clear the build log,
-    // which seems good enough for this corner case.)
-    // Do keep entries around for files which still exist on disk, for
-    // generators that want to use this information.
-    err := ""
-    mtime := disk_interface_.Stat(s.AsString(), &err)
-    if mtime == -1 {
-      Error("%s", err)  // Log and ignore Stat() errors.
-    }
-    return mtime == 0
+func (n *NinjaMain) IsPathDead(s string) bool {
+  n := state_.LookupNode(s)
+  if n && n.in_edge() {
+    return false
   }
+  // Just checking n isn't enough: If an old output is both in the build log
+  // and in the deps log, it will have a Node object in state_.  (It will also
+  // have an in edge if one of its inputs is another output that's in the deps
+  // log, but having a deps edge product an output that's input to another deps
+  // edge is rare, and the first recompaction will delete all old outputs from
+  // the deps log, and then a second recompaction will clear the build log,
+  // which seems good enough for this corner case.)
+  // Do keep entries around for files which still exist on disk, for
+  // generators that want to use this information.
+  err := ""
+  mtime := disk_interface_.Stat(s.AsString(), &err)
+  if mtime == -1 {
+    Error("%s", err)  // Log and ignore Stat() errors.
+  }
+  return mtime == 0
+}
 
 // Subtools, accessible via "-t foo".
 type Tool struct {
@@ -100,18 +100,18 @@ type Tool struct {
   // Implementation of the tool.
   func NinjaMain::ToolFunc
 }
-  // When to run the tool.
-  enum {
-    // Run after parsing the command-line flags and potentially changing
-    // the current working directory (as early as possible).
-    RUN_AFTER_FLAGS,
+// When to run the tool.
+enum {
+  // Run after parsing the command-line flags and potentially changing
+  // the current working directory (as early as possible).
+  RUN_AFTER_FLAGS,
 
-    // Run after loading build.ninja.
-    RUN_AFTER_LOAD,
+  // Run after loading build.ninja.
+  RUN_AFTER_LOAD,
 
-    // Run after loading the build/deps logs.
-    RUN_AFTER_LOGS,
-  } when
+  // Run after loading the build/deps logs.
+  RUN_AFTER_LOGS,
+} when
 
 // Print usage information.
 func Usage(config *BuildConfig) {

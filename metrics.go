@@ -57,10 +57,10 @@ type Stopwatch struct {
 
   started_ uint64
 }
-  // Seconds since Restart() call.
-  func (s *Stopwatch) Elapsed() float64 {
-    return 1e-6 * static_cast<double>(Now() - started_)
-  }
+// Seconds since Restart() call.
+func (s *Stopwatch) Elapsed() float64 {
+  return 1e-6 * static_cast<double>(Now() - started_)
+}
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.

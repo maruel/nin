@@ -77,14 +77,14 @@ type DepsLog struct {
 
   DepsLogTest friend struct
 }
-  // Reading (startup-time) interface.
-  type Deps struct {
-    Deps(int64_t mtime, int node_count)
-        : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
-    ~Deps() { delete [] nodes; }
-    mtime TimeStamp
-    node_count int
-    nodes *Node*
+type Deps struct {
+type Deps struct {
+  Deps(int64_t mtime, int node_count)
+      : mtime(mtime), node_count(node_count), nodes(new Node*[node_count]) {}
+  ~Deps() { delete [] nodes; }
+  mtime TimeStamp
+  node_count int
+  nodes *Node*
   }
 
 

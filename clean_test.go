@@ -23,9 +23,9 @@ type CleanTest struct {
   fs_ VirtualFileSystem
   config_ BuildConfig
 }
-  func (c *CleanTest) SetUp() {
-    config_.verbosity = BuildConfig::QUIET
-  }
+func (c *CleanTest) SetUp() {
+  config_.verbosity = BuildConfig::QUIET
+}
 
 func TestCleanTest_CleanAll(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build in1: cat src1\n" "build out1: cat in1\n" "build in2: cat src2\n" "build out2: cat in2\n"))
@@ -375,14 +375,14 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
 type CleanDeadTest struct {
   virtual bool IsPathDead(string) const { return false; }
 }
-  func (c *CleanDeadTest) SetUp() {
-    // In case a crashing test left a stale file behind.
-    unlink(kTestFilename)
-    CleanTest::SetUp()
-  }
-  func (c *CleanDeadTest) TearDown() {
-    unlink(kTestFilename)
-  }
+func (c *CleanDeadTest) SetUp() {
+  // In case a crashing test left a stale file behind.
+  unlink(kTestFilename)
+  CleanTest::SetUp()
+}
+func (c *CleanDeadTest) TearDown() {
+  unlink(kTestFilename)
+}
 
 func TestCleanDeadTest_CleanDead(t *testing.T) {
   var state State

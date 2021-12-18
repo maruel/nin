@@ -45,11 +45,11 @@ type ManifestParser struct {
   options_ ManifestParserOptions
   quiet_ bool
 }
-  // Parse a text string of input.  Used by tests.
-  func (m *ManifestParser) ParseTest(input string, err *string) bool {
-    quiet_ = true
-    return Parse("input", input, err)
-  }
+// Parse a text string of input.  Used by tests.
+func (m *ManifestParser) ParseTest(input string, err *string) bool {
+  quiet_ = true
+  return Parse("input", input, err)
+}
 
 
 ManifestParser::ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options)

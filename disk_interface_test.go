@@ -22,20 +22,20 @@ type DiskInterfaceTest struct {
   temp_dir_ ScopedTempDir
   disk_ RealDiskInterface
 }
-  func (d *DiskInterfaceTest) SetUp() {
-    // These tests do real disk accesses, so create a temp dir.
-    temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
+func (d *DiskInterfaceTest) SetUp() {
+  // These tests do real disk accesses, so create a temp dir.
+  temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
+}
+func (d *DiskInterfaceTest) TearDown() {
+  temp_dir_.Cleanup()
+}
+func (d *DiskInterfaceTest) Touch(path string) bool {
+  FILE *f = fopen(path, "w")
+  if f == nil {
+    return false
   }
-  func (d *DiskInterfaceTest) TearDown() {
-    temp_dir_.Cleanup()
-  }
-  func (d *DiskInterfaceTest) Touch(path string) bool {
-    FILE *f = fopen(path, "w")
-    if f == nil {
-      return false
-    }
-    return fclose(f) == 0
-  }
+  return fclose(f) == 0
+}
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
   err := ""
@@ -204,22 +204,22 @@ type StatTest struct {
   mtimes_ map[string]TimeStamp
   stats_ mutable vector<string>
 }
-  func (s *StatTest) WriteFile(path string, contents string) bool {
-    if !false { panic("oops") }
-    return true
-  }
-  func (s *StatTest) MakeDir(path string) bool {
-    if !false { panic("oops") }
-    return false
-  }
-  func (s *StatTest) ReadFile(path string, contents *string, err *string) Status {
-    if !false { panic("oops") }
-    return NotFound
-  }
-  func (s *StatTest) RemoveFile(path string) int {
-    if !false { panic("oops") }
-    return 0
-  }
+func (s *StatTest) WriteFile(path string, contents string) bool {
+  if !false { panic("oops") }
+  return true
+}
+func (s *StatTest) MakeDir(path string) bool {
+  if !false { panic("oops") }
+  return false
+}
+func (s *StatTest) ReadFile(path string, contents *string, err *string) Status {
+  if !false { panic("oops") }
+  return NotFound
+}
+func (s *StatTest) RemoveFile(path string) int {
+  if !false { panic("oops") }
+  return 0
+}
 
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {

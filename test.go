@@ -72,16 +72,16 @@ type VirtualFileSystem struct {
   // A simple fake timestamp for file operations.
   now_ int
 }
-  // Tick "time" forwards; subsequent file operations will be newer than
-  // previous ones.
-  func (v *VirtualFileSystem) Tick() int {
-    return ++now_
-  }
-  // An entry for a single in-memory file.
-  type Entry struct {
-    mtime int
-    stat_error string  // If mtime is -1.
-    contents string
+// Tick "time" forwards; subsequent file operations will be newer than
+// previous ones.
+func (v *VirtualFileSystem) Tick() int {
+  return ++now_
+}
+type Entry struct {
+type Entry struct {
+  mtime int
+  stat_error string  // If mtime is -1.
+  contents string
   }
 
 type ScopedTempDir struct {

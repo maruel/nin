@@ -32,14 +32,14 @@ type Cleaner struct {
   disk_interface_ *DiskInterface
   status_ int
 }
-  // @return the number of file cleaned.
-  func (c *Cleaner) cleaned_files_count() int {
-    return cleaned_files_count_
-  }
-  // @return whether the cleaner is in verbose mode.
-  func (c *Cleaner) IsVerbose() bool {
-    return (config_.verbosity != BuildConfig::QUIET && (config_.verbosity == BuildConfig::VERBOSE || config_.dry_run))
-  }
+// @return the number of file cleaned.
+func (c *Cleaner) cleaned_files_count() int {
+  return cleaned_files_count_
+}
+// @return whether the cleaner is in verbose mode.
+func (c *Cleaner) IsVerbose() bool {
+  return (config_.verbosity != BuildConfig::QUIET && (config_.verbosity == BuildConfig::VERBOSE || config_.dry_run))
+}
 
 
 Cleaner::Cleaner(State* state, const BuildConfig& config, DiskInterface* disk_interface)

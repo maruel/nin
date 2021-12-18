@@ -93,44 +93,44 @@ type Node struct {
   // A dense integer id for the node, assigned and used by DepsLog.
   id_ int
 }
-  // Return false on error.
-  func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
-    if status_known() {
-      return true
-    }
-    return Stat(disk_interface, err)
+// Return false on error.
+func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
+  if status_known() {
+    return true
   }
-  // Mark as not-yet-stat()ed and not dirty.
-  func (n *Node) ResetState() {
-    mtime_ = -1
-    exists_ = ExistenceStatusUnknown
-    dirty_ = false
+  return Stat(disk_interface, err)
+}
+// Mark as not-yet-stat()ed and not dirty.
+func (n *Node) ResetState() {
+  mtime_ = -1
+  exists_ = ExistenceStatusUnknown
+  dirty_ = false
+}
+// Mark the Node as already-stat()ed and missing.
+func (n *Node) MarkMissing() {
+  if mtime_ == -1 {
+    mtime_ = 0
   }
-  // Mark the Node as already-stat()ed and missing.
-  func (n *Node) MarkMissing() {
-    if mtime_ == -1 {
-      mtime_ = 0
-    }
-    exists_ = ExistenceStatusMissing
-  }
-  func (n *Node) exists() bool {
-    return exists_ == ExistenceStatusExists
-  }
-  func (n *Node) status_known() bool {
-    return exists_ != ExistenceStatusUnknown
-  }
-  // Get |path()| but use slash_bits to convert back to original slash styles.
-  func (n *Node) PathDecanonicalized() string {
-    return PathDecanonicalized(path_, slash_bits_)
-  }
-  enum ExistenceStatus {
-    // The file hasn't been examined.
-    ExistenceStatusUnknown,
-    // The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
-    ExistenceStatusMissing,
-    // The path is an actual file. mtime_ will be the file's mtime.
-    ExistenceStatusExists
-  }
+  exists_ = ExistenceStatusMissing
+}
+func (n *Node) exists() bool {
+  return exists_ == ExistenceStatusExists
+}
+func (n *Node) status_known() bool {
+  return exists_ != ExistenceStatusUnknown
+}
+// Get |path()| but use slash_bits to convert back to original slash styles.
+func (n *Node) PathDecanonicalized() string {
+  return PathDecanonicalized(path_, slash_bits_)
+}
+enum ExistenceStatus {
+  // The file hasn't been examined.
+  ExistenceStatusUnknown,
+  // The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
+  ExistenceStatusMissing,
+  // The path is an actual file. mtime_ will be the file's mtime.
+  ExistenceStatusExists
+}
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
@@ -180,21 +180,21 @@ type Edge struct {
   implicit_outs_ int
 
 }
-  enum VisitMark {
-    VisitNone,
-    VisitInStack,
-    VisitDone
-  }
-  func (e *Edge) is_implicit(index uint) bool {
-    return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
-        !is_order_only(index)
-  }
-  func (e *Edge) is_order_only(index uint) bool {
-    return index >= inputs_.size() - order_only_deps_
-  }
-  func (e *Edge) is_implicit_out(index uint) bool {
-    return index >= outputs_.size() - implicit_outs_
-  }
+enum VisitMark {
+  VisitNone,
+  VisitInStack,
+  VisitDone
+}
+func (e *Edge) is_implicit(index uint) bool {
+  return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
+      !is_order_only(index)
+}
+func (e *Edge) is_order_only(index uint) bool {
+  return index >= inputs_.size() - order_only_deps_
+}
+func (e *Edge) is_implicit_out(index uint) bool {
+  return index >= outputs_.size() - implicit_outs_
+}
 
 type EdgeCmp struct {
   bool operator()(const Edge* a, const Edge* b) const {
@@ -216,9 +216,9 @@ type ImplicitDepLoader struct {
   deps_log_ *DepsLog
   depfile_parser_options_ *DepfileParserOptions const
 }
-  func (i *ImplicitDepLoader) deps_log() *DepsLog {
-    return deps_log_
-  }
+func (i *ImplicitDepLoader) deps_log() *DepsLog {
+  return deps_log_
+}
 
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
@@ -234,15 +234,15 @@ type DependencyScan struct {
   dep_loader_ ImplicitDepLoader
   dyndep_loader_ DyndepLoader
 }
-  func (d *DependencyScan) build_log() *BuildLog {
-    return build_log_
-  }
-  func (d *DependencyScan) set_build_log(log *BuildLog) {
-    build_log_ = log
-  }
-  func (d *DependencyScan) deps_log() *DepsLog {
-    return dep_loader_.deps_log()
-  }
+func (d *DependencyScan) build_log() *BuildLog {
+  return build_log_
+}
+func (d *DependencyScan) set_build_log(log *BuildLog) {
+  build_log_ = log
+}
+func (d *DependencyScan) deps_log() *DepsLog {
+  return dep_loader_.deps_log()
+}
 
 
 // Return false on error.
@@ -590,7 +590,7 @@ type EdgeEnv struct {
   escape_in_out_ EscapeKind
   recursive_ bool
 }
-  enum EscapeKind { kShellEscape, kDoNotEscape }
+enum EscapeKind { kShellEscape, kDoNotEscape }
 
 func (e *EdgeEnv) LookupVariable(var string) string {
   if var == "in" || var == "in_newline" {

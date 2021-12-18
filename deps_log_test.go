@@ -21,13 +21,13 @@ const char kTestFilename[] = "DepsLogTest-tempfile"
 
 type DepsLogTest struct {
 }
-  func (d *DepsLogTest) SetUp() {
-    // In case a crashing test left a stale file behind.
-    unlink(kTestFilename)
-  }
-  func (d *DepsLogTest) TearDown() {
-    unlink(kTestFilename)
-  }
+func (d *DepsLogTest) SetUp() {
+  // In case a crashing test left a stale file behind.
+  unlink(kTestFilename)
+}
+func (d *DepsLogTest) TearDown() {
+  unlink(kTestFilename)
+}
 
 func TestDepsLogTest_WriteRead(t *testing.T) {
   var state1 State

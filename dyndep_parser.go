@@ -25,10 +25,10 @@ type DyndepParser struct {
   dyndep_file_ *DyndepFile
   env_ BindingEnv
 }
-  // Parse a text string of input.  Used by tests.
-  func (d *DyndepParser) ParseTest(input string, err *string) bool {
-    return Parse("input", input, err)
-  }
+// Parse a text string of input.  Used by tests.
+func (d *DyndepParser) ParseTest(input string, err *string) bool {
+  return Parse("input", input, err)
+}
 
 
 DyndepParser::DyndepParser(State* state, FileReader* file_reader, DyndepFile* dyndep_file)

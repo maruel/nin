@@ -22,13 +22,13 @@ type ParserTest struct {
   state State
   fs_ VirtualFileSystem
 }
-  func (p *ParserTest) AssertParse(input string) {
-    ManifestParser parser(&state, &fs_)
-    err := ""
-    if parser.ParseTest(input, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    VerifyGraph(state)
-  }
+func (p *ParserTest) AssertParse(input string) {
+  ManifestParser parser(&state, &fs_)
+  err := ""
+  if parser.ParseTest(input, &err) { t.FailNow() }
+  if "" != err { t.FailNow() }
+  VerifyGraph(state)
+}
 
 func TestParserTest_Empty(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(""))
