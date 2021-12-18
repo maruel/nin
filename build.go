@@ -45,22 +45,23 @@ type Plan struct {
   // Total remaining number of wanted edges.
   wanted_edges_ int
 }
-enum EdgeResult {
-  kEdgeFailed,
+type EdgeResult int
+const (
+  kEdgeFailed EdgeResult = iota
   kEdgeSucceeded
-}
+)
 // Enumerate possible steps we want for an edge.
-enum Want
-{
+type Want int
+const (
   // We do not want to build the edge, but we might want to build one of
   // its dependents.
-  kWantNothing,
+  kWantNothing Want = iota
   // We want to build the edge, but have not yet scheduled it.
-  kWantToStart,
+  kWantToStart
   // We want to build the edge, have scheduled it, and are waiting
   // for it to complete.
   kWantToFinish
-}
+)
 
 // CommandRunner is an interface that wraps running the build
 // subcommands.  This allows tests to abstract out running commands.
@@ -95,12 +96,13 @@ type BuildConfig struct {
   max_load_average float64
   depfile_parser_options DepfileParserOptions
 }
-enum Verbosity {
-  QUIET,  // No output -- used when testing.
-  NO_STATUS_UPDATE,  // just regular output but suppress status update
-  NORMAL,  // regular output and status update
+type Verbosity int
+const (
+  QUIET Verbosity = iota  // No output -- used when testing.
+  NO_STATUS_UPDATE  // just regular output but suppress status update
+  NORMAL  // regular output and status update
   VERBOSE
-}
+)
 
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {

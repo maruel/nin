@@ -123,14 +123,15 @@ func (n *Node) status_known() bool {
 func (n *Node) PathDecanonicalized() string {
   return PathDecanonicalized(path_, slash_bits_)
 }
-enum ExistenceStatus {
+type ExistenceStatus int
+const (
   // The file hasn't been examined.
-  ExistenceStatusUnknown,
+  ExistenceStatusUnknown ExistenceStatus = iota
   // The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
-  ExistenceStatusMissing,
+  ExistenceStatusMissing
   // The path is an actual file. mtime_ will be the file's mtime.
   ExistenceStatusExists
-}
+)
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
@@ -180,11 +181,12 @@ type Edge struct {
   implicit_outs_ int
 
 }
-enum VisitMark {
-  VisitNone,
-  VisitInStack,
+type VisitMark int
+const (
+  VisitNone VisitMark = iota
+  VisitInStack
   VisitDone
-}
+)
 func (e *Edge) is_implicit(index uint) bool {
   return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
       !is_order_only(index)
@@ -590,7 +592,11 @@ type EdgeEnv struct {
   escape_in_out_ EscapeKind
   recursive_ bool
 }
-enum EscapeKind { kShellEscape, kDoNotEscape }
+type EscapeKind int
+const (
+	kShellEscape EscapeKind = iota
+	kDoNotEscape
+)
 
 func (e *EdgeEnv) LookupVariable(var string) string {
   if var == "in" || var == "in_newline" {

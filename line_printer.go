@@ -50,10 +50,11 @@ type LinePrinter struct {
   console_ *void
 
 }
-enum LineType {
-  FULL,
+type LineType int
+const (
+  FULL LineType = iota
   ELIDE
-}
+)
 
 
 LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {

@@ -26,11 +26,12 @@ type FileReader struct {
 
 }
 // Result of ReadFile.
-enum Status {
-  Okay,
-  NotFound,
+type Status int
+const (
+  Okay Status = iota
+  NotFound
   OtherError
-}
+)
 
 // Interface for accessing the disk.
 //

@@ -539,7 +539,11 @@ func (n *NinjaMain) ToolWinCodePage(options *Options, argc int, argv []*char) in
   return 0
 }
 
-enum PrintCommandMode { PCM_Single, PCM_All }
+type PrintCommandMode int
+const (
+	PCM_Single PrintCommandMode = iota
+	PCM_All
+)
 func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
   if edge == nil {
     return
@@ -648,10 +652,11 @@ func (n *NinjaMain) ToolCleanDead(options *Options, argc int, argv []*char) int 
   return cleaner.CleanDead(build_log_.entries())
 }
 
-enum EvaluateCommandMode {
-  ECM_NORMAL,
+type EvaluateCommandMode int
+const (
+  ECM_NORMAL EvaluateCommandMode = iota
   ECM_EXPAND_RSPFILE
-}
+)
 func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
   command := edge.EvaluateCommand()
   if mode == ECM_NORMAL {

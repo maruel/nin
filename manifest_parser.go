@@ -17,15 +17,17 @@
 package ginja
 
 
-enum DupeEdgeAction {
-  kDupeEdgeActionWarn,
-  kDupeEdgeActionError,
-}
+type DupeEdgeAction int
+const (
+  kDupeEdgeActionWarn DupeEdgeAction = iota
+  kDupeEdgeActionError
+)
 
-enum PhonyCycleAction {
-  kPhonyCycleActionWarn,
-  kPhonyCycleActionError,
-}
+type PhonyCycleAction int
+const (
+  kPhonyCycleActionWarn PhonyCycleAction = iota
+  kPhonyCycleActionError
+)
 
 type ManifestParserOptions struct {
   ManifestParserOptions()
