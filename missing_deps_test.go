@@ -41,15 +41,15 @@ type MissingDependencyScannerTest struct {
   scanner_ MissingDependencyScanner
 }
 func (m *MissingDependencyScannerTest) scanner() *MissingDependencyScanner {
-	return scanner_
+	return m.scanner_
 }
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
-  Node* node_deps[] = { state_.LookupNode(to) }
-  deps_log_.RecordDeps(state_.LookupNode(from), 0, 1, node_deps)
+  Node* node_deps[] = { m.state_.LookupNode(to) }
+  m.deps_log_.RecordDeps(m.state_.LookupNode(from), 0, 1, node_deps)
 }
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
   err := ""
-  nodes := state_.RootNodes(&err)
+  nodes := m.state_.RootNodes(&err)
   if "" != err { t.FailNow() }
   for it := nodes.begin(); it != nodes.end(); it++ {
     scanner().ProcessNode(*it)
@@ -58,22 +58,22 @@ func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 func (m *MissingDependencyScannerTest) CreateInitialState() {
   var deps_type EvalString
   deps_type.AddText("gcc")
-  compile_rule_.AddBinding("deps", deps_type)
-  generator_rule_.AddBinding("deps", deps_type)
-  header_edge := state_.AddEdge(&generator_rule_)
-  state_.AddOut(header_edge, "generated_header", 0)
-  compile_edge := state_.AddEdge(&compile_rule_)
-  state_.AddOut(compile_edge, "compiled_object", 0)
+  m.compile_rule_.AddBinding("deps", deps_type)
+  m.generator_rule_.AddBinding("deps", deps_type)
+  header_edge := m.state_.AddEdge(&m.generator_rule_)
+  m.state_.AddOut(header_edge, "generated_header", 0)
+  compile_edge := m.state_.AddEdge(&m.compile_rule_)
+  m.state_.AddOut(compile_edge, "compiled_object", 0)
 }
 func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
-  from_node := state_.LookupNode(from)
+  from_node := m.state_.LookupNode(from)
   from_edge := from_node.in_edge()
-  state_.AddIn(from_edge, to, 0)
+  m.state_.AddIn(from_edge, to, 0)
 }
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
-  flaky_node := state_.LookupNode(flaky)
+  flaky_node := m.state_.LookupNode(flaky)
   if 1u != scanner().nodes_missing_deps_.count(flaky_node) { t.FailNow() }
-  generated_node := state_.LookupNode(generated)
+  generated_node := m.state_.LookupNode(generated)
   if 1u != scanner().generated_nodes_.count(generated_node) { t.FailNow() }
   if 1u != scanner().generator_rules_.count(rule) { t.FailNow() }
 }

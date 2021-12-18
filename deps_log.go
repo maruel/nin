@@ -82,10 +82,10 @@ type Deps struct {
   }
 // Used for tests.
 func (d *DepsLog) nodes() *vector<Node*> {
-	return nodes_
+	return d.nodes_
 }
 func (d *DepsLog) deps() *vector<Deps*> {
-	return deps_
+	return d.deps_
 }
 
 
@@ -107,14 +107,14 @@ DepsLog::~DepsLog() {
 
 // Writing (build-time) interface.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
-  if needs_recompaction_ {
+  if d.needs_recompaction_ {
     if !Recompact(path, err) {
       return false
     }
   }
 
-  if !!file_ { panic("oops") }
-  file_path_ = path  // we don't actually open the file right now, but will do
+  if !!d.file_ { panic("oops") }
+  d.file_path_ = path  // we don't actually open the file right now, but will do
                       // so on the first write attempt
   return true
 }
@@ -174,28 +174,28 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
     return false
   }
   size |= 0x80000000  // Deps record: set high bit.
-  if fwrite(&size, 4, 1, file_) < 1 {
+  if fwrite(&size, 4, 1, d.file_) < 1 {
     return false
   }
   id := node.id()
-  if fwrite(&id, 4, 1, file_) < 1 {
+  if fwrite(&id, 4, 1, d.file_) < 1 {
     return false
   }
   mtime_part := static_cast<uint32_t>(mtime & 0xffffffff)
-  if fwrite(&mtime_part, 4, 1, file_) < 1 {
+  if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
     return false
   }
   mtime_part = static_cast<uint32_t>((mtime >> 32) & 0xffffffff)
-  if fwrite(&mtime_part, 4, 1, file_) < 1 {
+  if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
     return false
   }
   for i := 0; i < node_count; i++ {
     id = nodes[i].id()
-    if fwrite(&id, 4, 1, file_) < 1 {
+    if fwrite(&id, 4, 1, d.file_) < 1 {
       return false
     }
   }
-  if fflush(file_) != 0 {
+  if fflush(d.file_) != 0 {
     return false
   }
 
@@ -211,10 +211,10 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes 
 
 func (d *DepsLog) Close() {
   OpenForWriteIfNeeded()  // create the file even if nothing has been recorded
-  if file_ {
-    fclose(file_)
+  if d.file_ {
+    fclose(d.file_)
   }
-  file_ = nil
+  d.file_ = nil
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
@@ -284,9 +284,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
       deps := new Deps(mtime, deps_count)
       for i := 0; i < deps_count; i++ {
-        if !deps_data[i] < (int)nodes_.size() { panic("oops") }
-        if !nodes_[deps_data[i]] { panic("oops") }
-        deps.nodes[i] = nodes_[deps_data[i]]
+        if !deps_data[i] < (int)d.nodes_.size() { panic("oops") }
+        if !d.nodes_[deps_data[i]] { panic("oops") }
+        deps.nodes[i] = d.nodes_[deps_data[i]]
       }
 
       total_dep_record_count++
@@ -320,7 +320,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
       // dependency record entry.)
       unsigned checksum = *reinterpret_cast<unsigned*>(buf + size - 4)
       int expected_id = ~checksum
-      id := nodes_.size()
+      id := d.nodes_.size()
       if id != expected_id {
         read_failed = true
         break
@@ -328,7 +328,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
       if !node.id() < 0 { panic("oops") }
       node.set_id(id)
-      nodes_.push_back(node)
+      d.nodes_.push_back(node)
     }
   }
 
@@ -358,7 +358,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   kMinCompactionEntryCount := 1000
   kCompactionRatio := 3
   if total_dep_record_count > kMinCompactionEntryCount && total_dep_record_count > unique_dep_record_count * kCompactionRatio {
-    needs_recompaction_ = true
+    d.needs_recompaction_ = true
   }
 
   return LOAD_SUCCESS
@@ -367,21 +367,21 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 func (d *DepsLog) GetDeps(node *Node) *DepsLog::Deps {
   // Abort if the node has no id (never referenced in the deps) or if
   // there's no deps recorded for the node.
-  if node.id() < 0 || node.id() >= (int)deps_.size() {
+  if node.id() < 0 || node.id() >= (int)d.deps_.size() {
     return nil
   }
-  return deps_[node.id()]
+  return d.deps_[node.id()]
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
-  for id := 0; id < deps_.size(); id++ {
-    deps := deps_[id]
+  for id := 0; id < d.deps_.size(); id++ {
+    deps := d.deps_[id]
     if deps == nil {
       continue
     }
     for i := 0; i < deps.node_count; i++ {
       if deps.nodes[i] == node {
-        return nodes_[id]
+        return d.nodes_[id]
       }
     }
   }
@@ -406,22 +406,22 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 
   // Clear all known ids so that new ones can be reassigned.  The new indices
   // will refer to the ordering in new_log, not in the current log.
-  for i := nodes_.begin(); i != nodes_.end(); i++ {
+  for i := d.nodes_.begin(); i != d.nodes_.end(); i++ {
     (*i).set_id(-1)
   }
 
   // Write out all deps again.
-  for old_id := 0; old_id < (int)deps_.size(); old_id++ {
-    deps := deps_[old_id]
+  for old_id := 0; old_id < (int)d.deps_.size(); old_id++ {
+    deps := d.deps_[old_id]
     if deps == nil {  // If nodes_[old_id] is a leaf, it has no deps.
     	continue
     }
 
-    if !IsDepsEntryLiveFor(nodes_[old_id]) {
+    if !IsDepsEntryLiveFor(d.nodes_[old_id]) {
       continue
     }
 
-    if !new_log.RecordDeps(nodes_[old_id], deps.mtime, deps.node_count, deps.nodes) {
+    if !new_log.RecordDeps(d.nodes_[old_id], deps.mtime, deps.node_count, deps.nodes) {
       new_log.Close()
       return false
     }
@@ -430,8 +430,8 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
   new_log.Close()
 
   // All nodes now have ids that refer to new_log, so steal its data.
-  deps_.swap(new_log.deps_)
-  nodes_.swap(new_log.nodes_)
+  d.deps_.swap(new_log.deps_)
+  d.nodes_.swap(new_log.nodes_)
 
   if unlink(path) < 0 {
     *err = strerror(errno)
@@ -465,15 +465,15 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
-  if out_id >= (int)deps_.size() {
-    deps_.resize(out_id + 1)
+  if out_id >= (int)d.deps_.size() {
+    d.deps_.resize(out_id + 1)
   }
 
-  bool delete_old = deps_[out_id] != nil
+  bool delete_old = d.deps_[out_id] != nil
   if delete_old {
-    delete deps_[out_id]
+    delete d.deps_[out_id]
   }
-  deps_[out_id] = deps
+  d.deps_[out_id] = deps
   return delete_old
 }
 
@@ -491,27 +491,27 @@ func (d *DepsLog) RecordId(node *Node) bool {
   if !OpenForWriteIfNeeded() {
     return false
   }
-  if fwrite(&size, 4, 1, file_) < 1 {
+  if fwrite(&size, 4, 1, d.file_) < 1 {
     return false
   }
-  if fwrite(node.path().data(), path_size, 1, file_) < 1 {
+  if fwrite(node.path().data(), path_size, 1, d.file_) < 1 {
     if !!node.path().empty() { panic("oops") }
     return false
   }
-  if padding && fwrite("\0\0", padding, 1, file_) < 1 {
+  if padding && fwrite("\0\0", padding, 1, d.file_) < 1 {
     return false
   }
-  id := nodes_.size()
+  id := d.nodes_.size()
   unsigned checksum = ~(unsigned)id
-  if fwrite(&checksum, 4, 1, file_) < 1 {
+  if fwrite(&checksum, 4, 1, d.file_) < 1 {
     return false
   }
-  if fflush(file_) != 0 {
+  if fflush(d.file_) != 0 {
     return false
   }
 
   node.set_id(id)
-  nodes_.push_back(node)
+  d.nodes_.push_back(node)
 
   return true
 }
@@ -519,36 +519,36 @@ func (d *DepsLog) RecordId(node *Node) bool {
 // Should be called before using file_. When false is returned, errno will
 // be set.
 func (d *DepsLog) OpenForWriteIfNeeded() bool {
-  if file_path_.empty() {
+  if d.file_path_.empty() {
     return true
   }
-  file_ = fopen(file_path_, "ab")
-  if !file_ {
+  d.file_ = fopen(d.file_path_, "ab")
+  if !d.file_ {
     return false
   }
   // Set the buffer size to this and flush the file buffer after every record
   // to make sure records aren't written partially.
-  if setvbuf(file_, nil, _IOFBF, kMaxRecordSize + 1) != 0 {
+  if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize + 1) != 0 {
     return false
   }
-  SetCloseOnExec(fileno(file_))
+  SetCloseOnExec(fileno(d.file_))
 
   // Opening a file in append mode doesn't set the file pointer to the file's
   // end on Windows. Do that explicitly.
-  fseek(file_, 0, SEEK_END)
+  fseek(d.file_, 0, SEEK_END)
 
-  if ftell(file_) == 0 {
-    if fwrite(kFileSignature, sizeof(kFileSignature) - 1, 1, file_) < 1 {
+  if ftell(d.file_) == 0 {
+    if fwrite(kFileSignature, sizeof(kFileSignature) - 1, 1, d.file_) < 1 {
       return false
     }
-    if fwrite(&kCurrentVersion, 4, 1, file_) < 1 {
+    if fwrite(&kCurrentVersion, 4, 1, d.file_) < 1 {
       return false
     }
   }
-  if fflush(file_) != 0 {
+  if fflush(d.file_) != 0 {
     return false
   }
-  file_path_ = nil
+  d.file_path_ = nil
   return true
 }
 

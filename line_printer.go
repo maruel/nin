@@ -46,13 +46,13 @@ type LinePrinter struct {
 
 }
 func (l *LinePrinter) is_smart_terminal() bool {
-	return smart_terminal_
+	return l.smart_terminal_
 }
 func (l *LinePrinter) set_smart_terminal(smart bool) {
-	smart_terminal_ = smart
+	l.smart_terminal_ = smart
 }
 func (l *LinePrinter) supports_color() bool {
-	return supports_color_
+	return l.supports_color_
 }
 type LineType int
 const (
@@ -90,24 +90,24 @@ LinePrinter::LinePrinter() : have_blank_line_(true), console_locked_(false) {
 // Overprints the current line. If type is ELIDE, elides to_print to fit on
 // one line.
 func (l *LinePrinter) Print(to_print string, type LineType) {
-  if console_locked_ {
-    line_buffer_ = to_print
-    line_type_ = type
+  if l.console_locked_ {
+    l.line_buffer_ = to_print
+    l.line_type_ = type
     return
   }
 
-  if smart_terminal_ {
+  if l.smart_terminal_ {
     printf("\r")  // Print over previous line, if any.
     // On Windows, calling a C library function writing to stdout also handles
     // pausing the executable when the "Pause" key or Ctrl-S is pressed.
   }
 
-  if smart_terminal_ && type == ELIDE {
+  if l.smart_terminal_ && type == ELIDE {
     var csbi CONSOLE_SCREEN_BUFFER_INFO
-    GetConsoleScreenBufferInfo(console_, &csbi)
+    GetConsoleScreenBufferInfo(l.console_, &csbi)
 
     to_print = ElideMiddle(to_print, static_cast<size_t>(csbi.dwSize.X))
-    if supports_color_ {  // this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    if l.supports_color_ {  // this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
                             // succeeded
       printf("%s\x1B[K", to_print)  // Clear to end of line.
       fflush(stdout)
@@ -125,7 +125,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
         char_data[i].Char.AsciiChar = i < to_print.size() ? to_print[i] : ' '
         char_data[i].Attributes = csbi.wAttributes
       }
-      WriteConsoleOutput(console_, &char_data[0], buf_size, zero_zero, &target)
+      WriteConsoleOutput(l.console_, &char_data[0], buf_size, zero_zero, &target)
     }
     // Limit output to width of the terminal if provided so we don't cause
     // line-wrapping.
@@ -137,7 +137,7 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
     printf("\x1B[K")  // Clear to end of line.
     fflush(stdout)
 
-    have_blank_line_ = false
+    l.have_blank_line_ = false
   } else {
     printf("%s\n", to_print)
   }
@@ -145,8 +145,8 @@ func (l *LinePrinter) Print(to_print string, type LineType) {
 
 // Print the given data to the console, or buffer it if it is locked.
 func (l *LinePrinter) PrintOrBuffer(data string, size uint) {
-  if console_locked_ {
-    output_buffer_.append(data, size)
+  if l.console_locked_ {
+    l.output_buffer_.append(data, size)
   } else {
     // Avoid printf and C strings, since the actual output might contain null
     // bytes like UTF-16 does (yuck).
@@ -156,24 +156,24 @@ func (l *LinePrinter) PrintOrBuffer(data string, size uint) {
 
 // Prints a string on a new line, not overprinting previous output.
 func (l *LinePrinter) PrintOnNewLine(to_print string) {
-  if console_locked_ && !line_buffer_.empty() {
-    output_buffer_.append(line_buffer_)
-    output_buffer_.append(1, '\n')
-    line_buffer_ = nil
+  if l.console_locked_ && !l.line_buffer_.empty() {
+    l.output_buffer_.append(l.line_buffer_)
+    l.output_buffer_.append(1, '\n')
+    l.line_buffer_ = nil
   }
-  if !have_blank_line_ {
+  if !l.have_blank_line_ {
     PrintOrBuffer("\n", 1)
   }
   if !to_print.empty() {
     PrintOrBuffer(&to_print[0], to_print.size())
   }
-  have_blank_line_ = to_print.empty() || *to_print.rbegin() == '\n'
+  l.have_blank_line_ = to_print.empty() || *to_print.rbegin() == '\n'
 }
 
 // Lock or unlock the console.  Any output sent to the LinePrinter while the
 // console is locked will not be printed until it is unlocked.
 func (l *LinePrinter) SetConsoleLocked(locked bool) {
-  if locked == console_locked_ {
+  if locked == l.console_locked_ {
     return
   }
 
@@ -181,15 +181,15 @@ func (l *LinePrinter) SetConsoleLocked(locked bool) {
     PrintOnNewLine("")
   }
 
-  console_locked_ = locked
+  l.console_locked_ = locked
 
   if locked == nil {
-    PrintOnNewLine(output_buffer_)
-    if !line_buffer_.empty() {
-      Print(line_buffer_, line_type_)
+    PrintOnNewLine(l.output_buffer_)
+    if !l.line_buffer_.empty() {
+      Print(l.line_buffer_, l.line_type_)
     }
-    output_buffer_ = nil
-    line_buffer_ = nil
+    l.output_buffer_ = nil
+    l.line_buffer_ = nil
   }
 }
 

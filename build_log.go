@@ -55,7 +55,7 @@ type LogEntry struct {
   LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   }
 func (b *BuildLog) entries() *Entries {
-	return entries_
+	return b.entries_
 }
 
 
@@ -138,14 +138,14 @@ BuildLog::~BuildLog() {
 // Prepares writing to the log file without actually opening it - that will
 // happen when/if it's needed
 func (b *BuildLog) OpenForWrite(path string, user *BuildLogUser, err *string) bool {
-  if needs_recompaction_ {
+  if b.needs_recompaction_ {
     if !Recompact(path, user, err) {
       return false
     }
   }
 
-  if !!log_file_ { panic("oops") }
-  log_file_path_ = path  // we don't actually open the file right now, but will
+  if !!b.log_file_ { panic("oops") }
+  b.log_file_path_ = path  // we don't actually open the file right now, but will
                           // do so on the first write attempt
   return true
 }
@@ -155,13 +155,13 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime
   command_hash := LogEntry::HashCommand(command)
   for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
     path := (*out).path()
-    i := entries_.find(path)
+    i := b.entries_.find(path)
     var log_entry *LogEntry
-    if i != entries_.end() {
+    if i != b.entries_.end() {
       log_entry = i.second
     } else {
       log_entry = new LogEntry(path)
-      entries_.insert(Entries::value_type(log_entry.output, log_entry))
+      b.entries_.insert(Entries::value_type(log_entry.output, log_entry))
     }
     log_entry.command_hash = command_hash
     log_entry.start_time = start_time
@@ -171,11 +171,11 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime
     if !OpenForWriteIfNeeded() {
       return false
     }
-    if log_file_ {
-      if !WriteEntry(log_file_, *log_entry) {
+    if b.log_file_ {
+      if !WriteEntry(b.log_file_, *log_entry) {
         return false
       }
-      if fflush(log_file_) != 0 {
+      if fflush(b.log_file_) != 0 {
           return false
       }
     }
@@ -185,33 +185,33 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime
 
 func (b *BuildLog) Close() {
   OpenForWriteIfNeeded()  // create the file even if nothing has been recorded
-  if log_file_ {
-    fclose(log_file_)
+  if b.log_file_ {
+    fclose(b.log_file_)
   }
-  log_file_ = nil
+  b.log_file_ = nil
 }
 
 // Should be called before using log_file_. When false is returned, errno
 // will be set.
 func (b *BuildLog) OpenForWriteIfNeeded() bool {
-  if log_file_ || log_file_path_.empty() {
+  if b.log_file_ || b.log_file_path_.empty() {
     return true
   }
-  log_file_ = fopen(log_file_path_, "ab")
-  if !log_file_ {
+  b.log_file_ = fopen(b.log_file_path_, "ab")
+  if !b.log_file_ {
     return false
   }
-  if setvbuf(log_file_, nil, _IOLBF, BUFSIZ) != 0 {
+  if setvbuf(b.log_file_, nil, _IOLBF, BUFSIZ) != 0 {
     return false
   }
-  SetCloseOnExec(fileno(log_file_))
+  SetCloseOnExec(fileno(b.log_file_))
 
   // Opening a file in append mode doesn't set the file pointer to the file's
   // end on Windows. Do that explicitly.
-  fseek(log_file_, 0, SEEK_END)
+  fseek(b.log_file_, 0, SEEK_END)
 
-  if ftell(log_file_) == 0 {
-    if fprintf(log_file_, kFileSignature, kCurrentVersion) < 0 {
+  if ftell(b.log_file_) == 0 {
+    if fprintf(b.log_file_, kFileSignature, kCurrentVersion) < 0 {
       return false
     }
   }
@@ -237,34 +237,34 @@ type LineReader struct {
 // *line_end points to the \n at the end of the line. If no newline is seen
 // in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
 func (l *LineReader) ReadLine(line_start *char*, line_end *char*) bool {
-  if line_start_ >= buf_end_ || !line_end_ {
+  if l.line_start_ >= l.buf_end_ || !l.line_end_ {
     // Buffer empty, refill.
-    size_read := fread(buf_, 1, sizeof(buf_), file_)
+    size_read := fread(l.buf_, 1, sizeof(l.buf_), l.file_)
     if !size_read {
       return false
     }
-    line_start_ = buf_
-    buf_end_ = buf_ + size_read
+    l.line_start_ = l.buf_
+    l.buf_end_ = l.buf_ + size_read
   } else {
     // Advance to next line in buffer.
-    line_start_ = line_end_ + 1
+    l.line_start_ = l.line_end_ + 1
   }
 
-  line_end_ = (char*)memchr(line_start_, '\n', buf_end_ - line_start_)
-  if !line_end_ {
+  l.line_end_ = (char*)memchr(l.line_start_, '\n', l.buf_end_ - l.line_start_)
+  if !l.line_end_ {
     // No newline. Move rest of data to start of buffer, fill rest.
-    size_t already_consumed = line_start_ - buf_
-    size_t size_rest = (buf_end_ - buf_) - already_consumed
-    memmove(buf_, line_start_, size_rest)
+    size_t already_consumed = l.line_start_ - l.buf_
+    size_t size_rest = (l.buf_end_ - l.buf_) - already_consumed
+    memmove(l.buf_, l.line_start_, size_rest)
 
-    size_t read = fread(buf_ + size_rest, 1, sizeof(buf_) - size_rest, file_)
-    buf_end_ = buf_ + size_rest + read
-    line_start_ = buf_
-    line_end_ = (char*)memchr(line_start_, '\n', buf_end_ - line_start_)
+    size_t read = fread(l.buf_ + size_rest, 1, sizeof(l.buf_) - size_rest, l.file_)
+    l.buf_end_ = l.buf_ + size_rest + read
+    l.line_start_ = l.buf_
+    l.line_end_ = (char*)memchr(l.line_start_, '\n', l.buf_end_ - l.line_start_)
   }
 
-  *line_start = line_start_
-  *line_end = line_end_
+  *line_start = l.line_start_
+  *line_end = l.line_end_
   return true
 }
 
@@ -347,12 +347,12 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
     end = line_end
 
     var entry *LogEntry
-    i := entries_.find(output)
-    if i != entries_.end() {
+    i := b.entries_.find(output)
+    if i != b.entries_.end() {
       entry = i.second
     } else {
       entry = new LogEntry(output)
-      entries_.insert(Entries::value_type(entry.output, entry))
+      b.entries_.insert(Entries::value_type(entry.output, entry))
       unique_entry_count++
     }
     total_entry_count++
@@ -380,9 +380,9 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   kMinCompactionEntryCount := 100
   kCompactionRatio := 3
   if log_version < kCurrentVersion {
-    needs_recompaction_ = true
+    b.needs_recompaction_ = true
   } else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
-    needs_recompaction_ = true
+    b.needs_recompaction_ = true
   }
 
   return LOAD_SUCCESS
@@ -390,8 +390,8 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 
 // Lookup a previously-run command by its output path.
 func (b *BuildLog) LookupByOutput(path string) *BuildLog::LogEntry {
-  i := entries_.find(path)
-  if i != entries_.end() {
+  i := b.entries_.find(path)
+  if i != b.entries_.end() {
     return i.second
   }
   return nil
@@ -421,7 +421,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
   }
 
   var dead_outputs []string
-  for i := entries_.begin(); i != entries_.end(); i++ {
+  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
     if user.IsPathDead(i.first) {
       dead_outputs.push_back(i.first)
       continue
@@ -435,7 +435,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
   }
 
   for i := 0; i < dead_outputs.size(); i++ {
-    entries_.erase(dead_outputs[i])
+    b.entries_.erase(dead_outputs[i])
   }
 
   fclose(f)
@@ -469,7 +469,7 @@ func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_cou
     fclose(f)
     return false
   }
-  for i := entries_.begin(); i != entries_.end(); i++ {
+  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
     skip := output_count > 0
     for j := 0; j < output_count; j++ {
       if i.second.output == outputs[j] {

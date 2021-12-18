@@ -55,10 +55,10 @@ type Stopwatch struct {
 }
 // Seconds since Restart() call.
 func (s *Stopwatch) Elapsed() float64 {
-  return 1e-6 * static_cast<double>(Now() - started_)
+  return 1e-6 * static_cast<double>(Now() - s.started_)
 }
 func (s *Stopwatch) Restart() {
-	started_ = Now()
+	s.started_ = Now()
 }
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
@@ -128,19 +128,19 @@ func (m *Metrics) NewMetric(name string) *Metric {
   metric.name = name
   metric.count = 0
   metric.sum = 0
-  metrics_.push_back(metric)
+  m.metrics_.push_back(metric)
   return metric
 }
 
 // Print a summary report to stdout.
 func (m *Metrics) Report() {
   width := 0
-  for i := metrics_.begin(); i != metrics_.end(); i++ {
+  for i := m.metrics_.begin(); i != m.metrics_.end(); i++ {
     width = max((int)(*i).name.size(), width)
   }
 
   printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg (us)", "total (ms)")
-  for i := metrics_.begin(); i != metrics_.end(); i++ {
+  for i := m.metrics_.begin(); i != m.metrics_.end(); i++ {
     metric := *i
     double total = metric.sum / (double)1000
     double avg = metric.sum / (double)metric.count

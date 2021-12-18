@@ -61,7 +61,7 @@ func (c *CLWrapper) Run(command string, output *string) int {
   startup_info.hStdOutput = stdout_write
   startup_info.dwFlags |= STARTF_USESTDHANDLES
 
-  if !CreateProcessA(nil, (char*)command, nil, nil, /* inherit handles */ TRUE, 0, env_block_, nil, &startup_info, &process_info) {
+  if !CreateProcessA(nil, (char*)command, nil, nil, /* inherit handles */ TRUE, 0, c.env_block_, nil, &startup_info, &process_info) {
     Win32Fatal("CreateProcess")
   }
 

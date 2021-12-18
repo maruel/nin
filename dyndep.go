@@ -139,7 +139,7 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps const, err *strin
 }
 
 func (d *DyndepLoader) LoadDyndepFile(file *Node, ddf *DyndepFile, err *string) bool {
-  DyndepParser parser(state_, disk_interface_, ddf)
+  DyndepParser parser(d.state_, d.disk_interface_, ddf)
   return parser.Load(file.path(), err)
 }
 

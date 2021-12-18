@@ -23,7 +23,7 @@ type ParserTest struct {
   fs_ VirtualFileSystem
 }
 func (p *ParserTest) AssertParse(input string) {
-  ManifestParser parser(&state, &fs_)
+  ManifestParser parser(&state, &p.fs_)
   err := ""
   if parser.ParseTest(input, &err) { t.FailNow() }
   if "" != err { t.FailNow() }

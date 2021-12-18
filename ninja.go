@@ -66,7 +66,7 @@ type NinjaMain struct {
   start_time_millis_ int64
 }
 func (n *NinjaMain) IsPathDead(s string) bool {
-  n := state_.LookupNode(s)
+  n := n.state_.LookupNode(s)
   if n && n.in_edge() {
     return false
   }
@@ -80,7 +80,7 @@ func (n *NinjaMain) IsPathDead(s string) bool {
   // Do keep entries around for files which still exist on disk, for
   // generators that want to use this information.
   err := ""
-  mtime := disk_interface_.Stat(s.AsString(), &err)
+  mtime := n.disk_interface_.Stat(s.AsString(), &err)
   if mtime == -1 {
     Error("%s", err)  // Log and ignore Stat() errors.
   }
@@ -142,12 +142,12 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
   }
   var slash_bits uint64  // Unused because this path is only used for lookup.
   CanonicalizePath(&path, &slash_bits)
-  node := state_.LookupNode(path)
+  node := n.state_.LookupNode(path)
   if node == nil {
     return false
   }
 
-  Builder builder(&state_, config_, &build_log_, &deps_log_, &disk_interface_, status, start_time_millis_)
+  Builder builder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
   if !builder.AddTarget(node, err) {
     return false
   }
@@ -165,7 +165,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Stat
   if !node.dirty() {
     // Reset the state to prevent problems like
     // https://github.com/ninja-build/ninja/issues/874
-    state_.Reset()
+    n.state_.Reset()
     return false
   }
 
@@ -190,11 +190,11 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
     first_dependent = true
   }
 
-  node := state_.LookupNode(path)
+  node := n.state_.LookupNode(path)
   if node != nil {
     if first_dependent {
       if node.out_edges().empty() {
-        rev_deps := deps_log_.GetFirstReverseDepsNode(node)
+        rev_deps := n.deps_log_.GetFirstReverseDepsNode(node)
         if !rev_deps {
           *err = "'" + path + "' has no out edge"
           return nil
@@ -218,7 +218,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
     } else if path == "help" {
       *err += ", did you mean 'ninja -h'?"
     } else {
-      suggestion := state_.SpellcheckNode(path)
+      suggestion := n.state_.SpellcheckNode(path)
       if suggestion != nil {
         *err += ", did you mean '" + suggestion.path() + "'?"
       }
@@ -230,7 +230,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 // CollectTarget for all command-line arguments, filling in \a targets.
 func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *vector<Node*>, err *string) bool {
   if argc == 0 {
-    *targets = state_.DefaultNodes(err)
+    *targets = n.state_.DefaultNodes(err)
     return err.empty()
   }
 
@@ -253,7 +253,7 @@ func (n *NinjaMain) ToolGraph(options *Options, argc int, argv []*char) int {
     return 1
   }
 
-  GraphViz graph(&state_, &disk_interface_)
+  GraphViz graph(&n.state_, &n.disk_interface_)
   graph.Start()
   for n := nodes.begin(); n != nodes.end(); n++ {
     graph.AddTarget(*n)
@@ -269,7 +269,7 @@ func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
     return 1
   }
 
-  DyndepLoader dyndep_loader(&state_, &disk_interface_)
+  DyndepLoader dyndep_loader(&n.state_, &n.disk_interface_)
 
   for i := 0; i < argc; i++ {
     err := ""
@@ -308,7 +308,7 @@ func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
 }
 
 func (n *NinjaMain) ToolBrowse(options *Options, argc int, argv []*char) int {
-  RunBrowsePython(&state_, ninja_command_, options.input_file, argc, argv)
+  RunBrowsePython(&n.state_, n.ninja_command_, options.input_file, argc, argv)
   // If we get here, the browse failed.
   return 1
 }
@@ -386,8 +386,8 @@ func ToolTargetsList(state *State) int {
 func (n *NinjaMain) ToolDeps(options *Options, argc int, argv *char*) int {
   var nodes []*Node
   if argc == 0 {
-    for ni := deps_log_.nodes().begin(); ni != deps_log_.nodes().end(); ni++ {
-      if deps_log_.IsDepsEntryLiveFor(*ni) {
+    for ni := n.deps_log_.nodes().begin(); ni != n.deps_log_.nodes().end(); ni++ {
+      if n.deps_log_.IsDepsEntryLiveFor(*ni) {
         nodes.push_back(*ni)
       }
     }
@@ -401,7 +401,7 @@ func (n *NinjaMain) ToolDeps(options *Options, argc int, argv *char*) int {
 
   var disk_interface RealDiskInterface
   for vector<Node*>::iterator it = nodes.begin(), end = nodes.end(); it != end; it++ {
-    deps := deps_log_.GetDeps(*it)
+    deps := n.deps_log_.GetDeps(*it)
     if deps == nil {
       printf("%s: deps not found\n", (*it).path())
       continue
@@ -431,7 +431,7 @@ func (n *NinjaMain) ToolMissingDeps(options *Options, argc int, argv *char*) int
   }
   var disk_interface RealDiskInterface
   var printer MissingDependencyPrinter
-  MissingDependencyScanner scanner(&printer, &deps_log_, &state_, &disk_interface)
+  MissingDependencyScanner scanner(&printer, &n.deps_log_, &n.state_, &disk_interface)
   for it := nodes.begin(); it != nodes.end(); it++ {
     scanner.ProcessNode(*it)
   }
@@ -452,16 +452,16 @@ func (n *NinjaMain) ToolTargets(options *Options, argc int, argv []*char) int {
         rule = argv[1]
       }
       if len(rule) == 0 {
-        return ToolTargetsSourceList(&state_)
+        return ToolTargetsSourceList(&n.state_)
       } else {
-        return ToolTargetsList(&state_, rule)
+        return ToolTargetsList(&n.state_, rule)
       }
     } else if mode == "depth" {
       if argc > 1 {
         depth = atoi(argv[1])
       }
     } else if mode == "all" {
-      return ToolTargetsList(&state_)
+      return ToolTargetsList(&n.state_)
     } else {
       string suggestion =
           SpellcheckString(mode, "rule", "depth", "all", nil)
@@ -475,7 +475,7 @@ func (n *NinjaMain) ToolTargets(options *Options, argc int, argv []*char) int {
   }
 
   err := ""
-  root_nodes := state_.RootNodes(&err)
+  root_nodes := n.state_.RootNodes(&err)
   if len(err) == 0 {
     return ToolTargetsList(root_nodes, depth, 0)
   } else {
@@ -513,7 +513,7 @@ func (n *NinjaMain) ToolRules(options *Options, argc int, argv []*char) int {
   // Print rules
 
   var Rules typedef map<string, const Rule*>
-  rules := state_.bindings_.GetRules()
+  rules := n.state_.bindings_.GetRules()
   for i := rules.begin(); i != rules.end(); i++ {
     printf("%s", i.first)
     if print_description {
@@ -633,7 +633,7 @@ func (n *NinjaMain) ToolClean(options *Options, argc int, argv []*char) int {
     return 1
   }
 
-  Cleaner cleaner(&state_, config_, &disk_interface_)
+  Cleaner cleaner(&n.state_, n.config_, &n.disk_interface_)
   if argc >= 1 {
     if clean_rules {
       return cleaner.CleanRules(argc, argv)
@@ -646,8 +646,8 @@ func (n *NinjaMain) ToolClean(options *Options, argc int, argv []*char) int {
 }
 
 func (n *NinjaMain) ToolCleanDead(options *Options, argc int, argv []*char) int {
-  Cleaner cleaner(&state_, config_, &disk_interface_)
-  return cleaner.CleanDead(build_log_.entries())
+  Cleaner cleaner(&n.state_, n.config_, &n.disk_interface_)
+  return cleaner.CleanDead(n.build_log_.entries())
 }
 
 type EvaluateCommandMode int
@@ -733,7 +733,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*
   }
 
   putchar('[')
-  for e := state_.edges_.begin(); e != state_.edges_.end(); e++ {
+  for e := n.state_.edges_.begin(); e != n.state_.edges_.end(); e++ {
     if (*e).inputs_.empty() {
       continue
     }
@@ -796,12 +796,12 @@ func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
   }
 
   string log_path = ".ninja_log"
-  if !build_dir_.empty() {
-    log_path = build_dir_ + "/" + log_path
+  if !n.build_dir_.empty() {
+    log_path = n.build_dir_ + "/" + log_path
   }
 
   err := ""
-  status := build_log_.Load(log_path, &err)
+  status := n.build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
     return EXIT_FAILURE
@@ -816,14 +816,14 @@ func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
     err = nil
   }
 
-  success := build_log_.Restat(log_path, disk_interface_, argc, argv, &err)
+  success := n.build_log_.Restat(log_path, n.disk_interface_, argc, argv, &err)
   if success == nil {
     Error("failed recompaction: %s", err)
     return EXIT_FAILURE
   }
 
-  if !config_.dry_run {
-    if !build_log_.OpenForWrite(log_path, *this, &err) {
+  if !n.config_.dry_run {
+    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
       Error("opening build log: %s", err)
       return EXIT_FAILURE
     }
@@ -993,12 +993,12 @@ func WarningEnable(name string, options *Options) bool {
 // @return false on error.
 func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
   string log_path = ".ninja_log"
-  if !build_dir_.empty() {
-    log_path = build_dir_ + "/" + log_path
+  if !n.build_dir_.empty() {
+    log_path = n.build_dir_ + "/" + log_path
   }
 
   err := ""
-  status := build_log_.Load(log_path, &err)
+  status := n.build_log_.Load(log_path, &err)
   if status == LOAD_ERROR {
     Error("loading build log %s: %s", log_path, err)
     return false
@@ -1013,15 +1013,15 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
     if status == LOAD_NOT_FOUND {
       return true
     }
-    success := build_log_.Recompact(log_path, *this, &err)
+    success := n.build_log_.Recompact(log_path, *this, &err)
     if success == nil {
       Error("failed recompaction: %s", err)
     }
     return success
   }
 
-  if !config_.dry_run {
-    if !build_log_.OpenForWrite(log_path, *this, &err) {
+  if !n.config_.dry_run {
+    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
       Error("opening build log: %s", err)
       return false
     }
@@ -1036,12 +1036,12 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 // @return false on error.
 func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
   string path = ".ninja_deps"
-  if !build_dir_.empty() {
-    path = build_dir_ + "/" + path
+  if !n.build_dir_.empty() {
+    path = n.build_dir_ + "/" + path
   }
 
   err := ""
-  status := deps_log_.Load(path, &state_, &err)
+  status := n.deps_log_.Load(path, &n.state_, &err)
   if status == LOAD_ERROR {
     Error("loading deps log %s: %s", path, err)
     return false
@@ -1056,15 +1056,15 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
     if status == LOAD_NOT_FOUND {
       return true
     }
-    success := deps_log_.Recompact(path, &err)
+    success := n.deps_log_.Recompact(path, &err)
     if success == nil {
       Error("failed recompaction: %s", err)
     }
     return success
   }
 
-  if !config_.dry_run {
-    if !deps_log_.OpenForWrite(path, &err) {
+  if !n.config_.dry_run {
+    if !n.deps_log_.OpenForWrite(path, &err) {
       Error("opening deps log: %s", err)
       return false
     }
@@ -1078,18 +1078,18 @@ func (n *NinjaMain) DumpMetrics() {
   g_metrics.Report()
 
   printf("\n")
-  count := (int)state_.paths_.size()
-  buckets := (int)state_.paths_.bucket_count()
+  count := (int)n.state_.paths_.size()
+  buckets := (int)n.state_.paths_.bucket_count()
   printf("path.node hash load %.2f (%d entries / %d buckets)\n", count / (double) buckets, count, buckets)
 }
 
 // Ensure the build directory exists, creating it if necessary.
 // @return false on error.
 func (n *NinjaMain) EnsureBuildDirExists() bool {
-  build_dir_ = state_.bindings_.LookupVariable("builddir")
-  if !build_dir_.empty() && !config_.dry_run {
-    if !disk_interface_.MakeDirs(build_dir_ + "/.") && errno != EEXIST {
-      Error("creating build directory %s: %s", build_dir_, strerror(errno))
+  n.build_dir_ = n.state_.bindings_.LookupVariable("builddir")
+  if !n.build_dir_.empty() && !n.config_.dry_run {
+    if !n.disk_interface_.MakeDirs(n.build_dir_ + "/.") && errno != EEXIST {
+      Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
       return false
     }
   }
@@ -1106,9 +1106,9 @@ func (n *NinjaMain) RunBuild(argc int, argv *char*, status *Status) int {
     return 1
   }
 
-  disk_interface_.AllowStatCache(g_experimental_statcache)
+  n.disk_interface_.AllowStatCache(g_experimental_statcache)
 
-  Builder builder(&state_, config_, &build_log_, &deps_log_, &disk_interface_, status, start_time_millis_)
+  Builder builder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
   for i := 0; i < targets.size(); i++ {
     if !builder.AddTarget(targets[i], &err) {
       if len(err) != 0 {
@@ -1122,7 +1122,7 @@ func (n *NinjaMain) RunBuild(argc int, argv *char*, status *Status) int {
   }
 
   // Make sure restat rules do not see stale timestamps.
-  disk_interface_.AllowStatCache(false)
+  n.disk_interface_.AllowStatCache(false)
 
   if builder.AlreadyUpToDate() {
     status.Info("no work to do.")

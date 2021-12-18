@@ -41,20 +41,20 @@ type Pool struct {
 }
 // A depth of 0 is infinite
 func (p *Pool) is_valid() bool {
-	return depth_ >= 0
+	return p.depth_ >= 0
 }
 func (p *Pool) depth() int {
-	return depth_
+	return p.depth_
 }
 func (p *Pool) name() string {
-	return name_
+	return p.name_
 }
 func (p *Pool) current_use() int {
-	return current_use_
+	return p.current_use_
 }
 // true if the Pool might delay this edge
 func (p *Pool) ShouldDelayEdge() bool {
-	return depth_ != 0
+	return p.depth_ != 0
 }
 type WeightedEdgeCmp struct {
   bool operator()(const Edge* a, const Edge* b) const {
@@ -89,44 +89,44 @@ type State struct {
 // informs this Pool that the given edge is committed to be run.
 // Pool will count this edge as using resources from this pool.
 func (p *Pool) EdgeScheduled(edge *Edge) {
-  if depth_ != 0 {
-    current_use_ += edge.weight()
+  if p.depth_ != 0 {
+    p.current_use_ += edge.weight()
   }
 }
 
 // informs this Pool that the given edge is no longer runnable, and should
 // relinquish its resources back to the pool
 func (p *Pool) EdgeFinished(edge *Edge) {
-  if depth_ != 0 {
-    current_use_ -= edge.weight()
+  if p.depth_ != 0 {
+    p.current_use_ -= edge.weight()
   }
 }
 
 // adds the given edge to this Pool to be delayed.
 func (p *Pool) DelayEdge(edge *Edge) {
-  if !depth_ != 0 { panic("oops") }
-  delayed_.insert(edge)
+  if !p.depth_ != 0 { panic("oops") }
+  p.delayed_.insert(edge)
 }
 
 // Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
-  it := delayed_.begin()
-  while it != delayed_.end() {
+  it := p.delayed_.begin()
+  while it != p.delayed_.end() {
     edge := *it
-    if current_use_ + edge.weight() > depth_ {
+    if p.current_use_ + edge.weight() > p.depth_ {
       break
     }
     ready_queue.insert(edge)
     EdgeScheduled(*edge)
     it++
   }
-  delayed_.erase(delayed_.begin(), it)
+  p.delayed_.erase(p.delayed_.begin(), it)
 }
 
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
-  printf("%s (%d/%d) .\n", name_, current_use_, depth_)
-  for it := delayed_.begin(); it != delayed_.end(); it++ {
+  printf("%s (%d/%d) .\n", p.name_, p.current_use_, p.depth_)
+  for it := p.delayed_.begin(); it != p.delayed_.end(); it++ {
   {
   }
     printf("\t")
@@ -146,12 +146,12 @@ State::State() {
 
 func (s *State) AddPool(pool *Pool) {
   if !LookupPool(pool.name()) == nil { panic("oops") }
-  pools_[pool.name()] = pool
+  s.pools_[pool.name()] = pool
 }
 
 func (s *State) LookupPool(pool_name string) *Pool {
-  i := pools_.find(pool_name)
-  if i == pools_.end() {
+  i := s.pools_.find(pool_name)
+  if i == s.pools_.end() {
     return nil
   }
   return i.second
@@ -161,9 +161,9 @@ func (s *State) AddEdge(rule *Rule) *Edge {
   edge := new Edge()
   edge.rule_ = rule
   edge.pool_ = &State::kDefaultPool
-  edge.env_ = &bindings_
-  edge.id_ = edges_.size()
-  edges_.push_back(edge)
+  edge.env_ = &s.bindings_
+  edge.id_ = s.edges_.size()
+  s.edges_.push_back(edge)
   return edge
 }
 
@@ -173,13 +173,13 @@ func (s *State) GetNode(path string, slash_bits uint64) *Node {
     return node
   }
   node = new Node(path.AsString(), slash_bits)
-  paths_[node.path()] = node
+  s.paths_[node.path()] = node
   return node
 }
 
 func (s *State) LookupNode(path string) *Node {
-  i := paths_.find(path)
-  if i != paths_.end() {
+  i := s.paths_.find(path)
+  if i != s.paths_.end() {
     return i.second
   }
   return nil
@@ -191,7 +191,7 @@ func (s *State) SpellcheckNode(path string) *Node {
 
   int min_distance = kMaxValidEditDistance + 1
   result := nil
-  for i := paths_.begin(); i != paths_.end(); i++ {
+  for i := s.paths_.begin(); i != s.paths_.end(); i++ {
     distance := EditDistance( i.first, path, kAllowReplacements, kMaxValidEditDistance)
     if distance < min_distance && i.second {
       min_distance = distance
@@ -223,7 +223,7 @@ func (s *State) AddDefault(path string, err *string) bool {
     *err = "unknown target '" + path.AsString() + "'"
     return false
   }
-  defaults_.push_back(node)
+  s.defaults_.push_back(node)
   return true
 }
 
@@ -232,7 +232,7 @@ func (s *State) AddDefault(path string, err *string) bool {
 func (s *State) RootNodes(err *string) []*Node {
   var root_nodes []*Node
   // Search for nodes with no output.
-  for e := edges_.begin(); e != edges_.end(); e++ {
+  for e := s.edges_.begin(); e != s.edges_.end(); e++ {
     for out := (*e).outputs_.begin(); out != (*e).outputs_.end(); out++ {
       if (*out).out_edges().empty() {
         root_nodes.push_back(*out)
@@ -240,7 +240,7 @@ func (s *State) RootNodes(err *string) []*Node {
     }
   }
 
-  if !edges_.empty() && root_nodes.empty() {
+  if !s.edges_.empty() && root_nodes.empty() {
     *err = "could not determine root nodes of build graph"
   }
 
@@ -248,16 +248,16 @@ func (s *State) RootNodes(err *string) []*Node {
 }
 
 func (s *State) DefaultNodes(err *string) []*Node {
-  return defaults_.empty() ? RootNodes(err) : defaults_
+  return s.defaults_.empty() ? RootNodes(err) : s.defaults_
 }
 
 // Reset state.  Keeps all nodes and edges, but restores them to the
 // state where we haven't yet examined the disk for dirty state.
 func (s *State) Reset() {
-  for i := paths_.begin(); i != paths_.end(); i++ {
+  for i := s.paths_.begin(); i != s.paths_.end(); i++ {
     i.second.ResetState()
   }
-  for e := edges_.begin(); e != edges_.end(); e++ {
+  for e := s.edges_.begin(); e != s.edges_.end(); e++ {
     (*e).outputs_ready_ = false
     (*e).deps_loaded_ = false
     (*e).mark_ = Edge::VisitNone
@@ -266,13 +266,13 @@ func (s *State) Reset() {
 
 // Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
-  for i := paths_.begin(); i != paths_.end(); i++ {
+  for i := s.paths_.begin(); i != s.paths_.end(); i++ {
     node := i.second
     printf("%s %s [id:%d]\n", node.path(), node.status_known() ? (node.dirty() ? "dirty" : "clean") : "unknown", node.id())
   }
-  if !pools_.empty() {
+  if !s.pools_.empty() {
     printf("resource_pools:\n")
-    for it := pools_.begin(); it != pools_.end(); it++ {
+    for it := s.pools_.begin(); it != s.pools_.end(); it++ {
     {
     }
       if !it.second.name().empty() {

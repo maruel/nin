@@ -43,7 +43,7 @@ type MissingDependencyScanner struct {
   adjacency_map_ AdjacencyMap
 }
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
-	return !nodes_missing_deps_.empty()
+	return !m.nodes_missing_deps_.empty()
 }
 
 
@@ -61,8 +61,8 @@ func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_in
   for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
     var slash_bits uint64
     CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
-    node := state_.GetNode(*i, slash_bits)
-    dep_nodes_output_.push_back(node)
+    node := n.state_.GetNode(*i, slash_bits)
+    n.dep_nodes_output_.push_back(node)
   }
   return true
 }
@@ -86,7 +86,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
   if edge == nil {
     return
   }
-  if !seen_.insert(node).second {
+  if !m.seen_.insert(node).second {
     return
   }
 
@@ -96,14 +96,14 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 
   string deps_type = edge.GetBinding("deps")
   if !deps_type.empty() {
-    deps := deps_log_.GetDeps(node)
+    deps := m.deps_log_.GetDeps(node)
     if deps != nil {
       ProcessNodeDeps(node, deps.nodes, deps.node_count)
     }
   } else {
     var parser_opts DepfileParserOptions
     var depfile_deps []*Node
-    NodeStoringImplicitDepLoader dep_loader(state_, deps_log_, disk_interface_, &parser_opts, &depfile_deps)
+    NodeStoringImplicitDepLoader dep_loader(m.state_, m.deps_log_, m.disk_interface_, &parser_opts, &depfile_deps)
     err := ""
     dep_loader.LoadDeps(edge, &err)
     if !depfile_deps.empty() {
@@ -143,27 +143,27 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes *Node*,
     for ne := missing_deps.begin(); ne != missing_deps.end(); ne++ {
       for i := 0; i < dep_nodes_count; i++ {
         if dep_nodes[i].in_edge() == *ne {
-          generated_nodes_.insert(dep_nodes[i])
-          generator_rules_.insert(&(*ne).rule())
+          m.generated_nodes_.insert(dep_nodes[i])
+          m.generator_rules_.insert(&(*ne).rule())
           missing_deps_rule_names.insert((*ne).rule().name())
-          delegate_.OnMissingDep(node, dep_nodes[i].path(), (*ne).rule())
+          m.delegate_.OnMissingDep(node, dep_nodes[i].path(), (*ne).rule())
         }
       }
     }
-    missing_dep_path_count_ += missing_deps_rule_names.size()
-    nodes_missing_deps_.insert(node)
+    m.missing_dep_path_count_ += missing_deps_rule_names.size()
+    m.nodes_missing_deps_.insert(node)
   }
 }
 
 func (m *MissingDependencyScanner) PrintStats() {
-  cout << "Processed " << seen_.size() << " nodes.\n"
+  cout << "Processed " << m.seen_.size() << " nodes.\n"
   if HadMissingDeps() {
-    cout << "Error: There are " << missing_dep_path_count_
+    cout << "Error: There are " << m.missing_dep_path_count_
               << " missing dependency paths.\n"
-    cout << nodes_missing_deps_.size()
+    cout << m.nodes_missing_deps_.size()
               << " targets had depfile dependencies on "
-              << generated_nodes_.size() << " distinct generated inputs "
-              << "(from " << generator_rules_.size() << " rules) "
+              << m.generated_nodes_.size() << " distinct generated inputs "
+              << "(from " << m.generator_rules_.size() << " rules) "
               << " without a non-depfile dep path to the generator.\n"
     cout << "There might be build flakiness if any of the targets listed "
                  "above are built alone, or not late enough, in a clean output "
@@ -174,14 +174,14 @@ func (m *MissingDependencyScanner) PrintStats() {
 }
 
 func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool {
-  it := adjacency_map_.find(from)
-  if it != adjacency_map_.end() {
+  it := m.adjacency_map_.find(from)
+  if it != m.adjacency_map_.end() {
     inner_it := it.second.find(to)
     if inner_it != it.second.end() {
       return inner_it.second
     }
   } else {
-    it = adjacency_map_.insert(make_pair(from, InnerAdjacencyMap())).first
+    it = m.adjacency_map_.insert(make_pair(from, InnerAdjacencyMap())).first
   }
   found := false
   for i := 0; i < to.inputs_.size(); i++ {

@@ -106,7 +106,7 @@ func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *str
       var slash_bits uint64
       CanonicalizePath(&normalized, &slash_bits)
       if !IsSystemInclude(normalized) {
-        includes_.insert(normalized)
+        c.includes_.insert(normalized)
       }
     } else if !seen_show_includes && FilterInputFilename(line) {
       // Drop it.

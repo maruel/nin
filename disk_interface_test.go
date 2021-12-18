@@ -24,10 +24,10 @@ type DiskInterfaceTest struct {
 }
 func (d *DiskInterfaceTest) SetUp() {
   // These tests do real disk accesses, so create a temp dir.
-  temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
+  d.temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
 }
 func (d *DiskInterfaceTest) TearDown() {
-  temp_dir_.Cleanup()
+  d.temp_dir_.Cleanup()
 }
 func (d *DiskInterfaceTest) Touch(path string) bool {
   FILE *f = fopen(path, "w")
@@ -223,9 +223,9 @@ func (s *StatTest) RemoveFile(path string) int {
 
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {
-  stats_.push_back(path)
-  i := mtimes_.find(path)
-  if i == mtimes_.end() {
+  s.stats_.push_back(path)
+  i := s.mtimes_.find(path)
+  if i == s.mtimes_.end() {
     return 0  // File not found.
   }
   return i.second

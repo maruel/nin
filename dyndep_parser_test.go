@@ -24,13 +24,13 @@ type DyndepParserTest struct {
   dyndep_file_ DyndepFile
 }
 func (d *DyndepParserTest) AssertParse(input string) {
-  DyndepParser parser(&state_, &fs_, &dyndep_file_)
+  DyndepParser parser(&d.state_, &d.fs_, &d.dyndep_file_)
   err := ""
   if parser.ParseTest(input, &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 }
 func (d *DyndepParserTest) SetUp() {
-  ::AssertParse(&state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
+  ::AssertParse(&d.state_, "rule touch\n" "  command = touch $out\n" "build out otherout: touch\n")
 }
 
 func TestDyndepParserTest_Empty(t *testing.T) {

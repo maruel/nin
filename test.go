@@ -76,7 +76,7 @@ type VirtualFileSystem struct {
 // Tick "time" forwards; subsequent file operations will be newer than
 // previous ones.
 func (v *VirtualFileSystem) Tick() int {
-  return ++now_
+  return ++v.now_
 }
 // An entry for a single in-memory file.
 type Entry struct {
@@ -144,7 +144,7 @@ func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
 // Short way to get a Node by its path from state_.
 func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
   if !strpbrk(path, "/\\") { t.FailNow() }
-  return state_.GetNode(path, 0)
+  return s.state_.GetNode(path, 0)
 }
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
@@ -189,15 +189,15 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
 
 // "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {
-  files_[path].mtime = now_
-  files_[path].contents = contents
-  files_created_.insert(path)
+  v.files_[path].mtime = v.now_
+  v.files_[path].contents = contents
+  v.files_created_.insert(path)
 }
 
 // DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
-  i := files_.find(path)
-  if i != files_.end() {
+  i := v.files_.find(path)
+  if i != v.files_.end() {
     *err = i.second.stat_error
     return i.second.mtime
   }
@@ -210,14 +210,14 @@ func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
 }
 
 func (v *VirtualFileSystem) MakeDir(path string) bool {
-  directories_made_.push_back(path)
+  v.directories_made_.push_back(path)
   return true  // success
 }
 
 func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) FileReader::Status {
-  files_read_.push_back(path)
-  i := files_.find(path)
-  if i != files_.end() {
+  v.files_read_.push_back(path)
+  i := v.files_.find(path)
+  if i != v.files_.end() {
     *contents = i.second.contents
     return Okay
   }
@@ -226,13 +226,13 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {
-  if find(directories_made_.begin(), directories_made_.end(), path) != directories_made_.end() {
+  if find(v.directories_made_.begin(), v.directories_made_.end(), path) != v.directories_made_.end() {
     return -1
   }
-  i := files_.find(path)
-  if i != files_.end() {
-    files_.erase(i)
-    files_removed_.insert(path)
+  i := v.files_.find(path)
+  if i != v.files_.end() {
+    v.files_.erase(i)
+    v.files_removed_.insert(path)
     return 0
   } else {
     return 1
@@ -242,11 +242,11 @@ func (v *VirtualFileSystem) RemoveFile(path string) int {
 // Create a temporary directory and chdir into it.
 func (s *ScopedTempDir) CreateAndEnter(name string) {
   // First change into the system temp dir and save it for cleanup.
-  start_dir_ = GetSystemTempDir()
-  if start_dir_.empty() {
+  s.start_dir_ = GetSystemTempDir()
+  if s.start_dir_.empty() {
     Fatal("couldn't get system temp dir")
   }
-  if chdir(start_dir_) < 0 {
+  if chdir(s.start_dir_) < 0 {
     Fatal("chdir: %s", strerror(errno))
   }
 
@@ -258,31 +258,31 @@ func (s *ScopedTempDir) CreateAndEnter(name string) {
   if tempname == nil {
     Fatal("mkdtemp: %s", strerror(errno))
   }
-  temp_dir_name_ = tempname
+  s.temp_dir_name_ = tempname
 
   // chdir into the new temporary directory.
-  if chdir(temp_dir_name_) < 0 {
+  if chdir(s.temp_dir_name_) < 0 {
     Fatal("chdir: %s", strerror(errno))
   }
 }
 
 // Clean up the temporary directory.
 func (s *ScopedTempDir) Cleanup() {
-  if temp_dir_name_.empty() {
+  if s.temp_dir_name_.empty() {
     return  // Something went wrong earlier.
   }
 
   // Move out of the directory we're about to clobber.
-  if chdir(start_dir_) < 0 {
+  if chdir(s.start_dir_) < 0 {
     Fatal("chdir: %s", strerror(errno))
   }
 
-  string command = "rmdir /s /q " + temp_dir_name_
-  string command = "rm -rf " + temp_dir_name_
+  string command = "rmdir /s /q " + s.temp_dir_name_
+  string command = "rm -rf " + s.temp_dir_name_
   if system(command) < 0 {
     Fatal("system: %s", strerror(errno))
   }
 
-  temp_dir_name_ = nil
+  s.temp_dir_name_ = nil
 }
 

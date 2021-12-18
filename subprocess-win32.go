@@ -36,17 +36,17 @@ func (s *Subprocess) SetupPipe(ioport HANDLE) HANDLE {
   char pipe_name[100]
   snprintf(pipe_name, sizeof(pipe_name), "\\\\.\\pipe\\ninja_pid%lu_sp%p", GetCurrentProcessId(), this)
 
-  pipe_ = ::CreateNamedPipeA(pipe_name, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, 0, 0, INFINITE, nil)
-  if pipe_ == INVALID_HANDLE_VALUE {
+  s.pipe_ = ::CreateNamedPipeA(pipe_name, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, 0, 0, INFINITE, nil)
+  if s.pipe_ == INVALID_HANDLE_VALUE {
     Win32Fatal("CreateNamedPipe")
   }
 
-  if !CreateIoCompletionPort(pipe_, ioport, (ULONG_PTR)this, 0) {
+  if !CreateIoCompletionPort(s.pipe_, ioport, (ULONG_PTR)this, 0) {
     Win32Fatal("CreateIoCompletionPort")
   }
 
-  memset(&overlapped_, 0, sizeof(overlapped_))
-  if !ConnectNamedPipe(pipe_, &overlapped_) && GetLastError() != ERROR_IO_PENDING {
+  memset(&s.overlapped_, 0, sizeof(s.overlapped_))
+  if !ConnectNamedPipe(s.pipe_, &s.overlapped_) && GetLastError() != ERROR_IO_PENDING {
     Win32Fatal("ConnectNamedPipe")
   }
 
@@ -79,7 +79,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   var startup_info STARTUPINFOA
   memset(&startup_info, 0, sizeof(startup_info))
   startup_info.cb = sizeof(STARTUPINFO)
-  if !use_console_ {
+  if !s.use_console_ {
     startup_info.dwFlags = STARTF_USESTDHANDLES
     startup_info.hStdInput = nul
     startup_info.hStdOutput = child_pipe
@@ -92,7 +92,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   memset(&process_info, 0, sizeof(process_info))
 
   // Ninja handles ctrl-c, except for subprocesses in console pools.
-  DWORD process_flags = use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP
+  DWORD process_flags = s.use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP
 
   // Do not prepend 'cmd /c' on Windows, this breaks command
   // lines greater than 8,191 chars.
@@ -104,11 +104,11 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
       if child_pipe {
         CloseHandle(child_pipe)
       }
-      CloseHandle(pipe_)
+      CloseHandle(s.pipe_)
       CloseHandle(nul)
-      pipe_ = nil
+      s.pipe_ = nil
       // child_ is already NULL;
-      buf_ = "CreateProcess failed: The system cannot find the file "
+      s.buf_ = "CreateProcess failed: The system cannot find the file "
           "specified.\n"
       return true
     } else {
@@ -135,32 +135,32 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   CloseHandle(nul)
 
   CloseHandle(process_info.hThread)
-  child_ = process_info.hProcess
+  s.child_ = process_info.hProcess
 
   return true
 }
 
 func (s *Subprocess) OnPipeReady() {
   var bytes DWORD
-  if !GetOverlappedResult(pipe_, &overlapped_, &bytes, TRUE) {
+  if !GetOverlappedResult(s.pipe_, &s.overlapped_, &bytes, TRUE) {
     if GetLastError() == ERROR_BROKEN_PIPE {
-      CloseHandle(pipe_)
-      pipe_ = nil
+      CloseHandle(s.pipe_)
+      s.pipe_ = nil
       return
     }
     Win32Fatal("GetOverlappedResult")
   }
 
-  if is_reading_ && bytes {
-    buf_.append(overlapped_buf_, bytes)
+  if s.is_reading_ && bytes {
+    s.buf_.append(s.overlapped_buf_, bytes)
   }
 
-  memset(&overlapped_, 0, sizeof(overlapped_))
-  is_reading_ = true
-  if !::ReadFile(pipe_, overlapped_buf_, sizeof(overlapped_buf_), &bytes, &overlapped_) {
+  memset(&s.overlapped_, 0, sizeof(s.overlapped_))
+  s.is_reading_ = true
+  if !::ReadFile(s.pipe_, s.overlapped_buf_, sizeof(s.overlapped_buf_), &bytes, &s.overlapped_) {
     if GetLastError() == ERROR_BROKEN_PIPE {
-      CloseHandle(pipe_)
-      pipe_ = nil
+      CloseHandle(s.pipe_)
+      s.pipe_ = nil
       return
     }
     if GetLastError() != ERROR_IO_PENDING {
@@ -173,18 +173,18 @@ func (s *Subprocess) OnPipeReady() {
 }
 
 func (s *Subprocess) Finish() ExitStatus {
-  if !child_ {
+  if !s.child_ {
     return ExitFailure
   }
 
   // TODO: add error handling for all of these.
-  WaitForSingleObject(child_, INFINITE)
+  WaitForSingleObject(s.child_, INFINITE)
 
   exit_code := 0
-  GetExitCodeProcess(child_, &exit_code)
+  GetExitCodeProcess(s.child_, &exit_code)
 
-  CloseHandle(child_)
-  child_ = nil
+  CloseHandle(s.child_)
+  s.child_ = nil
 
   return exit_code == 0              ? ExitSuccess :
          exit_code == CONTROL_C_EXIT ? ExitInterrupted :
@@ -192,11 +192,11 @@ func (s *Subprocess) Finish() ExitStatus {
 }
 
 func (s *Subprocess) Done() bool {
-  return pipe_ == nil
+  return s.pipe_ == nil
 }
 
 func (s *Subprocess) GetOutput() string {
-  return buf_
+  return s.buf_
 }
 
 HANDLE SubprocessSet::ioport_
@@ -218,7 +218,7 @@ SubprocessSet::~SubprocessSet() {
 
 func (s *SubprocessSet) NotifyInterrupted(dwCtrlType DWORD) BOOL WINAPI {
   if dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT {
-    if !PostQueuedCompletionStatus(ioport_, 0, 0, nil) {
+    if !PostQueuedCompletionStatus(s.ioport_, 0, 0, nil) {
       Win32Fatal("PostQueuedCompletionStatus")
     }
     return TRUE
@@ -245,7 +245,7 @@ func (s *SubprocessSet) DoWork() bool {
   var subproc *Subprocess
   var overlapped *OVERLAPPED
 
-  if !GetQueuedCompletionStatus(ioport_, &bytes_read, (PULONG_PTR)&subproc, &overlapped, INFINITE) {
+  if !GetQueuedCompletionStatus(s.ioport_, &bytes_read, (PULONG_PTR)&subproc, &overlapped, INFINITE) {
     if GetLastError() != ERROR_BROKEN_PIPE {
       Win32Fatal("GetQueuedCompletionStatus")
     }
@@ -260,10 +260,10 @@ func (s *SubprocessSet) DoWork() bool {
 
   if subproc.Done() {
     vector<Subprocess*>::iterator end =
-        remove(running_.begin(), running_.end(), subproc)
-    if running_.end() != end {
-      finished_.push(subproc)
-      running_.resize(end - running_.begin())
+        remove(s.running_.begin(), s.running_.end(), subproc)
+    if s.running_.end() != end {
+      s.finished_.push(subproc)
+      s.running_.resize(end - s.running_.begin())
     }
   }
 
@@ -271,16 +271,16 @@ func (s *SubprocessSet) DoWork() bool {
 }
 
 func (s *SubprocessSet) NextFinished() *Subprocess {
-  if finished_.empty() {
+  if s.finished_.empty() {
     return nil
   }
-  subproc := finished_.front()
-  finished_.pop()
+  subproc := s.finished_.front()
+  s.finished_.pop()
   return subproc
 }
 
 func (s *SubprocessSet) Clear() {
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     // Since the foreground process is in our process group, it will receive a
     // CTRL_C_EVENT or CTRL_BREAK_EVENT at the same time as us.
     if (*i).child_ && !(*i).use_console_ {
@@ -289,9 +289,9 @@ func (s *SubprocessSet) Clear() {
       }
     }
   }
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     var *i delete
   }
-  running_ = nil
+  s.running_ = nil
 }
 

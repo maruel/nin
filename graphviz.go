@@ -29,14 +29,14 @@ type GraphViz struct {
 
 
 func (g *GraphViz) AddTarget(node *Node) {
-  if visited_nodes_.find(node) != visited_nodes_.end() {
+  if g.visited_nodes_.find(node) != g.visited_nodes_.end() {
     return
   }
 
   pathstr := node.path()
   replace(pathstr.begin(), pathstr.end(), '\\', '/')
   printf("\"%p\" [label=\"%s\"]\n", node, pathstr)
-  visited_nodes_.insert(node)
+  g.visited_nodes_.insert(node)
 
   edge := node.in_edge()
 
@@ -46,14 +46,14 @@ func (g *GraphViz) AddTarget(node *Node) {
     return
   }
 
-  if visited_edges_.find(edge) != visited_edges_.end() {
+  if g.visited_edges_.find(edge) != g.visited_edges_.end() {
     return
   }
-  visited_edges_.insert(edge)
+  g.visited_edges_.insert(edge)
 
   if edge.dyndep_ && edge.dyndep_.dyndep_pending() {
     err := ""
-    if !dyndep_loader_.LoadDyndeps(edge.dyndep_, &err) {
+    if !g.dyndep_loader_.LoadDyndeps(edge.dyndep_, &err) {
       Warning("%s\n", err)
     }
   }

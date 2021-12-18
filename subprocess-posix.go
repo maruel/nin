@@ -36,13 +36,13 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   if pipe(output_pipe) < 0 {
     Fatal("pipe: %s", strerror(errno))
   }
-  fd_ = output_pipe[0]
+  s.fd_ = output_pipe[0]
   // If available, we use ppoll in DoWork(); otherwise we use pselect
   // and so must avoid overly-large FDs.
-  if fd_ >= static_cast<int>(FD_SETSIZE) {
+  if s.fd_ >= static_cast<int>(FD_SETSIZE) {
     Fatal("pipe: %s", strerror(EMFILE))
   }
-  SetCloseOnExec(fd_)
+  SetCloseOnExec(s.fd_)
 
   var action posix_spawn_file_actions_t
   err := posix_spawn_file_actions_init(&action)
@@ -72,7 +72,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   // default action in the new process image, so no explicit
   // POSIX_SPAWN_SETSIGDEF parameter is needed.
 
-  if !use_console_ {
+  if !s.use_console_ {
     // Put the child in its own process group, so ctrl-c won't reach it.
     flags |= POSIX_SPAWN_SETPGROUP
     // No need to posix_spawnattr_setpgroup(&attr, 0), it's the default.
@@ -106,7 +106,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
   }
 
   string spawned_args[] = { "/bin/sh", "-c", command, nil }
-  err = posix_spawn(&pid_, "/bin/sh", &action, &attr, const_cast<char**>(spawned_args), environ)
+  err = posix_spawn(&s.pid_, "/bin/sh", &action, &attr, const_cast<char**>(spawned_args), environ)
   if err != 0 {
     Fatal("posix_spawn: %s", strerror(err))
   }
@@ -126,25 +126,25 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 
 func (s *Subprocess) OnPipeReady() {
   char buf[4 << 10]
-  len := read(fd_, buf, sizeof(buf))
+  len := read(s.fd_, buf, sizeof(buf))
   if len > 0 {
-    buf_.append(buf, len)
+    s.buf_.append(buf, len)
   } else {
     if len < 0 {
       Fatal("read: %s", strerror(errno))
     }
-    close(fd_)
-    fd_ = -1
+    close(s.fd_)
+    s.fd_ = -1
   }
 }
 
 func (s *Subprocess) Finish() ExitStatus {
-  if !pid_ != -1 { panic("oops") }
+  if !s.pid_ != -1 { panic("oops") }
   status := 0
-  if waitpid(pid_, &status, 0) < 0 {
-    Fatal("waitpid(%d): %s", pid_, strerror(errno))
+  if waitpid(s.pid_, &status, 0) < 0 {
+    Fatal("waitpid(%d): %s", s.pid_, strerror(errno))
   }
-  pid_ = -1
+  s.pid_ = -1
 
   if WIFEXITED(status) && WEXITSTATUS(status) & 0x80 {
     // Map the shell's exit code used for signal failure (128 + signal) to the
@@ -168,17 +168,17 @@ func (s *Subprocess) Finish() ExitStatus {
 }
 
 func (s *Subprocess) Done() bool {
-  return fd_ == -1
+  return s.fd_ == -1
 }
 
 func (s *Subprocess) GetOutput() string {
-  return buf_
+  return s.buf_
 }
 
 int SubprocessSet::interrupted_
 
 func (s *SubprocessSet) SetInterruptedFlag(signum int) {
-  interrupted_ = signum
+  s.interrupted_ = signum
 }
 
 func (s *SubprocessSet) HandlePendingInterruption() {
@@ -189,11 +189,11 @@ func (s *SubprocessSet) HandlePendingInterruption() {
     return
   }
   if sigismember(&pending, SIGINT) {
-    interrupted_ = SIGINT
+    s.interrupted_ = SIGINT
   } else if sigismember(&pending, SIGTERM) {
-    interrupted_ = SIGTERM
+    s.interrupted_ = SIGTERM
   } else if sigismember(&pending, SIGHUP) {
-    interrupted_ = SIGHUP
+    s.interrupted_ = SIGHUP
   }
 }
 
@@ -244,7 +244,7 @@ func (s *SubprocessSet) DoWork() bool {
   var fds []pollfd
   nfds := 0
 
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     fd := (*i).fd_
     if fd < 0 {
       continue
@@ -254,8 +254,8 @@ func (s *SubprocessSet) DoWork() bool {
     nfds++
   }
 
-  interrupted_ = 0
-  ret := ppoll(&fds.front(), nfds, nil, &old_mask_)
+  s.interrupted_ = 0
+  ret := ppoll(&fds.front(), nfds, nil, &s.old_mask_)
   if ret == -1 {
     if errno != EINTR {
       perror("ninja: ppoll")
@@ -270,7 +270,7 @@ func (s *SubprocessSet) DoWork() bool {
   }
 
   cur_nfd := 0
-  for i := running_.begin(); i != running_.end();  {
+  for i := s.running_.begin(); i != s.running_.end();  {
     fd := (*i).fd_
     if fd < 0 {
       continue
@@ -279,8 +279,8 @@ func (s *SubprocessSet) DoWork() bool {
     if fds[cur_nfd++].revents {
       (*i).OnPipeReady()
       if (*i).Done() {
-        finished_.push(*i)
-        i = running_.erase(i)
+        s.finished_.push(*i)
+        i = s.running_.erase(i)
         continue
       }
     }
@@ -295,7 +295,7 @@ func (s *SubprocessSet) DoWork() bool {
   nfds := 0
   FD_ZERO(&set)
 
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     fd := (*i).fd_
     if fd >= 0 {
       FD_SET(fd, &set)
@@ -305,8 +305,8 @@ func (s *SubprocessSet) DoWork() bool {
     }
   }
 
-  interrupted_ = 0
-  ret := pselect(nfds, &set, 0, 0, 0, &old_mask_)
+  s.interrupted_ = 0
+  ret := pselect(nfds, &set, 0, 0, 0, &s.old_mask_)
   if ret == -1 {
     if errno != EINTR {
       perror("ninja: pselect")
@@ -320,13 +320,13 @@ func (s *SubprocessSet) DoWork() bool {
     return true
   }
 
-  for i := running_.begin(); i != running_.end();  {
+  for i := s.running_.begin(); i != s.running_.end();  {
     fd := (*i).fd_
     if fd >= 0 && FD_ISSET(fd, &set) {
       (*i).OnPipeReady()
       if (*i).Done() {
-        finished_.push(*i)
-        i = running_.erase(i)
+        s.finished_.push(*i)
+        i = s.running_.erase(i)
         continue
       }
     }
@@ -337,25 +337,25 @@ func (s *SubprocessSet) DoWork() bool {
 }
 
 func (s *SubprocessSet) NextFinished() *Subprocess {
-  if finished_.empty() {
+  if s.finished_.empty() {
     return nil
   }
-  subproc := finished_.front()
-  finished_.pop()
+  subproc := s.finished_.front()
+  s.finished_.pop()
   return subproc
 }
 
 func (s *SubprocessSet) Clear() {
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     // Since the foreground process is in our process group, it will receive
   }
     // the interruption signal (i.e. SIGINT or SIGTERM) at the same time as us.
     if !(*i).use_console_ {
-      kill(-(*i).pid_, interrupted_)
+      kill(-(*i).pid_, s.interrupted_)
     }
-  for i := running_.begin(); i != running_.end(); i++ {
+  for i := s.running_.begin(); i != s.running_.end(); i++ {
     var *i delete
   }
-  running_ = nil
+  s.running_ = nil
 }
 

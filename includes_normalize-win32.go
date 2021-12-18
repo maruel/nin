@@ -181,14 +181,14 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
     return false
   }
 
-  if !SameDrive(abs_input, relative_to_, err) {
+  if !SameDrive(abs_input, i.relative_to_, err) {
     if len(err) != 0 {
       return false
     }
     *result = partially_fixed.AsString()
     return true
   }
-  *result = Relativize(abs_input, split_relative_to_, err)
+  *result = Relativize(abs_input, i.split_relative_to_, err)
   if len(err) != 0 {
     return false
   }

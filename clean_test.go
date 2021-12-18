@@ -24,7 +24,7 @@ type CleanTest struct {
   config_ BuildConfig
 }
 func (c *CleanTest) SetUp() {
-  config_.verbosity = BuildConfig::QUIET
+  c.config_.verbosity = BuildConfig::QUIET
 }
 
 func TestCleanTest_CleanAll(t *testing.T) {

@@ -74,68 +74,68 @@ func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool 
 }
 // Mark as not-yet-stat()ed and not dirty.
 func (n *Node) ResetState() {
-  mtime_ = -1
-  exists_ = ExistenceStatusUnknown
-  dirty_ = false
+  n.mtime_ = -1
+  n.exists_ = ExistenceStatusUnknown
+  n.dirty_ = false
 }
 // Mark the Node as already-stat()ed and missing.
 func (n *Node) MarkMissing() {
-  if mtime_ == -1 {
-    mtime_ = 0
+  if n.mtime_ == -1 {
+    n.mtime_ = 0
   }
-  exists_ = ExistenceStatusMissing
+  n.exists_ = ExistenceStatusMissing
 }
 func (n *Node) exists() bool {
-  return exists_ == ExistenceStatusExists
+  return n.exists_ == ExistenceStatusExists
 }
 func (n *Node) status_known() bool {
-  return exists_ != ExistenceStatusUnknown
+  return n.exists_ != ExistenceStatusUnknown
 }
 func (n *Node) path() string {
-	return path_
+	return n.path_
 }
 // Get |path()| but use slash_bits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
-  return PathDecanonicalized(path_, slash_bits_)
+  return PathDecanonicalized(n.path_, n.slash_bits_)
 }
 func (n *Node) slash_bits() uint64 {
-	return slash_bits_
+	return n.slash_bits_
 }
 func (n *Node) mtime() TimeStamp {
-	return mtime_
+	return n.mtime_
 }
 func (n *Node) dirty() bool {
-	return dirty_
+	return n.dirty_
 }
 func (n *Node) set_dirty(dirty bool) {
-	dirty_ = dirty
+	n.dirty_ = dirty
 }
 func (n *Node) MarkDirty() {
-	dirty_ = true
+	n.dirty_ = true
 }
 func (n *Node) dyndep_pending() bool {
-	return dyndep_pending_
+	return n.dyndep_pending_
 }
 func (n *Node) set_dyndep_pending(pending bool) {
-	dyndep_pending_ = pending
+	n.dyndep_pending_ = pending
 }
 func (n *Node) in_edge() *Edge {
-	return in_edge_
+	return n.in_edge_
 }
 func (n *Node) set_in_edge(edge *Edge) {
-	in_edge_ = edge
+	n.in_edge_ = edge
 }
 func (n *Node) id() int {
-	return id_
+	return n.id_
 }
 func (n *Node) set_id(id int) {
-	id_ = id
+	n.id_ = id
 }
 func (n *Node) out_edges() *vector<Edge*> {
-	return out_edges_
+	return n.out_edges_
 }
 func (n *Node) AddOutEdge(edge *Edge) {
-	out_edges_.push_back(edge)
+	n.out_edges_.push_back(edge)
 }
 type ExistenceStatus int
 const (
@@ -197,26 +197,26 @@ const (
   VisitDone
 )
 func (e *Edge) rule() *Rule {
-	return *rule_
+	return *e.rule_
 }
 func (e *Edge) pool() *Pool {
-	return pool_
+	return e.pool_
 }
 func (e *Edge) weight() int {
 	return 1
 }
 func (e *Edge) outputs_ready() bool {
-	return outputs_ready_
+	return e.outputs_ready_
 }
 func (e *Edge) is_implicit(index uint) bool {
-  return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
+  return index >= e.inputs_.size() - e.order_only_deps_ - e.implicit_deps_ &&
       !is_order_only(index)
 }
 func (e *Edge) is_order_only(index uint) bool {
-  return index >= inputs_.size() - order_only_deps_
+  return index >= e.inputs_.size() - e.order_only_deps_
 }
 func (e *Edge) is_implicit_out(index uint) bool {
-  return index >= outputs_.size() - implicit_outs_
+  return index >= e.outputs_.size() - e.implicit_outs_
 }
 
 type EdgeCmp struct {
@@ -240,7 +240,7 @@ type ImplicitDepLoader struct {
   depfile_parser_options_ *DepfileParserOptions const
 }
 func (i *ImplicitDepLoader) deps_log() *DepsLog {
-  return deps_log_
+  return i.deps_log_
 }
 
 // DependencyScan manages the process of scanning the files in a graph
@@ -258,31 +258,31 @@ type DependencyScan struct {
   dyndep_loader_ DyndepLoader
 }
 func (d *DependencyScan) build_log() *BuildLog {
-  return build_log_
+  return d.build_log_
 }
 func (d *DependencyScan) set_build_log(log *BuildLog) {
-  build_log_ = log
+  d.build_log_ = log
 }
 func (d *DependencyScan) deps_log() *DepsLog {
-  return dep_loader_.deps_log()
+  return d.dep_loader_.deps_log()
 }
 
 
 // Return false on error.
 func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
   METRIC_RECORD("node stat")
-  mtime_ = disk_interface.Stat(path_, err)
-  if mtime_ == -1 {
+  n.mtime_ = disk_interface.Stat(n.path_, err)
+  if n.mtime_ == -1 {
     return false
   }
-  exists_ = (mtime_ != 0) ? ExistenceStatusExists : ExistenceStatusMissing
+  n.exists_ = (n.mtime_ != 0) ? ExistenceStatusExists : ExistenceStatusMissing
   return true
 }
 
 // If the file doesn't exist, set the mtime_ from its dependencies
 func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
   if !exists() {
-    mtime_ = max(mtime_, mtime)
+    n.mtime_ = max(n.mtime_, mtime)
   }
 }
 
@@ -309,7 +309,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
       return true
     }
     // This node has no in-edge; it is dirty if it is missing.
-    if !node.StatIfNecessary(disk_interface_, err) {
+    if !node.StatIfNecessary(d.disk_interface_, err) {
       return false
     }
     if !node.exists() {
@@ -365,7 +365,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
 
   // Load output mtimes so we can compare them to the most recent input below.
   for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-    if !(*o).StatIfNecessary(disk_interface_, err) {
+    if !(*o).StatIfNecessary(d.disk_interface_, err) {
       return false
     }
   }
@@ -373,7 +373,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *vector<Node*>, err *s
   if !edge.deps_loaded_ {
     // This is our first encounter with this edge.  Load discovered deps.
     edge.deps_loaded_ = true
-    if !dep_loader_.LoadDeps(edge, err) {
+    if !d.dep_loader_.LoadDeps(edge, err) {
       if len(err) != 0 {
         return false
       }
@@ -581,7 +581,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, err *string) bool {
-  return dyndep_loader_.LoadDyndeps(node, err)
+  return d.dyndep_loader_.LoadDyndeps(node, err)
 }
 
 // Load a dyndep file from the given node's path and update the
@@ -589,12 +589,12 @@ func (d *DependencyScan) LoadDyndeps(node *Node, err *string) bool {
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) bool {
-  return dyndep_loader_.LoadDyndeps(node, ddf, err)
+  return d.dyndep_loader_.LoadDyndeps(node, ddf, err)
 }
 
 // Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
-  for i := inputs_.begin(); i != inputs_.end(); i++ {
+  for i := e.inputs_.begin(); i != e.inputs_.end(); i++ {
     if (*i).in_edge() && !(*i).in_edge().outputs_ready() {
       return false
     }
@@ -620,5 +620,5 @@ const (
 
 func (e *EdgeEnv) LookupVariable(var string) string {
   if var == "in" || var == "in_newline" {
-    int explicit_deps_count = edge_.inputs_.size() - edge_.implicit_deps_ -
-      edge_.order_only_deps_
+    int explicit_deps_count = e.edge_.inputs_.size() - e.edge_.implicit_deps_ -
+      e.edge_.order_only_deps_

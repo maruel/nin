@@ -36,12 +36,12 @@ type PlanTest struct {
 // easy to write tests around.
 func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
   for i := 0; i < count; i++ {
-    if plan_.more_to_do() { t.FailNow() }
-    edge := plan_.FindWork()
+    if p.plan_.more_to_do() { t.FailNow() }
+    edge := p.plan_.FindWork()
     if edge { t.FailNow() }
     ret.push_back(edge)
   }
-  if !plan_.FindWork() { t.FailNow() }
+  if !p.plan_.FindWork() { t.FailNow() }
   sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
 }
 
@@ -181,39 +181,39 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 }
 
 func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, test_case))
+  ASSERT_NO_FATAL_FAILURE(AssertParse(&p.state_, test_case))
   GetNode("out1").MarkDirty()
   GetNode("out2").MarkDirty()
   err := ""
-  if plan_.AddTarget(GetNode("out1"), &err) { t.FailNow() }
+  if p.plan_.AddTarget(GetNode("out1"), &err) { t.FailNow() }
   if "" != err { t.FailNow() }
-  if plan_.AddTarget(GetNode("out2"), &err) { t.FailNow() }
+  if p.plan_.AddTarget(GetNode("out2"), &err) { t.FailNow() }
   if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if p.plan_.more_to_do() { t.FailNow() }
 
-  edge := plan_.FindWork()
+  edge := p.plan_.FindWork()
   if edge { t.FailNow() }
   if "in" !=  edge.inputs_[0].path() { t.FailNow() }
   if "out1" != edge.outputs_[0].path() { t.FailNow() }
 
   // This will be false since poolcat is serialized
-  if !plan_.FindWork() { t.FailNow() }
+  if !p.plan_.FindWork() { t.FailNow() }
 
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
+  p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
   if "" != err { t.FailNow() }
 
-  edge = plan_.FindWork()
+  edge = p.plan_.FindWork()
   if edge { t.FailNow() }
   if "in" != edge.inputs_[0].path() { t.FailNow() }
   if "out2" != edge.outputs_[0].path() { t.FailNow() }
 
-  if !plan_.FindWork() { t.FailNow() }
+  if !p.plan_.FindWork() { t.FailNow() }
 
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
+  p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
   if "" != err { t.FailNow() }
 
-  if !plan_.more_to_do() { t.FailNow() }
-  edge = plan_.FindWork()
+  if !p.plan_.more_to_do() { t.FailNow() }
+  edge = p.plan_.FindWork()
   if 0 != edge { t.FailNow() }
 }
 
@@ -426,11 +426,11 @@ type BuildTest struct {
 func (b *BuildTest) SetUp() {
   StateTestWithBuiltinRules::SetUp()
 
-  builder_.command_runner_.reset(&command_runner_)
-  AssertParse(&state_, "build cat1: cat in1\n" "build cat2: cat in1 in2\n" "build cat12: cat cat1 cat2\n")
+  b.builder_.command_runner_.reset(&b.command_runner_)
+  AssertParse(&b.state_, "build cat1: cat in1\n" "build cat2: cat in1 in2\n" "build cat12: cat cat1 cat2\n")
 
-  fs_.Create("in1", "")
-  fs_.Create("in2", "")
+  b.fs_.Create("in1", "")
+  b.fs_.Create("in2", "")
 }
 func (b *BuildTest) IsPathDead(s string) bool {
 	return false
@@ -469,11 +469,11 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
     pdeps_log = &deps_log
   }
 
-  Builder builder(pstate, config_, pbuild_log, pdeps_log, &fs_, &status_, 0)
+  Builder builder(pstate, b.config_, pbuild_log, pdeps_log, &b.fs_, &b.status_, 0)
   if builder.AddTarget(target, &err) { t.FailNow() }
 
-  command_runner_.commands_ran_ = nil
-  builder.command_runner_.reset(&command_runner_)
+  b.command_runner_.commands_ran_ = nil
+  builder.command_runner_.reset(&b.command_runner_)
   if !builder.AlreadyUpToDate() {
     build_res := builder.Build(&err)
     if build_res { t.FailNow() }
@@ -483,16 +483,16 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
 
 // CommandRunner impl
 func (f *FakeCommandRunner) CanRunMore() bool {
-  return active_edges_.size() < max_active_edges_
+  return f.active_edges_.size() < f.max_active_edges_
 }
 
 func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
-  if !active_edges_.size() < max_active_edges_ { panic("oops") }
-  if !find(active_edges_.begin(), active_edges_.end(), edge) == active_edges_.end() { panic("oops") }
-  commands_ran_.push_back(edge.EvaluateCommand())
+  if !f.active_edges_.size() < f.max_active_edges_ { panic("oops") }
+  if !find(f.active_edges_.begin(), f.active_edges_.end(), edge) == f.active_edges_.end() { panic("oops") }
+  f.commands_ran_.push_back(edge.EvaluateCommand())
   if edge.rule().name() == "cat"  || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
     for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-      fs_.Create((*out).path(), "")
+      f.fs_.Create((*out).path(), "")
     }
   } else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
     // Don't do anything.
@@ -501,54 +501,54 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
     if !edge.outputs_.size() == 1 { panic("oops") }
     content := ""
     err := ""
-    if fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == DiskInterface::Okay {
-      fs_.WriteFile(edge.outputs_[0].path(), content)
+    if f.fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == DiskInterface::Okay {
+      f.fs_.WriteFile(edge.outputs_[0].path(), content)
     }
   } else if edge.rule().name() == "touch-implicit-dep-out" {
     string dep = edge.GetBinding("test_dependency")
-    fs_.Create(dep, "")
-    fs_.Tick()
+    f.fs_.Create(dep, "")
+    f.fs_.Tick()
     for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-      fs_.Create((*out).path(), "")
+      f.fs_.Create((*out).path(), "")
     }
   } else if edge.rule().name() == "touch-out-implicit-dep" {
     string dep = edge.GetBinding("test_dependency")
     for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-      fs_.Create((*out).path(), "")
+      f.fs_.Create((*out).path(), "")
     }
-    fs_.Tick()
-    fs_.Create(dep, "")
+    f.fs_.Tick()
+    f.fs_.Create(dep, "")
   } else if edge.rule().name() == "generate-depfile" {
     string dep = edge.GetBinding("test_dependency")
     depfile := edge.GetUnescapedDepfile()
     contents := ""
     for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
       contents += (*out).path() + ": " + dep + "\n"
-      fs_.Create((*out).path(), "")
+      f.fs_.Create((*out).path(), "")
     }
-    fs_.Create(depfile, contents)
+    f.fs_.Create(depfile, contents)
   } else {
     printf("unknown command\n")
     return false
   }
 
-  active_edges_.push_back(edge)
+  f.active_edges_.push_back(edge)
 
   // Allow tests to control the order by the name of the first output.
-  sort(active_edges_.begin(), active_edges_.end(), CompareEdgesByOutput::cmp)
+  sort(f.active_edges_.begin(), f.active_edges_.end(), CompareEdgesByOutput::cmp)
 
   return true
 }
 
 func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
-  if active_edges_.empty() {
+  if f.active_edges_.empty() {
     return false
   }
 
   // All active edges were already completed immediately when started,
   // so we can pick any edge here.  Pick the last edge.  Tests can
   // control the order of edges by the name of the first output.
-  vector<Edge*>::iterator edge_iter = active_edges_.end() - 1
+  vector<Edge*>::iterator edge_iter = f.active_edges_.end() - 1
 
   edge := *edge_iter
   result.edge = edge
@@ -564,7 +564,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
     } else {
       result.status = ExitFailure
     }
-    active_edges_.erase(edge_iter)
+    f.active_edges_.erase(edge_iter)
     return true
   }
 
@@ -575,7 +575,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
     }
   }
 
-  if edge.rule().name() == "fail" || (edge.rule().name() == "touch-fail-tick2" && fs_.now_ == 2) {
+  if edge.rule().name() == "fail" || (edge.rule().name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
     result.status = ExitFailure
   } else {
     result.status = ExitSuccess
@@ -587,7 +587,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
   string verify_active_edge = edge.GetBinding("verify_active_edge")
   if !verify_active_edge.empty() {
     verify_active_edge_found := false
-    for i := active_edges_.begin(); i != active_edges_.end(); i++ {
+    for i := f.active_edges_.begin(); i != f.active_edges_.end(); i++ {
       if !(*i).outputs_.empty() && (*i).outputs_[0].path() == verify_active_edge {
         verify_active_edge_found = true
       }
@@ -595,16 +595,16 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
     if verify_active_edge_found { t.FailNow() }
   }
 
-  active_edges_.erase(edge_iter)
+  f.active_edges_.erase(edge_iter)
   return true
 }
 
 func (f *FakeCommandRunner) GetActiveEdges() []*Edge {
-  return active_edges_
+  return f.active_edges_
 }
 
 func (f *FakeCommandRunner) Abort() {
-  active_edges_ = nil
+  f.active_edges_ = nil
 }
 
 // Mark a path dirty.
@@ -1817,10 +1817,10 @@ type BuildWithQueryDepsLogTest struct {
 func (b *BuildWithQueryDepsLogTest) SetUp() {
   BuildTest::SetUp()
 
-  temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
+  b.temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
 
   err := ""
-  if log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
+  if b.log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
   if "" != err { t.FailNow() }
 }
 
@@ -1994,10 +1994,10 @@ type BuildWithDepsLogTest struct {
 func (b *BuildWithDepsLogTest) SetUp() {
   BuildTest::SetUp()
 
-  temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
+  b.temp_dir_.CreateAndEnter("BuildWithDepsLogTest")
 }
 func (b *BuildWithDepsLogTest) TearDown() {
-  temp_dir_.Cleanup()
+  b.temp_dir_.Cleanup()
 }
 
 // Run a straightforwad build where the deps log is used.

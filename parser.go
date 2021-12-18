@@ -34,7 +34,7 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
   METRIC_RECORD(".ninja parse")
   contents := ""
   read_err := ""
-  if file_reader_.ReadFile(filename, &contents, &read_err) != FileReader::Okay {
+  if p.file_reader_.ReadFile(filename, &contents, &read_err) != FileReader::Okay {
     *err = "loading '" + filename + "': " + read_err
     if parent != nil {
       parent.Error(string(*err), err)
@@ -55,12 +55,12 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
 func (p *Parser) ExpectToken(expected Lexer::Token, err *string) bool {
-  token := lexer_.ReadToken()
+  token := p.lexer_.ReadToken()
   if token != expected {
     string message = string("expected ") + Lexer::TokenName(expected)
     message += string(", got ") + Lexer::TokenName(token)
     message += Lexer::TokenErrorHint(expected)
-    return lexer_.Error(message, err)
+    return p.lexer_.Error(message, err)
   }
   return true
 }

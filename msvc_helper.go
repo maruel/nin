@@ -26,6 +26,6 @@ type CLWrapper struct {
 // Set the environment block (as suitable for CreateProcess) to be used
 // by Run().
 func (c *CLWrapper) SetEnvBlock(env_block *void) {
-	env_block_ = env_block
+	c.env_block_ = env_block
 }
 

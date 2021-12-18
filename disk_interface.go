@@ -182,7 +182,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
     *err = err_stream.str()
     return -1
   }
-  if !use_cache_ {
+  if !r.use_cache_ {
     return StatSingleFile(path, err)
   }
 
@@ -197,11 +197,11 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
   transform(dir.begin(), dir.end(), dir.begin(), ::tolower)
   transform(base.begin(), base.end(), base.begin(), ::tolower)
 
-  ci := cache_.find(dir)
-  if ci == cache_.end() {
-    ci = cache_.insert(make_pair(dir, DirCache())).first
+  ci := r.cache_.find(dir)
+  if ci == r.cache_.end() {
+    ci = r.cache_.insert(make_pair(dir, DirCache())).first
     if !StatAllFilesInDir(dir.empty() ? "." : dir, &ci.second, err) {
-      cache_.erase(ci)
+      r.cache_.erase(ci)
       return -1
     }
   }
@@ -321,9 +321,9 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 
 // Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
-  use_cache_ = allow
-  if !use_cache_ {
-    cache_ = nil
+  r.use_cache_ = allow
+  if !r.use_cache_ {
+    r.cache_ = nil
   }
 }
 
