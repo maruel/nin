@@ -39,7 +39,6 @@ type ManifestParserOptions struct {
 
 // Parses .ninja files.
 type ManifestParser struct {
-  ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options = ManifestParserOptions())
 
   env_ *BindingEnv
   options_ ManifestParserOptions

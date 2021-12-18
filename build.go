@@ -16,7 +16,7 @@
 
 package ginja
 
-/*
+
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
@@ -108,7 +108,6 @@ const (
 
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
-  Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
 
   state_ *State
   config_ *BuildConfig
@@ -1047,4 +1046,4 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 
   return true
 }
-*/
+

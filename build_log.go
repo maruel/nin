@@ -51,7 +51,6 @@ type LogEntry struct {
         mtime == o.mtime
   }
 
-  LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   }
 func (b *BuildLog) entries() *Entries {
 	return b.entries_
