@@ -45,21 +45,22 @@ type Plan struct {
   // Total remaining number of wanted edges.
   wanted_edges_ int
 }
-  enum EdgeResult {
-    kEdgeFailed,
-    kEdgeSucceeded
-  }
-  enum Want
-  {
-    // We do not want to build the edge, but we might want to build one of
-    // its dependents.
-    kWantNothing,
-    // We want to build the edge, but have not yet scheduled it.
-    kWantToStart,
-    // We want to build the edge, have scheduled it, and are waiting
-    // for it to complete.
-    kWantToFinish
-  }
+enum EdgeResult {
+  kEdgeFailed,
+  kEdgeSucceeded
+}
+// Enumerate possible steps we want for an edge.
+enum Want
+{
+  // We do not want to build the edge, but we might want to build one of
+  // its dependents.
+  kWantNothing,
+  // We want to build the edge, but have not yet scheduled it.
+  kWantToStart,
+  // We want to build the edge, have scheduled it, and are waiting
+  // for it to complete.
+  kWantToFinish
+}
 
 // CommandRunner is an interface that wraps running the build
 // subcommands.  This allows tests to abstract out running commands.
@@ -71,14 +72,14 @@ type CommandRunner struct {
 
   virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
 }
-  type Result struct {
-    Result() : edge(nil) {}
-    edge *Edge
-    status ExitStatus
-    output string
-    bool success() const { return status == ExitSuccess; }
+type Result struct {
+  Result() : edge(nil) {}
+  edge *Edge
+  status ExitStatus
+  output string
+  bool success() const { return status == ExitSuccess; }
   }
-  func (c *CommandRunner) Abort() {}
+func (c *CommandRunner) Abort() {}
 
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
@@ -94,12 +95,12 @@ type BuildConfig struct {
   max_load_average float64
   depfile_parser_options DepfileParserOptions
 }
-  enum Verbosity {
-    QUIET,  // No output -- used when testing.
-    NO_STATUS_UPDATE,  // just regular output but suppress status update
-    NORMAL,  // regular output and status update
-    VERBOSE
-  }
+enum Verbosity {
+  QUIET,  // No output -- used when testing.
+  NO_STATUS_UPDATE,  // just regular output but suppress status update
+  NORMAL,  // regular output and status update
+  VERBOSE
+}
 
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
@@ -127,9 +128,10 @@ type Builder struct {
 
   void operator=(const Builder &other) // DO NOT IMPLEMENT
 }
-  func (b *Builder) SetBuildLog(log *BuildLog) {
-    scan_.set_build_log(log)
-  }
+// Used for tests.
+func (b *Builder) SetBuildLog(log *BuildLog) {
+  scan_.set_build_log(log)
+}
 
 
 // A CommandRunner that doesn't actually run the commands.
