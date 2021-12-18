@@ -21,10 +21,11 @@ package ginja
 type CLWrapper struct {
   CLWrapper() : env_block_(nil) {}
 
-  // Set the environment block (as suitable for CreateProcess) to be used
-  // by Run().
-  void SetEnvBlock(void* env_block) { env_block_ = env_block; }
-
   env_block_ *void
+}
+// Set the environment block (as suitable for CreateProcess) to be used
+// by Run().
+func (c *CLWrapper) SetEnvBlock(env_block *void) {
+	env_block_ = env_block
 }
 

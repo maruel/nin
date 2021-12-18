@@ -30,27 +30,6 @@ type Node struct {
         in_edge_(nil),
         id_(-1) {}
 
-  string path() const { return path_; }
-  uint64_t slash_bits() const { return slash_bits_; }
-
-  TimeStamp mtime() const { return mtime_; }
-
-  bool dirty() const { return dirty_; }
-  void set_dirty(bool dirty) { dirty_ = dirty; }
-  void MarkDirty() { dirty_ = true; }
-
-  bool dyndep_pending() const { return dyndep_pending_; }
-  void set_dyndep_pending(bool pending) { dyndep_pending_ = pending; }
-
-  Edge* in_edge() const { return in_edge_; }
-  void set_in_edge(Edge* edge) { in_edge_ = edge; }
-
-  int id() const { return id_; }
-  void set_id(int id) { id_ = id; }
-
-  const vector<Edge*>& out_edges() const { return out_edges_; }
-  void AddOutEdge(Edge* edge) { out_edges_.push_back(edge); }
-
   void Dump(string prefix="") const
 
   path_ string
@@ -112,9 +91,51 @@ func (n *Node) exists() bool {
 func (n *Node) status_known() bool {
   return exists_ != ExistenceStatusUnknown
 }
+func (n *Node) path() string {
+	return path_
+}
 // Get |path()| but use slash_bits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
   return PathDecanonicalized(path_, slash_bits_)
+}
+func (n *Node) slash_bits() uint64 {
+	return slash_bits_
+}
+func (n *Node) mtime() TimeStamp {
+	return mtime_
+}
+func (n *Node) dirty() bool {
+	return dirty_
+}
+func (n *Node) set_dirty(dirty bool) {
+	dirty_ = dirty
+}
+func (n *Node) MarkDirty() {
+	dirty_ = true
+}
+func (n *Node) dyndep_pending() bool {
+	return dyndep_pending_
+}
+func (n *Node) set_dyndep_pending(pending bool) {
+	dyndep_pending_ = pending
+}
+func (n *Node) in_edge() *Edge {
+	return in_edge_
+}
+func (n *Node) set_in_edge(edge *Edge) {
+	in_edge_ = edge
+}
+func (n *Node) id() int {
+	return id_
+}
+func (n *Node) set_id(id int) {
+	id_ = id
+}
+func (n *Node) out_edges() *vector<Edge*> {
+	return out_edges_
+}
+func (n *Node) AddOutEdge(edge *Edge) {
+	out_edges_.push_back(edge)
 }
 type ExistenceStatus int
 const (
@@ -150,11 +171,6 @@ type Edge struct {
   deps_missing_ bool
   generated_by_dep_loader_ bool
 
-  const Rule& rule() const { return *rule_; }
-  Pool* pool() const { return pool_; }
-  int weight() const { return 1; }
-  bool outputs_ready() const { return outputs_ready_; }
-
   // There are three types of inputs.
   // 1) explicit deps, which show up as $in on the command line;
   // 2) implicit deps, which the target depends on implicitly (e.g. C headers),
@@ -180,6 +196,18 @@ const (
   VisitInStack
   VisitDone
 )
+func (e *Edge) rule() *Rule {
+	return *rule_
+}
+func (e *Edge) pool() *Pool {
+	return pool_
+}
+func (e *Edge) weight() int {
+	return 1
+}
+func (e *Edge) outputs_ready() bool {
+	return outputs_ready_
+}
 func (e *Edge) is_implicit(index uint) bool {
   return index >= inputs_.size() - order_only_deps_ - implicit_deps_ &&
       !is_order_only(index)

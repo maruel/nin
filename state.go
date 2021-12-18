@@ -29,15 +29,6 @@ type Pool struct {
   Pool(string name, int depth)
     : name_(name), current_use_(0), depth_(depth), delayed_() {}
 
-  // A depth of 0 is infinite
-  bool is_valid() const { return depth_ >= 0; }
-  int depth() const { return depth_; }
-  string name() const { return name_; }
-  int current_use() const { return current_use_; }
-
-  // true if the Pool might delay this edge
-  bool ShouldDelayEdge() const { return depth_ != 0; }
-
   name_ string
 
   // |current_use_| is the total of the weights of the edges which are
@@ -47,6 +38,23 @@ type Pool struct {
 
   DelayedEdges typedef set<Edge*, WeightedEdgeCmp>
   delayed_ DelayedEdges
+}
+// A depth of 0 is infinite
+func (p *Pool) is_valid() bool {
+	return depth_ >= 0
+}
+func (p *Pool) depth() int {
+	return depth_
+}
+func (p *Pool) name() string {
+	return name_
+}
+func (p *Pool) current_use() int {
+	return current_use_
+}
+// true if the Pool might delay this edge
+func (p *Pool) ShouldDelayEdge() bool {
+	return depth_ != 0
 }
 type WeightedEdgeCmp struct {
   bool operator()(const Edge* a, const Edge* b) const {

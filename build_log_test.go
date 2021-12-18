@@ -20,7 +20,6 @@ package ginja
 const char kTestFilename[] = "BuildLogTest-tempfile"
 
 type BuildLogTest struct {
-  virtual bool IsPathDead(string s) const { return false; }
 }
 func (b *BuildLogTest) SetUp() {
   // In case a crashing test left a stale file behind.
@@ -28,6 +27,9 @@ func (b *BuildLogTest) SetUp() {
 }
 func (b *BuildLogTest) TearDown() {
   unlink(kTestFilename)
+}
+func (b *BuildLogTest) IsPathDead(s string) bool {
+	return false
 }
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
@@ -299,7 +301,9 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 }
 
 type BuildLogRecompactTest struct {
-  virtual bool IsPathDead(string s) const { return s == "out2"; }
+}
+func (b *BuildLogRecompactTest) IsPathDead(s string) bool {
+	return s == "out2"
 }
 
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {

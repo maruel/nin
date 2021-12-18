@@ -25,7 +25,6 @@ class MissingDependencyPrinter : public MissingDependencyScannerDelegate {
 }
 
 type MissingDependencyScanner struct {
-  bool HadMissingDeps() { return !nodes_missing_deps_.empty(); }
 
   delegate_ *MissingDependencyScannerDelegate
   deps_log_ *DepsLog
@@ -42,6 +41,9 @@ type MissingDependencyScanner struct {
   InnerAdjacencyMap typedef map<Edge*, bool>
   AdjacencyMap typedef map<Edge*, InnerAdjacencyMap>
   adjacency_map_ AdjacencyMap
+}
+func (m *MissingDependencyScanner) HadMissingDeps() bool {
+	return !nodes_missing_deps_.empty()
 }
 
 

@@ -373,7 +373,6 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
 }
 
 type CleanDeadTest struct {
-  virtual bool IsPathDead(string) const { return false; }
 }
 func (c *CleanDeadTest) SetUp() {
   // In case a crashing test left a stale file behind.
@@ -382,6 +381,9 @@ func (c *CleanDeadTest) SetUp() {
 }
 func (c *CleanDeadTest) TearDown() {
   unlink(kTestFilename)
+}
+func (c *CleanDeadTest) IsPathDead(string) bool {
+	return false
 }
 
 func TestCleanDeadTest_CleanDead(t *testing.T) {

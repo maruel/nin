@@ -21,11 +21,6 @@ package ginja
 // if the terminal supports it.
 type LinePrinter struct {
 
-  bool is_smart_terminal() const { return smart_terminal_; }
-  void set_smart_terminal(bool smart) { smart_terminal_ = smart; }
-
-  bool supports_color() const { return supports_color_; }
-
   // Whether we can do fancy terminal control codes.
   smart_terminal_ bool
 
@@ -49,6 +44,15 @@ type LinePrinter struct {
 
   console_ *void
 
+}
+func (l *LinePrinter) is_smart_terminal() bool {
+	return smart_terminal_
+}
+func (l *LinePrinter) set_smart_terminal(smart bool) {
+	smart_terminal_ = smart
+}
+func (l *LinePrinter) supports_color() bool {
+	return supports_color_
 }
 type LineType int
 const (

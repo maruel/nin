@@ -21,12 +21,6 @@ package ginja
 // which steps we're ready to execute.
 type Plan struct {
 
-  // Returns true if there's more work to be done.
-  bool more_to_do() const { return wanted_edges_ > 0 && command_edges_ > 0; }
-
-  // Number of edges with commands to run.
-  int command_edge_count() const { return command_edges_; }
-
   // Keep track of which edges we want to build in this plan.  If this map does
   // not contain an entry for an edge, we do not want to build the entry or its
   // dependents.  If it does contain an entry, the enumeration indicates what
@@ -43,11 +37,19 @@ type Plan struct {
   // Total remaining number of wanted edges.
   wanted_edges_ int
 }
+// Returns true if there's more work to be done.
+func (p *Plan) more_to_do() bool {
+	return wanted_edges_ > 0 && command_edges_ > 0
+}
 type EdgeResult int
 const (
   kEdgeFailed EdgeResult = iota
   kEdgeSucceeded
 )
+// Number of edges with commands to run.
+func (p *Plan) command_edge_count() int {
+	return command_edges_
+}
 // Enumerate possible steps we want for an edge.
 type Want int
 const (
@@ -67,7 +69,6 @@ const (
 type CommandRunner struct {
   virtual ~CommandRunner() {}
 
-  virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
 }
 // The result of waiting for a command.
 type Result struct {
@@ -75,8 +76,13 @@ type Result struct {
   edge *Edge
   status ExitStatus
   output string
-  bool success() const { return status == ExitSuccess; }
   }
+func (c *CommandRunner) success() bool {
+	return status == ExitSuccess
+}
+func (c *CommandRunner) GetActiveEdges() []*Edge {
+	return vector<Edge*>()
+}
 func (c *CommandRunner) Abort() {}
 
 // Options (e.g. verbosity, parallelism) passed to a build.

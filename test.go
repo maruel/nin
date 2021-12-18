@@ -31,9 +31,15 @@ class Test {
   func SetUp() {}
   func TearDown() {}
 
-  bool Failed() const { return failed_; }
-  int AssertionFailures() const { return assertion_failures_; }
-  void AddAssertionFailure() { assertion_failures_++; }
+  func Failed() bool {
+	return failed_
+}
+  func AssertionFailures() int {
+	return assertion_failures_
+}
+  func AddAssertionFailure() {
+	assertion_failures_++
+}
 }
 
 void RegisterTest(testing::Test* (*)(), string)

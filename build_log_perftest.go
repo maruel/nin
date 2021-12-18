@@ -20,7 +20,9 @@ package ginja
 const char kTestFilename[] = "BuildLogPerfTest-tempfile"
 
 type NoDeadPaths struct {
-  virtual bool IsPathDead(string) const { return false; }
+}
+func (n *NoDeadPaths) IsPathDead(string) bool {
+	return false
 }
 
 func WriteTestData(err *string) bool {

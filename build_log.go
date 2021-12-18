@@ -32,7 +32,6 @@ type BuildLog struct {
   ~BuildLog()
 
   Entries typedef ExternalStringHashMap<LogEntry*>::Type
-  const Entries& entries() const { return entries_; }
 
   entries_ Entries
   log_file_ *FILE
@@ -55,6 +54,9 @@ type LogEntry struct {
 
   LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   }
+func (b *BuildLog) entries() *Entries {
+	return entries_
+}
 
 
 // On AIX, inttypes.h gets indirectly included by build_log.h.

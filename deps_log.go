@@ -60,10 +60,6 @@ type DepsLog struct {
   DepsLog() : needs_recompaction_(false), file_(nil) {}
   ~DepsLog()
 
-  // Used for tests.
-  const vector<Node*>& nodes() const { return nodes_; }
-  const vector<Deps*>& deps() const { return deps_; }
-
   needs_recompaction_ bool
   file_ *FILE
   file_path_ string
@@ -84,6 +80,13 @@ type Deps struct {
   node_count int
   nodes *Node*
   }
+// Used for tests.
+func (d *DepsLog) nodes() *vector<Node*> {
+	return nodes_
+}
+func (d *DepsLog) deps() *vector<Deps*> {
+	return deps_
+}
 
 
 typedef __int32 int32_t

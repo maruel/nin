@@ -32,8 +32,6 @@ type MissingDependencyScannerTest struct {
     ASSERT_EQ("", err)
   }
 
-  MissingDependencyScanner& scanner() { return scanner_; }
-
   delegate_ MissingDependencyTestDelegate
   generator_rule_ Rule
   compile_rule_ Rule
@@ -41,6 +39,9 @@ type MissingDependencyScannerTest struct {
   state_ State
   filesystem_ VirtualFileSystem
   scanner_ MissingDependencyScanner
+}
+func (m *MissingDependencyScannerTest) scanner() *MissingDependencyScanner {
+	return scanner_
 }
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
   Node* node_deps[] = { state_.LookupNode(to) }

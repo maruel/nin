@@ -51,13 +51,14 @@ type Metrics struct {
 type Stopwatch struct {
   Stopwatch() : started_(0) {}
 
-  void Restart() { started_ = Now(); }
-
   started_ uint64
 }
 // Seconds since Restart() call.
 func (s *Stopwatch) Elapsed() float64 {
   return 1e-6 * static_cast<double>(Now() - started_)
+}
+func (s *Stopwatch) Restart() {
+	started_ = Now()
 }
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top

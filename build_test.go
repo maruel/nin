@@ -417,8 +417,6 @@ type BuildTest struct {
     builder_.command_runner_.release()
   }
 
-  virtual bool IsPathDead(string s) const { return false; }
-
   config_ BuildConfig
   command_runner_ FakeCommandRunner
   fs_ VirtualFileSystem
@@ -433,6 +431,9 @@ func (b *BuildTest) SetUp() {
 
   fs_.Create("in1", "")
   fs_.Create("in2", "")
+}
+func (b *BuildTest) IsPathDead(s string) bool {
+	return false
 }
 func (b *BuildTest) MakeConfig() BuildConfig {
   var config BuildConfig
