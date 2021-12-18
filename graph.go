@@ -30,14 +30,7 @@ type Node struct {
         in_edge_(nil),
         id_(-1) {}
 
-  // Return false on error.
-
-  // Mark as not-yet-stat()ed and not dirty.
-
-  // Mark the Node as already-stat()ed and missing.
-
   string path() const { return path_; }
-  // Get |path()| but use slash_bits to convert back to original slash styles.
   uint64_t slash_bits() const { return slash_bits_; }
 
   TimeStamp mtime() const { return mtime_; }
@@ -583,7 +576,6 @@ func (e *Edge) AllInputsReady() bool {
 
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
-
   EdgeEnv(const Edge* const edge, const EscapeKind escape)
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 

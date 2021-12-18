@@ -27,8 +27,6 @@ type Plan struct {
   // Number of edges with commands to run.
   int command_edge_count() const { return command_edges_; }
 
-  // Enumerate possible steps we want for an edge.
-
   // Keep track of which edges we want to build in this plan.  If this map does
   // not contain an entry for an edge, we do not want to build the entry or its
   // dependents.  If it does contain an entry, the enumeration indicates what
@@ -69,10 +67,9 @@ const (
 type CommandRunner struct {
   virtual ~CommandRunner() {}
 
-  // The result of waiting for a command.
-
   virtual vector<Edge*> GetActiveEdges() { return vector<Edge*>(); }
 }
+// The result of waiting for a command.
 type Result struct {
   Result() : edge(nil) {}
   edge *Edge
@@ -108,8 +105,6 @@ const (
 type Builder struct {
   Builder(State* state, const BuildConfig& config, BuildLog* build_log, DepsLog* deps_log, DiskInterface* disk_interface, Status* status, int64_t start_time_millis)
   ~Builder()
-
-  // Used for tests.
 
   state_ *State
   config_ *BuildConfig

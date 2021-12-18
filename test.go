@@ -72,7 +72,7 @@ type VirtualFileSystem struct {
 func (v *VirtualFileSystem) Tick() int {
   return ++now_
 }
-type Entry struct {
+// An entry for a single in-memory file.
 type Entry struct {
   mtime int
   stat_error string  // If mtime is -1.
