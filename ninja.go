@@ -681,7 +681,7 @@ func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
   return command
 }
 
-func printCompdb(directory string const, edge Edge* const, eval_mode EvaluateCommandMode) {
+func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
   printf("\n  {\n    \"directory\": \"")
   PrintJSONString(directory)
   printf("\",\n    \"command\": \"")

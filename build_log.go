@@ -453,7 +453,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs *char*, err string* const) bool {
+func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs *char*, err *string) bool {
   METRIC_RECORD(".ninja_log restat")
 
   Close()

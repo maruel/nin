@@ -604,7 +604,7 @@ type EdgeEnv struct {
       : edge_(edge), escape_in_out_(escape), recursive_(false) {}
 
   lookups_ []string
-  edge_ Edge* const
+  edge_ *Edge
   escape_in_out_ EscapeKind
   recursive_ bool
 }
