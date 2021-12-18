@@ -30,8 +30,6 @@ type Node struct {
         in_edge_(nil),
         id_(-1) {}
 
-  void Dump(string prefix="") const
-
   path_ string
 
   // Set bits starting from lowest for backslashes that were normalized to
@@ -155,8 +153,6 @@ type Edge struct {
         id_(0), outputs_ready_(false), deps_loaded_(false),
         deps_missing_(false), generated_by_dep_loader_(false),
         implicit_deps_(0), order_only_deps_(0), implicit_outs_(0) {}
-
-  void Dump(string prefix="") const
 
   rule_ *Rule
   pool_ *Pool
