@@ -23,13 +23,13 @@ func TestStatusTest_StatusFormatElapsed(t *testing.T) {
 
   status.BuildStarted()
   // Before any task is done, the elapsed time must be zero.
-  if "[%/e0.000]" != status.FormatProgressStatus("[%%/e%e]", 0) { t.FailNow() }
+  if "[%/e0.000]" != status.FormatProgressStatus("[%%/e%e]", 0) { t.Fatal("expected equal") }
 }
 
 func TestStatusTest_StatusFormatReplacePlaceholder(t *testing.T) {
   var config BuildConfig
   StatusPrinter status(config)
 
-  if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }
+  if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.Fatal("expected equal") }
 }
 

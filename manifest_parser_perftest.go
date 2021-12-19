@@ -27,9 +27,8 @@ func WriteFakeManifests(dir string, err *string) bool {
     return mtime != -1
   }
 
-	command := "python misc/write_fake_manifests.py " + dir
-  printf("Creating manifest data...")
-	fflush(stdout)
+  string command = "python misc/write_fake_manifests.py " + dir
+  printf("Creating manifest data..."); fflush(stdout)
   exit_code := system(command)
   printf("done.\n")
   if exit_code != 0 {

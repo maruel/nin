@@ -18,65 +18,65 @@ package ginja
 
 
 func TestCLParserTest_ShowIncludes(t *testing.T) {
-  if "" != CLParser::FilterShowIncludes("", "") { t.FailNow() }
+  if "" != CLParser::FilterShowIncludes("", "") { t.Fatal("expected equal") }
 
-  if "" != CLParser::FilterShowIncludes("Sample compiler output", "") { t.FailNow() }
-  if "c:\\Some Files\\foobar.h" != CLParser::FilterShowIncludes("Note: including file: c:\\Some Files\\foobar.h", "") { t.FailNow() }
-  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Note: including file:    c:\\initspaces.h", "") { t.FailNow() }
-  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Non-default prefix: inc file:    c:\\initspaces.h", "Non-default prefix: inc file:") { t.FailNow() }
+  if "" != CLParser::FilterShowIncludes("Sample compiler output", "") { t.Fatal("expected equal") }
+  if "c:\\Some Files\\foobar.h" != CLParser::FilterShowIncludes("Note: including file: c:\\Some Files\\foobar.h", "") { t.Fatal("expected equal") }
+  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Note: including file:    c:\\initspaces.h", "") { t.Fatal("expected equal") }
+  if "c:\\initspaces.h" != CLParser::FilterShowIncludes("Non-default prefix: inc file:    c:\\initspaces.h", "Non-default prefix: inc file:") { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_FilterInputFilename(t *testing.T) {
-  if CLParser::FilterInputFilename("foobar.cc") { t.FailNow() }
-  if CLParser::FilterInputFilename("foo bar.cc") { t.FailNow() }
-  if CLParser::FilterInputFilename("baz.c") { t.FailNow() }
-  if CLParser::FilterInputFilename("FOOBAR.CC") { t.FailNow() }
+  if !CLParser::FilterInputFilename("foobar.cc") { t.Fatal("expected true") }
+  if !CLParser::FilterInputFilename("foo bar.cc") { t.Fatal("expected true") }
+  if !CLParser::FilterInputFilename("baz.c") { t.Fatal("expected true") }
+  if !CLParser::FilterInputFilename("FOOBAR.CC") { t.Fatal("expected true") }
 
-  if !CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end of file found ...") { t.FailNow() }
+  if CLParser::FilterInputFilename( "src\\cl_helper.cc(166) : fatal error C1075: end of file found ...") { t.Fatal("expected false") }
 }
 
 func TestCLParserTest_ParseSimple(t *testing.T) {
   var parser CLParser
   string output, err
-  if parser.Parse( "foo\r\nNote: inc file prefix:  foo.h\r\nbar\r\n", "Note: inc file prefix:", &output, &err) { t.FailNow() }
+  if !parser.Parse( "foo\r\nNote: inc file prefix:  foo.h\r\nbar\r\n", "Note: inc file prefix:", &output, &err) { t.Fatal("expected true") }
 
-  if "foo\nbar\n" != output { t.FailNow() }
-  if 1u != parser.includes_.size() { t.FailNow() }
-  if "foo.h" != *parser.includes_.begin() { t.FailNow() }
+  if "foo\nbar\n" != output { t.Fatal("expected equal") }
+  if 1u != parser.includes_.size() { t.Fatal("expected equal") }
+  if "foo.h" != *parser.includes_.begin() { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
   var parser CLParser
   string output, err
-  if parser.Parse( "foo.cc\r\ncl: warning\r\n", "", &output, &err) { t.FailNow() }
-  if "cl: warning\n" != output { t.FailNow() }
+  if !parser.Parse( "foo.cc\r\ncl: warning\r\n", "", &output, &err) { t.Fatal("expected true") }
+  if "cl: warning\n" != output { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
   var parser CLParser
   string output, err
-  if parser.Parse( "foo.cc\r\nNote: including file: foo.h\r\nsomething something foo.cc\r\n", "", &output, &err) { t.FailNow() }
-  if "something something foo.cc\n" != output { t.FailNow() }
+  if !parser.Parse( "foo.cc\r\nNote: including file: foo.h\r\nsomething something foo.cc\r\n", "", &output, &err) { t.Fatal("expected true") }
+  if "something something foo.cc\n" != output { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_ParseSystemInclude(t *testing.T) {
   var parser CLParser
   string output, err
-  if parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\nNote: including file: d:\\Microsoft Visual Studio\\bar.h\r\nNote: including file: path.h\r\n", "", &output, &err) { t.FailNow() }
+  if !parser.Parse( "Note: including file: c:\\Program Files\\foo.h\r\nNote: including file: d:\\Microsoft Visual Studio\\bar.h\r\nNote: including file: path.h\r\n", "", &output, &err) { t.Fatal("expected true") }
   // We should have dropped the first two includes because they look like
   // system headers.
-  if "" != output { t.FailNow() }
-  if 1u != parser.includes_.size() { t.FailNow() }
-  if "path.h" != *parser.includes_.begin() { t.FailNow() }
+  if "" != output { t.Fatal("expected equal") }
+  if 1u != parser.includes_.size() { t.Fatal("expected equal") }
+  if "path.h" != *parser.includes_.begin() { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_DuplicatedHeader(t *testing.T) {
   var parser CLParser
   string output, err
-  if parser.Parse( "Note: including file: foo.h\r\nNote: including file: bar.h\r\nNote: including file: foo.h\r\n", "", &output, &err) { t.FailNow() }
+  if !parser.Parse( "Note: including file: foo.h\r\nNote: including file: bar.h\r\nNote: including file: foo.h\r\n", "", &output, &err) { t.Fatal("expected true") }
   // We should have dropped one copy of foo.h.
-  if "" != output { t.FailNow() }
-  if 2u != parser.includes_.size() { t.FailNow() }
+  if "" != output { t.Fatal("expected equal") }
+  if 2u != parser.includes_.size() { t.Fatal("expected equal") }
 }
 
 func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
@@ -88,9 +88,9 @@ func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
   const char kInput[] =
       "Note: including file: sub/./foo.h\r\nNote: including file: bar.h\r\n"
       "Note: including file: sub\\foo.h\r\n"
-  if parser.Parse(kInput, "", &output, &err) { t.FailNow() }
+  if !parser.Parse(kInput, "", &output, &err) { t.Fatal("expected true") }
   // We should have dropped one copy of foo.h.
-  if "" != output { t.FailNow() }
-  if 2u != parser.includes_.size() { t.FailNow() }
+  if "" != output { t.Fatal("expected equal") }
+  if 2u != parser.includes_.size() { t.Fatal("expected equal") }
 }
 

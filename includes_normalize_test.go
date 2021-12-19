@@ -27,54 +27,54 @@ func GetCurDir() string {
 func NormalizeAndCheckNoError(input string) string {
   string result, err
   IncludesNormalize normalizer(".")
-  if normalizer.Normalize(input, &result, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !normalizer.Normalize(input, &result, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   return result
 }
 
 func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
   string result, err
   IncludesNormalize normalizer(relative_to)
-  if normalizer.Normalize(input, &result, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !normalizer.Normalize(input, &result, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   return result
 }
 
 func TestIncludesNormalize_Simple(t *testing.T) {
-  if "b" != NormalizeAndCheckNoError("a\\..\\b") { t.FailNow() }
-  if "b" != NormalizeAndCheckNoError("a\\../b") { t.FailNow() }
-  if "a/b" != NormalizeAndCheckNoError("a\\.\\b") { t.FailNow() }
-  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.FailNow() }
+  if "b" != NormalizeAndCheckNoError("a\\..\\b") { t.Fatal("expected equal") }
+  if "b" != NormalizeAndCheckNoError("a\\../b") { t.Fatal("expected equal") }
+  if "a/b" != NormalizeAndCheckNoError("a\\.\\b") { t.Fatal("expected equal") }
+  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.Fatal("expected equal") }
 }
 
 func TestIncludesNormalize_WithRelative(t *testing.T) {
   err := ""
   currentdir := GetCurDir()
-  if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.FailNow() }
-  if "a" != NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if string("../") + currentdir + string("/a") != NormalizeRelativeAndCheckNoError("a", "../b") { t.FailNow() }
-  if string("../") + currentdir + string("/a/b") != NormalizeRelativeAndCheckNoError("a/b", "../c") { t.FailNow() }
-  if "../../a" != NormalizeRelativeAndCheckNoError("a", "b/c") { t.FailNow() }
-  if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.FailNow() }
+  if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.Fatal("expected equal") }
+  if "a" != NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)) { t.Fatal("expected equal") }
+  if "" != err { t.Fatal("expected equal") }
+  if string("../") + currentdir + string("/a") != NormalizeRelativeAndCheckNoError("a", "../b") { t.Fatal("expected equal") }
+  if string("../") + currentdir + string("/a/b") != NormalizeRelativeAndCheckNoError("a/b", "../c") { t.Fatal("expected equal") }
+  if "../../a" != NormalizeRelativeAndCheckNoError("a", "b/c") { t.Fatal("expected equal") }
+  if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.Fatal("expected equal") }
 }
 
 func TestIncludesNormalize_Case(t *testing.T) {
-  if "b" != NormalizeAndCheckNoError("Abc\\..\\b") { t.FailNow() }
-  if "BdEf" != NormalizeAndCheckNoError("Abc\\..\\BdEf") { t.FailNow() }
-  if "A/b" != NormalizeAndCheckNoError("A\\.\\b") { t.FailNow() }
-  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.FailNow() }
-  if "A/B" != NormalizeAndCheckNoError("A\\.\\B") { t.FailNow() }
-  if "A/B" != NormalizeAndCheckNoError("A\\./B") { t.FailNow() }
+  if "b" != NormalizeAndCheckNoError("Abc\\..\\b") { t.Fatal("expected equal") }
+  if "BdEf" != NormalizeAndCheckNoError("Abc\\..\\BdEf") { t.Fatal("expected equal") }
+  if "A/b" != NormalizeAndCheckNoError("A\\.\\b") { t.Fatal("expected equal") }
+  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.Fatal("expected equal") }
+  if "A/B" != NormalizeAndCheckNoError("A\\.\\B") { t.Fatal("expected equal") }
+  if "A/B" != NormalizeAndCheckNoError("A\\./B") { t.Fatal("expected equal") }
 }
 
 func TestIncludesNormalize_DifferentDrive(t *testing.T) {
-  if "stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
-  if "stuff.h" != NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08") { t.FailNow() }
-  if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08") { t.FailNow() }
-  if "P:/vs08/stufF.h" != NormalizeRelativeAndCheckNoError( "P:\\vs08\\stufF.h", "D:\\stuff/things") { t.FailNow() }
-  if "P:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError( "P:/vs08\\stuff.h", "D:\\stuff/things") { t.FailNow() }
-  if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") { t.FailNow() }
+  if "stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08") { t.Fatal("expected equal") }
+  if "stuff.h" != NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08") { t.Fatal("expected equal") }
+  if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08") { t.Fatal("expected equal") }
+  if "P:/vs08/stufF.h" != NormalizeRelativeAndCheckNoError( "P:\\vs08\\stufF.h", "D:\\stuff/things") { t.Fatal("expected equal") }
+  if "P:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError( "P:/vs08\\stuff.h", "D:\\stuff/things") { t.Fatal("expected equal") }
+  if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") { t.Fatal("expected equal") }
 }
 
 func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
@@ -83,13 +83,13 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
   // Too long, won't be canonicalized. Ensure doesn't crash.
   string result, err
   IncludesNormalize normalizer(".")
-  if ! normalizer.Normalize(kLongInputString, &result, &err) { t.FailNow() }
-  if "path too long" != err { t.FailNow() }
+  if  normalizer.Normalize(kLongInputString, &result, &err) { t.Fatal("expected false") }
+  if "path too long" != err { t.Fatal("expected equal") }
 
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
   char kExactlyMaxPath[_MAX_PATH + 1]
-  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.FailNow() }
+  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
 
   cwd_len := strlen(kExactlyMaxPath)
   ASSERT_LE(cwd_len + 3 + 1, _MAX_PATH)
@@ -108,20 +108,20 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
   }
 
   kExactlyMaxPath[_MAX_PATH] = '\0'
-  if strlen(kExactlyMaxPath) != _MAX_PATH { t.FailNow() }
+  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
 
   string forward_slashes(kExactlyMaxPath)
   replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
   // Make sure a path that's exactly _MAX_PATH long is canonicalized.
-  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.FailNow() }
+  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.Fatal("expected equal") }
 }
 
 func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
   string result, err
   IncludesNormalize normalizer(".")
   // A short path should work
-  if normalizer.Normalize("a", &result, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !normalizer.Normalize("a", &result, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // Construct max size path having cwd prefix.
   // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
@@ -134,10 +134,10 @@ func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
     }
   }
   kExactlyMaxPath[_MAX_PATH] = '\0'
-  if strlen(kExactlyMaxPath) != _MAX_PATH { t.FailNow() }
+  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
 
   // Make sure a path that's exactly _MAX_PATH long fails with a proper error.
-  if !normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.FailNow() }
-  if err.find("GetFullPathName") != string::npos { t.FailNow() }
+  if normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.Fatal("expected false") }
+  if !err.find("GetFullPathName") != string::npos { t.Fatal("expected true") }
 }
 

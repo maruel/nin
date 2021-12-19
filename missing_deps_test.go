@@ -51,7 +51,7 @@ func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) 
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
   err := ""
   nodes := m.state_.RootNodes(&err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
   for it := nodes.begin(); it != nodes.end(); it++ {
     scanner().ProcessNode(*it)
   }
@@ -73,21 +73,21 @@ func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string,
 }
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
   flaky_node := m.state_.LookupNode(flaky)
-  if 1u != scanner().nodes_missing_deps_.count(flaky_node) { t.FailNow() }
+  if 1u != scanner().nodes_missing_deps_.count(flaky_node) { t.Fatal("expected equal") }
   generated_node := m.state_.LookupNode(generated)
-  if 1u != scanner().generated_nodes_.count(generated_node) { t.FailNow() }
-  if 1u != scanner().generator_rules_.count(rule) { t.FailNow() }
+  if 1u != scanner().generated_nodes_.count(generated_node) { t.Fatal("expected equal") }
+  if 1u != scanner().generator_rules_.count(rule) { t.Fatal("expected equal") }
 }
 
 func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
   ProcessAllNodes()
-  if !scanner().HadMissingDeps() { t.FailNow() }
+  if scanner().HadMissingDeps() { t.Fatal("expected false") }
 }
 
 func TestMissingDependencyScannerTest_NoMissingDep(t *testing.T) {
   CreateInitialState()
   ProcessAllNodes()
-  if !scanner().HadMissingDeps() { t.FailNow() }
+  if scanner().HadMissingDeps() { t.Fatal("expected false") }
 }
 
 func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
@@ -95,9 +95,9 @@ func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
   // compiled_object uses generated_header, without a proper dependency
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  if scanner().HadMissingDeps() { t.FailNow() }
-  if 1u != scanner().nodes_missing_deps_.size() { t.FailNow() }
-  if 1u != scanner().missing_dep_path_count_ { t.FailNow() }
+  if !scanner().HadMissingDeps() { t.Fatal("expected true") }
+  if 1u != scanner().nodes_missing_deps_.size() { t.Fatal("expected equal") }
+  if 1u != scanner().missing_dep_path_count_ { t.Fatal("expected equal") }
   AssertMissingDependencyBetween("compiled_object", "generated_header", &generator_rule_)
 }
 
@@ -107,7 +107,7 @@ func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
   CreateGraphDependencyBetween("compiled_object", "generated_header")
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  if !scanner().HadMissingDeps() { t.FailNow() }
+  if scanner().HadMissingDeps() { t.Fatal("expected false") }
 }
 
 func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
@@ -119,7 +119,7 @@ func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
   CreateGraphDependencyBetween("intermediate", "generated_header")
   RecordDepsLogDep("compiled_object", "generated_header")
   ProcessAllNodes()
-  if !scanner().HadMissingDeps() { t.FailNow() }
+  if scanner().HadMissingDeps() { t.Fatal("expected false") }
 }
 
 func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
@@ -129,9 +129,9 @@ func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
   // In case of a cycle, both paths are reported (and there is
   // no way to fix the issue by adding deps).
   ProcessAllNodes()
-  if scanner().HadMissingDeps() { t.FailNow() }
-  if 2u != scanner().nodes_missing_deps_.size() { t.FailNow() }
-  if 2u != scanner().missing_dep_path_count_ { t.FailNow() }
+  if !scanner().HadMissingDeps() { t.Fatal("expected true") }
+  if 2u != scanner().nodes_missing_deps_.size() { t.Fatal("expected equal") }
+  if 2u != scanner().missing_dep_path_count_ { t.Fatal("expected equal") }
   AssertMissingDependencyBetween("compiled_object", "generated_header", &generator_rule_)
   AssertMissingDependencyBetween("generated_header", "compiled_object", &compile_rule_)
 }
@@ -145,6 +145,6 @@ func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
   // This test is to illustrate that.
   err := ""
   nodes := state_.RootNodes(&err)
-  if "" == err { t.FailNow() }
+  if "" == err { t.Fatal("expected different") }
 }
 

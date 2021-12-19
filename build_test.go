@@ -36,12 +36,12 @@ type PlanTest struct {
 // easy to write tests around.
 func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
   for i := 0; i < count; i++ {
-    if p.plan_.more_to_do() { t.FailNow() }
+    if !p.plan_.more_to_do() { t.Fatal("expected true") }
     edge := p.plan_.FindWork()
-    if edge { t.FailNow() }
+    if !edge { t.Fatal("expected true") }
     ret.push_back(edge)
   }
-  if !p.plan_.FindWork() { t.FailNow() }
+  if p.plan_.FindWork() { t.Fatal("expected false") }
   sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
 }
 
@@ -50,31 +50,31 @@ func TestPlanTest_Basic(t *testing.T) {
   GetNode("mid").MarkDirty()
   GetNode("out").MarkDirty()
   err := ""
-  if plan_.AddTarget(GetNode("out"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   edge := plan_.FindWork()
-  if edge { t.FailNow() }
-  if "in" !=  edge.inputs_[0].path() { t.FailNow() }
-  if "mid" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "mid" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
-  if !plan_.FindWork() { t.FailNow() }
-
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
-
-  edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if "mid" != edge.inputs_[0].path() { t.FailNow() }
-  if "out" != edge.outputs_[0].path() { t.FailNow() }
+  if plan_.FindWork() { t.Fatal("expected false") }
 
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !plan_.more_to_do() { t.FailNow() }
   edge = plan_.FindWork()
-  if 0 != edge { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "mid" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+
+  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
+  if "" != err { t.Fatal("expected equal") }
+
+  if plan_.more_to_do() { t.Fatal("expected false") }
+  edge = plan_.FindWork()
+  if 0 != edge { t.Fatal("expected equal") }
 }
 
 // Test that two outputs from one rule can be handled as inputs to the next.
@@ -85,23 +85,23 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
   GetNode("out").MarkDirty()
 
   err := ""
-  if plan_.AddTarget(GetNode("out"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   var edge *Edge
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat in
+  if !edge { t.Fatal("expected true") }  // cat in
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat mid1 mid2
+  if !edge { t.Fatal("expected true") }  // cat mid1 mid2
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if !edge { t.FailNow() }  // done
+  if edge { t.Fatal("expected false") }  // done
 }
 
 // Test that two outputs from one rule can eventually be routed to another.
@@ -113,33 +113,33 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
   GetNode("b2").MarkDirty()
   GetNode("out").MarkDirty()
   err := ""
-  if plan_.AddTarget(GetNode("out"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   var edge *Edge
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat in
+  if !edge { t.Fatal("expected true") }  // cat in
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat a1
+  if !edge { t.Fatal("expected true") }  // cat a1
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat a2
+  if !edge { t.Fatal("expected true") }  // cat a2
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat b1 b2
+  if !edge { t.Fatal("expected true") }  // cat b1 b2
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if !edge { t.FailNow() }  // done
+  if edge { t.Fatal("expected false") }  // done
 }
 
 // Test that two edges from one output can both execute.
@@ -151,33 +151,33 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
   GetNode("out").MarkDirty()
 
   err := ""
-  if plan_.AddTarget(GetNode("out"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   var edge *Edge
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat in
+  if !edge { t.Fatal("expected true") }  // cat in
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat mid
+  if !edge { t.Fatal("expected true") }  // cat mid
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat mid
+  if !edge { t.Fatal("expected true") }  // cat mid
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }  // cat a1 a2
+  if !edge { t.Fatal("expected true") }  // cat a1 a2
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if !edge { t.FailNow() }  // done
+  if edge { t.Fatal("expected false") }  // done
 }
 
 func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
@@ -185,36 +185,36 @@ func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
   GetNode("out1").MarkDirty()
   GetNode("out2").MarkDirty()
   err := ""
-  if p.plan_.AddTarget(GetNode("out1"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if p.plan_.AddTarget(GetNode("out2"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if p.plan_.more_to_do() { t.FailNow() }
+  if !p.plan_.AddTarget(GetNode("out1"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !p.plan_.AddTarget(GetNode("out2"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !p.plan_.more_to_do() { t.Fatal("expected true") }
 
   edge := p.plan_.FindWork()
-  if edge { t.FailNow() }
-  if "in" !=  edge.inputs_[0].path() { t.FailNow() }
-  if "out1" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out1" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
   // This will be false since poolcat is serialized
-  if !p.plan_.FindWork() { t.FailNow() }
+  if p.plan_.FindWork() { t.Fatal("expected false") }
 
   p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = p.plan_.FindWork()
-  if edge { t.FailNow() }
-  if "in" != edge.inputs_[0].path() { t.FailNow() }
-  if "out2" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out2" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
-  if !p.plan_.FindWork() { t.FailNow() }
+  if p.plan_.FindWork() { t.Fatal("expected false") }
 
   p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !p.plan_.more_to_do() { t.FailNow() }
+  if p.plan_.more_to_do() { t.Fatal("expected false") }
   edge = p.plan_.FindWork()
-  if 0 != edge { t.FailNow() }
+  if 0 != edge { t.Fatal("expected equal") }
 }
 
 func TestPlanTest_PoolWithDepthOne(t *testing.T) {
@@ -235,57 +235,57 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
   GetNode("allTheThings").MarkDirty()
 
   err := ""
-  if plan_.AddTarget(GetNode("allTheThings"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !plan_.AddTarget(GetNode("allTheThings"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   var edges deque<Edge*>
   FindWorkSorted(&edges, 5)
 
   for i := 0; i < 4; i++ {
     edge := edges[i]
-    if "in" !=  edge.inputs_[0].path() { t.FailNow() }
+    if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
     string base_name(i < 2 ? "out" : "outb")
-    if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.FailNow() }
+    if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.Fatal("expected equal") }
   }
 
   // outb3 is exempt because it has an empty pool
   edge := edges[4]
-  if edge { t.FailNow() }
-  if "in" !=  edge.inputs_[0].path() { t.FailNow() }
-  if "outb3" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "outb3" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
   // finish out1
   plan_.EdgeFinished(edges.front(), Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
   edges.pop_front()
 
   // out3 should be available
   out3 := plan_.FindWork()
-  if out3 { t.FailNow() }
-  if "in" !=  out3.inputs_[0].path() { t.FailNow() }
-  if "out3" != out3.outputs_[0].path() { t.FailNow() }
+  if !out3 { t.Fatal("expected true") }
+  if "in" !=  out3.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out3" != out3.outputs_[0].path() { t.Fatal("expected equal") }
 
-  if !plan_.FindWork() { t.FailNow() }
+  if plan_.FindWork() { t.Fatal("expected false") }
 
   plan_.EdgeFinished(out3, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !plan_.FindWork() { t.FailNow() }
+  if plan_.FindWork() { t.Fatal("expected false") }
 
   for it := edges.begin(); it != edges.end(); it++ {
     plan_.EdgeFinished(*it, Plan::kEdgeSucceeded, &err)
-    if "" != err { t.FailNow() }
+    if "" != err { t.Fatal("expected equal") }
   }
 
   last := plan_.FindWork()
-  if last { t.FailNow() }
-  if "allTheThings" != last.outputs_[0].path() { t.FailNow() }
+  if !last { t.Fatal("expected true") }
+  if "allTheThings" != last.outputs_[0].path() { t.Fatal("expected equal") }
 
   plan_.EdgeFinished(last, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !plan_.more_to_do() { t.FailNow() }
-  if !plan_.FindWork() { t.FailNow() }
+  if plan_.more_to_do() { t.Fatal("expected false") }
+  if plan_.FindWork() { t.Fatal("expected false") }
 }
 
 func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
@@ -297,9 +297,9 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
   GetNode("libfoo.a").MarkDirty()
   GetNode("all").MarkDirty()
   err := ""
-  if plan_.AddTarget(GetNode("all"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("all"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   edge := nil
 
@@ -307,53 +307,53 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
   FindWorkSorted(&initial_edges, 2)
 
   edge = initial_edges[1]  // Foo first
-  if "foo.cpp" != edge.outputs_[0].path() { t.FailNow() }
+  if "foo.cpp" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if !plan_.FindWork() { t.FailNow() }
-  if "foo.cpp" != edge.inputs_[0].path() { t.FailNow() }
-  if "foo.cpp" != edge.inputs_[1].path() { t.FailNow() }
-  if "foo.cpp.obj" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if plan_.FindWork() { t.Fatal("expected false") }
+  if "foo.cpp" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "foo.cpp" != edge.inputs_[1].path() { t.Fatal("expected equal") }
+  if "foo.cpp.obj" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = initial_edges[0]  // Now for bar
-  if "bar.cpp" != edge.outputs_[0].path() { t.FailNow() }
+  if "bar.cpp" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if !plan_.FindWork() { t.FailNow() }
-  if "bar.cpp" != edge.inputs_[0].path() { t.FailNow() }
-  if "bar.cpp" != edge.inputs_[1].path() { t.FailNow() }
-  if "bar.cpp.obj" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if plan_.FindWork() { t.Fatal("expected false") }
+  if "bar.cpp" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "bar.cpp" != edge.inputs_[1].path() { t.Fatal("expected equal") }
+  if "bar.cpp.obj" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if !plan_.FindWork() { t.FailNow() }
-  if "foo.cpp.obj" != edge.inputs_[0].path() { t.FailNow() }
-  if "bar.cpp.obj" != edge.inputs_[1].path() { t.FailNow() }
-  if "libfoo.a" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if plan_.FindWork() { t.Fatal("expected false") }
+  if "foo.cpp.obj" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "bar.cpp.obj" != edge.inputs_[1].path() { t.Fatal("expected equal") }
+  if "libfoo.a" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if !plan_.FindWork() { t.FailNow() }
-  if "libfoo.a" != edge.inputs_[0].path() { t.FailNow() }
-  if "all" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if plan_.FindWork() { t.Fatal("expected false") }
+  if "libfoo.a" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "all" != edge.outputs_[0].path() { t.Fatal("expected equal") }
   plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if !edge { t.FailNow() }
-  if !plan_.more_to_do() { t.FailNow() }
+  if edge { t.Fatal("expected false") }
+  if plan_.more_to_do() { t.Fatal("expected false") }
 }
 
 func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
@@ -361,36 +361,36 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
   GetNode("out1").MarkDirty()
   GetNode("out2").MarkDirty()
   err := ""
-  if plan_.AddTarget(GetNode("out1"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.AddTarget(GetNode("out2"), &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if plan_.more_to_do() { t.FailNow() }
+  if !plan_.AddTarget(GetNode("out1"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.AddTarget(GetNode("out2"), &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !plan_.more_to_do() { t.Fatal("expected true") }
 
   edge := plan_.FindWork()
-  if edge { t.FailNow() }
-  if "in" !=  edge.inputs_[0].path() { t.FailNow() }
-  if "out1" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out1" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
   // This will be false since poolcat is serialized
-  if !plan_.FindWork() { t.FailNow() }
+  if plan_.FindWork() { t.Fatal("expected false") }
 
   plan_.EdgeFinished(edge, Plan::kEdgeFailed, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
   edge = plan_.FindWork()
-  if edge { t.FailNow() }
-  if "in" != edge.inputs_[0].path() { t.FailNow() }
-  if "out2" != edge.outputs_[0].path() { t.FailNow() }
+  if !edge { t.Fatal("expected true") }
+  if "in" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "out2" != edge.outputs_[0].path() { t.Fatal("expected equal") }
 
-  if !plan_.FindWork() { t.FailNow() }
+  if plan_.FindWork() { t.Fatal("expected false") }
 
   plan_.EdgeFinished(edge, Plan::kEdgeFailed, &err)
-  if "" != err { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
 
-  if plan_.more_to_do() { t.FailNow() } // Jobs have failed
+  if !plan_.more_to_do() { t.Fatal("expected true") } // Jobs have failed
   edge = plan_.FindWork()
-  if 0 != edge { t.FailNow() }
+  if 0 != edge { t.Fatal("expected equal") }
 }
 
 // Fake implementation of CommandRunner, useful for tests.
@@ -468,28 +468,28 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
   err := ""
   BuildLog build_log, *pbuild_log = nil
   if log_path {
-    if build_log.Load(log_path, &err) { t.FailNow() }
-    if build_log.OpenForWrite(log_path, *this, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !build_log.Load(log_path, &err) { t.Fatal("expected true") }
+    if !build_log.OpenForWrite(log_path, *this, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     pbuild_log = &build_log
   }
 
   DepsLog deps_log, *pdeps_log = nil
   if deps_path {
-    if deps_log.Load(deps_path, pstate, &err) { t.FailNow() }
-    if deps_log.OpenForWrite(deps_path, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.Load(deps_path, pstate, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite(deps_path, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     pdeps_log = &deps_log
   }
 
   Builder builder(pstate, b.config_, pbuild_log, pdeps_log, &b.fs_, &b.status_, 0)
-  if builder.AddTarget(target, &err) { t.FailNow() }
+  if !builder.AddTarget(target, &err) { t.Fatal("expected true") }
 
   b.command_runner_.commands_ran_ = nil
   builder.command_runner_.reset(&b.command_runner_)
   if !builder.AlreadyUpToDate() {
     build_res := builder.Build(&err)
-    if build_res { t.FailNow() }
+    if !build_res { t.Fatal("expected true") }
   }
   builder.command_runner_.release()
 }
@@ -605,7 +605,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
         verify_active_edge_found = true
       }
     }
-    if verify_active_edge_found { t.FailNow() }
+    if !verify_active_edge_found { t.Fatal("expected true") }
   }
 
   f.active_edges_.erase(edge_iter)
@@ -634,7 +634,7 @@ func (b *BuildTest) Dirty(path string) {
 
 func TestBuildTest_NoWork(t *testing.T) {
   err := ""
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 func TestBuildTest_OneStep(t *testing.T) {
@@ -642,13 +642,13 @@ func TestBuildTest_OneStep(t *testing.T) {
   // we should rebuild the target.
   Dirty("cat1")
   err := ""
-  if builder_.AddTarget("cat1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("cat1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cat in1 > cat1" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cat in1 > cat1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_OneStep2(t *testing.T) {
@@ -656,27 +656,27 @@ func TestBuildTest_OneStep2(t *testing.T) {
   // we should rebuild the target.
   Dirty("cat1")
   err := ""
-  if builder_.AddTarget("cat1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("cat1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cat in1 > cat1" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cat in1 > cat1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_TwoStep(t *testing.T) {
   err := ""
-  if builder_.AddTarget("cat12", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("cat12", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
   // Depending on how the pointers work out, we could've ran
   // the first two commands in either order.
-  if (command_runner_.commands_ran_[0] == "cat in1 > cat1" && command_runner_.commands_ran_[1] == "cat in1 in2 > cat2") || (command_runner_.commands_ran_[1] == "cat in1 > cat1" && command_runner_.commands_ran_[0] == "cat in1 in2 > cat2") { t.FailNow() }
+  if !(command_runner_.commands_ran_[0] == "cat in1 > cat1" && command_runner_.commands_ran_[1] == "cat in1 in2 > cat2") || (command_runner_.commands_ran_[1] == "cat in1 > cat1" && command_runner_.commands_ran_[0] == "cat in1 in2 > cat2") { t.Fatal("expected true") }
 
-  if "cat cat1 cat2 > cat12" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if "cat cat1 cat2 > cat12" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 
   fs_.Tick()
 
@@ -684,13 +684,13 @@ func TestBuildTest_TwoStep(t *testing.T) {
   // and the final file.
   fs_.Create("in2", "")
   state_.Reset()
-  if builder_.AddTarget("cat12", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 5u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cat in1 in2 > cat2" != command_runner_.commands_ran_[3] { t.FailNow() }
-  if "cat cat1 cat2 > cat12" != command_runner_.commands_ran_[4] { t.FailNow() }
+  if !builder_.AddTarget("cat12", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 5u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cat in1 in2 > cat2" != command_runner_.commands_ran_[3] { t.Fatal("expected equal") }
+  if "cat cat1 cat2 > cat12" != command_runner_.commands_ran_[4] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_TwoOutputs(t *testing.T) {
@@ -699,12 +699,12 @@ func TestBuildTest_TwoOutputs(t *testing.T) {
   fs_.Create("in.txt", "")
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "touch out1 out2" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "touch out1 out2" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_ImplicitOutput(t *testing.T) {
@@ -712,12 +712,12 @@ func TestBuildTest_ImplicitOutput(t *testing.T) {
   fs_.Create("in.txt", "")
 
   err := ""
-  if builder_.AddTarget("out.imp", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("out.imp", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 // Test case from
@@ -730,10 +730,10 @@ func TestBuildTest_MultiOutIn(t *testing.T) {
   fs_.Create("in1", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_Chain(t *testing.T) {
@@ -742,18 +742,18 @@ func TestBuildTest_Chain(t *testing.T) {
   fs_.Create("c1", "")
 
   err := ""
-  if builder_.AddTarget("c5", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 4u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("c5", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 4u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   err = nil
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("c5", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("c5", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   fs_.Tick()
 
@@ -761,40 +761,40 @@ func TestBuildTest_Chain(t *testing.T) {
   err = nil
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("c5", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }  // 3->4, 4->5
+  if !builder_.AddTarget("c5", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }  // 3->4, 4->5
 }
 
 func TestBuildTest_MissingInput(t *testing.T) {
   // Input is referenced by build file, but no rule for it.
   err := ""
   Dirty("in1")
-  if !builder_.AddTarget("cat1", &err) { t.FailNow() }
-  if "'in1' != needed by 'cat1', missing and no known rule to make it", err { t.FailNow() }
+  if builder_.AddTarget("cat1", &err) { t.Fatal("expected false") }
+  if "'in1' != needed by 'cat1', missing and no known rule to make it", err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_MissingTarget(t *testing.T) {
   // Target is not referenced by build file.
   err := ""
-  if !builder_.AddTarget("meow", &err) { t.FailNow() }
-  if "unknown target: 'meow'" != err { t.FailNow() }
+  if builder_.AddTarget("meow", &err) { t.Fatal("expected false") }
+  if "unknown target: 'meow'" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_MakeDirs(t *testing.T) {
   err := ""
 
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build subdir\\dir2\\file: cat in1\n"))
-  if builder_.AddTarget("subdir/dir2/file", &err) { t.FailNow() }
+  if !builder_.AddTarget("subdir/dir2/file", &err) { t.Fatal("expected true") }
 
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != fs_.directories_made_.size() { t.FailNow() }
-  if "subdir" != fs_.directories_made_[0] { t.FailNow() }
-  if "subdir/dir2" != fs_.directories_made_[1] { t.FailNow() }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != fs_.directories_made_.size() { t.Fatal("expected equal") }
+  if "subdir" != fs_.directories_made_[0] { t.Fatal("expected equal") }
+  if "subdir/dir2" != fs_.directories_made_[1] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DepFileMissing(t *testing.T) {
@@ -802,10 +802,10 @@ func TestBuildTest_DepFileMissing(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n"))
   fs_.Create("foo.c", "")
 
-  if builder_.AddTarget("fo o.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != fs_.files_read_.size() { t.FailNow() }
-  if "fo o.o.d" != fs_.files_read_[0] { t.FailNow() }
+  if !builder_.AddTarget("fo o.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != fs_.files_read_.size() { t.Fatal("expected equal") }
+  if "fo o.o.d" != fs_.files_read_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DepFileOK(t *testing.T) {
@@ -817,19 +817,19 @@ func TestBuildTest_DepFileOK(t *testing.T) {
   fs_.Create("foo.c", "")
   GetNode("bar.h").MarkDirty()  // Mark bar.h as missing.
   fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != fs_.files_read_.size() { t.FailNow() }
-  if "foo.o.d" != fs_.files_read_[0] { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != fs_.files_read_.size() { t.Fatal("expected equal") }
+  if "foo.o.d" != fs_.files_read_[0] { t.Fatal("expected equal") }
 
   // Expect three new edges: one generating foo.o, and two more from
   // loading the depfile.
-  if orig_edges + 3 != (int)state_.edges_.size() { t.FailNow() }
+  if orig_edges + 3 != (int)state_.edges_.size() { t.Fatal("expected equal") }
   // Expect our edge to now have three inputs: foo.c and two headers.
-  if 3u != edge.inputs_.size() { t.FailNow() }
+  if 3u != edge.inputs_.size() { t.Fatal("expected equal") }
 
   // Expect the command line we generate to only use the original input.
-  if "cc foo.c" != edge.EvaluateCommand() { t.FailNow() }
+  if "cc foo.c" != edge.EvaluateCommand() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DepFileParseError(t *testing.T) {
@@ -837,8 +837,8 @@ func TestBuildTest_DepFileParseError(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n"))
   fs_.Create("foo.c", "")
   fs_.Create("foo.o.d", "randomtext\n")
-  if !builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if "foo.o.d: expected ':' in depfile" != err { t.FailNow() }
+  if builder_.AddTarget("foo.o", &err) { t.Fatal("expected false") }
+  if "foo.o.d: expected ':' in depfile" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_EncounterReadyTwice(t *testing.T) {
@@ -846,17 +846,17 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule touch\n  command = touch $out\nbuild c: touch\nbuild b: touch || c\nbuild a: touch | b || c\n"))
 
   vector<Edge*> c_out = GetNode("c").out_edges()
-  if 2u != c_out.size() { t.FailNow() }
-  if "b" != c_out[0].outputs_[0].path() { t.FailNow() }
-  if "a" != c_out[1].outputs_[0].path() { t.FailNow() }
+  if 2u != c_out.size() { t.Fatal("expected equal") }
+  if "b" != c_out[0].outputs_[0].path() { t.Fatal("expected equal") }
+  if "a" != c_out[1].outputs_[0].path() { t.Fatal("expected equal") }
 
   fs_.Create("b", "")
-  if builder_.AddTarget("a", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("a", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_OrderOnlyDeps(t *testing.T) {
@@ -867,27 +867,27 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
   fs_.Create("foo.c", "")
   fs_.Create("otherfile", "")
   fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // One explicit, two implicit, one order only.
-  if 4u != edge.inputs_.size() { t.FailNow() }
-  if 2 != edge.implicit_deps_ { t.FailNow() }
-  if 1 != edge.order_only_deps_ { t.FailNow() }
+  if 4u != edge.inputs_.size() { t.Fatal("expected equal") }
+  if 2 != edge.implicit_deps_ { t.Fatal("expected equal") }
+  if 1 != edge.order_only_deps_ { t.Fatal("expected equal") }
   // Verify the inputs are in the order we expect
   // (explicit then implicit then orderonly).
-  if "foo.c" != edge.inputs_[0].path() { t.FailNow() }
-  if "blah.h" != edge.inputs_[1].path() { t.FailNow() }
-  if "bar.h" != edge.inputs_[2].path() { t.FailNow() }
-  if "otherfile" != edge.inputs_[3].path() { t.FailNow() }
+  if "foo.c" != edge.inputs_[0].path() { t.Fatal("expected equal") }
+  if "blah.h" != edge.inputs_[1].path() { t.Fatal("expected equal") }
+  if "bar.h" != edge.inputs_[2].path() { t.Fatal("expected equal") }
+  if "otherfile" != edge.inputs_[3].path() { t.Fatal("expected equal") }
 
   // Expect the command line we generate to only use the original input.
-  if "cc foo.c" != edge.EvaluateCommand() { t.FailNow() }
+  if "cc foo.c" != edge.EvaluateCommand() { t.Fatal("expected equal") }
 
   // explicit dep dirty, expect a rebuild.
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   fs_.Tick()
 
@@ -899,10 +899,10 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
   fs_.Create("bar.h", "")
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   fs_.Tick()
 
@@ -913,18 +913,18 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
   fs_.Create("otherfile", "")
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   // implicit dep missing, expect rebuild.
   fs_.RemoveFile("bar.h")
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
@@ -935,27 +935,27 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
   fs_.Create("oo.h.in", "")
 
   // foo.o and order-only dep dirty, build both.
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // all clean, no rebuild.
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   // order-only dep missing, build it only.
   fs_.RemoveFile("oo.h")
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cc oo.h.in" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cc oo.h.in" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   fs_.Tick()
 
@@ -963,11 +963,11 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
   fs_.Create("oo.h.in", "")
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("foo.o", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cc oo.h.in" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("foo.o", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cc oo.h.in" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DepFileCanonicalize(t *testing.T) {
@@ -980,21 +980,21 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
   GetNode("bar.h").MarkDirty()  // Mark bar.h as missing.
   // Note, different slashes from manifest.
   fs_.Create("gen/stuff\\things/foo.o.d", "gen\\stuff\\things\\foo.o: blah.h bar.h\n")
-  if builder_.AddTarget("gen/stuff/things/foo.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != fs_.files_read_.size() { t.FailNow() }
+  if !builder_.AddTarget("gen/stuff/things/foo.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != fs_.files_read_.size() { t.Fatal("expected equal") }
   // The depfile path does not get Canonicalize as it seems unnecessary.
-  if "gen/stuff\\things/foo.o.d" != fs_.files_read_[0] { t.FailNow() }
+  if "gen/stuff\\things/foo.o.d" != fs_.files_read_[0] { t.Fatal("expected equal") }
 
   // Expect three new edges: one generating foo.o, and two more from
   // loading the depfile.
-  if orig_edges + 3 != (int)state_.edges_.size() { t.FailNow() }
+  if orig_edges + 3 != (int)state_.edges_.size() { t.Fatal("expected equal") }
   // Expect our edge to now have three inputs: foo.c and two headers.
-  if 3u != edge.inputs_.size() { t.FailNow() }
+  if 3u != edge.inputs_.size() { t.Fatal("expected equal") }
 
   // Expect the command line we generate to only use the original input, and
   // using the slashes from the manifest.
-  if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() { t.FailNow() }
+  if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_Phony(t *testing.T) {
@@ -1002,14 +1002,14 @@ func TestBuildTest_Phony(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat bar.cc\nbuild all: phony out\n"))
   fs_.Create("bar.cc", "")
 
-  if builder_.AddTarget("all", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("all", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // Only one command to run, because phony runs no command.
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_PhonyNoWork(t *testing.T) {
@@ -1018,9 +1018,9 @@ func TestBuildTest_PhonyNoWork(t *testing.T) {
   fs_.Create("bar.cc", "")
   fs_.Create("out", "")
 
-  if builder_.AddTarget("all", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("all", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 // Test a self-referencing phony.  Ideally this should not work, but
@@ -1030,9 +1030,9 @@ func TestBuildTest_PhonySelfReference(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a: phony a\n"))
 
-  if builder_.AddTarget("a", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("a", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 // There are 6 different cases for phony rules:
@@ -1069,20 +1069,20 @@ func TestPhonyUseCase(t *BuildTest, i int) {
   builder_.command_runner_.reset(&command_runner_)
 
   fs_.Create("blank", "")  // a "real" file
-  if builder_.AddTarget("test1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("test2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("test3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("test4", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("test5", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AddTarget("test6", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("test1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AddTarget("test2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AddTarget("test3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AddTarget("test4", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AddTarget("test5", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AddTarget("test6", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   ci := ""
   ci += static_cast<char>('0' + i)
@@ -1097,40 +1097,40 @@ func TestPhonyUseCase(t *BuildTest, i int) {
     startTime := fs_.now_
 
     // Build number 1
-    if builder_.AddTarget("test" + ci, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder_.AddTarget("test" + ci, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     if !builder_.AlreadyUpToDate() {
-      if builder_.Build(&err) { t.FailNow() }
+      if !builder_.Build(&err) { t.Fatal("expected true") }
     }
-    if "" != err { t.FailNow() }
+    if "" != err { t.Fatal("expected equal") }
 
     // Touch the input file
     state_.Reset()
     command_runner_.commands_ran_ = nil
     fs_.Tick()
     fs_.Create("blank", "")  // a "real" file
-    if builder_.AddTarget("test" + ci, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder_.AddTarget("test" + ci, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // Second build, expect testN edge to be rebuilt
     // and phonyN node's mtime to be updated.
-    if !builder_.AlreadyUpToDate() { t.FailNow() }
-    if builder_.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-    if string("touch test") + ci != command_runner_.commands_ran_[0] { t.FailNow() }
-    if builder_.AlreadyUpToDate() { t.FailNow() }
+    if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+    if !builder_.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+    if string("touch test") + ci != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+    if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
     inputTime := inputNode.mtime()
 
-    if !phonyNode.exists() { t.FailNow() }
-    if !phonyNode.dirty() { t.FailNow() }
+    if phonyNode.exists() { t.Fatal("expected false") }
+    if phonyNode.dirty() { t.Fatal("expected false") }
 
-    if phonyNode.mtime() <= startTime { t.FailNow() }
-    if phonyNode.mtime() != inputTime { t.FailNow() }
-    if testNode.Stat(&fs_, &err) { t.FailNow() }
-    if testNode.exists() { t.FailNow() }
-    if testNode.mtime() <= startTime { t.FailNow() }
+    if phonyNode.mtime() <= startTime { t.Fatal("expected greater") }
+    if phonyNode.mtime() != inputTime { t.Fatal("expected equal") }
+    if !testNode.Stat(&fs_, &err) { t.Fatal("expected true") }
+    if !testNode.exists() { t.Fatal("expected true") }
+    if testNode.mtime() <= startTime { t.Fatal("expected greater") }
   } else {
     // Tests 2 and 5: Expect dependents to always rebuild.
 
@@ -1138,23 +1138,23 @@ func TestPhonyUseCase(t *BuildTest, i int) {
     command_runner_.commands_ran_ = nil
     fs_.Tick()
     command_runner_.commands_ran_ = nil
-    if builder_.AddTarget("test" + ci, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if !builder_.AlreadyUpToDate() { t.FailNow() }
-    if builder_.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-    if "touch test" + ci != command_runner_.commands_ran_[0] { t.FailNow() }
+    if !builder_.AddTarget("test" + ci, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+    if !builder_.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+    if "touch test" + ci != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
     state_.Reset()
     command_runner_.commands_ran_ = nil
-    if builder_.AddTarget("test" + ci, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if !builder_.AlreadyUpToDate() { t.FailNow() }
-    if builder_.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-    if "touch test" + ci != command_runner_.commands_ran_[0] { t.FailNow() }
+    if !builder_.AddTarget("test" + ci, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+    if !builder_.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+    if "touch test" + ci != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
   }
 }
 
@@ -1169,12 +1169,12 @@ func TestBuildTest_Fail(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule fail\n  command = fail\nbuild out1: fail\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "subcommand failed" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "subcommand failed" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_SwallowFailures(t *testing.T) {
@@ -1184,12 +1184,12 @@ func TestBuildTest_SwallowFailures(t *testing.T) {
   config_.failures_allowed = 3
 
   err := ""
-  if builder_.AddTarget("all", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("all", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "subcommands failed" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "subcommands failed" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
@@ -1199,12 +1199,12 @@ func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
   config_.failures_allowed = 11
 
   err := ""
-  if builder_.AddTarget("final", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("final", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cannot make progress due to previous errors" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cannot make progress due to previous errors" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_SwallowFailuresPool(t *testing.T) {
@@ -1214,12 +1214,12 @@ func TestBuildTest_SwallowFailuresPool(t *testing.T) {
   config_.failures_allowed = 11
 
   err := ""
-  if builder_.AddTarget("final", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("final", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cannot make progress due to previous errors" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cannot make progress due to previous errors" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
@@ -1234,7 +1234,7 @@ func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
 
   var save_state State
   RebuildTarget("final.stamp", manifest, nil, nil, &save_state)
-  if save_state.LookupPool("some_pool").current_use() < 0 { t.FailNow() }
+  if save_state.LookupPool("some_pool").current_use() < 0 { t.Fatal("expected greater or equal") }
 }
 
 type BuildWithLogTest struct {
@@ -1255,10 +1255,10 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 
   err := ""
 
-  if builder_.AddTarget("out.imp", &err) { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out.imp", &err) { t.Fatal("expected true") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
 
-  if GetNode("out.imp").dirty() { t.FailNow() }
+  if !GetNode("out.imp").dirty() { t.Fatal("expected true") }
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
@@ -1271,20 +1271,20 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 
   err := ""
 
-  if builder_.AddTarget("out.imp", &err) { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out.imp", &err) { t.Fatal("expected true") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
   builder_.Cleanup()
   builder_.plan_.Reset()
 
-  if builder_.AddTarget("out.imp", &err) { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
-  if !GetNode("out.imp").dirty() { t.FailNow() }
+  if !builder_.AddTarget("out.imp", &err) { t.Fatal("expected true") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
+  if GetNode("out.imp").dirty() { t.Fatal("expected false") }
 }
 
 func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
@@ -1298,15 +1298,15 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 
   // Because it's not in the log, it should not be up-to-date until
   // we build again.
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
 
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
@@ -1317,10 +1317,10 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
   fs_.Create("in", "")
 
   // Run once successfully to get out1 in the log
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
@@ -1331,10 +1331,10 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
   fs_.Create("in", "")
 
   // Run again with a failure that updates the output file timestamp
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if !builder_.Build(&err) { t.FailNow() }
-  if "subcommand failed" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "subcommand failed" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
@@ -1344,11 +1344,11 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
   fs_.Tick()
 
   // Run again, should rerun even though the output file is up to date on disk
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
@@ -1358,11 +1358,11 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
   fs_.Create("in", "")
 
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
@@ -1371,11 +1371,11 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
   fs_.Create("in", "")
 
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildWithLogTest_RestatTest(t *testing.T) {
@@ -1393,12 +1393,12 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
   // otherwise, the lack of an entry in the build log will cause out3 to rebuild
   // regardless of restat.
   err := ""
-  if builder_.AddTarget("out3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if 3u != builder_.plan_.command_edge_count() { t.FailNow() }
+  if !builder_.AddTarget("out3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if 3u != builder_.plan_.command_edge_count() { t.Fatal("expected equal") }
   command_runner_.commands_ran_ = nil
   state_.Reset()
 
@@ -1407,18 +1407,18 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
   fs_.Create("in", "")
   // "cc" touches out1, so we should build out2.  But because "true" does not
   // touch out2, we should cancel the build of out3.
-  if builder_.AddTarget("out3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // If we run again, it should be a no-op, because the build log has recorded
   // that we've already built out2 with an input timestamp of 2 (from out1).
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   fs_.Tick()
 
@@ -1428,10 +1428,10 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
   // if out1 changes.
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
@@ -1448,10 +1448,10 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
   // otherwise, the lack of an entry in the build log will cause out2 to rebuild
   // regardless of restat.
   err := ""
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   command_runner_.commands_ran_ = nil
   state_.Reset()
 
@@ -1462,10 +1462,10 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
   // Run a build, expect only the first command to run.
   // It doesn't touch its output (due to being the "true" command), so
   // we shouldn't run the dependent build.
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
@@ -1475,11 +1475,11 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
   fs_.Create("in", "")
 
   err := ""
-  if builder_.AddTarget("out4", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out4", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   fs_.Tick()
   fs_.Create("in", "")
@@ -1492,11 +1492,11 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
   // cleard.
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out4", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out4", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 // Test scenario, in which an input file is removed, but output isn't changed
@@ -1516,16 +1516,16 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
   // Run the build, out1 and out2 get built
   err := ""
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // See that an entry in the logfile is created, capturing
   // the right mtime
   BuildLog::LogEntry* log_entry = build_log_.LookupByOutput("out1")
-  if nil != log_entry { t.FailNow() }
-  if restat_mtime != log_entry.mtime { t.FailNow() }
+  if !nil != log_entry { t.Fatal("expected true") }
+  if restat_mtime != log_entry.mtime { t.Fatal("expected equal") }
 
   // Now remove a file, referenced from depfile, so that target becomes
   // dirty, but the output does not change
@@ -1534,15 +1534,15 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
   // Trigger the build again - only out1 gets built
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // Check that the logfile entry remains correctly set
   log_entry = build_log_.LookupByOutput("out1")
-  if nil != log_entry { t.FailNow() }
-  if restat_mtime != log_entry.mtime { t.FailNow() }
+  if !nil != log_entry { t.Fatal("expected true") }
+  if restat_mtime != log_entry.mtime { t.Fatal("expected equal") }
 }
 
 func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
@@ -1552,19 +1552,19 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 
   err := ""
 
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
   builder_.Cleanup()
   builder_.plan_.Reset()
 
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 type BuildDryRun struct {
@@ -1589,10 +1589,10 @@ func TestBuildDryRun_AllCommandsShown(t *testing.T) {
   // "cc" touches out1, so we should build out2.  But because "true" does not
   // touch out2, we should cancel the build of out3.
   err := ""
-  if builder_.AddTarget("out3", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out3", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 // Test that RSP files are created when & where appropriate and deleted after
@@ -1643,26 +1643,26 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
   fs_.Create("in", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   files_created := fs_.files_created_.size()
   files_removed := fs_.files_removed_.size()
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "subcommand failed" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "subcommand failed" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // The RSP file was created
-  if files_created + 1 != fs_.files_created_.size() { t.FailNow() }
-  if 1u != fs_.files_created_.count("out.rsp") { t.FailNow() }
+  if files_created + 1 != fs_.files_created_.size() { t.Fatal("expected equal") }
+  if 1u != fs_.files_created_.count("out.rsp") { t.Fatal("expected equal") }
 
   // The RSP file was NOT removed
-  if files_removed != fs_.files_removed_.size() { t.FailNow() }
-  if 0u != fs_.files_removed_.count("out.rsp") { t.FailNow() }
+  if files_removed != fs_.files_removed_.size() { t.Fatal("expected equal") }
+  if 0u != fs_.files_removed_.count("out.rsp") { t.Fatal("expected equal") }
 
   // The RSP file contains what it should
-  if "Another very long command" != fs_.files_["out.rsp"].contents { t.FailNow() }
+  if "Another very long command" != fs_.files_["out.rsp"].contents { t.Fatal("expected equal") }
 }
 
 // Test that contents of the RSP file behaves like a regular part of
@@ -1675,33 +1675,33 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
   fs_.Create("in", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // 1. Build for the 1st time (-> populate log)
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // 2. Build again (no change)
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   // 3. Alter the entry in the logfile
   // (to simulate a change in the command line between 2 builds)
   BuildLog::LogEntry* log_entry = build_log_.LookupByOutput("out")
-  if nil != log_entry { t.FailNow() }
+  if !nil != log_entry { t.Fatal("expected true") }
   ASSERT_NO_FATAL_FAILURE(AssertHash( "cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash))
   log_entry.command_hash++  // Change the command hash to something else.
   // Now expect the target to be rebuilt
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_InterruptCleanup(t *testing.T) {
@@ -1715,21 +1715,21 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 
   // An untouched output of an interrupted command should be retained.
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if !builder_.Build(&err) { t.FailNow() }
-  if "interrupted by user" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "interrupted by user" != err { t.Fatal("expected equal") }
   builder_.Cleanup()
-  if fs_.Stat("out1" <= &err), 0 { t.FailNow() }
+  if fs_.Stat("out1" <= &err), 0 { t.Fatal("expected greater") }
   err = ""
 
   // A touched output of an interrupted command should be deleted.
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if !builder_.Build(&err) { t.FailNow() }
-  if "interrupted by user" != err { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "interrupted by user" != err { t.Fatal("expected equal") }
   builder_.Cleanup()
-  if 0 != fs_.Stat("out2", &err) { t.FailNow() }
+  if 0 != fs_.Stat("out2", &err) { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
@@ -1742,8 +1742,8 @@ func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
   fs_.files_[kTooLongToStat].stat_error = "stat failed"
 
   err := ""
-  if !builder_.AddTarget(kTooLongToStat, &err) { t.FailNow() }
-  if "stat failed" != err { t.FailNow() }
+  if builder_.AddTarget(kTooLongToStat, &err) { t.Fatal("expected false") }
+  if "stat failed" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
@@ -1754,19 +1754,19 @@ func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
   // out1 should be up to date even though its input is dirty, because its
   // order-only dependency has nothing to do.
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 
   // out2 should still be out of date though, because its input is dirty.
   err = nil
   command_runner_.commands_ran_ = nil
   state_.Reset()
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
@@ -1774,38 +1774,38 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
   Dirty("out")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if !builder_.AlreadyUpToDate() { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if builder_.AlreadyUpToDate() { t.Fatal("expected false") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "subcommand failed" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "subcommand failed" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_StatusFormatElapsed(t *testing.T) {
   status_.BuildStarted()
   // Before any task is done, the elapsed time must be zero.
-  if "[%/e0.000]" != status_.FormatProgressStatus("[%%/e%e]", 0) { t.FailNow() }
+  if "[%/e0.000]" != status_.FormatProgressStatus("[%%/e%e]", 0) { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_StatusFormatReplacePlaceholder(t *testing.T) {
-  if "[%/s0/t0/r0/u0/f0]" != status_.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.FailNow() }
+  if "[%/s0/t0/r0/u0/f0]" != status_.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_FailedDepsParse(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build bad_deps.o: cat in1\n  deps = gcc\n  depfile = in1.d\n"))
 
   err := ""
-  if builder_.AddTarget("bad_deps.o", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("bad_deps.o", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // These deps will fail to parse, as they should only have one
   // path to the left of the colon.
   fs_.Create("in1.d", "AAA BBB")
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "subcommand failed" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "subcommand failed" != err { t.Fatal("expected equal") }
 }
 
 type BuildWithQueryDepsLogTest struct {
@@ -1829,8 +1829,8 @@ func (b *BuildWithQueryDepsLogTest) SetUp() {
   b.temp_dir_.CreateAndEnter("BuildWithQueryDepsLogTest")
 
   err := ""
-  if b.log_.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !b.log_.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 }
 
 // Test a MSVC-style deps log with multiple outputs.
@@ -1838,22 +1838,22 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 1 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
+  if 1 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 1 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
+  if 1 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
 }
 
 // Test a GCC-style deps log with multiple outputs.
@@ -1861,25 +1861,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   fs_.Create("in.d", "out1 out2: in1 in2")
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 2 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out1_deps.nodes[1].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 2 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out2_deps.nodes[1].path() { t.Fatal("expected equal") }
 }
 
 // Test a GCC-style deps log with multiple outputs using a line per input.
@@ -1887,25 +1887,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   fs_.Create("in.d", "out1 out2: in1\nout1 out2: in2")
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 2 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out1_deps.nodes[1].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 2 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out2_deps.nodes[1].path() { t.Fatal("expected equal") }
 }
 
 // Test a GCC-style deps log with multiple outputs using a line per output.
@@ -1913,25 +1913,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   fs_.Create("in.d", "out1: in1 in2\nout2: in1 in2")
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 2 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out1_deps.nodes[1].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 2 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out2_deps.nodes[1].path() { t.Fatal("expected equal") }
 }
 
 // Test a GCC-style deps log with multiple outputs mentioning only the main output.
@@ -1939,25 +1939,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   fs_.Create("in.d", "out1: in1 in2")
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 2 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out1_deps.nodes[1].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 2 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out2_deps.nodes[1].path() { t.Fatal("expected equal") }
 }
 
 // Test a GCC-style deps log with multiple outputs mentioning only the secondary output.
@@ -1967,25 +1967,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n"))
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   fs_.Create("in.d", "out2: in1 in2")
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 
   Node* out1_node = state_.LookupNode("out1")
   out1_deps := log_.GetDeps(out1_node)
-  if 2 != out1_deps.node_count { t.FailNow() }
-  if "in1" != out1_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out1_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out1_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out1_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out1_deps.nodes[1].path() { t.Fatal("expected equal") }
 
   Node* out2_node = state_.LookupNode("out2")
   out2_deps := log_.GetDeps(out2_node)
-  if 2 != out2_deps.node_count { t.FailNow() }
-  if "in1" != out2_deps.nodes[0].path() { t.FailNow() }
-  if "in2" != out2_deps.nodes[1].path() { t.FailNow() }
+  if 2 != out2_deps.node_count { t.Fatal("expected equal") }
+  if "in1" != out2_deps.nodes[0].path() { t.Fatal("expected equal") }
+  if "in2" != out2_deps.nodes[1].path() { t.Fatal("expected equal") }
 }
 
 // Tests of builds involving deps logs necessarily must span
@@ -2025,19 +2025,19 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 
     // Run the build once, everything should be ok.
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     fs_.Create("in1.d", "out: in2")
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // The deps file should have been removed.
-    if 0 != fs_.Stat("in1.d", &err) { t.FailNow() }
+    if 0 != fs_.Stat("in1.d", &err) { t.Fatal("expected equal") }
     // Recreate it for the next step.
     fs_.Create("in1.d", "out: in2")
     deps_log.Close()
@@ -2055,20 +2055,20 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 
     // Run the build again.
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
     command_runner_.commands_ran_ = nil
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // We should have rebuilt the output due to in2 being
     // out of date.
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
     builder.command_runner_.release()
   }
@@ -2094,15 +2094,15 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 
     // Run the build once, everything should be ok.
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2115,7 +2115,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
   fs_.Create("out", "")
 
   // The deps file should have been removed, so no need to timestamp it.
-  if 0 != fs_.Stat("in1.d", &err) { t.FailNow() }
+  if 0 != fs_.Stat("in1.d", &err) { t.Fatal("expected equal") }
 
   {
     var state State
@@ -2123,24 +2123,24 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
     command_runner_.commands_ran_ = nil
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // Recreate the deps file here because the build expects them to exist.
     fs_.Create("in1.d", "out: ")
 
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // We should have rebuilt the output due to the deps being
     // out of date.
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
     builder.command_runner_.release()
   }
@@ -2165,10 +2165,10 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
   command_runner_.commands_ran_ = nil
 
   err := ""
-  if builder.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   builder.command_runner_.release()
 }
@@ -2183,10 +2183,10 @@ func TestBuildTest_RestatDepfileDependency(t *testing.T) {
   fs_.Create("header.in", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 }
 
 // Check that a restat rule generating a header cancels compilations correctly,
@@ -2203,16 +2203,16 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 
     // Run the build once, everything should be ok.
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     fs_.Create("in1.d", "out: header.h")
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2229,20 +2229,20 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 
     // Run the build again.
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
     command_runner_.commands_ran_ = nil
-    if builder.AddTarget("out", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("out", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // Rule "true" should have run again, but the build of "out" should have
     // been cancelled due to restat propagating through the depfile header.
-    if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+    if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
     builder.command_runner_.release()
   }
@@ -2261,16 +2261,16 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
     // Run the build once, everything should be ok.
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("fo o.o", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("fo o.o", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     fs_.Create("fo o.o.d", "fo\\ o.o: blah.h bar.h\n")
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2281,9 +2281,9 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
@@ -2291,17 +2291,17 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
     edge := state.edges_.back()
 
     state.GetNode("bar.h", 0).MarkDirty()  // Mark bar.h as missing.
-    if builder.AddTarget("fo o.o", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("fo o.o", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // Expect three new edges: one generating fo o.o, and two more from
     // loading the depfile.
-    if 3u != state.edges_.size() { t.FailNow() }
+    if 3u != state.edges_.size() { t.Fatal("expected equal") }
     // Expect our edge to now have three inputs: foo.c and two headers.
-    if 3u != edge.inputs_.size() { t.FailNow() }
+    if 3u != edge.inputs_.size() { t.Fatal("expected equal") }
 
     // Expect the command line we generate to only use the original input.
-    if "cc foo.c" != edge.EvaluateCommand() { t.FailNow() }
+    if "cc foo.c" != edge.EvaluateCommand() { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2323,16 +2323,16 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, &build_log, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out2", &err) { t.FailNow() }
-    if !builder.AlreadyUpToDate() { t.FailNow() }
+    if !builder.AddTarget("out2", &err) { t.Fatal("expected true") }
+    if builder.AlreadyUpToDate() { t.Fatal("expected false") }
 
-    if builder.Build(&err) { t.FailNow() }
-    if builder.AlreadyUpToDate() { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if !builder.AlreadyUpToDate() { t.Fatal("expected true") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2346,17 +2346,17 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, &build_log, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out2", &err) { t.FailNow() }
-    if !builder.AlreadyUpToDate() { t.FailNow() }
+    if !builder.AddTarget("out2", &err) { t.Fatal("expected true") }
+    if builder.AlreadyUpToDate() { t.Fatal("expected false") }
 
-    if builder.Build(&err) { t.FailNow() }
-    if builder.AlreadyUpToDate() { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if !builder.AlreadyUpToDate() { t.Fatal("expected true") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2369,14 +2369,14 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, &build_log, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("out2", &err) { t.FailNow() }
-    if builder.AlreadyUpToDate() { t.FailNow() }
+    if !builder.AddTarget("out2", &err) { t.Fatal("expected true") }
+    if !builder.AlreadyUpToDate() { t.Fatal("expected true") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2396,17 +2396,17 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
     // Run the build once, everything should be ok.
     var deps_log DepsLog
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
-    if builder.AddTarget("a/b/c/d/e/fo o.o", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("a/b/c/d/e/fo o.o", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     // Note, different slashes from manifest.
     fs_.Create("a/b\\c\\d/e/fo o.o.d", "a\\b\\c\\d\\e\\fo\\ o.o: blah.h bar.h\n")
-    if builder.Build(&err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.Build(&err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2417,9 +2417,9 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
     ASSERT_NO_FATAL_FAILURE(AssertParse(&state, manifest))
 
     var deps_log DepsLog
-    if deps_log.Load("ninja_deps", &state, &err) { t.FailNow() }
-    if deps_log.OpenForWrite("ninja_deps", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !deps_log.Load("ninja_deps", &state, &err) { t.Fatal("expected true") }
+    if !deps_log.OpenForWrite("ninja_deps", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     Builder builder(&state, config_, nil, &deps_log, &fs_, &status_, 0)
     builder.command_runner_.reset(&command_runner_)
@@ -2427,18 +2427,18 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
     edge := state.edges_.back()
 
     state.GetNode("bar.h", 0).MarkDirty()  // Mark bar.h as missing.
-    if builder.AddTarget("a/b/c/d/e/fo o.o", &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !builder.AddTarget("a/b/c/d/e/fo o.o", &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
 
     // Expect three new edges: one generating fo o.o, and two more from
     // loading the depfile.
-    if 3u != state.edges_.size() { t.FailNow() }
+    if 3u != state.edges_.size() { t.Fatal("expected equal") }
     // Expect our edge to now have three inputs: foo.c and two headers.
-    if 3u != edge.inputs_.size() { t.FailNow() }
+    if 3u != edge.inputs_.size() { t.Fatal("expected equal") }
 
     // Expect the command line we generate to only use the original input.
     // Note, slashes from manifest, not .d.
-    if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() { t.FailNow() }
+    if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() { t.Fatal("expected equal") }
 
     deps_log.Close()
     builder.command_runner_.release()
@@ -2461,7 +2461,7 @@ string manifest =
   // But we are also missing the depfile for 'out',
   // which should force its command to run anyway!
   RebuildTarget("out", manifest)
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 // Check that a restat rule doesn't clear an edge if the deps are missing.
@@ -2477,11 +2477,11 @@ func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
   fs_.Create("header.h", "")
 
   RebuildTarget("out", manifest, "build_log", "ninja_deps")
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // Sanity: this rebuild should be NOOP
   RebuildTarget("out", manifest, "build_log", "ninja_deps")
-  if 0u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 0u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // Touch 'header.in', blank dependencies log (create a different one).
   // Building header.h triggers 'restat' outputs cleanup.
@@ -2491,11 +2491,11 @@ func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
 
   // (switch to a new blank deps_log "ninja_deps2")
   RebuildTarget("out", manifest, "build_log", "ninja_deps2")
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // Sanity: this build should be NOOP
   RebuildTarget("out", manifest, "build_log", "ninja_deps2")
-  if 0u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 0u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // Check that invalidating deps by target timestamp also works here
   // Repeat the test but touch target instead of blanking the log.
@@ -2503,11 +2503,11 @@ func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
   fs_.Create("header.in", "")
   fs_.Create("out", "")
   RebuildTarget("out", manifest, "build_log", "ninja_deps2")
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 
   // And this build should be NOOP again
   RebuildTarget("out", manifest, "build_log", "ninja_deps2")
-  if 0u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 0u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_WrongOutputInDepfileCausesRebuild(t *testing.T) {
@@ -2521,7 +2521,7 @@ func TestBuildTest_WrongOutputInDepfileCausesRebuild(t *testing.T) {
   fs_.Create("foo.o.d", "bar.o.d: header.h\n")
 
   RebuildTarget("foo.o", manifest, "build_log", "ninja_deps")
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_Console(t *testing.T) {
@@ -2530,11 +2530,11 @@ func TestBuildTest_Console(t *testing.T) {
   fs_.Create("in.txt", "")
 
   err := ""
-  if builder_.AddTarget("cons", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("cons", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepMissingAndNoRule(t *testing.T) {
@@ -2543,8 +2543,8 @@ func TestBuildTest_DyndepMissingAndNoRule(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n" ))
 
   err := ""
-  if !builder_.AddTarget("out", &err) { t.FailNow() }
-  if "loading 'dd': No such file or directory" != err { t.FailNow() }
+  if builder_.AddTarget("out", &err) { t.Fatal("expected false") }
+  if "loading 'dd': No such file or directory" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
@@ -2555,13 +2555,13 @@ func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
   fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "touch tmp tmp.imp" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "touch tmp tmp.imp" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepReadySyntaxError(t *testing.T) {
@@ -2571,8 +2571,8 @@ func TestBuildTest_DyndepReadySyntaxError(t *testing.T) {
   fs_.Create("dd", "build out: dyndep\n" )
 
   err := ""
-  if !builder_.AddTarget("out", &err) { t.FailNow() }
-  if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err { t.FailNow() }
+  if builder_.AddTarget("out", &err) { t.Fatal("expected false") }
+  if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepReadyCircular(t *testing.T) {
@@ -2583,8 +2583,8 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if !builder_.AddTarget("out", &err) { t.FailNow() }
-  if "dependency cycle: circ . in . circ" != err { t.FailNow() }
+  if builder_.AddTarget("out", &err) { t.Fatal("expected false") }
+  if "dependency cycle: circ . in . circ" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuild(t *testing.T) {
@@ -2593,22 +2593,22 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
   fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   files_created := fs_.files_created_.size()
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch out" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if 2u != fs_.files_read_.size() { t.FailNow() }
-  if "dd-in" != fs_.files_read_[0] { t.FailNow() }
-  if "dd" != fs_.files_read_[1] { t.FailNow() }
-  if 2u + files_created != fs_.files_created_.size() { t.FailNow() }
-  if 1u != fs_.files_created_.count("dd") { t.FailNow() }
-  if 1u != fs_.files_created_.count("out") { t.FailNow() }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch out" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if 2u != fs_.files_read_.size() { t.Fatal("expected equal") }
+  if "dd-in" != fs_.files_read_[0] { t.Fatal("expected equal") }
+  if "dd" != fs_.files_read_[1] { t.Fatal("expected equal") }
+  if 2u + files_created != fs_.files_created_.size() { t.Fatal("expected equal") }
+  if 1u != fs_.files_created_.count("dd") { t.Fatal("expected equal") }
+  if 1u != fs_.files_created_.count("out") { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
@@ -2618,11 +2618,11 @@ func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
   fs_.Create("dd-in", "build out: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
@@ -2634,15 +2634,15 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch unrelated" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch unrelated" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
@@ -2655,14 +2655,14 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) {
@@ -2676,12 +2676,12 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) 
   fs_.Create("out2", "")
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "multiple rules generate out-twice.imp" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "multiple rules generate out-twice.imp" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) {
@@ -2699,12 +2699,12 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) 
   fs_.Create("out2", "")
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
-  if "multiple rules generate out-twice.imp" != err { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
+  if "multiple rules generate out-twice.imp" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
@@ -2716,15 +2716,15 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch in" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch in" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
@@ -2735,14 +2735,14 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
   fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
@@ -2754,24 +2754,24 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
   fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // Loading the depfile gave tmp.imp a phony input edge.
-  if GetNode("tmp.imp").in_edge().is_phony() { t.FailNow() }
+  if !GetNode("tmp.imp").in_edge().is_phony() { t.Fatal("expected true") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   // Loading the dyndep file gave tmp.imp a real input edge.
-  if !GetNode("tmp.imp").in_edge().is_phony() { t.FailNow() }
+  if GetNode("tmp.imp").in_edge().is_phony() { t.Fatal("expected false") }
 
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "cp tmp out" != command_runner_.commands_ran_[2] { t.FailNow() }
-  if 1u != fs_.files_created_.count("tmp.imp") { t.FailNow() }
-  if builder_.AlreadyUpToDate() { t.FailNow() }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "cp tmp out" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
+  if 1u != fs_.files_created_.count("tmp.imp") { t.Fatal("expected equal") }
+  if !builder_.AlreadyUpToDate() { t.Fatal("expected true") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
@@ -2783,14 +2783,14 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
   fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild tmp | tmp.imp: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
@@ -2802,14 +2802,14 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
   fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n" )
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch tmp tmp.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out out.imp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
@@ -2821,13 +2821,13 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if !builder_.Build(&err) { t.FailNow() }
+  if builder_.Build(&err) { t.Fatal("expected false") }
   // Depending on how the pointers in Plan::ready_ work out, we could have
   // discovered the cycle from either starting point.
-  if err == "dependency cycle: circ . in . circ" || err == "dependency cycle: in . circ . in" { t.FailNow() }
+  if !err == "dependency cycle: circ . in . circ" || err == "dependency cycle: in . circ . in" { t.Fatal("expected true") }
 }
 
 func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
@@ -2845,14 +2845,14 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
   // otherwise, the lack of an entry in the build log will cause "out2" to
   // rebuild regardless of restat.
   err := ""
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "true" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "cat out1 > out2" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd-in dd" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "true" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "cat out1 > out2" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 
   command_runner_.commands_ran_ = nil
   state_.Reset()
@@ -2861,11 +2861,11 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 
   // We touched "in", so we should build "out1".  But because "true" does not
   // touch "out1", we should cancel the build of "out2".
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if 1u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "true" != command_runner_.commands_ran_[0] { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if 1u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "true" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
@@ -2888,16 +2888,16 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
   // re-schedule the already-active edge.
 
   err := ""
-  if builder_.AddTarget("out1", &err) { t.FailNow() }
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
+  if !builder_.AddTarget("out1", &err) { t.Fatal("expected true") }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
   // Depending on how the pointers in Plan::ready_ work out, the first
   // two commands may have run in either order.
-  if (command_runner_.commands_ran_[0] == "touch out1 out1.imp" && command_runner_.commands_ran_[1] == "cp zdd-in zdd") || (command_runner_.commands_ran_[1] == "touch out1 out1.imp" && command_runner_.commands_ran_[0] == "cp zdd-in zdd") { t.FailNow() }
-  if "cp out1 out2" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !(command_runner_.commands_ran_[0] == "touch out1 out1.imp" && command_runner_.commands_ran_[1] == "cp zdd-in zdd") || (command_runner_.commands_ran_[1] == "touch out1 out1.imp" && command_runner_.commands_ran_[0] == "cp zdd-in zdd") { t.Fatal("expected true") }
+  if "cp out1 out2" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
@@ -2920,14 +2920,14 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
   // file is loaded to update the build graph independently.
 
   err := ""
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch out1 out1.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out2 out2.imp" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch out1 out1.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out2 out2.imp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
@@ -2948,14 +2948,14 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
   // clean without dyndep info.
 
   err := ""
-  if builder_.AddTarget("out2", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 3u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch out1 out1.imp" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch out2 out2.imp" != command_runner_.commands_ran_[2] { t.FailNow() }
+  if !builder_.AddTarget("out2", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch out1 out1.imp" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch out2 out2.imp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
@@ -2969,16 +2969,16 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 4u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "touch in" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch tmp" != command_runner_.commands_ran_[2] { t.FailNow() }
-  if "touch out" != command_runner_.commands_ran_[3] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 4u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "touch in" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch tmp" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
+  if "touch out" != command_runner_.commands_ran_[3] { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
@@ -2991,16 +2991,16 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
   fs_.Create("out", "")
 
   err := ""
-  if builder_.AddTarget("out", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !builder_.AddTarget("out", &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if builder_.Build(&err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 5u != command_runner_.commands_ran_.size() { t.FailNow() }
-  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.FailNow() }
-  if "cp dd0-in dd0" != command_runner_.commands_ran_[1] { t.FailNow() }
-  if "touch in" != command_runner_.commands_ran_[2] { t.FailNow() }
-  if "touch tmp" != command_runner_.commands_ran_[3] { t.FailNow() }
-  if "touch out" != command_runner_.commands_ran_[4] { t.FailNow() }
+  if !builder_.Build(&err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 5u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
+  if "cp dd1-in dd1" != command_runner_.commands_ran_[0] { t.Fatal("expected equal") }
+  if "cp dd0-in dd0" != command_runner_.commands_ran_[1] { t.Fatal("expected equal") }
+  if "touch in" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
+  if "touch tmp" != command_runner_.commands_ran_[3] { t.Fatal("expected equal") }
+  if "touch out" != command_runner_.commands_ran_[4] { t.Fatal("expected equal") }
 }
 

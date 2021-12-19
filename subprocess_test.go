@@ -28,46 +28,46 @@ type SubprocessTest struct {
 // Run a command that fails and emits to stderr.
 func TestSubprocessTest_BadCommandStderr(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("cmd /c ninja_no_such_command")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     // Pretend we discovered that stderr was ready for writing.
     subprocs_.DoWork()
   }
 
-  if ExitFailure != subproc.Finish() { t.FailNow() }
-  if "" == subproc.GetOutput() { t.FailNow() }
+  if ExitFailure != subproc.Finish() { t.Fatal("expected equal") }
+  if "" == subproc.GetOutput() { t.Fatal("expected different") }
 }
 
 // Run a command that does not exist
 func TestSubprocessTest_NoSuchCommand(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("ninja_no_such_command")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     // Pretend we discovered that stderr was ready for writing.
     subprocs_.DoWork()
   }
 
-  if ExitFailure != subproc.Finish() { t.FailNow() }
-  if "" == subproc.GetOutput() { t.FailNow() }
-  if "CreateProcess failed: The system cannot find the file specified.\n" != subproc.GetOutput() { t.FailNow() }
+  if ExitFailure != subproc.Finish() { t.Fatal("expected equal") }
+  if "" == subproc.GetOutput() { t.Fatal("expected different") }
+  if "CreateProcess failed: The system cannot find the file specified.\n" != subproc.GetOutput() { t.Fatal("expected equal") }
 }
 
 func TestSubprocessTest_InterruptChild(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -INT $$")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     subprocs_.DoWork()
   }
 
-  if ExitInterrupted != subproc.Finish() { t.FailNow() }
+  if ExitInterrupted != subproc.Finish() { t.Fatal("expected equal") }
 }
 
 func TestSubprocessTest_InterruptParent(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -INT $PPID ; sleep 1")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     interrupted := subprocs_.DoWork()
@@ -76,23 +76,23 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
     }
   }
 
-  if !"We should have been interrupted" { t.FailNow() }
+  if "We should have been interrupted" { t.Fatal("expected false") }
 }
 
 func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -TERM $$")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     subprocs_.DoWork()
   }
 
-  if ExitInterrupted != subproc.Finish() { t.FailNow() }
+  if ExitInterrupted != subproc.Finish() { t.Fatal("expected equal") }
 }
 
 func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -TERM $PPID ; sleep 1")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     interrupted := subprocs_.DoWork()
@@ -101,23 +101,23 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
     }
   }
 
-  if !"We should have been interrupted" { t.FailNow() }
+  if "We should have been interrupted" { t.Fatal("expected false") }
 }
 
 func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -HUP $$")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     subprocs_.DoWork()
   }
 
-  if ExitInterrupted != subproc.Finish() { t.FailNow() }
+  if ExitInterrupted != subproc.Finish() { t.Fatal("expected equal") }
 }
 
 func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
   Subprocess* subproc = subprocs_.Add("kill -HUP $PPID ; sleep 1")
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     interrupted := subprocs_.DoWork()
@@ -126,7 +126,7 @@ func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
     }
   }
 
-  if !"We should have been interrupted" { t.FailNow() }
+  if "We should have been interrupted" { t.Fatal("expected false") }
 }
 
 func TestSubprocessTest_Console(t *testing.T) {
@@ -134,27 +134,27 @@ func TestSubprocessTest_Console(t *testing.T) {
   if isatty(0) && isatty(1) && isatty(2) {
     Subprocess* subproc =
         subprocs_.Add("test -t 0 -a -t 1 -a -t 2", /*use_console=*/true)
-    if (Subprocess*)0 == subproc { t.FailNow() }
+    if (Subprocess*)0 == subproc { t.Fatal("expected different") }
 
     for !subproc.Done() {
       subprocs_.DoWork()
     }
 
-    if ExitSuccess != subproc.Finish() { t.FailNow() }
+    if ExitSuccess != subproc.Finish() { t.Fatal("expected equal") }
   }
 }
 
 func TestSubprocessTest_SetWithSingle(t *testing.T) {
   subproc := subprocs_.Add(kSimpleCommand)
-  if (Subprocess *) 0 == subproc { t.FailNow() }
+  if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
 
   for !subproc.Done() {
     subprocs_.DoWork()
   }
-  if ExitSuccess != subproc.Finish() { t.FailNow() }
-  if "" == subproc.GetOutput() { t.FailNow() }
+  if ExitSuccess != subproc.Finish() { t.Fatal("expected equal") }
+  if "" == subproc.GetOutput() { t.Fatal("expected different") }
 
-  if 1u != subprocs_.finished_.size() { t.FailNow() }
+  if 1u != subprocs_.finished_.size() { t.Fatal("expected equal") }
 }
 
 func TestSubprocessTest_SetWithMulti(t *testing.T) {
@@ -167,26 +167,26 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 
   for i := 0; i < 3; i++ {
     processes[i] = subprocs_.Add(kCommands[i])
-    if (Subprocess *) 0 == processes[i] { t.FailNow() }
+    if (Subprocess *) 0 == processes[i] { t.Fatal("expected different") }
   }
 
-  if 3u != subprocs_.running_.size() { t.FailNow() }
+  if 3u != subprocs_.running_.size() { t.Fatal("expected equal") }
   for i := 0; i < 3; i++ {
-    if !processes[i].Done() { t.FailNow() }
-    if "" != processes[i].GetOutput() { t.FailNow() }
+    if processes[i].Done() { t.Fatal("expected false") }
+    if "" != processes[i].GetOutput() { t.Fatal("expected equal") }
   }
 
   for !processes[0].Done() || !processes[1].Done() || !processes[2].Done() {
-    if subprocs_.running_.size() <= 0u { t.FailNow() }
+    if subprocs_.running_.size() <= 0u { t.Fatal("expected greater") }
     subprocs_.DoWork()
   }
 
-  if 0u != subprocs_.running_.size() { t.FailNow() }
-  if 3u != subprocs_.finished_.size() { t.FailNow() }
+  if 0u != subprocs_.running_.size() { t.Fatal("expected equal") }
+  if 3u != subprocs_.finished_.size() { t.Fatal("expected equal") }
 
   for i := 0; i < 3; i++ {
-    if ExitSuccess != processes[i].Finish() { t.FailNow() }
-    if "" == processes[i].GetOutput() { t.FailNow() }
+    if ExitSuccess != processes[i].Finish() { t.Fatal("expected equal") }
+    if "" == processes[i].GetOutput() { t.Fatal("expected different") }
     delete processes[i]
   }
 }
@@ -198,7 +198,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 
   // Make sure [ulimit -n] isn't going to stop us from working.
   var rlim rlimit
-  if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.FailNow() }
+  if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.Fatal("expected equal") }
   if rlim.rlim_cur < kNumProcs {
     printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)
     return
@@ -207,17 +207,17 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
   var procs []*Subprocess
   for i := 0; i < kNumProcs; i++ {
     Subprocess* subproc = subprocs_.Add("/bin/echo")
-    if (Subprocess *) 0 == subproc { t.FailNow() }
+    if (Subprocess *) 0 == subproc { t.Fatal("expected different") }
     procs.push_back(subproc)
   }
   for !subprocs_.running_.empty() {
     subprocs_.DoWork()
   }
   for i := 0; i < procs.size(); i++ {
-    if ExitSuccess != procs[i].Finish() { t.FailNow() }
-    if "" == procs[i].GetOutput() { t.FailNow() }
+    if ExitSuccess != procs[i].Finish() { t.Fatal("expected equal") }
+    if "" == procs[i].GetOutput() { t.Fatal("expected different") }
   }
-  if kNumProcs != subprocs_.finished_.size() { t.FailNow() }
+  if kNumProcs != subprocs_.finished_.size() { t.Fatal("expected equal") }
 }
 
 // TODO: this test could work on Windows, just not sure how to simply
@@ -229,7 +229,7 @@ func TestSubprocessTest_ReadStdin(t *testing.T) {
   for !subproc.Done() {
     subprocs_.DoWork()
   }
-  if ExitSuccess != subproc.Finish() { t.FailNow() }
-  if 1u != subprocs_.finished_.size() { t.FailNow() }
+  if ExitSuccess != subproc.Finish() { t.Fatal("expected equal") }
+  if 1u != subprocs_.finished_.size() { t.Fatal("expected equal") }
 }
 

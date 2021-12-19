@@ -18,31 +18,31 @@ package ginja
 
 
 func TestEditDistanceTest_TestEmpty(t *testing.T) {
-  if 5 != EditDistance("", "ninja") { t.FailNow() }
-  if 5 != EditDistance("ninja", "") { t.FailNow() }
-  if 0 != EditDistance("", "") { t.FailNow() }
+  if 5 != EditDistance("", "ninja") { t.Fatal("expected equal") }
+  if 5 != EditDistance("ninja", "") { t.Fatal("expected equal") }
+  if 0 != EditDistance("", "") { t.Fatal("expected equal") }
 }
 
 func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
   allow_replacements := true
   for max_distance := 1; max_distance < 7; max_distance++ {
-    if max_distance + 1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) { t.FailNow() }
+    if max_distance + 1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) { t.Fatal("expected equal") }
   }
 }
 
 func TestEditDistanceTest_TestAllowReplacements(t *testing.T) {
   allow_replacements := true
-  if 1 != EditDistance("ninja", "njnja", allow_replacements) { t.FailNow() }
-  if 1 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
+  if 1 != EditDistance("ninja", "njnja", allow_replacements) { t.Fatal("expected equal") }
+  if 1 != EditDistance("njnja", "ninja", allow_replacements) { t.Fatal("expected equal") }
 
   allow_replacements = false
-  if 2 != EditDistance("ninja", "njnja", allow_replacements) { t.FailNow() }
-  if 2 != EditDistance("njnja", "ninja", allow_replacements) { t.FailNow() }
+  if 2 != EditDistance("ninja", "njnja", allow_replacements) { t.Fatal("expected equal") }
+  if 2 != EditDistance("njnja", "ninja", allow_replacements) { t.Fatal("expected equal") }
 }
 
 func TestEditDistanceTest_TestBasics(t *testing.T) {
-  if 0 != EditDistance("browser_tests", "browser_tests") { t.FailNow() }
-  if 1 != EditDistance("browser_test", "browser_tests") { t.FailNow() }
-  if 1 != EditDistance("browser_tests", "browser_test") { t.FailNow() }
+  if 0 != EditDistance("browser_tests", "browser_tests") { t.Fatal("expected equal") }
+  if 1 != EditDistance("browser_test", "browser_tests") { t.Fatal("expected equal") }
+  if 1 != EditDistance("browser_tests", "browser_test") { t.Fatal("expected equal") }
 }
 

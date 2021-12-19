@@ -18,22 +18,22 @@ package ginja
 
 
 func TestJSONTest_RegularAscii(t *testing.T) {
-  if EncodeJSONString("foo bar") != "foo bar" { t.FailNow() }
+  if EncodeJSONString("foo bar") != "foo bar" { t.Fatal("expected equal") }
 }
 
 func TestJSONTest_EscapedChars(t *testing.T) {
-  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"\\\\\\b\\f\\n\\r\\t" { t.FailNow() }
+  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"\\\\\\b\\f\\n\\r\\t" { t.Fatal("expected equal") }
 }
 
 // codepoints between 0 and 0x1f should be escaped
 func TestJSONTest_ControlChars(t *testing.T) {
-  if EncodeJSONString("\x01\x1f") != "\\u0001\\u001f" { t.FailNow() }
+  if EncodeJSONString("\x01\x1f") != "\\u0001\\u001f" { t.Fatal("expected equal") }
 }
 
 // Leave them alone as JSON accepts unicode literals
 // out of control character range
 func TestJSONTest_UTF8(t *testing.T) {
   string utf8str = "\xe4\xbd\xa0\xe5\xa5\xbd"
-  if EncodeJSONString(utf8str) != utf8str { t.FailNow() }
+  if EncodeJSONString(utf8str) != utf8str { t.Fatal("expected equal") }
 }
 

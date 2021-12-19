@@ -26,8 +26,8 @@ type DyndepParserTest struct {
 func (d *DyndepParserTest) AssertParse(input string) {
   DyndepParser parser(&d.state_, &d.fs_, &d.dyndep_file_)
   err := ""
-  if parser.ParseTest(input, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !parser.ParseTest(input, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 }
 func (d *DyndepParserTest) SetUp() {
   ::AssertParse(&d.state_, "rule touch\n  command = touch $out\nbuild out otherout: touch\n")
@@ -38,8 +38,8 @@ func TestDyndepParserTest_Empty(t *testing.T) {
 ""
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: expected 'ninja_dyndep_version = ...'\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: expected 'ninja_dyndep_version = ...'\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_Version1(t *testing.T) {
@@ -83,8 +83,8 @@ func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
 "ninja_dyndep_version = 1.0"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unexpected EOF\nninja_dyndep_version = 1.0\n                          ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: unexpected EOF\nninja_dyndep_version = 1.0\n                          ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
@@ -92,8 +92,8 @@ func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
 "ninja_dyndep_version = 0\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unsupported 'ninja_dyndep_version = 0'\nninja_dyndep_version = 0\n                        ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: unsupported 'ninja_dyndep_version = 0'\nninja_dyndep_version = 0\n                        ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
@@ -101,8 +101,8 @@ func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
 "ninja_dyndep_version = 1.1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unsupported 'ninja_dyndep_version = 1.1'\nninja_dyndep_version = 1.1\n                          ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: unsupported 'ninja_dyndep_version = 1.1'\nninja_dyndep_version = 1.1\n                          ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
@@ -110,8 +110,8 @@ func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
 "ninja_dyndep_version = 1\nninja_dyndep_version = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected identifier\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: unexpected identifier\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
@@ -119,8 +119,8 @@ func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
 "not_ninja_dyndep_version = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: expected 'ninja_dyndep_version = ...'\nnot_ninja_dyndep_version = 1\n                            ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: expected 'ninja_dyndep_version = ...'\nnot_ninja_dyndep_version = 1\n                            ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
@@ -128,8 +128,8 @@ func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
 "build out: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: expected 'ninja_dyndep_version = ...'\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: expected 'ninja_dyndep_version = ...'\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_UnexpectedEqual(t *testing.T) {
@@ -137,8 +137,8 @@ func TestDyndepParserTest_UnexpectedEqual(t *testing.T) {
 "= 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unexpected '='\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: unexpected '='\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
@@ -146,8 +146,8 @@ func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
 " = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:1: unexpected indent\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:1: unexpected indent\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutDuplicate(t *testing.T) {
@@ -155,8 +155,8 @@ func TestDyndepParserTest_OutDuplicate(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: multiple statements for 'out'\nbuild out: dyndep\n         ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:3: multiple statements for 'out'\nbuild out: dyndep\n         ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
@@ -164,8 +164,8 @@ func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild otherout: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: multiple statements for 'otherout'\nbuild otherout: dyndep\n              ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:3: multiple statements for 'otherout'\nbuild otherout: dyndep\n              ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_NoOutEOF(t *testing.T) {
@@ -173,8 +173,8 @@ func TestDyndepParserTest_NoOutEOF(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\nbuild\n     ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: unexpected EOF\nbuild\n     ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_NoOutColon(t *testing.T) {
@@ -182,8 +182,8 @@ func TestDyndepParserTest_NoOutColon(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild :\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected path\nbuild :\n      ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: expected path\nbuild :\n      ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutNoStatement(t *testing.T) {
@@ -191,8 +191,8 @@ func TestDyndepParserTest_OutNoStatement(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild missing: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: no build statement exists for 'missing'\nbuild missing: dyndep\n             ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: no build statement exists for 'missing'\nbuild missing: dyndep\n             ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutEOF(t *testing.T) {
@@ -200,8 +200,8 @@ func TestDyndepParserTest_OutEOF(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\nbuild out\n         ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: unexpected EOF\nbuild out\n         ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutNoRule(t *testing.T) {
@@ -209,8 +209,8 @@ func TestDyndepParserTest_OutNoRule(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out:"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected build command name 'dyndep'\nbuild out:\n          ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: expected build command name 'dyndep'\nbuild out:\n          ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OutBadRule(t *testing.T) {
@@ -218,8 +218,8 @@ func TestDyndepParserTest_OutBadRule(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: touch"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: expected build command name 'dyndep'\nbuild out: touch\n           ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: expected build command name 'dyndep'\nbuild out: touch\n           ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_BuildEOF(t *testing.T) {
@@ -227,8 +227,8 @@ func TestDyndepParserTest_BuildEOF(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: unexpected EOF\nbuild out: dyndep\n                 ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: unexpected EOF\nbuild out: dyndep\n                 ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ExplicitOut(t *testing.T) {
@@ -236,8 +236,8 @@ func TestDyndepParserTest_ExplicitOut(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out exp: dyndep\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: explicit outputs not supported\nbuild out exp: dyndep\n             ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: explicit outputs not supported\nbuild out exp: dyndep\n             ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ExplicitIn(t *testing.T) {
@@ -245,8 +245,8 @@ func TestDyndepParserTest_ExplicitIn(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep exp\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: explicit inputs not supported\nbuild out: dyndep exp\n                     ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: explicit inputs not supported\nbuild out: dyndep exp\n                     ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
@@ -254,8 +254,8 @@ func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep ||\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:2: order-only inputs not supported\nbuild out: dyndep ||\n                  ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:2: order-only inputs not supported\nbuild out: dyndep ||\n                  ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_BadBinding(t *testing.T) {
@@ -263,8 +263,8 @@ func TestDyndepParserTest_BadBinding(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep\n  not_restat = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:3: binding is not 'restat'\n  not_restat = 1\n                ^ near here" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:3: binding is not 'restat'\n  not_restat = 1\n                ^ near here" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_RestatTwice(t *testing.T) {
@@ -272,142 +272,142 @@ func TestDyndepParserTest_RestatTwice(t *testing.T) {
 "ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n  restat = 1\n"
   DyndepParser parser(&state_, &fs_, &dyndep_file_)
   err := ""
-  if !parser.ParseTest(kInput, &err) { t.FailNow() }
-  if "input:4: unexpected indent\n" != err { t.FailNow() }
+  if parser.ParseTest(kInput, &err) { t.Fatal("expected false") }
+  if "input:4: unexpected indent\n" != err { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_NoImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | : dyndep |\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ImplicitIn(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep | impin\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 1u != i.second.implicit_inputs_.size() { t.FailNow() }
-  if "impin" != i.second.implicit_inputs_[0].path() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 1u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
+  if "impin" != i.second.implicit_inputs_[0].path() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ImplicitIns(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep | impin1 impin2\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 2u != i.second.implicit_inputs_.size() { t.FailNow() }
-  if "impin1" != i.second.implicit_inputs_[0].path() { t.FailNow() }
-  if "impin2" != i.second.implicit_inputs_[1].path() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 2u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
+  if "impin1" != i.second.implicit_inputs_[0].path() { t.Fatal("expected equal") }
+  if "impin2" != i.second.implicit_inputs_[1].path() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ImplicitOut(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout: dyndep\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 1u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if "impout" != i.second.implicit_outputs_[0].path() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 1u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if "impout" != i.second.implicit_outputs_[0].path() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout1 impout2 : dyndep\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 2u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if "impout1" != i.second.implicit_outputs_[0].path() { t.FailNow() }
-  if "impout2" != i.second.implicit_outputs_[1].path() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 2u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if "impout1" != i.second.implicit_outputs_[0].path() { t.Fatal("expected equal") }
+  if "impout2" != i.second.implicit_outputs_[1].path() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out | impout1 impout2: dyndep | impin1 impin2\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 2u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if "impout1" != i.second.implicit_outputs_[0].path() { t.FailNow() }
-  if "impout2" != i.second.implicit_outputs_[1].path() { t.FailNow() }
-  if 2u != i.second.implicit_inputs_.size() { t.FailNow() }
-  if "impin1" != i.second.implicit_inputs_[0].path() { t.FailNow() }
-  if "impin2" != i.second.implicit_inputs_[1].path() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 2u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if "impout1" != i.second.implicit_outputs_[0].path() { t.Fatal("expected equal") }
+  if "impout2" != i.second.implicit_outputs_[1].path() { t.Fatal("expected equal") }
+  if 2u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
+  if "impin1" != i.second.implicit_inputs_[0].path() { t.Fatal("expected equal") }
+  if "impin2" != i.second.implicit_inputs_[1].path() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_Restat(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if true != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if true != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_OtherOutput(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild otherout: dyndep\n"))
 
-  if 1u != dyndep_file_.size() { t.FailNow() }
+  if 1u != dyndep_file_.size() { t.Fatal("expected equal") }
   i := dyndep_file_.find(state_.edges_[0])
-  if i == dyndep_file_.end() { t.FailNow() }
-  if false != i.second.restat_ { t.FailNow() }
-  if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-  if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+  if i == dyndep_file_.end() { t.Fatal("expected different") }
+  if false != i.second.restat_ { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+  if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
 }
 
 func TestDyndepParserTest_MultipleEdges(t *testing.T) {
     ::AssertParse(&state_, "build out2: touch\n")
-  if 2u != state_.edges_.size() { t.FailNow() }
-  if 1u != state_.edges_[1].outputs_.size() { t.FailNow() }
-  if "out2" != state_.edges_[1].outputs_[0].path() { t.FailNow() }
-  if 0u != state_.edges_[0].inputs_.size() { t.FailNow() }
+  if 2u != state_.edges_.size() { t.Fatal("expected equal") }
+  if 1u != state_.edges_[1].outputs_.size() { t.Fatal("expected equal") }
+  if "out2" != state_.edges_[1].outputs_[0].path() { t.Fatal("expected equal") }
+  if 0u != state_.edges_[0].inputs_.size() { t.Fatal("expected equal") }
 
   ASSERT_NO_FATAL_FAILURE(AssertParse( "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out2: dyndep\n  restat = 1\n"))
 
-  if 2u != dyndep_file_.size() { t.FailNow() }
+  if 2u != dyndep_file_.size() { t.Fatal("expected equal") }
   {
     i := dyndep_file_.find(state_.edges_[0])
-    if i == dyndep_file_.end() { t.FailNow() }
-    if false != i.second.restat_ { t.FailNow() }
-    if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-    if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+    if i == dyndep_file_.end() { t.Fatal("expected different") }
+    if false != i.second.restat_ { t.Fatal("expected equal") }
+    if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+    if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
   }
   {
     i := dyndep_file_.find(state_.edges_[1])
-    if i == dyndep_file_.end() { t.FailNow() }
-    if true != i.second.restat_ { t.FailNow() }
-    if 0u != i.second.implicit_outputs_.size() { t.FailNow() }
-    if 0u != i.second.implicit_inputs_.size() { t.FailNow() }
+    if i == dyndep_file_.end() { t.Fatal("expected different") }
+    if true != i.second.restat_ { t.Fatal("expected equal") }
+    if 0u != i.second.implicit_outputs_.size() { t.Fatal("expected equal") }
+    if 0u != i.second.implicit_inputs_.size() { t.Fatal("expected equal") }
   }
 }
 

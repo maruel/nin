@@ -18,7 +18,7 @@ package ginja
 
 
 func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
-  if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") { t.FailNow() }
+  if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") { t.Fatal("expected equal") }
 }
 
 func TestMSVCHelperTest_EnvBlock(t *testing.T) {
@@ -27,13 +27,13 @@ func TestMSVCHelperTest_EnvBlock(t *testing.T) {
   cl.SetEnvBlock(env_block)
   output := ""
   cl.Run("cmd /c \"echo foo is %foo%", &output)
-  if "foo is bar\r\n" != output { t.FailNow() }
+  if "foo is bar\r\n" != output { t.Fatal("expected equal") }
 }
 
 func TestMSVCHelperTest_NoReadOfStderr(t *testing.T) {
   var cl CLWrapper
   output := ""
   cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
-  if "to stdout\r\n" != output { t.FailNow() }
+  if "to stdout\r\n" != output { t.Fatal("expected equal") }
 }
 

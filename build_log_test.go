@@ -37,25 +37,25 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
   var log1 BuildLog
   err := ""
-  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   log1.RecordCommand(state_.edges_[0], 15, 18)
   log1.RecordCommand(state_.edges_[1], 20, 25)
   log1.Close()
 
   var log2 BuildLog
-  if log2.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
-  if 2u != log1.entries().size() { t.FailNow() }
-  if 2u != log2.entries().size() { t.FailNow() }
+  if 2u != log1.entries().size() { t.Fatal("expected equal") }
+  if 2u != log2.entries().size() { t.Fatal("expected equal") }
   BuildLog::LogEntry* e1 = log1.LookupByOutput("out")
-  if e1 { t.FailNow() }
+  if !e1 { t.Fatal("expected true") }
   BuildLog::LogEntry* e2 = log2.LookupByOutput("out")
-  if e2 { t.FailNow() }
-  if *e1 == *e2 { t.FailNow() }
-  if 15 != e1.start_time { t.FailNow() }
-  if "out" != e1.output { t.FailNow() }
+  if !e2 { t.Fatal("expected true") }
+  if !*e1 == *e2 { t.Fatal("expected true") }
+  if 15 != e1.start_time { t.Fatal("expected equal") }
+  if "out" != e1.output { t.Fatal("expected equal") }
 }
 
 func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
@@ -65,29 +65,29 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
   var log BuildLog
   string contents, err
 
-  if log.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   log.Close()
 
-  if 0 != ReadFile(kTestFilename, &contents, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if 0 != ReadFile(kTestFilename, &contents, &err) { t.Fatal("expected equal") }
+  if "" != err { t.Fatal("expected equal") }
   if contents.size() >= kVersionPos {
     contents[kVersionPos] = 'X'
   }
-  if kExpectedVersion != contents { t.FailNow() }
+  if kExpectedVersion != contents { t.Fatal("expected equal") }
 
   // Opening the file anew shouldn't add a second version string.
-  if log.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   log.Close()
 
   contents = nil
-  if 0 != ReadFile(kTestFilename, &contents, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if 0 != ReadFile(kTestFilename, &contents, &err) { t.Fatal("expected equal") }
+  if "" != err { t.Fatal("expected equal") }
   if contents.size() >= kVersionPos {
     contents[kVersionPos] = 'X'
   }
-  if kExpectedVersion != contents { t.FailNow() }
+  if kExpectedVersion != contents { t.Fatal("expected equal") }
 }
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
@@ -99,11 +99,11 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if e { t.FailNow() }
+  if !e { t.Fatal("expected true") }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command def", e.command_hash))
 }
 
@@ -113,33 +113,33 @@ func TestBuildLogTest_Truncate(t *testing.T) {
   {
     var log1 BuildLog
     err := ""
-    if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     log1.RecordCommand(state_.edges_[0], 15, 18)
     log1.RecordCommand(state_.edges_[1], 20, 25)
     log1.Close()
   }
 
   var statbuf stat
-  if 0 != stat(kTestFilename, &statbuf) { t.FailNow() }
-  if statbuf.st_size <= 0 { t.FailNow() }
+  if 0 != stat(kTestFilename, &statbuf) { t.Fatal("expected equal") }
+  if statbuf.st_size <= 0 { t.Fatal("expected greater") }
 
   // For all possible truncations of the input file, assert that we don't
   // crash when parsing.
   for size := statbuf.st_size; size > 0; size-- {
     var log2 BuildLog
     err := ""
-    if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-    if "" != err { t.FailNow() }
+    if !log2.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+    if "" != err { t.Fatal("expected equal") }
     log2.RecordCommand(state_.edges_[0], 15, 18)
     log2.RecordCommand(state_.edges_[1], 20, 25)
     log2.Close()
 
-    if Truncate(kTestFilename, size, &err) { t.FailNow() }
+    if !Truncate(kTestFilename, size, &err) { t.Fatal("expected true") }
 
     var log3 BuildLog
     err = nil
-    if log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() { t.FailNow() }
+    if !log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() { t.Fatal("expected true") }
   }
 }
 
@@ -151,8 +151,8 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if err.find("version") == string::npos { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if err.find("version") == string::npos { t.Fatal("expected different") }
 }
 
 func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
@@ -163,14 +163,14 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   BuildLog::LogEntry* e = log.LookupByOutput("out with space")
-  if e { t.FailNow() }
-  if 123 != e.start_time { t.FailNow() }
-  if 456 != e.end_time { t.FailNow() }
-  if 456 != e.mtime { t.FailNow() }
+  if !e { t.Fatal("expected true") }
+  if 123 != e.start_time { t.Fatal("expected equal") }
+  if 456 != e.end_time { t.Fatal("expected equal") }
+  if 456 != e.mtime { t.Fatal("expected equal") }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
 }
 
@@ -187,21 +187,21 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if e { t.FailNow() }
-  if 123 != e.start_time { t.FailNow() }
-  if 456 != e.end_time { t.FailNow() }
-  if 456 != e.mtime { t.FailNow() }
+  if !e { t.Fatal("expected true") }
+  if 123 != e.start_time { t.Fatal("expected equal") }
+  if 456 != e.end_time { t.Fatal("expected equal") }
+  if 456 != e.mtime { t.Fatal("expected equal") }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
 
   e = log.LookupByOutput("out2")
-  if e { t.FailNow() }
-  if 456 != e.start_time { t.FailNow() }
-  if 789 != e.end_time { t.FailNow() }
-  if 789 != e.mtime { t.FailNow() }
+  if !e { t.Fatal("expected true") }
+  if 456 != e.start_time { t.Fatal("expected equal") }
+  if 789 != e.end_time { t.Fatal("expected equal") }
+  if 789 != e.mtime { t.Fatal("expected equal") }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
@@ -233,23 +233,23 @@ func TestBuildLogTest_Restat(t *testing.T) {
   fclose(f)
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if 3 != e.mtime { t.FailNow() }
+  if 3 != e.mtime { t.Fatal("expected equal") }
 
   var testDiskInterface TestDiskInterface
   char out2[] = { 'o', 'u', 't', '2', 0 }
   char* filter2[] = { out2 }
-  if log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   e = log.LookupByOutput("out")
-  if 3 != e.mtime { t.FailNow() } // unchanged, since the filter doesn't match
+  if 3 != e.mtime { t.Fatal("expected equal") } // unchanged, since the filter doesn't match
 
-  if log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   e = log.LookupByOutput("out")
-  if 4 != e.mtime { t.FailNow() }
+  if 4 != e.mtime { t.Fatal("expected equal") }
 }
 
 func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
@@ -267,17 +267,17 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
   err := ""
   var log BuildLog
-  if log.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
 
   BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if nil != e { t.FailNow() }
+  if nil != e { t.Fatal("expected equal") }
 
   e = log.LookupByOutput("out2")
-  if e { t.FailNow() }
-  if 456 != e.start_time { t.FailNow() }
-  if 789 != e.end_time { t.FailNow() }
-  if 789 != e.mtime { t.FailNow() }
+  if !e { t.Fatal("expected true") }
+  if 456 != e.start_time { t.Fatal("expected equal") }
+  if 789 != e.end_time { t.Fatal("expected equal") }
+  if 789 != e.mtime { t.Fatal("expected equal") }
   ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
 }
 
@@ -287,17 +287,17 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
   var log BuildLog
   log.RecordCommand(state_.edges_[0], 21, 22)
 
-  if 2u != log.entries().size() { t.FailNow() }
+  if 2u != log.entries().size() { t.Fatal("expected equal") }
   BuildLog::LogEntry* e1 = log.LookupByOutput("out")
-  if e1 { t.FailNow() }
+  if !e1 { t.Fatal("expected true") }
   BuildLog::LogEntry* e2 = log.LookupByOutput("out.d")
-  if e2 { t.FailNow() }
-  if "out" != e1.output { t.FailNow() }
-  if "out.d" != e2.output { t.FailNow() }
-  if 21 != e1.start_time { t.FailNow() }
-  if 21 != e2.start_time { t.FailNow() }
-  if 22 != e2.end_time { t.FailNow() }
-  if 22 != e2.end_time { t.FailNow() }
+  if !e2 { t.Fatal("expected true") }
+  if "out" != e1.output { t.Fatal("expected equal") }
+  if "out.d" != e2.output { t.Fatal("expected equal") }
+  if 21 != e1.start_time { t.Fatal("expected equal") }
+  if 21 != e2.start_time { t.Fatal("expected equal") }
+  if 22 != e2.end_time { t.Fatal("expected equal") }
+  if 22 != e2.end_time { t.Fatal("expected equal") }
 }
 
 type BuildLogRecompactTest struct {
@@ -311,8 +311,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 
   var log1 BuildLog
   err := ""
-  if log1.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+  if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
   // Record the same edge several times, to trigger recompaction
   // the next time the log is opened.
   for i := 0; i < 200; i++ {
@@ -323,21 +323,21 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 
   // Load...
   var log2 BuildLog
-  if log2.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 2u != log2.entries().size() { t.FailNow() }
-  if log2.LookupByOutput("out") { t.FailNow() }
-  if log2.LookupByOutput("out2") { t.FailNow() }
+  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 2u != log2.entries().size() { t.Fatal("expected equal") }
+  if !log2.LookupByOutput("out") { t.Fatal("expected true") }
+  if !log2.LookupByOutput("out2") { t.Fatal("expected true") }
   // ...and force a recompaction.
-  if log2.OpenForWrite(kTestFilename, *this, &err) { t.FailNow() }
+  if !log2.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
   log2.Close()
 
   // "out2" is dead, it should've been removed.
   var log3 BuildLog
-  if log2.Load(kTestFilename, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if 1u != log2.entries().size() { t.FailNow() }
-  if log2.LookupByOutput("out") { t.FailNow() }
-  if !log2.LookupByOutput("out2") { t.FailNow() }
+  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
+  if "" != err { t.Fatal("expected equal") }
+  if 1u != log2.entries().size() { t.Fatal("expected equal") }
+  if !log2.LookupByOutput("out") { t.Fatal("expected true") }
+  if log2.LookupByOutput("out2") { t.Fatal("expected false") }
 }
 
