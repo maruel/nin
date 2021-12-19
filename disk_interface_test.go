@@ -15,6 +15,7 @@
 package ginja
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -24,7 +25,6 @@ func DiskInterfaceTest(t *testing.T) RealDiskInterface {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//d := DiskInterfaceTest{temp_dir_: t.TempDir()}
 	temp_dir_ := t.TempDir()
 	if err := os.Chdir(temp_dir_); err != nil {
 		t.Fatal(err)
@@ -34,38 +34,15 @@ func DiskInterfaceTest(t *testing.T) RealDiskInterface {
 			t.Error(err)
 		}
 	})
-	return RealDiskInterface{}
+	return NewRealDiskInterface()
 }
 
-/*
-type DiskInterfaceTest struct {
-	//ScopedTempDir
-	temp_dir_ string
-	disk_     RealDiskInterface
-}
-
-/*
-func (d *DiskInterfaceTest) SetUp() {
-  // These tests do real disk accesses, so create a temp dir.
-  d.temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
-}
-func (d *DiskInterfaceTest) TearDown() {
-  d.temp_dir_.Cleanup()
-}
-*/
 func Touch(path string) bool {
-	/*
-	  FILE *f = fopen(path, "w")
-	  if f == nil {
-	    return false
-	  }
-	  return fclose(f) == 0
-	*/
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
 	if f != nil {
 		f.Close()
 	}
-	return err != nil
+	return err == nil
 }
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
@@ -89,7 +66,7 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 
 	// On POSIX systems, the errno is different if a component of the
 	// path prefix is not a directory.
-	if Touch("notadir") {
+	if !Touch("notadir") {
 		t.Fatal(1)
 	}
 	if got := disk_.Stat("notadir/nosuchfile", &err); got != -1 {
@@ -115,14 +92,14 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	err := ""
-	if Touch("file") {
-		t.FailNow()
+	if !Touch("file") {
+		t.Fatal("failed")
 	}
 	if disk_.Stat("file", &err) <= 1 {
-		t.FailNow()
+		t.Fatal("failed")
 	}
 	if "" != err {
-		t.FailNow()
+		t.Fatal(err)
 	}
 }
 
@@ -171,121 +148,263 @@ func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
 	}
 }
 
-/*
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
-  err := ""
+	t.Skip("TODO")
+	disk_ := DiskInterfaceTest(t)
+	err := ""
 
-  if !Touch("file1") { t.Fatal("expected true") }
-  if !Touch("fiLE2") { t.Fatal("expected true") }
-  if !disk_.MakeDir("subdir") { t.Fatal("expected true") }
-  if !disk_.MakeDir("subdir/subsubdir") { t.Fatal("expected true") }
-  if !Touch("subdir\\subfile1") { t.Fatal("expected true") }
-  if !Touch("subdir\\SUBFILE2") { t.Fatal("expected true") }
-  if !Touch("subdir\\SUBFILE3") { t.Fatal("expected true") }
+	if !Touch("file1") {
+		t.Fatal("expected true")
+	}
+	if !Touch("fiLE2") {
+		t.Fatal("expected true")
+	}
+	if !disk_.MakeDir("subdir") {
+		t.Fatal("expected true")
+	}
+	if !disk_.MakeDir("subdir/subsubdir") {
+		t.Fatal("expected true")
+	}
+	if !Touch("subdir\\subfile1") {
+		t.Fatal("expected true")
+	}
+	if !Touch("subdir\\SUBFILE2") {
+		t.Fatal("expected true")
+	}
+	if !Touch("subdir\\SUBFILE3") {
+		t.Fatal("expected true")
+	}
 
-  disk_.AllowStatCache(false)
-  TimeStamp parent_stat_uncached = disk_.Stat("..", &err)
-  disk_.AllowStatCache(true)
+	disk_.AllowStatCache(false)
+	parent_stat_uncached := disk_.Stat("..", &err)
+	disk_.AllowStatCache(true)
 
-  if disk_.Stat("FIle1" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("file1" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
+	if disk_.Stat("FIle1", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("file1", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if disk_.Stat("subdir/subfile2" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("sUbdir\\suBFile1" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
+	if disk_.Stat("subdir/subfile2", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("sUbdir\\suBFile1", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if disk_.Stat(".." <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("." <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("subdir" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("subdir/subsubdir" <= &err), 1 { t.Fatal("expected greater") }
-  if "" != err { t.Fatal("expected equal") }
+	if disk_.Stat("..", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat(".", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("subdir", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("subdir/subsubdir", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/.", &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/subsubdir/..", &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat(".." != &err), parent_stat_uncached { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if disk_.Stat("subdir/subsubdir" != &err), disk_.Stat("subdir/subsubdir/.", &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
+	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/.", &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/subsubdir/..", &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("..", &err) != parent_stat_uncached {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk_.Stat("subdir/subsubdir", &err) != disk_.Stat("subdir/subsubdir/.", &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  // Test error cases.
-  string bad_path("cc:\\foo")
-  if -1 != disk_.Stat(bad_path, &err) { t.Fatal("expected equal") }
-  EXPECT_NE("", err); err = nil
-  if -1 != disk_.Stat(bad_path, &err) { t.Fatal("expected equal") }
-  EXPECT_NE("", err); err = nil
-  if 0 != disk_.Stat("nosuchfile", &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
+	// Test error cases.
+	bad_path := "cc:\\foo"
+	if -1 != disk_.Stat(bad_path, &err) {
+		t.Fatal("expected equal")
+	}
+	if "" == err {
+		t.Fatal("expected error")
+	}
+	err = ""
+	if -1 != disk_.Stat(bad_path, &err) {
+		t.Fatal("expected equal")
+	}
+	if "" == err {
+		t.Fatal("expected error")
+	}
+	err = ""
+	if 0 != disk_.Stat("nosuchfile", &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
-  err := ""
-  content := ""
-  if DiskInterface::NotFound != disk_.ReadFile("foobar", &content, &err) { t.Fatal("expected equal") }
-  if "" != content { t.Fatal("expected equal") }
-  if "" == err { t.Fatal("expected different") } // actual value is platform-specific
-  err = nil
+	disk_ := DiskInterfaceTest(t)
+	err := ""
+	content := ""
+	if NotFound != disk_.ReadFile("foobar", &content, &err) {
+		t.Fatal("expected equal")
+	}
+	if "" != content {
+		t.Fatal("expected equal")
+	}
+	if "" == err {
+		t.Fatal("expected different")
+	} // actual value is platform-specific
+	err = ""
 
-  string kTestFile = "testfile"
-  FILE* f = fopen(kTestFile, "wb")
-  if !f { t.Fatal("expected true") }
-  string kTestContent = "test content\nok"
-  fprintf(f, "%s", kTestContent)
-  if 0 != fclose(f) { t.Fatal("expected equal") }
+	kTestFile := "testfile"
+	f, _ := os.OpenFile(kTestFile, os.O_CREATE|os.O_RDWR, 0o600)
+	if f == nil {
+		t.Fatal("expected true")
+	}
+	kTestContent := "test content\nok"
+	fmt.Fprintf(f, "%s", kTestContent)
+	if nil != f.Close() {
+		t.Fatal("expected equal")
+	}
 
-  if DiskInterface::Okay != disk_.ReadFile(kTestFile, &content, &err) { t.Fatal("expected equal") }
-  if kTestContent != content { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
+	if Okay != disk_.ReadFile(kTestFile, &content, &err) {
+		t.Fatal("expected equal")
+	}
+	if kTestContent != content {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 }
 
+/*
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
-  string path = "path/with/double//slash/";
-  if !disk_.MakeDirs(path) { t.Fatal("expected true") }
-  FILE* f = fopen((path + "a_file"), "w")
-  if !f { t.Fatal("expected true") }
-  if 0 != fclose(f) { t.Fatal("expected equal") }
-  string path2 = "another\\with\\back\\\\slashes\\"
-  if !disk_.MakeDirs(path2) { t.Fatal("expected true") }
-  FILE* f2 = fopen((path2 + "a_file"), "w")
-  if !f2 { t.Fatal("expected true") }
-  if 0 != fclose(f2) { t.Fatal("expected equal") }
+	disk_ := DiskInterfaceTest(t)
+	path := "path/with/double//slash/"
+	if !disk_.MakeDirs(path) {
+		t.Fatal("expected true")
+	}
+	f, _ := os.Open(path+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
+	if f == nil {
+		t.Fatal("expected true")
+	}
+	if nil != f.Close() {
+		t.Fatal("expected equal")
+	}
+	path2 := "another\\with\\back\\\\slashes\\"
+	if !disk_.MakeDirs(path2) {
+		t.Fatal("expected true")
+	}
+	f2, _ = os.OpenFile(path2+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
+	if !f2 {
+		t.Fatal("expected true")
+	}
+	if err != f2.Close() {
+		t.Fatal("expected equal")
+	}
 }
-
+*/
+/*
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
-  string kFileName = "file-to-remove"
-  if !Touch(kFileName) { t.Fatal("expected true") }
-  if 0 != disk_.RemoveFile(kFileName) { t.Fatal("expected equal") }
-  if 1 != disk_.RemoveFile(kFileName) { t.Fatal("expected equal") }
-  if 1 != disk_.RemoveFile("does not exist") { t.Fatal("expected equal") }
-  if !Touch(kFileName) { t.Fatal("expected true") }
-  if 0 != system((string("attrib +R ") + kFileName)) { t.Fatal("expected equal") }
-  if 0 != disk_.RemoveFile(kFileName) { t.Fatal("expected equal") }
-  if 1 != disk_.RemoveFile(kFileName) { t.Fatal("expected equal") }
+	disk_ := DiskInterfaceTest(t)
+	kFileName := "file-to-remove"
+	if !Touch(kFileName) {
+		t.Fatal("expected true")
+	}
+	if 0 != disk_.RemoveFile(kFileName) {
+		t.Fatal("expected equal")
+	}
+	if 1 != disk_.RemoveFile(kFileName) {
+		t.Fatal("expected equal")
+	}
+	if 1 != disk_.RemoveFile("does not exist") {
+		t.Fatal("expected equal")
+	}
+	if !Touch(kFileName) {
+		t.Fatal("expected true")
+	}
+	if 0 != system((string("attrib +R ") + kFileName)) {
+		t.Fatal("expected equal")
+	}
+	if 0 != disk_.RemoveFile(kFileName) {
+		t.Fatal("expected equal")
+	}
+	if 1 != disk_.RemoveFile(kFileName) {
+		t.Fatal("expected equal")
+	}
 }
+*/
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
-  string kDirectoryName = "directory-to-remove"
-  if !disk_.MakeDir(kDirectoryName) { t.Fatal("expected true") }
-  if 0 != disk_.RemoveFile(kDirectoryName) { t.Fatal("expected equal") }
-  if 1 != disk_.RemoveFile(kDirectoryName) { t.Fatal("expected equal") }
-  if 1 != disk_.RemoveFile("does not exist") { t.Fatal("expected equal") }
+	disk_ := DiskInterfaceTest(t)
+	kDirectoryName := "directory-to-remove"
+	if !disk_.MakeDir(kDirectoryName) {
+		t.Fatal("expected true")
+	}
+	if 0 != disk_.RemoveFile(kDirectoryName) {
+		t.Fatal("expected equal")
+	}
+	if 1 != disk_.RemoveFile(kDirectoryName) {
+		t.Fatal("expected equal")
+	}
+	if 1 != disk_.RemoveFile("does not exist") {
+		t.Fatal("expected equal")
+	}
 }
 
 type StatTest struct {
-
-  scan_ DependencyScan
-  mtimes_ map[string]TimeStamp
-  stats_ mutable vector<string>
+	StateTestWithBuiltinRules
+	scan_   DependencyScan
+	mtimes_ map[string]TimeStamp
+	stats_  []string
 }
+
+/*
 func NewStatTest() StatTest {
 	return StatTest{
 		scan_: &state_, nil, nil, this, nil,

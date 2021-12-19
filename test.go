@@ -45,14 +45,15 @@ void RegisterTest(testing::Test* (*)(), string)
 //extern testing::Test* g_current_test
 
 // Support utilities for tests.
+*/
 
 // A base test fixture that includes a State object with a
 // builtin "cat" rule.
 type StateTestWithBuiltinRules struct {
-
-  state_ State
+	state_ State
 }
 
+/*
 void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
 */
 
@@ -146,47 +147,63 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
   if !strpbrk(path, "/\\") { t.FailNow() }
   return s.state_.GetNode(path, 0)
 }
-
+*/
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
-  ManifestParser parser(state, nil, opts)
-  err := ""
-  if parser.ParseTest(input, &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
-  VerifyGraph(*state)
+	parser := NewManifestParser(state, nil, opts)
+	err := ""
+	if !parser.ParseTest(input, &err) {
+		panic(err)
+	}
+	if "" != err {
+		panic(err)
+	}
+	s.VerifyGraph(state)
 }
 
 func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
-  if BuildLog::LogEntry::HashCommand(expected) != actual { t.FailNow() }
+	panic("TODO")
+	/*
+		if HashCommand(expected) != actual {
+			panic(actual)
+		}
+	*/
 }
 
 func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
-  for e := state.edges_.begin(); e != state.edges_.end(); e++ {
-    // All edges need at least one output.
-    if !(*e).outputs_.empty() { t.FailNow() }
-    // Check that the edge's inputs have the edge as out-edge.
-    for in_node := (*e).inputs_.begin(); in_node != (*e).inputs_.end(); in_node++ {
-      out_edges := (*in_node).out_edges()
-      if find(out_edges.begin() == out_edges.end(), *e), out_edges.end() { t.FailNow() }
-    }
-    // Check that the edge's outputs have the edge as in-edge.
-    for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
-      if (*out_node).in_edge() != *e { t.FailNow() }
-    }
-  }
+	for _, e := range state.edges_ {
+		// All edges need at least one output.
+		if len(e.outputs_) == 0 {
+			panic(e.outputs_)
+		}
+		// Check that the edge's inputs have the edge as out-edge.
+		panic("TODO")
+		/*
+			for _, in_node := range e.inputs_ {
+				out_edges := in_node.out_edges()
+				if find(out_edges.begin() == out_edges.end(), *e), out_edges.end() { t.FailNow() }
+			}
+		*/
+		// Check that the edge's outputs have the edge as in-edge.
+		for _, out_node := range e.outputs_ {
+			if out_node.in_edge() != e {
+				panic(out_node)
+			}
+		}
+	}
 
-  // The union of all in- and out-edges of each nodes should be exactly edges_.
-  var node_edge_set map[*Edge]struct{}
-  for p := state.paths_.begin(); p != state.paths_.end(); p++ {
-    n := p.second
-    if n.in_edge() {
-      node_edge_set.insert(n.in_edge())
-    }
-    node_edge_set.insert(n.out_edges().begin(), n.out_edges().end())
-  }
-  set<const Edge*> edge_set(state.edges_.begin(), state.edges_.end())
-  if node_edge_set != edge_set { t.FailNow() }
+	// The union of all in- and out-edges of each nodes should be exactly edges_.
+	node_edge_set := map[*Edge]struct{}{}
+	for _, n := range state.paths_ {
+		if n.in_edge() != nil {
+			node_edge_set[n.in_edge()] = struct{}{}
+		}
+		panic("TODO")
+		//node_edge_set.insert(n.out_edges().begin(), n.out_edges().end())
+	}
+	panic("TODO")
+	//map[*Edge]struct{} edge_set(state.edges_.begin(), state.edges_.end())
+	//if node_edge_set != edge_set { t.FailNow() }
 }
-*/
 
 // "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {

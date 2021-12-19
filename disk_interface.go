@@ -314,7 +314,11 @@ func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string)
 }
 
 func (r *RealDiskInterface) RemoveFile(path string) int {
-	panic("TODO")
+	if err := os.Remove(path); err != nil {
+		// TODO: return -1?
+		return 1
+	}
+	return 0
 	/*
 		attributes := GetFileAttributes(path)
 		if attributes == INVALID_FILE_ATTRIBUTES {
@@ -355,8 +359,8 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 				return -1
 			}
 		}
+		return 0
 	*/
-	return 0
 }
 
 // Whether stat information can be cached.  Only has an effect on Windows.
@@ -364,5 +368,7 @@ func (r *RealDiskInterface) AllowStatCache(allow bool) {
 	r.use_cache_ = allow
 	if !r.use_cache_ {
 		r.cache_ = nil
+	} else if r.cache_ == nil {
+		r.cache_ = Cache{}
 	}
 }
