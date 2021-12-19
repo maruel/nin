@@ -20,9 +20,6 @@ import (
 	"strings"
 )
 
-// TODO(maruel): Remove.
-type State int
-
 const NINJA_PYTHON = "abc.py"
 const kBrowsePy = "abc"
 

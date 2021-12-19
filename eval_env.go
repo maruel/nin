@@ -54,6 +54,10 @@ func NewRule(name string) Rule {
 	return Rule{name_: name}
 }
 
+func (r *Rule) name() string {
+	return r.name_
+}
+
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
 type BindingEnv struct {

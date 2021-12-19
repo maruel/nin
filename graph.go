@@ -14,7 +14,6 @@
 
 package ginja
 
-/*
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
 type Node struct {
@@ -52,17 +51,17 @@ type Node struct {
 	id_ int
 }
 
-func NewNode(path string, slash_bits uint64) Node {
-	return Node{
+func NewNode(path string, slash_bits uint64) *Node {
+	return &Node{
 		path_:       path,
 		slash_bits_: slash_bits,
 		mtime_:      -1,
 		exists_:     ExistenceStatusUnknown,
-		in_edge_:    nil,
 		id_:         -1,
 	}
 }
 
+/*
 // Return false on error.
 func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
 	if status_known() {
@@ -70,7 +69,7 @@ func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool 
 	}
 	return Stat(disk_interface, err)
 }
-
+*/
 // Mark as not-yet-stat()ed and not dirty.
 func (n *Node) ResetState() {
 	n.mtime_ = -1
@@ -95,10 +94,12 @@ func (n *Node) path() string {
 	return n.path_
 }
 
+/*
 // Get |path()| but use slash_bits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
 	return PathDecanonicalized(n.path_, n.slash_bits_)
 }
+*/
 func (n *Node) slash_bits() uint64 {
 	return n.slash_bits_
 }
@@ -132,11 +133,11 @@ func (n *Node) id() int {
 func (n *Node) set_id(id int) {
 	n.id_ = id
 }
-func (n *Node) out_edges() *[]*Edge {
+func (n *Node) out_edges() []*Edge {
 	return n.out_edges_
 }
 func (n *Node) AddOutEdge(edge *Edge) {
-	n.out_edges_.push_back(edge)
+	n.out_edges_ = append(n.out_edges_, edge)
 }
 
 type ExistenceStatus int
@@ -159,7 +160,7 @@ type Edge struct {
 	dyndep_                  *Node
 	env_                     *BindingEnv
 	mark_                    VisitMark
-	id_                      uint
+	id_                      int
 	outputs_ready_           bool
 	deps_loaded_             bool
 	deps_missing_            bool
@@ -191,8 +192,8 @@ const (
 	VisitDone
 )
 
-func NewEdge() Edge {
-	return Edge{
+func NewEdge() *Edge {
+	return &Edge{
 		rule_:   nil,
 		pool_:   nil,
 		dyndep_: nil,
@@ -201,7 +202,7 @@ func NewEdge() Edge {
 	}
 }
 func (e *Edge) rule() *Rule {
-	return *e.rule_
+	return e.rule_
 }
 func (e *Edge) pool() *Pool {
 	return e.pool_
@@ -212,15 +213,14 @@ func (e *Edge) weight() int {
 func (e *Edge) outputs_ready() bool {
 	return e.outputs_ready_
 }
-func (e *Edge) is_implicit(index uint) bool {
-	return index >= e.inputs_.size()-e.order_only_deps_-e.implicit_deps_ &&
-		!is_order_only(index)
+func (e *Edge) is_implicit(index int) bool {
+	return index >= len(e.inputs_)-e.order_only_deps_-e.implicit_deps_ && !e.is_order_only(index)
 }
-func (e *Edge) is_order_only(index uint) bool {
-	return index >= e.inputs_.size()-e.order_only_deps_
+func (e *Edge) is_order_only(index int) bool {
+	return index >= len(e.inputs_)-e.order_only_deps_
 }
-func (e *Edge) is_implicit_out(index uint) bool {
-	return index >= e.outputs_.size()-e.implicit_outs_
+func (e *Edge) is_implicit_out(index int) bool {
+	return index >= len(e.outputs_)-e.implicit_outs_
 }
 
 /*
@@ -760,24 +760,26 @@ func (e *Edge) GetUnescapedRspfile() string {
 	env := NewEdgeEnv(this, kDoNotEscape)
 	return env.LookupVariable("rspfile")
 }
-
+*/
 func (e *Edge) Dump(prefix string) {
 	printf("%s[ ", prefix)
-	for i := e.inputs_.begin(); i != e.inputs_.end() && *i != nil; i++ {
-		printf("%s ", (*i).path())
+	for _, i := range e.inputs_ {
+		if i != nil {
+			printf("%s ", i.path())
+		}
 	}
 	printf("--%s. ", e.rule_.name())
-	for i := e.outputs_.begin(); i != e.outputs_.end() && *i != nil; i++ {
-		printf("%s ", (*i).path())
+	for _, i := range e.outputs_ {
+		printf("%s ", i.path())
 	}
-	if e.pool_ {
-		if !e.pool_.name().empty() {
+	if e.pool_ != nil {
+		if e.pool_.name() != "" {
 			printf("(in pool '%s')", e.pool_.name())
 		}
 	} else {
 		printf("(null pool?)")
 	}
-	printf("] 0x%p\n", this)
+	printf("] 0x%p\n", e)
 }
 
 func (e *Edge) is_phony() bool {
@@ -785,9 +787,10 @@ func (e *Edge) is_phony() bool {
 }
 
 func (e *Edge) use_console() bool {
-	return pool() == &kConsolePool
+	return e.pool() == &kConsolePool
 }
 
+/*
 func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
 	// of the form "build a: phony ... a ...".   Restrict our
