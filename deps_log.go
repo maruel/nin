@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "os"
 
 // As build commands run they can output extra dependency information
 // (e.g. header dependencies for C source) dynamically.  DepsLog collects
@@ -57,177 +56,170 @@ package ginja
 // wins, allowing updates to just be appended to the file.  A separate
 // repacking step can run occasionally to remove dead records.
 type DepsLog struct {
+	needs_recompaction_ bool
+	file_               *os.File
+	file_path_          string
 
-  needs_recompaction_ bool
-  file_ *FILE
-  file_path_ string
-
-  // Maps id -> Node.
-  nodes_ []*Node
-  // Maps id -> deps of that id.
-  deps_ []*Deps
-
-  DepsLogTest friend struct
+	// Maps id -> Node.
+	nodes_ []*Node
+	// Maps id -> deps of that id.
+	deps_ []*Deps
 }
+
 func NewDepsLog() DepsLog {
 	return DepsLog{
 		file_: nil,
 	}
 }
+
 // Reading (startup-time) interface.
 type Deps struct {
-  mtime TimeStamp
-  node_count int
-  nodes *Node*
-  }
-func NewDeps(mtime int64, node_count int) Deps {
+	mtime      TimeStamp
+	node_count int
+	nodes      []*Node
+}
+
+func NewDeps(mtime TimeStamp, node_count int) Deps {
 	return Deps{
-		mtime: mtime,
+		mtime:      mtime,
 		node_count: node_count,
-		nodes: new Node*[node_count],
+		nodes:      make([]*Node, node_count),
 	}
 }
-~Deps() { delete [] nodes; }
+
 // Used for tests.
 func (d *DepsLog) nodes() *[]*Node {
-	return d.nodes_
+	return &d.nodes_
 }
 func (d *DepsLog) deps() *[]*Deps {
-	return d.deps_
+	return &d.deps_
 }
-
-
-typedef __int32 int32_t
-type uint32_t unsigned __int32
 
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.
-const char kFileSignature[] = "# ninjadeps\n"
-const int kCurrentVersion = 4
+const kFileSignature = "# ninjadeps\n"
+const kCurrentVersion = 4
 
 // Record size is currently limited to less than the full 32 bit, due to
 // internal buffers having to have this size.
-const unsigned kMaxRecordSize = (1 << 19) - 1
+const kMaxRecordSize = (1 << 19) - 1
 
-DepsLog::~DepsLog() {
-  Close()
-}
-
+/*
 // Writing (build-time) interface.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
-  if d.needs_recompaction_ {
-    if !Recompact(path, err) {
-      return false
-    }
-  }
+	if d.needs_recompaction_ {
+		if !d.Recompact(path, err) {
+			return false
+		}
+	}
 
-  if !!d.file_ { panic("oops") }
-  d.file_path_ = path  // we don't actually open the file right now, but will do
-                      // so on the first write attempt
-  return true
+	if !!d.file_ {
+		panic("oops")
+	}
+	d.file_path_ = path // we don't actually open the file right now, but will do
+	// so on the first write attempt
+	return true
 }
-
+*/
+/*
 func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes *[]*Node) bool {
-  return RecordDeps(node, mtime, nodes.size(), nodes.empty() ? nil : (Node**)&nodes.front())
+	// Track whether there's any new data to be recorded.
+	made_change := false
+
+	// Assign ids to all nodes that are missing one.
+	if node.id() < 0 {
+		if !d.RecordId(node) {
+			return false
+		}
+		made_change = true
+	}
+	for i := 0; i < node_count; i++ {
+		if nodes[i].id() < 0 {
+			if !d.RecordId(nodes[i]) {
+				return false
+			}
+			made_change = true
+		}
+	}
+
+	// See if the new data is different than the existing data, if any.
+	if !made_change {
+		deps := GetDeps(node)
+		if !deps || deps.mtime != mtime || deps.node_count != node_count {
+			made_change = true
+		} else {
+			for i := 0; i < node_count; i++ {
+				if deps.nodes[i] != nodes[i] {
+					made_change = true
+					break
+				}
+			}
+		}
+	}
+
+	// Don't write anything if there's no new info.
+	if !made_change {
+		return true
+	}
+
+	// Update on-disk representation.
+	size := uint32(4 * (1 + 2 + node_count))
+	if size > kMaxRecordSize {
+		errno = ERANGE
+		return false
+	}
+
+	if !OpenForWriteIfNeeded() {
+		return false
+	}
+	size |= 0x80000000 // Deps record: set high bit.
+	if fwrite(&size, 4, 1, d.file_) < 1 {
+		return false
+	}
+	id := node.id()
+	if fwrite(&id, 4, 1, d.file_) < 1 {
+		return false
+	}
+	mtime_part := static_cast < uint32_t > (mtime & 0xffffffff)
+	if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
+		return false
+	}
+	mtime_part = static_cast < uint32_t > ((mtime >> 32) & 0xffffffff)
+	if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
+		return false
+	}
+	for i := 0; i < node_count; i++ {
+		id = nodes[i].id()
+		if fwrite(&id, 4, 1, d.file_) < 1 {
+			return false
+		}
+	}
+	if fflush(d.file_) != 0 {
+		return false
+	}
+
+	// Update in-memory representation.
+	deps := NewDeps(mtime, node_count)
+	for i := 0; i < node_count; i++ {
+		deps.nodes[i] = nodes[i]
+	}
+	UpdateDeps(node.id(), deps)
+
+	return true
 }
-
-func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, node_count int, nodes *Node*) bool {
-  // Track whether there's any new data to be recorded.
-  made_change := false
-
-  // Assign ids to all nodes that are missing one.
-  if node.id() < 0 {
-    if !RecordId(node) {
-      return false
-    }
-    made_change = true
-  }
-  for i := 0; i < node_count; i++ {
-    if nodes[i].id() < 0 {
-      if !RecordId(nodes[i]) {
-        return false
-      }
-      made_change = true
-    }
-  }
-
-  // See if the new data is different than the existing data, if any.
-  if !made_change {
-    deps := GetDeps(node)
-    if !deps || deps.mtime != mtime || deps.node_count != node_count {
-      made_change = true
-    } else {
-      for i := 0; i < node_count; i++ {
-        if deps.nodes[i] != nodes[i] {
-          made_change = true
-          break
-        }
-      }
-    }
-  }
-
-  // Don't write anything if there's no new info.
-  if !made_change {
-    return true
-  }
-
-  // Update on-disk representation.
-  unsigned size = 4 * (1 + 2 + node_count)
-  if size > kMaxRecordSize {
-    errno = ERANGE
-    return false
-  }
-
-  if !OpenForWriteIfNeeded() {
-    return false
-  }
-  size |= 0x80000000  // Deps record: set high bit.
-  if fwrite(&size, 4, 1, d.file_) < 1 {
-    return false
-  }
-  id := node.id()
-  if fwrite(&id, 4, 1, d.file_) < 1 {
-    return false
-  }
-  mtime_part := static_cast<uint32_t>(mtime & 0xffffffff)
-  if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
-    return false
-  }
-  mtime_part = static_cast<uint32_t>((mtime >> 32) & 0xffffffff)
-  if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
-    return false
-  }
-  for i := 0; i < node_count; i++ {
-    id = nodes[i].id()
-    if fwrite(&id, 4, 1, d.file_) < 1 {
-      return false
-    }
-  }
-  if fflush(d.file_) != 0 {
-    return false
-  }
-
-  // Update in-memory representation.
-  deps := new Deps(mtime, node_count)
-  for i := 0; i < node_count; i++ {
-    deps.nodes[i] = nodes[i]
-  }
-  UpdateDeps(node.id(), deps)
-
-  return true
-}
-
+*/
 func (d *DepsLog) Close() {
-  OpenForWriteIfNeeded()  // create the file even if nothing has been recorded
-  if d.file_ {
-    fclose(d.file_)
-  }
-  d.file_ = nil
+	d.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
+	if d.file_ != nil {
+		d.file_.Close()
+	}
+	d.file_ = nil
 }
 
+/*
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   METRIC_RECORD(".ninja_deps load")
-  char buf[kMaxRecordSize + 1]
+	buf := [kMaxRecordSize + 1]byte{}
   FILE* f = fopen(path, "rb")
   if f == nil {
     if errno == ENOENT {
@@ -371,31 +363,32 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
   return LOAD_SUCCESS
 }
-
-func (d *DepsLog) GetDeps(node *Node) *DepsLog::Deps {
-  // Abort if the node has no id (never referenced in the deps) or if
-  // there's no deps recorded for the node.
-  if node.id() < 0 || node.id() >= (int)d.deps_.size() {
-    return nil
-  }
-  return d.deps_[node.id()]
+*/
+func (d *DepsLog) GetDeps(node *Node) *Deps {
+	// Abort if the node has no id (never referenced in the deps) or if
+	// there's no deps recorded for the node.
+	if node.id() < 0 || node.id() >= len(d.deps_) {
+		return nil
+	}
+	return d.deps_[node.id()]
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
-  for id := 0; id < d.deps_.size(); id++ {
-    deps := d.deps_[id]
-    if deps == nil {
-      continue
-    }
-    for i := 0; i < deps.node_count; i++ {
-      if deps.nodes[i] == node {
-        return d.nodes_[id]
-      }
-    }
-  }
-  return nil
+	for id := 0; id < len(d.deps_); id++ {
+		deps := d.deps_[id]
+		if deps == nil {
+			continue
+		}
+		for i := 0; i < deps.node_count; i++ {
+			if deps.nodes[i] == node {
+				return d.nodes_[id]
+			}
+		}
+	}
+	return nil
 }
 
+/*
 // Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
   METRIC_RECORD(".ninja_deps recompact")
@@ -461,15 +454,16 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 // this is the case for a given node.  This function is slow, don't call
 // it from code that runs on every build.
 func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
-  // Skip entries that don't have in-edges or whose edges don't have a
-  // "deps" attribute. They were in the deps log from previous builds, but
-  // the the files they were for were removed from the build and their deps
-  // entries are no longer needed.
-  // (Without the check for "deps", a chain of two or more nodes that each
-  // had deps wouldn't be collected in a single recompaction.)
-  return node.in_edge() && !node.in_edge().GetBinding("deps").empty()
+	// Skip entries that don't have in-edges or whose edges don't have a
+	// "deps" attribute. They were in the deps log from previous builds, but
+	// the the files they were for were removed from the build and their deps
+	// entries are no longer needed.
+	// (Without the check for "deps", a chain of two or more nodes that each
+	// had deps wouldn't be collected in a single recompaction.)
+	return node.in_edge() && !node.in_edge().GetBinding("deps").empty()
 }
-
+*/
+/*
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
@@ -484,7 +478,8 @@ func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
   d.deps_[out_id] = deps
   return delete_old
 }
-
+*/
+/*
 // Write a node name record, assigning it an id.
 func (d *DepsLog) RecordId(node *Node) bool {
   path_size := node.path().size()
@@ -496,7 +491,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
     return false
   }
 
-  if !OpenForWriteIfNeeded() {
+  if !d.OpenForWriteIfNeeded() {
     return false
   }
   if fwrite(&size, 4, 1, d.file_) < 1 {
@@ -523,40 +518,42 @@ func (d *DepsLog) RecordId(node *Node) bool {
 
   return true
 }
+*/
 
 // Should be called before using file_. When false is returned, errno will
 // be set.
 func (d *DepsLog) OpenForWriteIfNeeded() bool {
-  if d.file_path_.empty() {
-    return true
-  }
-  d.file_ = fopen(d.file_path_, "ab")
-  if !d.file_ {
-    return false
-  }
-  // Set the buffer size to this and flush the file buffer after every record
-  // to make sure records aren't written partially.
-  if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize + 1) != 0 {
-    return false
-  }
-  SetCloseOnExec(fileno(d.file_))
+	if d.file_path_ == "" {
+		return true
+	}
+	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE, 0o644)
+	if d.file_ == nil {
+		return false
+	}
+	/*
+		// Set the buffer size to this and flush the file buffer after every record
+		// to make sure records aren't written partially.
+		if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize+1) != 0 {
+			return false
+		}
+		SetCloseOnExec(fileno(d.file_))
 
-  // Opening a file in append mode doesn't set the file pointer to the file's
-  // end on Windows. Do that explicitly.
-  fseek(d.file_, 0, SEEK_END)
+		// Opening a file in append mode doesn't set the file pointer to the file's
+		// end on Windows. Do that explicitly.
+		fseek(d.file_, 0, SEEK_END)
 
-  if ftell(d.file_) == 0 {
-    if fwrite(kFileSignature, sizeof(kFileSignature) - 1, 1, d.file_) < 1 {
-      return false
-    }
-    if fwrite(&kCurrentVersion, 4, 1, d.file_) < 1 {
-      return false
-    }
-  }
-  if fflush(d.file_) != 0 {
-    return false
-  }
-  d.file_path_ = nil
-  return true
+		if ftell(d.file_) == 0 {
+			if fwrite(kFileSignature, sizeof(kFileSignature)-1, 1, d.file_) < 1 {
+				return false
+			}
+			if fwrite(&kCurrentVersion, 4, 1, d.file_) < 1 {
+				return false
+			}
+		}
+		if fflush(d.file_) != 0 {
+			return false
+		}
+	*/
+	d.file_path_ = ""
+	return true
 }
-
