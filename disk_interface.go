@@ -280,28 +280,11 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 	}
 	return 0
 }
+*/
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
-	fp := fopen(path, "w")
-	if fp == nil {
-		Error("WriteFile(%s): Unable to create file. %s", path, strerror(errno))
-		return false
-	}
-
-	if fwrite(contents.data(), 1, contents.length(), fp) < contents.length() {
-		Error("WriteFile(%s): Unable to write to the file. %s", path, strerror(errno))
-		fclose(fp)
-		return false
-	}
-
-	if fclose(fp) == EOF {
-		Error("WriteFile(%s): Unable to close the file. %s", path, strerror(errno))
-		return false
-	}
-
-	return true
+	return ioutil.WriteFile(path, []byte(contents), 0o755) == nil
 }
-*/
 
 func (r *RealDiskInterface) MakeDir(path string) bool {
 	/*
