@@ -234,7 +234,6 @@ type EdgeSet map[Edge*, EdgeCmp]struct{}
 
 type EdgeSet map[*Edge]struct{}
 
-/*
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
@@ -244,6 +243,7 @@ type ImplicitDepLoader struct {
 	depfile_parser_options_ *DepfileParserOptions
 }
 
+/*
 func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
 		state_:                  state,
@@ -255,7 +255,7 @@ func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskI
 func (i *ImplicitDepLoader) deps_log() *DepsLog {
 	return i.deps_log_
 }
-
+*/
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
 type DependencyScan struct {
@@ -265,6 +265,7 @@ type DependencyScan struct {
 	dyndep_loader_  DyndepLoader
 }
 
+/*
 func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
 		build_log_:      build_log,
@@ -638,7 +639,7 @@ func (e *Edge) AllInputsReady() bool {
 	}
 	return true
 }
-
+*/
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
 	lookups_       []string
@@ -653,6 +654,7 @@ const (
 	kDoNotEscape
 )
 
+/*
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	return EdgeEnv{
 		edge_:          edge,

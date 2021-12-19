@@ -14,7 +14,6 @@
 
 package ginja
 
-/*
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
@@ -35,6 +34,8 @@ type Plan struct {
 	// Total remaining number of wanted edges.
 	wanted_edges_ int
 }
+
+/*
 
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
@@ -126,7 +127,6 @@ const (
 	VERBOSE
 )
 
-/*
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
 	state_          *State
@@ -144,6 +144,8 @@ type Builder struct {
 	disk_interface_ *DiskInterface
 	scan_           DependencyScan
 }
+
+/*
 
 // Used for tests.
 func (b *Builder) SetBuildLog(log *BuildLog) {
