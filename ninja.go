@@ -64,7 +64,6 @@ type NinjaMain struct {
 	start_time_millis_ int64
 }
 
-/*
 func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	return NinjaMain{
 		ninja_command_:     ninja_command,
@@ -73,29 +72,28 @@ func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	}
 }
 
-typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
+//typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 func (n *NinjaMain) IsPathDead(s string) bool {
-  n := n.state_.LookupNode(s)
-  if n && n.in_edge() {
-    return false
-  }
-  // Just checking n isn't enough: If an old output is both in the build log
-  // and in the deps log, it will have a Node object in state_.  (It will also
-  // have an in edge if one of its inputs is another output that's in the deps
-  // log, but having a deps edge product an output that's input to another deps
-  // edge is rare, and the first recompaction will delete all old outputs from
-  // the deps log, and then a second recompaction will clear the build log,
-  // which seems good enough for this corner case.)
-  // Do keep entries around for files which still exist on disk, for
-  // generators that want to use this information.
-  err := ""
-  mtime := n.disk_interface_.Stat(s.AsString(), &err)
-  if mtime == -1 {
-    Error("%s", err)  // Log and ignore Stat() errors.
-  }
-  return mtime == 0
+	nd := n.state_.LookupNode(s)
+	if nd != nil && nd.in_edge() != nil {
+		return false
+	}
+	// Just checking nd isn't enough: If an old output is both in the build log
+	// and in the deps log, it will have a Node object in state_.  (It will also
+	// have an in edge if one of its inputs is another output that's in the deps
+	// log, but having a deps edge product an output that's input to another deps
+	// edge is rare, and the first recompaction will delete all old outputs from
+	// the deps log, and then a second recompaction will clear the build log,
+	// which seems good enough for this corner case.)
+	// Do keep entries around for files which still exist on disk, for
+	// generators that want to use this information.
+	err := ""
+	mtime := n.disk_interface_.Stat(s, &err)
+	if mtime == -1 {
+		Error("%s", err) // Log and ignore Stat() errors.
+	}
+	return mtime == 0
 }
-*/
 
 // Subtools, accessible via "-t foo".
 type Tool struct {
@@ -1087,12 +1085,12 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
 
 // Dump the output requested by '-d stats'.
 func (n *NinjaMain) DumpMetrics() {
-  g_metrics.Report()
+	g_metrics.Report()
 
-  printf("\n")
-  count := (int)n.state_.paths_.size()
-  buckets := (int)n.state_.paths_.bucket_count()
-  printf("path.node hash load %.2f (%d entries / %d buckets)\n", count / (double) buckets, count, buckets)
+	printf("\n")
+	count := len(n.state_.paths_)
+	buckets := n.state_.paths_.bucket_count()
+	printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
 }
 
 // Ensure the build directory exists, creating it if necessary.
@@ -1271,7 +1269,7 @@ func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) i
 func main() {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing NinjaMain.
-	//config := BuildConfig{}
+	config := BuildConfig{}
 	options := Options{}
 	options.input_file = "build.ninja"
 	options.dupe_edges_should_err = true
@@ -1285,22 +1283,21 @@ func main() {
 	    exit(exit_code)
 	  }
 	*/
-	//status := NewStatusPrinter(&config)
+	status := NewStatusPrinter(&config)
+	if options.working_dir != "" {
+		// The formatting of this string, complete with funny quotes, is
+		// so Emacs can properly identify that the cwd has changed for
+		// subsequent commands.
+		// Don't print this if a tool is being used, so that tool output
+		// can be piped into a file without this string showing up.
+		if options.tool == nil && config.verbosity != NO_STATUS_UPDATE {
+			status.Info("Entering directory `%s'", options.working_dir)
+		}
+		if err := os.Chdir(options.working_dir); err != nil {
+			Fatal("chdir to '%s' - %s", options.working_dir, err)
+		}
+	}
 	/*
-	  if options.working_dir {
-	    // The formatting of this string, complete with funny quotes, is
-	    // so Emacs can properly identify that the cwd has changed for
-	    // subsequent commands.
-	    // Don't print this if a tool is being used, so that tool output
-	    // can be piped into a file without this string showing up.
-	    if !options.tool && config.verbosity != BuildConfig::NO_STATUS_UPDATE {
-	      status.Info("Entering directory `%s'", options.working_dir)
-	    }
-	    if chdir(options.working_dir) < 0 {
-	      Fatal("chdir to '%s' - %s", options.working_dir, strerror(errno))
-	    }
-	  }
-
 	  if options.tool && options.tool.when == Tool::RUN_AFTER_FLAGS {
 	    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
 	    // by other tools.

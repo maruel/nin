@@ -232,55 +232,57 @@ func MakeDirs(d DiskInterface, path string) bool {
 	}
 	return MakeDir(dir)
 }
+*/
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
-	METRIC_RECORD("node stat")
-	// MSDN: "Naming Files, Paths, and Namespaces"
-	// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-	if !path.empty() && path[0] != '\\' && path.size() > MAX_PATH {
-		var err_stream ostringstream
-		//err_stream << "Stat(" << path << "): Filename longer than " << MAX_PATH << " characters"
-		*err = err_stream.str()
-		return -1
-	}
-	if !r.use_cache_ {
-		return StatSingleFile(path, err)
-	}
-
-	dir := DirName(path)
-	o := 0
-	if dir.size() != 0 {
-		o = dir.size() + 1
-	}
-	base := path[o:]
-	if base == ".." {
-		// StatAllFilesInDir does not report any information for base = "..".
-		base = "."
-		dir = path
-	}
-
-	dir = strings.ToLower(dir)
-	base = strings.ToLower(base)
-
-	ci := r.cache_.find(dir)
-	if ci == r.cache_.end() {
-		ci = r.cache_.insert(make_pair(dir, DirCache())).first
-		s := "."
-		if !dir.empty() {
-			s = dir
-		}
-		if !StatAllFilesInDir(s, &ci.second, err) {
-			r.cache_.erase(ci)
+	/*
+		METRIC_RECORD("node stat")
+		// MSDN: "Naming Files, Paths, and Namespaces"
+		// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+		if !path.empty() && path[0] != '\\' && path.size() > MAX_PATH {
+			var err_stream ostringstream
+			//err_stream << "Stat(" << path << "): Filename longer than " << MAX_PATH << " characters"
+			*err = err_stream.str()
 			return -1
 		}
-	}
-	di := ci.second.find(base)
-	if di != ci.second.end() {
-		return di.second
-	}
+		if !r.use_cache_ {
+			return StatSingleFile(path, err)
+		}
+
+		dir := DirName(path)
+		o := 0
+		if dir.size() != 0 {
+			o = dir.size() + 1
+		}
+		base := path[o:]
+		if base == ".." {
+			// StatAllFilesInDir does not report any information for base = "..".
+			base = "."
+			dir = path
+		}
+
+		dir = strings.ToLower(dir)
+		base = strings.ToLower(base)
+
+		ci := r.cache_.find(dir)
+		if ci == r.cache_.end() {
+			ci = r.cache_.insert(make_pair(dir, DirCache())).first
+			s := "."
+			if !dir.empty() {
+				s = dir
+			}
+			if !StatAllFilesInDir(s, &ci.second, err) {
+				r.cache_.erase(ci)
+				return -1
+			}
+		}
+		di := ci.second.find(base)
+		if di != ci.second.end() {
+			return di.second
+		}
+	*/
 	return 0
 }
-*/
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
 	return ioutil.WriteFile(path, []byte(contents), 0o755) == nil
