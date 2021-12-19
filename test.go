@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
-
+/*
 // A tiny testing framework inspired by googletest, but much simpler and
 // faster to compile. It supports most things commonly used from googltest. The
 // most noticeable things missing: EXPECT_* and ASSERT_* don't support
@@ -56,48 +54,51 @@ type StateTestWithBuiltinRules struct {
 }
 
 void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
+*/
 
 // An implementation of DiskInterface that uses an in-memory representation
 // of disk state.  It also logs file accesses and directory creations
 // so it can be used by tests to verify disk access patterns.
 type VirtualFileSystem struct {
+	directories_made_ []string
+	files_read_       []string
+	files_            FileMap
+	files_removed_    map[string]struct{}
+	files_created_    map[string]struct{}
 
-  directories_made_ []string
-  files_read_ []string
-  files_ FileMap
-  files_removed_ map[string]struct{}
-  files_created_ map[string]struct{}
-
-  // A simple fake timestamp for file operations.
-  now_ int
+	// A simple fake timestamp for file operations.
+	now_ int
 }
+
 func NewVirtualFileSystem() VirtualFileSystem {
 	return VirtualFileSystem{
 		now_: 1,
 	}
 }
+
 // Tick "time" forwards; subsequent file operations will be newer than
 // previous ones.
 func (v *VirtualFileSystem) Tick() int {
-  return ++v.now_
+	v.now_++
+	return v.now_
 }
+
 // An entry for a single in-memory file.
 type Entry struct {
-  mtime int
-  stat_error string  // If mtime is -1.
-  contents string
-  }
+	mtime      TimeStamp
+	stat_error string // If mtime is -1.
+	contents   string
+}
 type FileMap map[string]Entry
 
 type ScopedTempDir struct {
-
-  // The temp directory containing our dir.
-  start_dir_ string
-  // The subdirectory name for our dir, or empty if it hasn't been set up.
-  temp_dir_name_ string
+	// The temp directory containing our dir.
+	start_dir_ string
+	// The subdirectory name for our dir, or empty if it hasn't been set up.
+	temp_dir_name_ string
 }
 
-
+/*
 //extern "C" {
         //extern char* mkdtemp(char* name_template)
 
@@ -185,59 +186,68 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
   set<const Edge*> edge_set(state.edges_.begin(), state.edges_.end())
   if node_edge_set != edge_set { t.FailNow() }
 }
+*/
 
 // "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {
-  v.files_[path].mtime = v.now_
-  v.files_[path].contents = contents
-  v.files_created_.insert(path)
+	panic("TODO")
+	/*
+		v.files_[path].mtime = v.now_
+		v.files_[path].contents = contents
+		v.files_created_.insert(path)
+	*/
 }
 
 // DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
-  i := v.files_.find(path)
-  if i != v.files_.end() {
-    *err = i.second.stat_error
-    return i.second.mtime
-  }
-  return 0
+	i, ok := v.files_[path]
+	if ok {
+		*err = i.stat_error
+		return i.mtime
+	}
+	return 0
 }
 
 func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
-  Create(path, contents)
-  return true
+	v.Create(path, contents)
+	return true
 }
 
 func (v *VirtualFileSystem) MakeDir(path string) bool {
-  v.directories_made_.push_back(path)
-  return true  // success
+	v.directories_made_ = append(v.directories_made_, path)
+	return true // success
 }
 
-func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) FileReader::Status {
-  v.files_read_.push_back(path)
-  i := v.files_.find(path)
-  if i != v.files_.end() {
-    *contents = i.second.contents
-    return Okay
-  }
-  *err = strerror(ENOENT)
-  return NotFound
+func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) DiskStatus {
+	v.files_read_ = append(v.files_read_, path)
+	i, ok := v.files_[path]
+	if ok {
+		*contents = i.contents
+		return Okay
+	}
+	*err = "Not found"
+	return NotFound
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {
-  if find(v.directories_made_.begin(), v.directories_made_.end(), path) != v.directories_made_.end() {
-    return -1
-  }
-  i := v.files_.find(path)
-  if i != v.files_.end() {
-    v.files_.erase(i)
-    v.files_removed_.insert(path)
-    return 0
-  } else {
-    return 1
-  }
+	panic("TODO")
+	/*
+		if find(v.directories_made_.begin(), v.directories_made_.end(), path) != v.directories_made_.end() {
+			return -1
+		}
+		i := v.files_.find(path)
+		if i != v.files_.end() {
+			v.files_.erase(i)
+			v.files_removed_.insert(path)
+			return 0
+		} else {
+			return 1
+		}
+	*/
+	return 0
 }
 
+/*
 // Create a temporary directory and chdir into it.
 func (s *ScopedTempDir) CreateAndEnter(name string) {
   // First change into the system temp dir and save it for cleanup.
@@ -283,4 +293,4 @@ func (s *ScopedTempDir) Cleanup() {
 
   s.temp_dir_name_ = nil
 }
-
+*/

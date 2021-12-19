@@ -404,7 +404,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				return m.lexer_.Error("empty path", err)
 			}
 			var slash_bits uint64
-			CanonicalizePath(&path, &slash_bits)
+			path = CanonicalizePath(path, &slash_bits)
 			if !m.state_.AddOut(edge, path, slash_bits) {
 				if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
 					m.lexer_.Error("multiple rules generate "+path, err)
@@ -481,27 +481,25 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
-	/*
-	  var eval EvalString
-	  if !m.lexer_.ReadPath(&eval, err) {
-	    return false
-	  }
-	  path := eval.Evaluate(m.env_)
+	var eval EvalString
+	if !m.lexer_.ReadPath(&eval, err) {
+		return false
+	}
+	path := eval.Evaluate(m.env_)
 
-	  ManifestParser subparser(m.state_, m.file_reader_, m.options_)
-	  if new_scope {
-	    subparser.env_ = new BindingEnv(m.env_)
-	  } else {
-	    subparser.env_ = m.env_
-	  }
+	subparser := NewManifestParser(m.state_, m.file_reader_, m.options_)
+	if new_scope {
+		subparser.env_ = NewBindingEnv(m.env_)
+	} else {
+		subparser.env_ = m.env_
+	}
 
-	  if !subparser.Load(path, err, &m.lexer_) {
-	    return false
-	  }
+	if !subparser.Load(path, err, &m.lexer_) {
+		return false
+	}
 
-	  if !m.ExpectToken(NEWLINE, err) {
-	    return false
-	  }
-	*/
+	if !m.ExpectToken(NEWLINE, err) {
+		return false
+	}
 	return true
 }
