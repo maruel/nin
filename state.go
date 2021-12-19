@@ -75,9 +75,11 @@ type DelayedEdges map[*Edge]struct{}
 
 // Global state (file status) for a single run.
 type State struct {
-	kDefaultPool Pool
-	kConsolePool Pool
-	kPhonyRule   Rule
+	/*
+		kDefaultPool Pool
+		kConsolePool Pool
+		kPhonyRule   Rule
+	*/
 
 	// Mapping of path -> Node.
 	paths_ Paths
@@ -88,7 +90,7 @@ type State struct {
 	// All the edges of the graph.
 	edges_ []*Edge
 
-	bindings_ BindingEnv
+	bindings_ *BindingEnv
 	defaults_ []*Node
 }
 
@@ -146,43 +148,43 @@ func (p *Pool) Dump() {
 }
 
 var (
-	kDefaultPool Pool //("", 0)
-	kConsolePool Pool //("console", 1)
-	kPhonyRule   Rule //("phony")
+	kDefaultPool = NewPool("", 0)
+	kConsolePool = NewPool("console", 1)
+	kPhonyRule   = NewRule("phony")
 )
 
 func NewState() State {
-	s := State{}
-	s.bindings_.AddRule(&kPhonyRule)
-	s.AddPool(&kDefaultPool)
-	s.AddPool(&kConsolePool)
+	s := State{
+		paths_:    Paths{},
+		pools_:    map[string]*Pool{},
+		bindings_: NewBindingEnv(nil),
+	}
+	s.bindings_.AddRule(kPhonyRule)
+	s.AddPool(kDefaultPool)
+	s.AddPool(kConsolePool)
 	return s
 }
 
 func (s *State) AddPool(pool *Pool) {
 	if s.LookupPool(pool.name()) != nil {
-		panic("oops")
+		panic(pool.name())
 	}
 	s.pools_[pool.name()] = pool
 }
 
 func (s *State) LookupPool(pool_name string) *Pool {
-	/*
-		i := s.pools_.find(pool_name)
-		if i == s.pools_.end() {
-			return nil
-		}
-		return i.second
-	*/
-	panic(nil)
-	return nil
+	i, ok := s.pools_[pool_name]
+	if !ok {
+		return nil
+	}
+	return i
 }
 
 func (s *State) AddEdge(rule *Rule) *Edge {
 	edge := NewEdge()
 	edge.rule_ = rule
-	edge.pool_ = &kDefaultPool
-	edge.env_ = &s.bindings_
+	edge.pool_ = kDefaultPool
+	edge.env_ = s.bindings_
 	edge.id_ = len(s.edges_)
 	s.edges_ = append(s.edges_, edge)
 	return edge

@@ -60,7 +60,7 @@ func NewManifestParser(state *State, file_reader FileReader, options ManifestPar
 	return ManifestParser{
 		Parser:   NewParser(state, file_reader),
 		options_: options,
-		env_:     &state.bindings_,
+		env_:     state.bindings_,
 	}
 }
 

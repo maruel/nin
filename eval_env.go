@@ -51,7 +51,10 @@ type Rule struct {
 }
 
 func NewRule(name string) *Rule {
-	return &Rule{name_: name}
+	return &Rule{
+		name_:     name,
+		bindings_: make(Bindings),
+	}
 }
 
 func (r *Rule) name() string {

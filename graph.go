@@ -723,21 +723,21 @@ func (e *EdgeEnv) MakePathList(span **Node, size uint, sep char) string {
 	}
 	return result
 }
-
+*/
 // Expand all variables in a command and return it as a string.
 // If incl_rsp_file is enabled, the string will also contain the
 // full contents of a response file (if applicable)
 func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
-	command := GetBinding("command")
+	command := e.GetBinding("command")
 	if incl_rsp_file {
-		rspfile_content := GetBinding("rspfile_content")
+		rspfile_content := e.GetBinding("rspfile_content")
 		if rspfile_content != "" {
 			command += ";rspfile=" + rspfile_content
 		}
 	}
 	return command
 }
-*/
+
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
 	//env := NewEdgeEnv(e, kShellEscape)
@@ -795,11 +795,11 @@ func (e *Edge) Dump(prefix string) {
 }
 
 func (e *Edge) is_phony() bool {
-	return e.rule_ == &kPhonyRule
+	return e.rule_ == kPhonyRule
 }
 
 func (e *Edge) use_console() bool {
-	return e.pool() == &kConsolePool
+	return e.pool() == kConsolePool
 }
 
 /*
@@ -1023,7 +1023,7 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 		return
 	}
 
-	phony_edge := i.state_.AddEdge(&kPhonyRule)
+	phony_edge := i.state_.AddEdge(kPhonyRule)
 	phony_edge.generated_by_dep_loader_ = true
 	node.set_in_edge(phony_edge)
 	phony_edge.outputs_ = append(phony_edge.outputs_, node)

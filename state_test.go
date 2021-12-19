@@ -12,33 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "testing"
 
 func TestState_Basic(t *testing.T) {
-  var state State
+	state := NewState()
 
-  var command EvalString
-  command.AddText("cat ")
-  command.AddSpecial("in")
-  command.AddText(" > ")
-  command.AddSpecial("out")
+	var command EvalString
+	command.AddText("cat ")
+	command.AddSpecial("in")
+	command.AddText(" > ")
+	command.AddSpecial("out")
 
-  Rule* rule = new Rule("cat")
-  rule.AddBinding("command", command)
-  state.bindings_.AddRule(rule)
+	rule := NewRule("cat")
+	rule.AddBinding("command", &command)
+	state.bindings_.AddRule(rule)
 
-  edge := state.AddEdge(rule)
-  state.AddIn(edge, "in1", 0)
-  state.AddIn(edge, "in2", 0)
-  state.AddOut(edge, "out", 0)
+	edge := state.AddEdge(rule)
+	state.AddIn(edge, "in1", 0)
+	state.AddIn(edge, "in2", 0)
+	state.AddOut(edge, "out", 0)
 
-  if "cat in1 in2 > out" != edge.EvaluateCommand() { t.FailNow() }
+	/* TODO
+	if got := edge.EvaluateCommand(false); got != "cat in1 in2 > out" {
+		t.Fatal(got)
+	}
 
-  if !state.GetNode("in1", 0).dirty() { t.FailNow() }
-  if !state.GetNode("in2", 0).dirty() { t.FailNow() }
-  if !state.GetNode("out", 0).dirty() { t.FailNow() }
+	if !state.GetNode("in1", 0).dirty() {
+		t.FailNow()
+	}
+	if !state.GetNode("in2", 0).dirty() {
+		t.FailNow()
+	}
+	if !state.GetNode("out", 0).dirty() {
+		t.FailNow()
+	}
+	*/
 }
-
