@@ -656,7 +656,6 @@ const (
 	kDoNotEscape
 )
 
-/*
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	return EdgeEnv{
 		edge_:          edge,
@@ -664,6 +663,7 @@ func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	}
 }
 
+/*
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
 		explicit_deps_count := e.edge_.inputs_.size() - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
@@ -737,13 +737,15 @@ func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
 	}
 	return command
 }
-
+*/
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
-	env := NewEdgeEnv(this, kShellEscape)
-	return env.LookupVariable(key)
+	//env := NewEdgeEnv(e, kShellEscape)
+	// TODO: return env.LookupVariable(key)
+	return ""
 }
 
+/*
 func (e *Edge) GetBindingBool(key string) bool {
 	return !GetBinding(key).empty()
 }

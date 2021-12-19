@@ -14,12 +14,17 @@
 
 package ginja
 
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
+
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
 type Status interface {
 }
 
-/*
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
 type StatusPrinter struct {
@@ -34,12 +39,6 @@ type StatusPrinter struct {
 	// The custom progress status format to use.
 	progress_status_format_ string
 	current_rate_           slidingRateInfo
-}
-
-func NewStatusPrinter(config *BuildConfig) StatusPrinter {
-	return StatusPrinter{
-		config_: config,
-	}
 }
 
 type slidingRateInfo struct {
@@ -104,6 +103,7 @@ func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int64) {
 	}
 }
 
+/*
 func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string) {
 	s.time_millis_ = end_time_millis
 	s.finished_edges_++
@@ -156,15 +156,16 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int64, suc
 		}
 
 		// TODO(maruel): Use an existing Go package.
+			// Fix extra CR being added on Windows, writing out CR CR LF (#773)
+			//_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
 
-		// Fix extra CR being added on Windows, writing out CR CR LF (#773)
-		_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
+			s.printer_.PrintOnNewLine(final_output)
 
-		s.printer_.PrintOnNewLine(final_output)
+			//_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
 
-		_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
 	}
 }
+*/
 
 func (s *StatusPrinter) BuildLoadDyndeps() {
 	// The DependencyScan calls EXPLAIN() to print lines explaining why
@@ -201,11 +202,11 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 	out := ""
 	// TODO(maruel): Benchmark to optimize memory usage and performance
 	// especially when GC is disabled.
-	for s := 0; s < len(progress_status_format); s++ {
-		c := progress_status_format[s]
+	for i := 0; i < len(progress_status_format); i++ {
+		c := progress_status_format[i]
 		if c == '%' {
-			s++
-			c := progress_status_format[s]
+			i++
+			c := progress_status_format[i]
 			switch c {
 			case '%':
 				out += "%"
@@ -240,7 +241,7 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 
 				// Overall finished edges per second.
 			case 'o':
-				rate := s.finished_edges_ / (s.time_millis_ / 1e3)
+				rate := float64(s.finished_edges_) / float64(s.time_millis_) * 1000.
 				if rate == -1 {
 					out += "?"
 				} else {
@@ -262,19 +263,19 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 				// Percentage
 			case 'p':
 				percent := (100 * s.finished_edges_) / s.total_edges_
-				out += fmt.Sprintf("%3i%%", percent)
+				out += fmt.Sprintf("%3d%%", percent)
 				break
 
 			case 'e':
-				out += fmt.Sprintf("%.3f", s.time_millis_/1e3)
+				out += fmt.Sprintf("%.3f", float64(s.time_millis_)*0.001)
 				break
 
 			default:
-				Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", *s)
+				Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", c)
 				return ""
 			}
 		} else {
-			out += c
+			out += string(c)
 		}
 	}
 	return out
@@ -301,25 +302,14 @@ func (s *StatusPrinter) PrintStatus(edge *Edge, time_millis int64) {
 	s.printer_.Print(to_print, l)
 }
 
-/*
-void StatusPrinter::Warning(string msg, ...) {
-  va_list ap
-  va_start(ap, msg)
-  ::Warning(msg, ap)
-  va_end(ap)
+func (s *StatusPrinter) Warning(msg string, i ...interface{}) {
+	Warning(msg, i...)
 }
 
-void StatusPrinter::Error(string msg, ...) {
-  va_list ap
-  va_start(ap, msg)
-  ::Error(msg, ap)
-  va_end(ap)
+func (s *StatusPrinter) Error(msg string, i ...interface{}) {
+	Error(msg, i...)
 }
 
-void StatusPrinter::Info(string msg, ...) {
-  va_list ap
-  va_start(ap, msg)
-  ::Info(msg, ap)
-  va_end(ap)
+func (s *StatusPrinter) Info(msg string, i ...interface{}) {
+	Info(msg, i...)
 }
-*/
