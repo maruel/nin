@@ -12,29 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"fmt"
+	"os"
+)
 
 // Command-line options.
 type Options struct {
-  // Build file to load.
-  input_file string
+	// Build file to load.
+	input_file string
 
-  // Directory to change into before running.
-  working_dir string
+	// Directory to change into before running.
+	working_dir string
 
-  // Tool to run rather than building.
-  tool *Tool
+	// Tool to run rather than building.
+	tool *Tool
 
-  // Whether duplicate rules for one target should warn or print an error.
-  dupe_edges_should_err bool
+	// Whether duplicate rules for one target should warn or print an error.
+	dupe_edges_should_err bool
 
-  // Whether phony cycles should warn or print an error.
-  phony_cycle_should_err bool
+	// Whether phony cycles should warn or print an error.
+	phony_cycle_should_err bool
 }
 
+/*
 // The Ninja main() loads up a series of data structures; various tools need
 // to poke into these, so store them as fields on an object.
 type NinjaMain struct {
@@ -90,35 +93,40 @@ func (n *NinjaMain) IsPathDead(s string) bool {
   }
   return mtime == 0
 }
-
+*/
 // Subtools, accessible via "-t foo".
 type Tool struct {
-  // Short name of the tool.
-  name string
+	// Short name of the tool.
+	name string
 
-  // Description (shown in "-t list").
-  desc string
+	// Description (shown in "-t list").
+	desc string
 
-  // Implementation of the tool.
-  func NinjaMain::ToolFunc
+	// Implementation of the tool.
+	//func NinjaMain::ToolFunc
 }
+
 // When to run the tool.
-enum {
-  // Run after parsing the command-line flags and potentially changing
-  // the current working directory (as early as possible).
-  RUN_AFTER_FLAGS,
+type When int
 
-  // Run after loading build.ninja.
-  RUN_AFTER_LOAD,
+const (
+	// Run after parsing the command-line flags and potentially changing
+	// the current working directory (as early as possible).
+	RUN_AFTER_FLAGS When = iota
 
-  // Run after loading the build/deps logs.
-  RUN_AFTER_LOGS,
-} when
+	// Run after loading build.ninja.
+	RUN_AFTER_LOAD
+
+	// Run after loading the build/deps logs.
+	RUN_AFTER_LOGS
+)
 
 // Print usage information.
 func Usage(config *BuildConfig) {
-  fprintf(stderr, "usage: ninja [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print ninja version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
+	fmt.Fprintf(os.Stderr, "usage: ninja [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print ninja version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
 }
+
+/*
 
 // Choose a default value for the -j (parallelism) flag.
 func GuessParallelism() int {
@@ -765,7 +773,8 @@ func (n *NinjaMain) ToolRecompact(options *Options, argc int, argv []*char) int 
     return 1
   }
 
-  if !OpenBuildLog(/*recompact_only=*/true) || !OpenDepsLog(/*recompact_only=*/true) {
+	// recompact_only
+  if !OpenBuildLog(true) || !OpenDepsLog(true) {
     return 1
   }
 
@@ -1375,4 +1384,4 @@ func main(argc int, argv *char*) int {
     return 2
   }
 }
-
+*/
