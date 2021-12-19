@@ -97,8 +97,8 @@ func (d *DepsLog) deps() *[]*Deps {
 
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.
-const kFileSignature = "# ninjadeps\n"
-const kCurrentVersion = 4
+const DepsLogFileSignature = "# ninjadeps\n"
+const DepsLogCurrentVersion = 4
 
 // Record size is currently limited to less than the full 32 bit, due to
 // internal buffers having to have this size.
@@ -238,7 +238,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
   // But the v1 format could sometimes (rarely) end up with invalid data, so
   // don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
   // and there was no release with it, so pretend that it never happened.)
-  if !valid_header || strcmp(buf, kFileSignature) != 0 || version != kCurrentVersion {
+  if !valid_header || strcmp(buf, DepsLogFileSignature) != 0 || version != DepsLogCurrentVersion {
     if version == 1 {
       *err = "deps log version change; rebuilding"
     } else {
@@ -543,10 +543,10 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 		fseek(d.file_, 0, SEEK_END)
 
 		if ftell(d.file_) == 0 {
-			if fwrite(kFileSignature, sizeof(kFileSignature)-1, 1, d.file_) < 1 {
+			if fwrite(DepsLogFileSignature, sizeof(DepsLogFileSignature)-1, 1, d.file_) < 1 {
 				return false
 			}
-			if fwrite(&kCurrentVersion, 4, 1, d.file_) < 1 {
+			if fwrite(&DepsLogCurrentVersion, 4, 1, d.file_) < 1 {
 				return false
 			}
 		}

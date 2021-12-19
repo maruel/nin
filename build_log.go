@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "os"
 
 // Can answer questions about the manifest for the BuildLog.
 type BuildLogUser struct {
@@ -29,32 +28,33 @@ type BuildLogUser struct {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-
-  entries_ Entries
-  log_file_ *FILE
-  log_file_path_ string
-  needs_recompaction_ bool
+	entries_            Entries
+	log_file_           *os.File
+	log_file_path_      string
+	needs_recompaction_ bool
 }
 type LogEntry struct {
-  output string
-  command_hash uint64
-  start_time int
-  end_time int
-  mtime TimeStamp
-
-  // Used by tests.
-  bool operator==(const LogEntry& o) {
-    return output == o.output && command_hash == o.command_hash &&
-        start_time == o.start_time && end_time == o.end_time &&
-        mtime == o.mtime
-  }
-
-  }
-type Entries ExternalStringHashMap<LogEntry*>::Type
-func (b *BuildLog) entries() *Entries {
-	return b.entries_
+	output       string
+	command_hash uint64
+	start_time   int
+	end_time     int
+	mtime        TimeStamp
+	/*
+	   // Used by tests.
+	   bool operator==(const LogEntry& o) {
+	     return output == o.output && command_hash == o.command_hash &&
+	         start_time == o.start_time && end_time == o.end_time &&
+	         mtime == o.mtime
+	   }
+	*/
 }
 
+//type Entries ExternalStringHashMap<LogEntry*>::Type
+type Entries map[string]*LogEntry
+
+func (b *BuildLog) entries() *Entries {
+	return &b.entries_
+}
 
 // On AIX, inttypes.h gets indirectly included by build_log.h.
 // It's easiest just to ask for the printf format macros right away.
@@ -66,12 +66,13 @@ func (b *BuildLog) entries() *Entries {
 // Once the number of redundant entries exceeds a threshold, we write
 // out a new file and replace the existing one with it.
 
-const char kFileSignature[] = "# ninja log v%d\n"
-const int kOldestSupportedVersion = 4
-const int kCurrentVersion = 5
+const BuildLogFileSignature = "# ninja log v%d\n"
+const BuildLogOldestSupportedVersion = 4
+const BuildLogCurrentVersion = 5
 
 // 64bit MurmurHash2, by Austin Appleby
-inline
+
+/*
 func MurmurHash64A(key *void, len2 uint) uint64 {
   seed := 0xDECAFBADDECAFBADull
   m := BIG_CONSTANT(0xc6a4a7935bd1e995)
@@ -111,15 +112,18 @@ func MurmurHash64A(key *void, len2 uint) uint64 {
   h ^= h >> r
   return h
 }
+func HashCommand(command string) uint64{
+  return MurmurHash64A(command, len(command))
+}
+*/
 
-// static
-uint64_t BuildLog::LogEntry::HashCommand(string command) {
-  return MurmurHash64A(command.str_, command.len_)
+func NewLogEntry(output string) LogEntry {
+	return LogEntry{
+		output: output,
+	}
 }
 
-BuildLog::LogEntry::LogEntry(string output)
-  : output(output) {}
-
+/*
 BuildLog::LogEntry::LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   : output(output), command_hash(command_hash),
     start_time(start_time), end_time(end_time), mtime(restat_mtime)
@@ -208,7 +212,7 @@ func (b *BuildLog) OpenForWriteIfNeeded() bool {
   fseek(b.log_file_, 0, SEEK_END)
 
   if ftell(b.log_file_) == 0 {
-    if fprintf(b.log_file_, kFileSignature, kCurrentVersion) < 0 {
+    if fprintf(b.log_file_, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
       return false
     }
   }
@@ -291,9 +295,9 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   line_end := 0
   for reader.ReadLine(&line_start, &line_end) {
     if !log_version {
-      sscanf(line_start, kFileSignature, &log_version)
+      sscanf(line_start, BuildLogFileSignature, &log_version)
 
-      if log_version < kOldestSupportedVersion {
+      if log_version < BuildLogOldestSupportedVersion {
         *err = ("build log version invalid, perhaps due to being too old; starting over")
         fclose(file)
         unlink(path)
@@ -381,7 +385,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   // - if it's getting large
   kMinCompactionEntryCount := 100
   kCompactionRatio := 3
-  if log_version < kCurrentVersion {
+  if log_version < BuildLogCurrentVersion {
     b.needs_recompaction_ = true
   } else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
     b.needs_recompaction_ = true
@@ -416,7 +420,7 @@ func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool 
     return false
   }
 
-  if fprintf(f, kFileSignature, kCurrentVersion) < 0 {
+  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
     *err = strerror(errno)
     fclose(f)
     return false
@@ -466,7 +470,7 @@ func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_cou
     return false
   }
 
-  if fprintf(f, kFileSignature, kCurrentVersion) < 0 {
+  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
     *err = strerror(errno)
     fclose(f)
     return false
@@ -508,4 +512,4 @@ func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_cou
 
   return true
 }
-
+*/
