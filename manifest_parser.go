@@ -144,7 +144,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 
   int depth = -1
 
-  while m.lexer_.PeekToken(Lexer::INDENT) {
+  for m.lexer_.PeekToken(Lexer::INDENT) {
     key := ""
     var value EvalString
     if !ParseLet(&key, &value, err) {
@@ -186,7 +186,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 
   rule := new Rule(name)  // XXX scoped_ptr
 
-  while m.lexer_.PeekToken(Lexer::INDENT) {
+  for m.lexer_.PeekToken(Lexer::INDENT) {
     key := ""
     var value EvalString
     if !ParseLet(&key, &value, err) {
@@ -265,7 +265,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
     if !m.lexer_.ReadPath(&out, err) {
       return false
     }
-    while len(out) != 0 {
+    for len(out) != 0 {
       outs.push_back(out)
 
       out.Clear()
@@ -360,7 +360,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
   // Bindings on edges are rare, so allocate per-edge envs only when needed.
   has_indent_token := m.lexer_.PeekToken(Lexer::INDENT)
   BindingEnv* env = has_indent_token ? new BindingEnv(m.env_) : m.env_
-  while has_indent_token {
+  for has_indent_token {
     key := ""
     var val EvalString
     if !ParseLet(&key, &val, err) {

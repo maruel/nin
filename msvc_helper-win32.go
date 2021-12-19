@@ -20,7 +20,7 @@ package ginja
 func Replace(input string, find string, replace string) string {
   result := input
   start_pos := 0
-  while (start_pos = result.find(find, start_pos)) != string::npos {
+  for (start_pos = result.find(find, start_pos)) != string::npos {
     result.replace(start_pos, find.length(), replace)
     start_pos += replace.length()
   }
@@ -71,7 +71,7 @@ func (c *CLWrapper) Run(command string, output *string) int {
 
   // Read all output of the subprocess.
   read_len := 1
-  while read_len {
+  for read_len {
     char buf[64 << 10]
     read_len = 0
     if !::ReadFile(stdout_read, buf, sizeof(buf), &read_len, nil) && GetLastError() != ERROR_BROKEN_PIPE {

@@ -23,7 +23,7 @@ func Usage() {
 
 func PushPathIntoEnvironment(env_block string) {
   as_str := env_block
-  while as_str[0] {
+  for as_str[0] {
     if _strnicmp(as_str, "path=", 5) == 0 {
       _putenv(as_str)
       return
@@ -68,7 +68,7 @@ func MSVCHelperMain(argc int, argv *char*) int {
   }
   opt := 0
   deps_prefix := ""
-  while (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
+  for (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
     switch (opt) {
       case 'e':
         envfile = optarg

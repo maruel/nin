@@ -78,7 +78,7 @@ func MurmurHash64A(key *void, len2 uint) uint64 {
   r := 47
   uint64_t h = seed ^ (len2 * m)
   data := (const unsigned char*)key
-  while len2 >= 8 {
+  for len2 >= 8 {
     var k uint64
     memcpy(&k, data, sizeof k)
     k *= m
@@ -289,7 +289,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
   LineReader reader(file)
   line_start := 0
   line_end := 0
-  while reader.ReadLine(&line_start, &line_end) {
+  for reader.ReadLine(&line_start, &line_end) {
     if !log_version {
       sscanf(line_start, kFileSignature, &log_version)
 
