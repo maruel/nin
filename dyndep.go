@@ -12,51 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
-
 
 // Store dynamically-discovered dependency information for one edge.
 type Dyndeps struct {
-  used_ bool
-  restat_ bool
-  implicit_inputs_ []*Node
-  implicit_outputs_ []*Node
+	used_             bool
+	restat_           bool
+	implicit_inputs_  []*Node
+	implicit_outputs_ []*Node
 }
+
 func NewDyndeps() Dyndeps {
-	return Dyndeps{
-	}
+	return Dyndeps{}
 }
 
 // Store data loaded from one dyndep file.  Map from an edge
 // to its dynamically-discovered dependency information.
 // This is a struct rather than a typedef so that we can
 // forward-declare it in other headers.
-struct DyndepFile: public map<Edge*, Dyndeps> {}
+type DyndepFile map[*Edge]Dyndeps
 
 // DyndepLoader loads dynamically discovered dependencies, as
 // referenced via the "dyndep" attribute in build files.
 type DyndepLoader struct {
-
-  state_ *State
-  disk_interface_ *DiskInterface
+	state_          *State
+	disk_interface_ *DiskInterface
 }
+
 func NewDyndepLoader(state *State, disk_interface *DiskInterface) DyndepLoader {
 	return DyndepLoader{
-		state_: state,
+		state_:          state,
 		disk_interface_: disk_interface,
 	}
 }
 
-
+/*
 // Load a dyndep file from the given node's path and update the
 // build graph with the new information.  One overload accepts
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
-  var ddf DyndepFile
-  return LoadDyndeps(node, &ddf, err)
+	var ddf DyndepFile
+	return d.LoadDyndeps(node, &ddf, err)
 }
 
 // Load a dyndep file from the given node's path and update the
@@ -64,89 +61,89 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) bool {
-  // We are loading the dyndep file now so it is no longer pending.
-  node.set_dyndep_pending(false)
+	// We are loading the dyndep file now so it is no longer pending.
+	node.set_dyndep_pending(false)
 
-  // Load the dyndep information from the file.
-  EXPLAIN("loading dyndep file '%s'", node.path())
-  if !LoadDyndepFile(node, ddf, err) {
-    return false
-  }
+	// Load the dyndep information from the file.
+	EXPLAIN("loading dyndep file '%s'", node.path())
+	if !LoadDyndepFile(node, ddf, err) {
+		return false
+	}
 
-  // Update each edge that specified this node as its dyndep binding.
-  out_edges := node.out_edges()
-  for oe := out_edges.begin(); oe != out_edges.end(); oe++ {
-    edge := *oe
-    if edge.dyndep_ != node {
-      continue
-    }
+	// Update each edge that specified this node as its dyndep binding.
+	out_edges := node.out_edges()
+	for oe := out_edges.begin(); oe != out_edges.end(); oe++ {
+		edge := *oe
+		if edge.dyndep_ != node {
+			continue
+		}
 
-    ddi := ddf.find(edge)
-    if ddi == ddf.end() {
-      *err = ("'" + edge.outputs_[0].path() + "' not mentioned in its dyndep file '" + node.path() + "'")
-      return false
-    }
+		ddi := ddf.find(edge)
+		if ddi == ddf.end() {
+			*err = ("'" + edge.outputs_[0].path() + "' not mentioned in its dyndep file '" + node.path() + "'")
+			return false
+		}
 
-    ddi.second.used_ = true
-    dyndeps := ddi.second
-    if !UpdateEdge(edge, &dyndeps, err) {
-      return false
-    }
-  }
+		ddi.second.used_ = true
+		dyndeps := ddi.second
+		if !UpdateEdge(edge, &dyndeps, err) {
+			return false
+		}
+	}
 
-  // Reject extra outputs in dyndep file.
-  for oe := ddf.begin(); oe != ddf.end(); oe++ {
-    if !oe.second.used_ {
-      edge := oe.first
-      *err = ("dyndep file '" + node.path() + "' mentions output '" + edge.outputs_[0].path() + "' whose build statement does not have a dyndep binding for the file")
-      return false
-    }
-  }
+	// Reject extra outputs in dyndep file.
+	for oe := ddf.begin(); oe != ddf.end(); oe++ {
+		if !oe.second.used_ {
+			edge := oe.first
+			*err = ("dyndep file '" + node.path() + "' mentions output '" + edge.outputs_[0].path() + "' whose build statement does not have a dyndep binding for the file")
+			return false
+		}
+	}
 
-  return true
+	return true
 }
 
-func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps const, err *string) bool {
-  // Add dyndep-discovered bindings to the edge.
-  // We know the edge already has its own binding
-  // scope because it has a "dyndep" binding.
-  if dyndeps.restat_ {
-    edge.env_.AddBinding("restat", "1")
-  }
+func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) bool {
+	// Add dyndep-discovered bindings to the edge.
+	// We know the edge already has its own binding
+	// scope because it has a "dyndep" binding.
+	if dyndeps.restat_ {
+		edge.env_.AddBinding("restat", "1")
+	}
 
-  // Add the dyndep-discovered outputs to the edge.
-  edge.outputs_.insert(edge.outputs_.end(), dyndeps.implicit_outputs_.begin(), dyndeps.implicit_outputs_.end())
-  edge.implicit_outs_ += dyndeps.implicit_outputs_.size()
+	// Add the dyndep-discovered outputs to the edge.
+	edge.outputs_.insert(edge.outputs_.end(), dyndeps.implicit_outputs_.begin(), dyndeps.implicit_outputs_.end())
+	edge.implicit_outs_ += dyndeps.implicit_outputs_.size()
 
-  // Add this edge as incoming to each new output.
-  for i := dyndeps.implicit_outputs_.begin(); i != dyndeps.implicit_outputs_.end(); i++ {
-    if Edge* old_in_edge = (*i).in_edge() {
-      // This node already has an edge producing it.  Fail with an error
-      // unless the edge was generated by ImplicitDepLoader, in which
-      // case we can replace it with the now-known real producer.
-      if !old_in_edge.generated_by_dep_loader_ {
-        *err = "multiple rules generate " + (*i).path()
-        return false
-      }
-      old_in_edge.outputs_ = nil
-    }
-    (*i).set_in_edge(edge)
-  }
+	// Add this edge as incoming to each new output.
+	for _, i := range dyndeps.implicit_outputs_ {
+		if old_in_edge := i.in_edge(); old_in_edge != nil {
+			// This node already has an edge producing it.  Fail with an error
+			// unless the edge was generated by ImplicitDepLoader, in which
+			// case we can replace it with the now-known real producer.
+			if !old_in_edge.generated_by_dep_loader_ {
+				*err = "multiple rules generate " + (*i).path()
+				return false
+			}
+			old_in_edge.outputs_ = nil
+		}
+		(*i).set_in_edge(edge)
+	}
 
-  // Add the dyndep-discovered inputs to the edge.
-  edge.inputs_.insert(edge.inputs_.end() - edge.order_only_deps_, dyndeps.implicit_inputs_.begin(), dyndeps.implicit_inputs_.end())
-  edge.implicit_deps_ += dyndeps.implicit_inputs_.size()
+	// Add the dyndep-discovered inputs to the edge.
+	edge.inputs_.insert(edge.inputs_.end()-edge.order_only_deps_, dyndeps.implicit_inputs_.begin(), dyndeps.implicit_inputs_.end())
+	edge.implicit_deps_ += dyndeps.implicit_inputs_.size()
 
-  // Add this edge as outgoing from each new input.
-  for i := dyndeps.implicit_inputs_.begin(); i != dyndeps.implicit_inputs_.end(); i++ {
-    (*i).AddOutEdge(edge)
-  }
+	// Add this edge as outgoing from each new input.
+	for i := dyndeps.implicit_inputs_.begin(); i != dyndeps.implicit_inputs_.end(); i++ {
+		(*i).AddOutEdge(edge)
+	}
 
-  return true
+	return true
 }
 
 func (d *DyndepLoader) LoadDyndepFile(file *Node, ddf *DyndepFile, err *string) bool {
-  DyndepParser parser(d.state_, d.disk_interface_, ddf)
-  return parser.Load(file.path(), err)
+	parser := NewDyndepParser(d.state_, d.disk_interface_, ddf)
+	return parser.Load(file.path(), err)
 }
-
+*/
