@@ -12,21 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
-
-import (
-	"fmt"
-	"os"
-	"strconv"
-)
 
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
 type Status interface {
 }
 
+/*
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
 type StatusPrinter struct {
@@ -41,6 +34,12 @@ type StatusPrinter struct {
 	// The custom progress status format to use.
 	progress_status_format_ string
 	current_rate_           slidingRateInfo
+}
+
+func NewStatusPrinter(config *BuildConfig) StatusPrinter {
+	return StatusPrinter{
+		config_: config,
+	}
 }
 
 type slidingRateInfo struct {

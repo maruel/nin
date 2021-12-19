@@ -25,14 +25,14 @@ import (
 type FileReader interface {
 	// Read and store in given string.  On success, return Okay.
 	// On error, return another Status and fill |err|.
-	ReadFile(path string, contents *string, err *string) Status
+	ReadFile(path string, contents *string, err *string) DiskStatus
 }
 
 // Result of ReadFile.
-type Status int
+type DiskStatus int
 
 const (
-	Okay Status = iota
+	Okay DiskStatus = iota
 	NotFound
 	OtherError
 )
@@ -301,7 +301,7 @@ func (r *RealDiskInterface) MakeDir(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string) Status {
+func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
 	c, err2 := ioutil.ReadFile(path)
 	if err2 == nil {
 		*contents = string(c)

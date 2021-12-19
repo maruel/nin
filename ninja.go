@@ -37,40 +37,42 @@ type Options struct {
 	phony_cycle_should_err bool
 }
 
-/*
 // The Ninja main() loads up a series of data structures; various tools need
 // to poke into these, so store them as fields on an object.
 type NinjaMain struct {
 
-  // Command line used to run Ninja.
-  ninja_command_ string
+	// Command line used to run Ninja.
+	ninja_command_ string
 
-  // Build configuration set from flags (e.g. parallelism).
-  config_ *BuildConfig
+	// Build configuration set from flags (e.g. parallelism).
+	config_ *BuildConfig
 
-  // Loaded state (rules, nodes).
-  state_ State
+	// Loaded state (rules, nodes).
+	state_ State
 
-  // Functions for accessing the disk.
-  disk_interface_ RealDiskInterface
+	// Functions for accessing the disk.
+	disk_interface_ RealDiskInterface
 
-  // The build directory, used for storing the build log etc.
-  build_dir_ string
+	// The build directory, used for storing the build log etc.
+	build_dir_ string
 
-  build_log_ BuildLog
-  deps_log_ DepsLog
+	build_log_ BuildLog
+	deps_log_  DepsLog
 
-  // The type of functions that are the entry points to tools (subcommands).
+	// The type of functions that are the entry points to tools (subcommands).
 
-  start_time_millis_ int64
+	start_time_millis_ int64
 }
+
+/*
 func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	return NinjaMain{
-		ninja_command_: ninja_command,
-		config_: config,
+		ninja_command_:     ninja_command,
+		config_:            config,
 		start_time_millis_: GetTimeMillis(),
 	}
 }
+
 typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
 func (n *NinjaMain) IsPathDead(s string) bool {
   n := n.state_.LookupNode(s)
@@ -94,6 +96,7 @@ func (n *NinjaMain) IsPathDead(s string) bool {
   return mtime == 0
 }
 */
+
 // Subtools, accessible via "-t foo".
 type Tool struct {
 	// Short name of the tool.
@@ -318,13 +321,14 @@ func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
   }
   return 0
 }
-
-func (n *NinjaMain) ToolBrowse(options *Options, argc int, argv []*char) int {
-  RunBrowsePython(&n.state_, n.ninja_command_, options.input_file, argc, argv)
-  // If we get here, the browse failed.
-  return 1
+*/
+func (n *NinjaMain) ToolBrowse(options *Options, args []string) int {
+	RunBrowsePython(&n.state_, n.ninja_command_, options.input_file, args)
+	// If we get here, the browse failed.
+	return 1
 }
 
+/*
 func (n *NinjaMain) ToolMSVC(options *Options, argc int, argv []*char) int {
   // Reset getopt: push one argument onto the front of argv, reset optind.
   argc++
@@ -657,12 +661,16 @@ func (n *NinjaMain) ToolCleanDead(options *Options, argc int, argv []*char) int 
   Cleaner cleaner(&n.state_, n.config_, &n.disk_interface_)
   return cleaner.CleanDead(n.build_log_.entries())
 }
+*/
 
 type EvaluateCommandMode int
+
 const (
-  ECM_NORMAL EvaluateCommandMode = iota
-  ECM_EXPAND_RSPFILE
+	ECM_NORMAL EvaluateCommandMode = iota
+	ECM_EXPAND_RSPFILE
 )
+
+/*
 func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
   command := edge.EvaluateCommand()
   if mode == ECM_NORMAL {
@@ -1259,129 +1267,114 @@ func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) i
 
   return -1
 }
-
-func real_main(argc int, argv *char*) NORETURN void {
-  // Use exit() instead of return in this function to avoid potentially
-  // expensive cleanup when destructing NinjaMain.
-  var config BuildConfig
-  Options options = {}
-  options.input_file = "build.ninja"
-  options.dupe_edges_should_err = true
-
-  setvbuf(stdout, nil, _IOLBF, BUFSIZ)
-  ninja_command := argv[0]
-
-  exit_code := ReadFlags(&argc, &argv, &options, &config)
-  if exit_code >= 0 {
-    exit(exit_code)
-  }
-
-  status := new StatusPrinter(config)
-
-  if options.working_dir {
-    // The formatting of this string, complete with funny quotes, is
-    // so Emacs can properly identify that the cwd has changed for
-    // subsequent commands.
-    // Don't print this if a tool is being used, so that tool output
-    // can be piped into a file without this string showing up.
-    if !options.tool && config.verbosity != BuildConfig::NO_STATUS_UPDATE {
-      status.Info("Entering directory `%s'", options.working_dir)
-    }
-    if chdir(options.working_dir) < 0 {
-      Fatal("chdir to '%s' - %s", options.working_dir, strerror(errno))
-    }
-  }
-
-  if options.tool && options.tool.when == Tool::RUN_AFTER_FLAGS {
-    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
-    // by other tools.
-    NinjaMain ninja(ninja_command, config)
-    exit((ninja.*options.tool.func)(&options, argc, argv))
-  }
-
-  // It'd be nice to use line buffering but MSDN says: "For some systems,
-  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
-  //  same as _IOFBF - Full Buffering."
-  // Buffering used to be disabled in the LinePrinter constructor but that
-  // now disables it too early and breaks -t deps performance (see issue #2018)
-  // so we disable it here instead, but only when not running a tool.
-  if !options.tool {
-    setvbuf(stdout, nil, _IONBF, 0)
-  }
-
-  // Limit number of rebuilds, to prevent infinite loops.
-  kCycleLimit := 100
-  for cycle := 1; cycle <= kCycleLimit; cycle++ {
-    NinjaMain ninja(ninja_command, config)
-
-    var parser_opts ManifestParserOptions
-    if options.dupe_edges_should_err {
-      parser_opts.dupe_edge_action_ = kDupeEdgeActionError
-    }
-    if options.phony_cycle_should_err {
-      parser_opts.phony_cycle_action_ = kPhonyCycleActionError
-    }
-    ManifestParser parser(&ninja.state_, &ninja.disk_interface_, parser_opts)
-    err := ""
-    if !parser.Load(options.input_file, &err) {
-      status.Error("%s", err)
-      exit(1)
-    }
-
-    if options.tool && options.tool.when == Tool::RUN_AFTER_LOAD {
-      exit((ninja.*options.tool.func)(&options, argc, argv))
-    }
-
-    if !ninja.EnsureBuildDirExists() {
-      exit(1)
-    }
-
-    if !ninja.OpenBuildLog() || !ninja.OpenDepsLog() {
-      exit(1)
-    }
-
-    if options.tool && options.tool.when == Tool::RUN_AFTER_LOGS {
-      exit((ninja.*options.tool.func)(&options, argc, argv))
-    }
-
-    // Attempt to rebuild the manifest before building anything else
-    if ninja.RebuildManifest(options.input_file, &err, status) {
-      // In dry_run mode the regeneration will succeed without changing the
-      // manifest forever. Better to return immediately.
-      if config.dry_run {
-        exit(0)
-      }
-      // Start the build over with the new manifest.
-      continue
-    } else if len(err) != 0 {
-      status.Error("rebuilding '%s': %s", options.input_file, err)
-      exit(1)
-    }
-
-    result := ninja.RunBuild(argc, argv, status)
-    if g_metrics {
-      ninja.DumpMetrics()
-    }
-    exit(result)
-  }
-
-  status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
-  exit(1)
-}
-
-func main(argc int, argv *char*) int {
-  // Set a handler to catch crashes not caught by the __try..__except
-  // block (e.g. an exception in a stack-unwind-block).
-  set_terminate(TerminateHandler)
-  __try {
-    // Running inside __try ... __except suppresses any Windows error
-    // dialogs for errors such as bad_alloc.
-    real_main(argc, argv)
-  }
-  __except(ExceptionFilter(GetExceptionCode(), GetExceptionInformation())) {
-    // Common error situations return exitCode=1. 2 was chosen to
-    // indicate a more serious problem.
-    return 2
-  }
-}
 */
+func main() {
+	// Use exit() instead of return in this function to avoid potentially
+	// expensive cleanup when destructing NinjaMain.
+	//config := BuildConfig{}
+	options := Options{}
+	options.input_file = "build.ninja"
+	options.dupe_edges_should_err = true
+
+	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
+	//ninja_command := os.Args[0]
+
+	/*
+	  exit_code := ReadFlags(&argc, &argv, &options, &config)
+	  if exit_code >= 0 {
+	    exit(exit_code)
+	  }
+	*/
+	//status := NewStatusPrinter(&config)
+	/*
+	  if options.working_dir {
+	    // The formatting of this string, complete with funny quotes, is
+	    // so Emacs can properly identify that the cwd has changed for
+	    // subsequent commands.
+	    // Don't print this if a tool is being used, so that tool output
+	    // can be piped into a file without this string showing up.
+	    if !options.tool && config.verbosity != BuildConfig::NO_STATUS_UPDATE {
+	      status.Info("Entering directory `%s'", options.working_dir)
+	    }
+	    if chdir(options.working_dir) < 0 {
+	      Fatal("chdir to '%s' - %s", options.working_dir, strerror(errno))
+	    }
+	  }
+
+	  if options.tool && options.tool.when == Tool::RUN_AFTER_FLAGS {
+	    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
+	    // by other tools.
+	    NinjaMain ninja(ninja_command, config)
+	    exit((ninja.*options.tool.func)(&options, argc, argv))
+	  }
+
+	  // It'd be nice to use line buffering but MSDN says: "For some systems,
+	  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
+	  //  same as _IOFBF - Full Buffering."
+	  // Buffering used to be disabled in the LinePrinter constructor but that
+	  // now disables it too early and breaks -t deps performance (see issue #2018)
+	  // so we disable it here instead, but only when not running a tool.
+	  if !options.tool {
+	    setvbuf(stdout, nil, _IONBF, 0)
+	  }
+
+	  // Limit number of rebuilds, to prevent infinite loops.
+	  kCycleLimit := 100
+	  for cycle := 1; cycle <= kCycleLimit; cycle++ {
+	    NinjaMain ninja(ninja_command, config)
+
+	    var parser_opts ManifestParserOptions
+	    if options.dupe_edges_should_err {
+	      parser_opts.dupe_edge_action_ = kDupeEdgeActionError
+	    }
+	    if options.phony_cycle_should_err {
+	      parser_opts.phony_cycle_action_ = kPhonyCycleActionError
+	    }
+	    ManifestParser parser(&ninja.state_, &ninja.disk_interface_, parser_opts)
+	    err := ""
+	    if !parser.Load(options.input_file, &err) {
+	      status.Error("%s", err)
+	      exit(1)
+	    }
+
+	    if options.tool && options.tool.when == Tool::RUN_AFTER_LOAD {
+	      exit((ninja.*options.tool.func)(&options, argc, argv))
+	    }
+
+	    if !ninja.EnsureBuildDirExists() {
+	      exit(1)
+	    }
+
+	    if !ninja.OpenBuildLog() || !ninja.OpenDepsLog() {
+	      exit(1)
+	    }
+
+	    if options.tool && options.tool.when == Tool::RUN_AFTER_LOGS {
+	      exit((ninja.*options.tool.func)(&options, argc, argv))
+	    }
+
+	    // Attempt to rebuild the manifest before building anything else
+	    if ninja.RebuildManifest(options.input_file, &err, status) {
+	      // In dry_run mode the regeneration will succeed without changing the
+	      // manifest forever. Better to return immediately.
+	      if config.dry_run {
+	        exit(0)
+	      }
+	      // Start the build over with the new manifest.
+	      continue
+	    } else if len(err) != 0 {
+	      status.Error("rebuilding '%s': %s", options.input_file, err)
+	      exit(1)
+	    }
+
+	    result := ninja.RunBuild(argc, argv, status)
+	    if g_metrics {
+	      ninja.DumpMetrics()
+	    }
+	    exit(result)
+	  }
+
+	  status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
+	*/
+	os.Exit(1)
+}
