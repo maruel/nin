@@ -12,16 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"os"
+	"testing"
+)
 
-type DiskInterfaceTest struct {
-
-  temp_dir_ ScopedTempDir
-  disk_ RealDiskInterface
+func DiskInterfaceTest(t *testing.T) RealDiskInterface {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	//d := DiskInterfaceTest{temp_dir_: t.TempDir()}
+	temp_dir_ := t.TempDir()
+	if err := os.Chdir(temp_dir_); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(old); err != nil {
+			t.Error(err)
+		}
+	})
+	return RealDiskInterface{}
 }
+
+/*
+type DiskInterfaceTest struct {
+	//ScopedTempDir
+	temp_dir_ string
+	disk_     RealDiskInterface
+}
+
+/*
 func (d *DiskInterfaceTest) SetUp() {
   // These tests do real disk accesses, so create a temp dir.
   d.temp_dir_.CreateAndEnter("Ninja-DiskInterfaceTest")
@@ -29,63 +52,126 @@ func (d *DiskInterfaceTest) SetUp() {
 func (d *DiskInterfaceTest) TearDown() {
   d.temp_dir_.Cleanup()
 }
-func (d *DiskInterfaceTest) Touch(path string) bool {
-  FILE *f = fopen(path, "w")
-  if f == nil {
-    return false
-  }
-  return fclose(f) == 0
+*/
+func Touch(path string) bool {
+	/*
+	  FILE *f = fopen(path, "w")
+	  if f == nil {
+	    return false
+	  }
+	  return fclose(f) == 0
+	*/
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
+	if f != nil {
+		f.Close()
+	}
+	return err != nil
 }
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
-  err := ""
-  if 0 != disk_.Stat("nosuchfile", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+	disk_ := DiskInterfaceTest(t)
+	err := ""
+	if 0 != disk_.Stat("nosuchfile", &err) {
+		t.Fatal(1)
+	}
+	if "" == err {
+		t.Fatal(err)
+	}
 
-  // On Windows, the errno for a file in a nonexistent directory
-  // is different.
-  if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+	// On Windows, the errno for a file in a nonexistent directory
+	// is different.
+	if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) {
+		t.Fatal(1)
+	}
+	if "" == err {
+		t.Fatal(err)
+	}
 
-  // On POSIX systems, the errno is different if a component of the
-  // path prefix is not a directory.
-  if Touch("notadir") { t.FailNow() }
-  if 0 != disk_.Stat("notadir/nosuchfile", &err) { t.FailNow() }
-  if "" != err { t.FailNow() }
+	// On POSIX systems, the errno is different if a component of the
+	// path prefix is not a directory.
+	if Touch("notadir") {
+		t.Fatal(1)
+	}
+	if got := disk_.Stat("notadir/nosuchfile", &err); got != -1 {
+		t.Fatal(got)
+	}
+	if "" == err {
+		t.Fatal(err)
+	}
 }
 
 func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
-  err := ""
-  string bad_path("cc:\\foo")
-  if -1 != disk_.Stat(bad_path, &err) { t.FailNow() }
-  if "" == err { t.FailNow() }
+	disk_ := DiskInterfaceTest(t)
+	err := ""
+	bad_path := "cc:\\foo"
+	if got := disk_.Stat(bad_path, &err); got != 0 {
+		t.Fatal(got)
+	}
+	if "" == err {
+		t.Fatal(err)
+	}
 }
 
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
-  err := ""
-  if Touch("file") { t.FailNow() }
-  if disk_.Stat("file" <= &err), 1 { t.FailNow() }
-  if "" != err { t.FailNow() }
+	disk_ := DiskInterfaceTest(t)
+	err := ""
+	if Touch("file") {
+		t.FailNow()
+	}
+	if disk_.Stat("file", &err) <= 1 {
+		t.FailNow()
+	}
+	if "" != err {
+		t.FailNow()
+	}
 }
 
 func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
-  err := ""
-  if disk_.MakeDir("subdir") { t.FailNow() }
-  if disk_.MakeDir("subdir/subsubdir") { t.FailNow() }
-  if disk_.Stat(".." <= &err), 1 { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if disk_.Stat("." <= &err), 1 { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if disk_.Stat("subdir" <= &err), 1 { t.FailNow() }
-  if "" != err { t.FailNow() }
-  if disk_.Stat("subdir/subsubdir" <= &err), 1 { t.FailNow() }
-  if "" != err { t.FailNow() }
+	disk_ := DiskInterfaceTest(t)
+	err := ""
+	if !disk_.MakeDir("subdir") {
+		t.Fatal(0)
+	}
+	if !disk_.MakeDir("subdir/subsubdir") {
+		t.Fatal(0)
+	}
+	if disk_.Stat("..", &err) <= 1 {
+		t.Fatal(0)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if disk_.Stat(".", &err) <= 1 {
+		t.Fatal(0)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if disk_.Stat("subdir", &err) <= 1 {
+		t.Fatal(0)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if disk_.Stat("subdir/subsubdir", &err) <= 1 {
+		t.Fatal(0)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
 
-  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/.", &err) { t.FailNow() }
-  if disk_.Stat("subdir" != &err), disk_.Stat("subdir/subsubdir/..", &err) { t.FailNow() }
-  if disk_.Stat("subdir/subsubdir" != &err), disk_.Stat("subdir/subsubdir/.", &err) { t.FailNow() }
+	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/.", &err) {
+		t.Fatal(0)
+	}
+	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/subsubdir/..", &err) {
+		t.Fatal(0)
+	}
+	if disk_.Stat("subdir/subsubdir", &err) != disk_.Stat("subdir/subsubdir/.", &err) {
+		t.Fatal(0)
+	}
 }
 
+/*
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
   err := ""
 
@@ -295,4 +381,4 @@ func TestStatTest_Middle(t *testing.T) {
   if GetNode("mid").dirty() { t.FailNow() }
   if GetNode("out").dirty() { t.FailNow() }
 }
-
+*/

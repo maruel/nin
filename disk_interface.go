@@ -15,9 +15,11 @@
 package ginja
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Interface for reading files from disk.  See DiskInterface for details.
@@ -42,6 +44,7 @@ const (
 // Abstract so it can be mocked out for tests.  The real implementation
 // is RealDiskInterface.
 type DiskInterface interface {
+	FileReader
 	// stat() a file, returning the mtime, or 0 if missing and -1 on
 	// other errors.
 	Stat(path string, err *string) TimeStamp
@@ -235,53 +238,47 @@ func MakeDirs(d DiskInterface, path string) bool {
 */
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
-	/*
-		METRIC_RECORD("node stat")
-		// MSDN: "Naming Files, Paths, and Namespaces"
-		// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-		if !path.empty() && path[0] != '\\' && path.size() > MAX_PATH {
-			var err_stream ostringstream
-			//err_stream << "Stat(" << path << "): Filename longer than " << MAX_PATH << " characters"
-			*err = err_stream.str()
+	METRIC_RECORD("node stat")
+	// MSDN: "Naming Files, Paths, and Namespaces"
+	// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+	const MAX_PATH = 260
+	if path != "" && path[0] != '\\' && len(path) > MAX_PATH {
+		*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, MAX_PATH)
+		return -1
+	}
+	if !r.use_cache_ {
+		return StatSingleFile(path, err)
+	}
+
+	dir := DirName(path)
+	o := 0
+	if dir != "" {
+		o = len(dir) + 1
+	}
+	base := path[o:]
+	if base == ".." {
+		// StatAllFilesInDir does not report any information for base = "..".
+		base = "."
+		dir = path
+	}
+
+	dir = strings.ToLower(dir)
+	base = strings.ToLower(base)
+
+	ci, ok := r.cache_[dir]
+	if !ok {
+		ci = DirCache{}
+		r.cache_[dir] = ci
+		s := "."
+		if dir != "" {
+			s = dir
+		}
+		if !StatAllFilesInDir(s, ci, err) {
+			delete(r.cache_, dir)
 			return -1
 		}
-		if !r.use_cache_ {
-			return StatSingleFile(path, err)
-		}
-
-		dir := DirName(path)
-		o := 0
-		if dir.size() != 0 {
-			o = dir.size() + 1
-		}
-		base := path[o:]
-		if base == ".." {
-			// StatAllFilesInDir does not report any information for base = "..".
-			base = "."
-			dir = path
-		}
-
-		dir = strings.ToLower(dir)
-		base = strings.ToLower(base)
-
-		ci := r.cache_.find(dir)
-		if ci == r.cache_.end() {
-			ci = r.cache_.insert(make_pair(dir, DirCache())).first
-			s := "."
-			if !dir.empty() {
-				s = dir
-			}
-			if !StatAllFilesInDir(s, &ci.second, err) {
-				r.cache_.erase(ci)
-				return -1
-			}
-		}
-		di := ci.second.find(base)
-		if di != ci.second.end() {
-			return di.second
-		}
-	*/
-	return 0
+	}
+	return ci[base]
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
@@ -316,50 +313,51 @@ func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string)
 	return OtherError
 }
 
-/*
 func (r *RealDiskInterface) RemoveFile(path string) int {
-	attributes := GetFileAttributes(path)
-	if attributes == INVALID_FILE_ATTRIBUTES {
-		win_err := GetLastError()
-		if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
-			return 1
-		}
-	} else if (attributes & FILE_ATTRIBUTE_READONLY) != 0 {
-		// On non-Windows systems, remove() will happily delete read-only files.
-		// On Windows Ninja should behave the same:
-		//   https://github.com/ninja-build/ninja/issues/1886
-		// Skip error checking.  If this fails, accept whatever happens below.
-		SetFileAttributes(path, attributes & ^FILE_ATTRIBUTE_READONLY)
-	}
-	if (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0 {
-		// remove() deletes both files and directories. On Windows we have to
-		// select the correct function (DeleteFile will yield Permission Denied when
-		// used on a directory)
-		// This fixes the behavior of ninja -t clean in some cases
-		// https://github.com/ninja-build/ninja/issues/828
-		if !RemoveDirectory(path) {
+	panic("TODO")
+	/*
+		attributes := GetFileAttributes(path)
+		if attributes == INVALID_FILE_ATTRIBUTES {
 			win_err := GetLastError()
 			if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
 				return 1
 			}
-			// Report remove(), not RemoveDirectory(), for cross-platform consistency.
-			Error("remove(%s): %s", path, GetLastErrorString())
-			return -1
+		} else if (attributes & FILE_ATTRIBUTE_READONLY) != 0 {
+			// On non-Windows systems, remove() will happily delete read-only files.
+			// On Windows Ninja should behave the same:
+			//   https://github.com/ninja-build/ninja/issues/1886
+			// Skip error checking.  If this fails, accept whatever happens below.
+			SetFileAttributes(path, attributes & ^FILE_ATTRIBUTE_READONLY)
 		}
-	} else {
-		if !DeleteFile(path) {
-			win_err := GetLastError()
-			if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
-				return 1
+		if (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0 {
+			// remove() deletes both files and directories. On Windows we have to
+			// select the correct function (DeleteFile will yield Permission Denied when
+			// used on a directory)
+			// This fixes the behavior of ninja -t clean in some cases
+			// https://github.com/ninja-build/ninja/issues/828
+			if !RemoveDirectory(path) {
+				win_err := GetLastError()
+				if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+					return 1
+				}
+				// Report remove(), not RemoveDirectory(), for cross-platform consistency.
+				Error("remove(%s): %s", path, GetLastErrorString())
+				return -1
 			}
-			// Report as remove(), not DeleteFile(), for cross-platform consistency.
-			Error("remove(%s): %s", path, GetLastErrorString())
-			return -1
+		} else {
+			if !DeleteFile(path) {
+				win_err := GetLastError()
+				if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+					return 1
+				}
+				// Report as remove(), not DeleteFile(), for cross-platform consistency.
+				Error("remove(%s): %s", path, GetLastErrorString())
+				return -1
+			}
 		}
-	}
+	*/
 	return 0
 }
-*/
 
 // Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
