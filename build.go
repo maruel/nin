@@ -198,58 +198,61 @@ func (p *Plan) Reset() {
 func (p *Plan) AddTarget(target *Node, err *string) bool {
 	return p.AddSubTarget(target, nil, err, nil)
 }
+*/
 
 func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
-	edge := node.in_edge()
-	if edge == nil { // Leaf node.
-		if node.dirty() {
-			referenced := ""
-			if dependent != nil {
-				referenced = ", needed by '" + dependent.path() + "',"
+	panic("TODO")
+	/*
+		edge := node.in_edge()
+		if edge == nil { // Leaf node.
+			if node.dirty() {
+				referenced := ""
+				if dependent != nil {
+					referenced = ", needed by '" + dependent.path() + "',"
+				}
+				*err = "'" + node.path() + "'" + referenced + " missing and no known rule to make it"
 			}
-			*err = "'" + node.path() + "'" + referenced + " missing and no known rule to make it"
-		}
-		return false
-	}
-
-	if edge.outputs_ready() {
-		return false // Don't need to do anything.
-	}
-
-	// If an entry in want_ does not already exist for edge, create an entry which
-	// maps to kWantNothing, indicating that we do not want to build this entry itself.
-	want, ok := p.want_[edge]
-	if !ok {
-		p.want_[edge] = kWantNothing
-	}
-	if dyndep_walk && want == kWantToFinish {
-		return false // Don't need to do anything with already-scheduled edge.
-	}
-
-	// If we do need to build edge and we haven't already marked it as wanted,
-	// mark it now.
-	if node.dirty() && want == kWantNothing {
-		want = kWantToStart
-		p.EdgeWanted(edge)
-		if !dyndep_walk && edge.AllInputsReady() {
-			ScheduleWork(want)
-		}
-	}
-
-	if dyndep_walk {
-		dyndep_walk.insert(edge)
-	}
-
-	if !want_ins.second {
-		return true // We've already processed the inputs.
-	}
-
-	for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
-		if !AddSubTarget(*i, node, err, dyndep_walk) && !err.empty() {
 			return false
 		}
-	}
 
+		if edge.outputs_ready() {
+			return false // Don't need to do anything.
+		}
+
+		// If an entry in want_ does not already exist for edge, create an entry which
+		// maps to kWantNothing, indicating that we do not want to build this entry itself.
+		want, ok := p.want_[edge]
+		if !ok {
+			p.want_[edge] = kWantNothing
+		}
+		if dyndep_walk && want == kWantToFinish {
+			return false // Don't need to do anything with already-scheduled edge.
+		}
+
+		// If we do need to build edge and we haven't already marked it as wanted,
+		// mark it now.
+		if node.dirty() && want == kWantNothing {
+			want = kWantToStart
+			p.EdgeWanted(edge)
+			if !dyndep_walk && edge.AllInputsReady() {
+				ScheduleWork(want)
+			}
+		}
+
+		if dyndep_walk {
+			dyndep_walk.insert(edge)
+		}
+
+		if !want_ins.second {
+			return true // We've already processed the inputs.
+		}
+
+		for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
+			if !AddSubTarget(*i, node, err, dyndep_walk) && !err.empty() {
+				return false
+			}
+		}
+	*/
 	return true
 }
 
@@ -259,7 +262,7 @@ func (p *Plan) EdgeWanted(edge *Edge) {
 		p.command_edges_++
 	}
 }
-*/
+
 // Pop a ready edge off the queue of edges to build.
 // Returns NULL if there's no work to do.
 func (p *Plan) FindWork() *Edge {
@@ -295,41 +298,45 @@ func (p *Plan) ScheduleWork(want_e map<Edge*, Want>::iterator) {
     p.ready_.insert(edge)
   }
 }
+*/
 
 // Mark an edge as done building (whether it succeeded or failed).
 // If any of the edge's outputs are dyndep bindings of their dependents,
 // this loads dynamic dependencies from the nodes' paths.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
-	e := p.want_.find(edge)
-	if !e != p.want_.end() {
-		panic("oops")
-	}
-	directly_wanted := e.second != kWantNothing
-
-	// See if this job frees up any delayed jobs.
-	if directly_wanted {
-		edge.pool().EdgeFinished(*edge)
-	}
-	edge.pool().RetrieveReadyEdges(&p.ready_)
-
-	// The rest of this function only applies to successful commands.
-	if result != kEdgeSucceeded {
-		return true
-	}
-
-	if directly_wanted {
-		p.wanted_edges_--
-	}
-	p.want_.erase(e)
-	edge.outputs_ready_ = true
-
-	// Check off any nodes we were waiting for with this edge.
-	for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-		if !NodeFinished(*o, err) {
-			return false
+	panic("TODO")
+	/*
+		e, ok := p.want_[edge]
+		if !ok {
+			panic("oops")
 		}
-	}
+		directly_wanted := e != kWantNothing
+
+		// See if this job frees up any delayed jobs.
+		if directly_wanted {
+			edge.pool().EdgeFinished(edge)
+		}
+		edge.pool().RetrieveReadyEdges(&p.ready_)
+
+		// The rest of this function only applies to successful commands.
+		if result != kEdgeSucceeded {
+			return true
+		}
+
+		if directly_wanted {
+			p.wanted_edges_--
+		}
+		delete(p.want_, e)
+		edge.outputs_ready_ = true
+
+		// Check off any nodes we were waiting for with this edge.
+		for _, o := range edge.outputs_ {
+			if !NodeFinished(*o, err) {
+				return false
+			}
+		}
+	*/
 	return true
 }
 
@@ -338,28 +345,31 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 // loads dynamic dependencies from the node's path.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) NodeFinished(node *Node, err *string) bool {
-	// If this node provides dyndep info, load it now.
-	if node.dyndep_pending() {
-		if !p.builder_ && "dyndep requires Plan to have a Builder" {
-			panic("oops")
-		}
-		// Load the now-clean dyndep file.  This will also update the
-		// build plan and schedule any new work that is ready.
-		return p.builder_.LoadDyndeps(node, err)
-	}
-
-	// See if we we want any edges from this node.
-	for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
-		want_e := p.want_.find(*oe)
-		if want_e == p.want_.end() {
-			continue
+	panic("TODO")
+	/*
+		// If this node provides dyndep info, load it now.
+		if node.dyndep_pending() {
+			if p.builder_ == nil {
+				panic("dyndep requires Plan to have a Builder")
+			}
+			// Load the now-clean dyndep file.  This will also update the
+			// build plan and schedule any new work that is ready.
+			return p.builder_.LoadDyndeps(node, err)
 		}
 
-		// See if the edge is now ready.
-		if !EdgeMaybeReady(want_e, err) {
-			return false
+		// See if we we want any edges from this node.
+		for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
+			want_e := p.want_.find(*oe)
+			if want_e == p.want_.end() {
+				continue
+			}
+
+			// See if the edge is now ready.
+			if !EdgeMaybeReady(want_e, err) {
+				return false
+			}
 		}
-	}
+	*/
 	return true
 }
 
@@ -379,184 +389,193 @@ func (p *Plan) EdgeMaybeReady(want_e map<Edge*, Want>::iterator, err *string) bo
   }
   return true
 }
+*/
 
 // Clean the given node during the build.
 // Return false on error.
 func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
-  node.set_dirty(false)
+	panic("TODO")
+	/*
+	  node.set_dirty(false)
 
-  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
-    // Don't process edges that we don't actually want.
-    want_e := p.want_.find(*oe)
-    if want_e == p.want_.end() || want_e.second == kWantNothing {
-      continue
-    }
+	  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
+	    // Don't process edges that we don't actually want.
+	    want_e := p.want_.find(*oe)
+	    if want_e == p.want_.end() || want_e.second == kWantNothing {
+	      continue
+	    }
 
-    // Don't attempt to clean an edge if it failed to load deps.
-    if (*oe).deps_missing_ {
-      continue
-    }
+	    // Don't attempt to clean an edge if it failed to load deps.
+	    if (*oe).deps_missing_ {
+	      continue
+	    }
 
-    // If all non-order-only inputs for this edge are now clean,
-    // we might have changed the dirty state of the outputs.
-    vector<Node*>::iterator begin = (*oe).inputs_.begin(), end = (*oe).inputs_.end() - (*oe).order_only_deps_
-    if find_if(begin, end, MEM_FN(&Node::dirty)) == end {
-      // Recompute most_recent_input.
-      most_recent_input := nil
-      for i := begin; i != end; i++ {
-        if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
-          most_recent_input = *i
-        }
-      }
+	    // If all non-order-only inputs for this edge are now clean,
+	    // we might have changed the dirty state of the outputs.
+	    vector<Node*>::iterator begin = (*oe).inputs_.begin(), end = (*oe).inputs_.end() - (*oe).order_only_deps_
+	    if find_if(begin, end, MEM_FN(&Node::dirty)) == end {
+	      // Recompute most_recent_input.
+	      most_recent_input := nil
+	      for i := begin; i != end; i++ {
+	        if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
+	          most_recent_input = *i
+	        }
+	      }
 
-      // Now, this edge is dirty if any of the outputs are dirty.
-      // If the edge isn't dirty, clean the outputs and mark the edge as not
-      // wanted.
-      outputs_dirty := false
-      if !scan.RecomputeOutputsDirty(*oe, most_recent_input, &outputs_dirty, err) {
-        return false
-      }
-      if !outputs_dirty {
-        for o := (*oe).outputs_.begin(); o != (*oe).outputs_.end(); o++ {
-          if !CleanNode(scan, *o, err) {
-            return false
-          }
-        }
+	      // Now, this edge is dirty if any of the outputs are dirty.
+	      // If the edge isn't dirty, clean the outputs and mark the edge as not
+	      // wanted.
+	      outputs_dirty := false
+	      if !scan.RecomputeOutputsDirty(*oe, most_recent_input, &outputs_dirty, err) {
+	        return false
+	      }
+	      if !outputs_dirty {
+	        for o := (*oe).outputs_.begin(); o != (*oe).outputs_.end(); o++ {
+	          if !CleanNode(scan, *o, err) {
+	            return false
+	          }
+	        }
 
-        want_e.second = kWantNothing
-        p.wanted_edges_--
-        if !(*oe).is_phony() {
-          p.command_edges_--
-        }
-      }
-    }
-  }
-  return true
+	        want_e.second = kWantNothing
+	        p.wanted_edges_--
+	        if !(*oe).is_phony() {
+	          p.command_edges_--
+	        }
+	      }
+	    }
+	  }
+	*/
+	return true
 }
 
 // Update the build plan to account for modifications made to the graph
 // by information loaded from a dyndep file.
 func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf *DyndepFile, err *string) bool {
-  // Recompute the dirty state of all our direct and indirect dependents now
-  // that our dyndep information has been loaded.
-  if !RefreshDyndepDependents(scan, node, err) {
-    return false
-  }
+	panic("TODO")
+	/*
+	  // Recompute the dirty state of all our direct and indirect dependents now
+	  // that our dyndep information has been loaded.
+	  if !p.RefreshDyndepDependents(scan, node, err) {
+	    return false
+	  }
 
-  // We loaded dyndep information for those out_edges of the dyndep node that
-  // specify the node in a dyndep binding, but they may not be in the plan.
-  // Starting with those already in the plan, walk newly-reachable portion
-  // of the graph through the dyndep-discovered dependencies.
+	  // We loaded dyndep information for those out_edges of the dyndep node that
+	  // specify the node in a dyndep binding, but they may not be in the plan.
+	  // Starting with those already in the plan, walk newly-reachable portion
+	  // of the graph through the dyndep-discovered dependencies.
 
-  // Find edges in the the build plan for which we have new dyndep info.
-  var dyndep_roots []DyndepFile::const_iterator
-  for oe := ddf.begin(); oe != ddf.end(); oe++ {
-    edge := oe.first
+	  // Find edges in the the build plan for which we have new dyndep info.
+	  var dyndep_roots []DyndepFile::const_iterator
+	  for oe := ddf.begin(); oe != ddf.end(); oe++ {
+	    edge := oe.first
 
-    // If the edge outputs are ready we do not need to consider it here.
-    if edge.outputs_ready() {
-      continue
-    }
+	    // If the edge outputs are ready we do not need to consider it here.
+	    if edge.outputs_ready() {
+	      continue
+	    }
 
-    want_e := p.want_.find(edge)
+	    want_e := p.want_.find(edge)
 
-    // If the edge has not been encountered before then nothing already in the
-    // plan depends on it so we do not need to consider the edge yet either.
-    if want_e == p.want_.end() {
-      continue
-    }
+	    // If the edge has not been encountered before then nothing already in the
+	    // plan depends on it so we do not need to consider the edge yet either.
+	    if want_e == p.want_.end() {
+	      continue
+	    }
 
-    // This edge is already in the plan so queue it for the walk.
-    dyndep_roots.push_back(oe)
-  }
+	    // This edge is already in the plan so queue it for the walk.
+	    dyndep_roots.push_back(oe)
+	  }
 
-  // Walk dyndep-discovered portion of the graph to add it to the build plan.
-  var dyndep_walk map[*Edge]struct{}
-  for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
-    oe := *oei
-    for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
-      if !AddSubTarget(*i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
-        return false
-      }
-    }
-  }
+	  // Walk dyndep-discovered portion of the graph to add it to the build plan.
+	  var dyndep_walk map[*Edge]struct{}
+	  for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
+	    oe := *oei
+	    for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
+	      if !AddSubTarget(*i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
+	        return false
+	      }
+	    }
+	  }
 
-  // Add out edges from this node that are in the plan (just as
-  // NodeFinished would have without taking the dyndep code path).
-  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
-    want_e := p.want_.find(*oe)
-    if want_e == p.want_.end() {
-      continue
-    }
-    dyndep_walk.insert(want_e.first)
-  }
+	  // Add out edges from this node that are in the plan (just as
+	  // NodeFinished would have without taking the dyndep code path).
+	  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
+	    want_e := p.want_.find(*oe)
+	    if want_e == p.want_.end() {
+	      continue
+	    }
+	    dyndep_walk.insert(want_e.first)
+	  }
 
-  // See if any encountered edges are now ready.
-  for wi := dyndep_walk.begin(); wi != dyndep_walk.end(); wi++ {
-    want_e := p.want_.find(*wi)
-    if want_e == p.want_.end() {
-      continue
-    }
-    if !EdgeMaybeReady(want_e, err) {
-      return false
-    }
-  }
-
-  return true
+	  // See if any encountered edges are now ready.
+	  for wi := dyndep_walk.begin(); wi != dyndep_walk.end(); wi++ {
+	    want_e := p.want_.find(*wi)
+	    if want_e == p.want_.end() {
+	      continue
+	    }
+	    if !EdgeMaybeReady(want_e, err) {
+	      return false
+	    }
+	  }
+	*/
+	return true
 }
 
 func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *string) bool {
-  // Collect the transitive closure of dependents and mark their edges
-  // as not yet visited by RecomputeDirty.
-  var dependents map[*Node]struct{}
-  UnmarkDependents(node, &dependents)
+	// Collect the transitive closure of dependents and mark their edges
+	// as not yet visited by RecomputeDirty.
+	dependents := map[*Node]struct{}{}
+	p.UnmarkDependents(node, dependents)
 
-  // Update the dirty state of all dependents and check if their edges
-  // have become wanted.
-  for i := dependents.begin(); i != dependents.end(); i++ {
-    n := *i
+	// Update the dirty state of all dependents and check if their edges
+	// have become wanted.
+	for n := range dependents {
+		// Check if this dependent node is now dirty.  Also checks for new cycles.
+		if !scan.RecomputeDirty(n, nil, err) {
+			return false
+		}
+		if !n.dirty() {
+			continue
+		}
 
-    // Check if this dependent node is now dirty.  Also checks for new cycles.
-    if !scan.RecomputeDirty(n, err) {
-      return false
-    }
-    if !n.dirty() {
-      continue
-    }
-
-    // This edge was encountered before.  However, we may not have wanted to
-    // build it if the outputs were not known to be dirty.  With dyndep
-    // information an output is now known to be dirty, so we want the edge.
-    edge := n.in_edge()
-    if !edge && !edge.outputs_ready() { panic("oops") }
-    want_e := p.want_.find(edge)
-    if !want_e != p.want_.end() { panic("oops") }
-    if want_e.second == kWantNothing {
-      want_e.second = kWantToStart
-      EdgeWanted(edge)
-    }
-  }
-  return true
+		// This edge was encountered before.  However, we may not have wanted to
+		// build it if the outputs were not known to be dirty.  With dyndep
+		// information an output is now known to be dirty, so we want the edge.
+		edge := n.in_edge()
+		if edge == nil || !edge.outputs_ready() {
+			panic("oops")
+		}
+		want_e, ok := p.want_[edge]
+		if !ok {
+			panic("oops")
+		}
+		if want_e == kWantNothing {
+			p.want_[edge] = kWantToStart
+			p.EdgeWanted(edge)
+		}
+	}
+	return true
 }
 
-func (p *Plan) UnmarkDependents(node *Node, dependents *map[*Node]struct{}) {
-  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
-    edge := *oe
+func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
+	for _, edge := range node.out_edges() {
+		_, ok := p.want_[edge]
+		if !ok {
+			continue
+		}
 
-    want_e := p.want_.find(edge)
-    if want_e == p.want_.end() {
-      continue
-    }
-
-    if edge.mark_ != Edge::VisitNone {
-      edge.mark_ = Edge::VisitNone
-      for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-        if dependents.insert(*o).second {
-          UnmarkDependents(*o, dependents)
-        }
-      }
-    }
-  }
+		if edge.mark_ != VisitNone {
+			edge.mark_ = VisitNone
+			for _, o := range edge.outputs_ {
+				_, ok := dependents[o]
+				if ok {
+					p.UnmarkDependents(o, dependents)
+				} else {
+					dependents[o] = struct{}{}
+				}
+			}
+		}
+	}
 }
 
 // Dumps the current state of the plan.
@@ -566,11 +585,10 @@ func (p *Plan) Dump() {
 		if w != kWantNothing {
 			printf("want ")
 		}
-		e.Dump()
+		e.Dump("")
 	}
 	printf("ready: %d\n", len(p.ready_))
 }
-*/
 
 type RealCommandRunner struct {
 	config_          *BuildConfig

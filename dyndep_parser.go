@@ -12,247 +12,250 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
-
 
 // Parses dyndep files.
 type DyndepParser struct {
-
-  dyndep_file_ *DyndepFile
-  env_ BindingEnv
+	Parser
+	dyndep_file_ DyndepFile
+	env_         *BindingEnv
 }
+
 // Parse a text string of input.  Used by tests.
 func (d *DyndepParser) ParseTest(input string, err *string) bool {
-  return Parse("input", input, err)
+	return d.Parse("input", input, err)
 }
 
-
-DyndepParser::DyndepParser(State* state, FileReader* file_reader, DyndepFile* dyndep_file)
-    : Parser(state, file_reader)
-    , dyndep_file_(dyndep_file) {
+func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFile) DyndepParser {
+	return DyndepParser{
+		Parser:       NewParser(state, file_reader),
+		dyndep_file_: dyndep_file,
+	}
 }
 
 // Parse a file, given its contents as a string.
 func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
-  d.lexer_.Start(filename, input)
+	panic("TODO")
+	/*
+	     d.lexer_.Start(filename, input)
 
-  // Require a supported ninja_dyndep_version value immediately so
-  // we can exit before encountering any syntactic surprises.
-  haveDyndepVersion := false
+	     // Require a supported ninja_dyndep_version value immediately so
+	     // we can exit before encountering any syntactic surprises.
+	     haveDyndepVersion := false
 
-  for ; ;  {
-    token := d.lexer_.ReadToken()
-    switch (token) {
-    case Lexer::BUILD: {
-      if !haveDyndepVersion {
-        return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
-      }
-      if !ParseEdge(err) {
-        return false
-      }
-      break
-    }
-    case Lexer::IDENT: {
-      d.lexer_.UnreadToken()
-      if haveDyndepVersion {
-        return d.lexer_.Error(string("unexpected ") + Lexer::TokenName(token), err)
-      }
-      if !ParseDyndepVersion(err) {
-        return false
-      }
-      haveDyndepVersion = true
-      break
-    }
-    case Lexer::ERROR:
-      return d.lexer_.Error(d.lexer_.DescribeLastError(), err)
-    case Lexer::TEOF:
-      if !haveDyndepVersion {
-        return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
-      }
-      return true
-    case Lexer::NEWLINE:
-      break
-    default:
-      return d.lexer_.Error(string("unexpected ") + Lexer::TokenName(token), err)
-    }
-  }
-  return false  // not reached
-}
+	     for ; ;  {
+	       token := d.lexer_.ReadToken()
+	       switch (token) {
+	       case BUILD: {
+	         if !haveDyndepVersion {
+	           return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
+	         }
+	         if !ParseEdge(err) {
+	           return false
+	         }
+	         break
+	       }
+	       case IDENT: {
+	         d.lexer_.UnreadToken()
+	         if haveDyndepVersion {
+	           return d.lexer_.Error(string("unexpected ") + TokenName(token), err)
+	         }
+	         if !ParseDyndepVersion(err) {
+	           return false
+	         }
+	         haveDyndepVersion = true
+	         break
+	       }
+	       case ERROR:
+	         return d.lexer_.Error(d.lexer_.DescribeLastError(), err)
+	       case TEOF:
+	         if !haveDyndepVersion {
+	           return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
+	         }
+	         return true
+	       case NEWLINE:
+	         break
+	       default:
+	         return d.lexer_.Error(string("unexpected ") + TokenName(token), err)
+	       }
+	     }
+	     return false  // not reached
+	   }
 
-func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
-  name := ""
-  var let_value EvalString
-  if !ParseLet(&name, &let_value, err) {
-    return false
-  }
-  if name != "ninja_dyndep_version" {
-    return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
-  }
-  version := let_value.Evaluate(&d.env_)
-  int major, minor
-  ParseVersion(version, &major, &minor)
-  if major != 1 || minor != 0 {
-    return d.lexer_.Error( string("unsupported 'ninja_dyndep_version = ") + version + "'", err)
-    return false
-  }
-  return true
+	   func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
+	     name := ""
+	     var let_value EvalString
+	     if !ParseLet(&name, &let_value, err) {
+	       return false
+	     }
+	     if name != "ninja_dyndep_version" {
+	       return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
+	     }
+	     version := let_value.Evaluate(&d.env_)
+	     int major, minor
+	     ParseVersion(version, &major, &minor)
+	     if major != 1 || minor != 0 {
+	       return d.lexer_.Error( string("unsupported 'ninja_dyndep_version = ") + version + "'", err)
+	       return false
+	     }
+	*/
+	return true
 }
 
 func (d *DyndepParser) ParseLet(key *string, value *EvalString, err *string) bool {
-  if !d.lexer_.ReadIdent(key) {
-    return d.lexer_.Error("expected variable name", err)
-  }
-  if !ExpectToken(Lexer::EQUALS, err) {
-    return false
-  }
-  if !d.lexer_.ReadVarValue(value, err) {
-    return false
-  }
-  return true
+	if !d.lexer_.ReadIdent(key) {
+		return d.lexer_.Error("expected variable name", err)
+	}
+	if !d.ExpectToken(EQUALS, err) {
+		return false
+	}
+	if !d.lexer_.ReadVarValue(value, err) {
+		return false
+	}
+	return true
 }
 
 func (d *DyndepParser) ParseEdge(err *string) bool {
-  // Parse one explicit output.  We expect it to already have an edge.
-  // We will record its dynamically-discovered dependency information.
-  dyndeps := nil
-  {
-    var out0 EvalString
-    if !d.lexer_.ReadPath(&out0, err) {
-      return false
-    }
-    if out0.empty() {
-      return d.lexer_.Error("expected path", err)
-    }
+	panic("TODO")
+	/*
+	   // Parse one explicit output.  We expect it to already have an edge.
+	   // We will record its dynamically-discovered dependency information.
+	   dyndeps := nil
+	   {
+	     var out0 EvalString
+	     if !d.lexer_.ReadPath(&out0, err) {
+	       return false
+	     }
+	     if out0.empty() {
+	       return d.lexer_.Error("expected path", err)
+	     }
 
-    path := out0.Evaluate(&d.env_)
-    if len(path) == 0 {
-      return d.lexer_.Error("empty path", err)
-    }
-    var slash_bits uint64
-    CanonicalizePath(&path, &slash_bits)
-    node := d.state_.LookupNode(path)
-    if !node || !node.in_edge() {
-      return d.lexer_.Error("no build statement exists for '" + path + "'", err)
-    }
-    edge := node.in_edge()
-    pair<DyndepFile::iterator, bool> res =
-      d.dyndep_file_.insert(DyndepFile::value_type(edge, Dyndeps()))
-    if !res.second {
-      return d.lexer_.Error("multiple statements for '" + path + "'", err)
-    }
-    dyndeps = &res.first.second
-  }
+	     path := out0.Evaluate(&d.env_)
+	     if len(path) == 0 {
+	       return d.lexer_.Error("empty path", err)
+	     }
+	     var slash_bits uint64
+	     CanonicalizePath(&path, &slash_bits)
+	     node := d.state_.LookupNode(path)
+	     if !node || !node.in_edge() {
+	       return d.lexer_.Error("no build statement exists for '" + path + "'", err)
+	     }
+	     edge := node.in_edge()
+	     pair<DyndepFile::iterator, bool> res =
+	       d.dyndep_file_.insert(DyndepFile::value_type(edge, Dyndeps()))
+	     if !res.second {
+	       return d.lexer_.Error("multiple statements for '" + path + "'", err)
+	     }
+	     dyndeps = &res.first.second
+	   }
 
-  // Disallow explicit outputs.
-  {
-    var out EvalString
-    if !d.lexer_.ReadPath(&out, err) {
-      return false
-    }
-    if len(out) != 0 {
-      return d.lexer_.Error("explicit outputs not supported", err)
-    }
-  }
+	   // Disallow explicit outputs.
+	   {
+	     var out EvalString
+	     if !d.lexer_.ReadPath(&out, err) {
+	       return false
+	     }
+	     if len(out) != 0 {
+	       return d.lexer_.Error("explicit outputs not supported", err)
+	     }
+	   }
 
-  // Parse implicit outputs, if any.
-  var outs []EvalString
-  if d.lexer_.PeekToken(Lexer::PIPE) {
-    for ; ;  {
-      var out EvalString
-      if !d.lexer_.ReadPath(&out, err) {
-        return err
-      }
-      if len(out) == 0 {
-        break
-      }
-      outs.push_back(out)
-    }
-  }
+	   // Parse implicit outputs, if any.
+	   var outs []EvalString
+	   if d.lexer_.PeekToken(PIPE) {
+	     for ; ;  {
+	       var out EvalString
+	       if !d.lexer_.ReadPath(&out, err) {
+	         return err
+	       }
+	       if len(out) == 0 {
+	         break
+	       }
+	       outs.push_back(out)
+	     }
+	   }
 
-  if !ExpectToken(Lexer::COLON, err) {
-    return false
-  }
+	   if !ExpectToken(COLON, err) {
+	     return false
+	   }
 
-  rule_name := ""
-  if !d.lexer_.ReadIdent(&rule_name) || rule_name != "dyndep" {
-    return d.lexer_.Error("expected build command name 'dyndep'", err)
-  }
+	   rule_name := ""
+	   if !d.lexer_.ReadIdent(&rule_name) || rule_name != "dyndep" {
+	     return d.lexer_.Error("expected build command name 'dyndep'", err)
+	   }
 
-  // Disallow explicit inputs.
-  {
-    var in EvalString
-    if !d.lexer_.ReadPath(&in, err) {
-      return false
-    }
-    if len(in) != 0 {
-      return d.lexer_.Error("explicit inputs not supported", err)
-    }
-  }
+	   // Disallow explicit inputs.
+	   {
+	     var in EvalString
+	     if !d.lexer_.ReadPath(&in, err) {
+	       return false
+	     }
+	     if len(in) != 0 {
+	       return d.lexer_.Error("explicit inputs not supported", err)
+	     }
+	   }
 
-  // Parse implicit inputs, if any.
-  var ins []EvalString
-  if d.lexer_.PeekToken(Lexer::PIPE) {
-    for ; ;  {
-      var in EvalString
-      if !d.lexer_.ReadPath(&in, err) {
-        return err
-      }
-      if len(in) == 0 {
-        break
-      }
-      ins.push_back(in)
-    }
-  }
+	   // Parse implicit inputs, if any.
+	   var ins []EvalString
+	   if d.lexer_.PeekToken(PIPE) {
+	     for ; ;  {
+	       var in EvalString
+	       if !d.lexer_.ReadPath(&in, err) {
+	         return err
+	       }
+	       if len(in) == 0 {
+	         break
+	       }
+	       ins.push_back(in)
+	     }
+	   }
 
-  // Disallow order-only inputs.
-  if d.lexer_.PeekToken(Lexer::PIPE2) {
-    return d.lexer_.Error("order-only inputs not supported", err)
-  }
+	   // Disallow order-only inputs.
+	   if d.lexer_.PeekToken(PIPE2) {
+	     return d.lexer_.Error("order-only inputs not supported", err)
+	   }
 
-  if !ExpectToken(Lexer::NEWLINE, err) {
-    return false
-  }
+	   if !ExpectToken(NEWLINE, err) {
+	     return false
+	   }
 
-  if d.lexer_.PeekToken(Lexer::INDENT) {
-    key := ""
-    var val EvalString
-    if !ParseLet(&key, &val, err) {
-      return false
-    }
-    if key != "restat" {
-      return d.lexer_.Error("binding is not 'restat'", err)
-    }
-    value := val.Evaluate(&d.env_)
-    dyndeps.restat_ = !value.empty()
-  }
+	   if d.lexer_.PeekToken(INDENT) {
+	     key := ""
+	     var val EvalString
+	     if !ParseLet(&key, &val, err) {
+	       return false
+	     }
+	     if key != "restat" {
+	       return d.lexer_.Error("binding is not 'restat'", err)
+	     }
+	     value := val.Evaluate(&d.env_)
+	     dyndeps.restat_ = !value.empty()
+	   }
 
-  dyndeps.implicit_inputs_.reserve(ins.size())
-  for i := ins.begin(); i != ins.end(); i++ {
-    path := i.Evaluate(&d.env_)
-    if len(path) == 0 {
-      return d.lexer_.Error("empty path", err)
-    }
-    var slash_bits uint64
-    CanonicalizePath(&path, &slash_bits)
-    n := d.state_.GetNode(path, slash_bits)
-    dyndeps.implicit_inputs_.push_back(n)
-  }
+	   dyndeps.implicit_inputs_.reserve(ins.size())
+	   for i := ins.begin(); i != ins.end(); i++ {
+	     path := i.Evaluate(&d.env_)
+	     if len(path) == 0 {
+	       return d.lexer_.Error("empty path", err)
+	     }
+	     var slash_bits uint64
+	     CanonicalizePath(&path, &slash_bits)
+	     n := d.state_.GetNode(path, slash_bits)
+	     dyndeps.implicit_inputs_.push_back(n)
+	   }
 
-  dyndeps.implicit_outputs_.reserve(outs.size())
-  for i := outs.begin(); i != outs.end(); i++ {
-    path := i.Evaluate(&d.env_)
-    if len(path) == 0 {
-      return d.lexer_.Error("empty path", err)
-    }
-    path_err := ""
-    var slash_bits uint64
-    CanonicalizePath(&path, &slash_bits)
-    n := d.state_.GetNode(path, slash_bits)
-    dyndeps.implicit_outputs_.push_back(n)
-  }
-
-  return true
+	   dyndeps.implicit_outputs_.reserve(outs.size())
+	   for i := outs.begin(); i != outs.end(); i++ {
+	     path := i.Evaluate(&d.env_)
+	     if len(path) == 0 {
+	       return d.lexer_.Error("empty path", err)
+	     }
+	     path_err := ""
+	     var slash_bits uint64
+	     CanonicalizePath(&path, &slash_bits)
+	     n := d.state_.GetNode(path, slash_bits)
+	     dyndeps.implicit_outputs_.push_back(n)
+	   }
+	*/
+	return true
 }
-
