@@ -230,10 +230,11 @@ type EdgeCmp struct {
   }
 }
 type EdgeSet map[Edge*, EdgeCmp]struct{}
-* /
+*/
 
 type EdgeSet map[*Edge]struct{}
 
+/*
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
