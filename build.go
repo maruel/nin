@@ -17,7 +17,6 @@ package ginja
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
-
 	// Keep track of which edges we want to build in this plan.  If this map does
 	// not contain an entry for an edge, we do not want to build the entry or its
 	// dependents.  If it does contain an entry, the enumeration indicates what
@@ -35,8 +34,6 @@ type Plan struct {
 	wanted_edges_ int
 }
 
-/*
-
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
 	return p.wanted_edges_ > 0 && p.command_edges_ > 0
@@ -46,7 +43,7 @@ func (p *Plan) more_to_do() bool {
 func (p *Plan) command_edge_count() int {
 	return p.command_edges_
 }
-*/
+
 type EdgeResult int
 
 const (
@@ -91,6 +88,7 @@ func NewResult() Result {
 func (c *CommandRunner) success() bool {
 	return c.status == ExitSuccess
 }
+
 func (c *CommandRunner) GetActiveEdges() []*Edge {
 	return nil
 }
@@ -145,13 +143,10 @@ type Builder struct {
 	scan_           DependencyScan
 }
 
-/*
-
 // Used for tests.
 func (b *Builder) SetBuildLog(log *BuildLog) {
 	b.scan_.set_build_log(log)
 }
-*/
 
 type RunningEdgeMap map[*Edge]int
 
@@ -182,7 +177,6 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
 	return true
 }
 
-/*
 func NewPlan(builder *Builder) Plan {
 	return Plan{
 		builder_: builder,
@@ -197,11 +191,12 @@ func (p *Plan) Reset() {
 	p.want_ = nil
 }
 
+/*
 // Add a target to our plan (including all its dependencies).
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
 func (p *Plan) AddTarget(target *Node, err *string) bool {
-	return AddSubTarget(target, nil, err, nil)
+	return p.AddSubTarget(target, nil, err, nil)
 }
 
 func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
@@ -264,17 +259,15 @@ func (p *Plan) EdgeWanted(edge *Edge) {
 		p.command_edges_++
 	}
 }
-
+*/
 // Pop a ready edge off the queue of edges to build.
 // Returns NULL if there's no work to do.
 func (p *Plan) FindWork() *Edge {
-	if p.ready_.empty() {
-		return nil
+	for e := range p.ready_ {
+		delete(p.ready_, e)
+		return e
 	}
-	e := p.ready_.begin()
-	edge := *e
-	p.ready_.erase(e)
-	return edge
+	return nil
 }
 
 /*

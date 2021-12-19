@@ -243,7 +243,6 @@ type ImplicitDepLoader struct {
 	depfile_parser_options_ *DepfileParserOptions
 }
 
-/*
 func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
 		state_:                  state,
@@ -252,10 +251,11 @@ func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskI
 		depfile_parser_options_: depfile_parser_options,
 	}
 }
+
 func (i *ImplicitDepLoader) deps_log() *DepsLog {
 	return i.deps_log_
 }
-*/
+
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
 type DependencyScan struct {
@@ -265,25 +265,27 @@ type DependencyScan struct {
 	dyndep_loader_  DyndepLoader
 }
 
-/*
 func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
 		build_log_:      build_log,
 		disk_interface_: disk_interface,
-		dep_loader_:     state, deps_log, disk_interface, depfile_parser_options,
-		dyndep_loader_: state, disk_interface,
+		dep_loader_:     NewImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
+		dyndep_loader_:  NewDyndepLoader(state, disk_interface),
 	}
 }
+
 func (d *DependencyScan) build_log() *BuildLog {
 	return d.build_log_
 }
 func (d *DependencyScan) set_build_log(log *BuildLog) {
 	d.build_log_ = log
 }
+
 func (d *DependencyScan) deps_log() *DepsLog {
 	return d.dep_loader_.deps_log()
 }
 
+/*
 // Return false on error.
 func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
 	METRIC_RECORD("node stat")
