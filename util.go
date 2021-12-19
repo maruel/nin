@@ -54,116 +54,105 @@ func Info(msg string, s ...interface{}) {
 	fmt.Fprintf(os.Stdout, "\n")
 }
 
+func IsPathSeparator(c byte) bool {
+	return c == '/' || c == '\\'
+}
+
+// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+// |slash_bits| has bits set starting from lowest for a backslash that was
+// normalized to a forward slash. (only used on Windows)
+func CanonicalizePath(path string, slash_bits *uint64) string {
+	// WARNING: this function is performance-critical; please benchmark
+	// any changes you make to it.
+	len2 := len(path)
+	if len2 == 0 {
+		return path
+	}
+	/*
+	     kMaxPathComponents := 60
+	   	var components [kMaxPathComponents]byte
+	     component_count := 0
+
+	     start := path
+	     dst := start
+	     src := start
+	   	end := start + len2
+
+	     if IsPathSeparator(*src) {
+	       // network path starts with //
+	       if len2 > 1 && IsPathSeparator(path[src + 1]) {
+	         src += 2
+	         dst += 2
+	       } else {
+	         src++
+	         dst++
+	       }
+	     }
+
+	     for src < end {
+	       if path[src] == '.' {
+	         if src + 1 == end || IsPathSeparator(path[src+1]) {
+	           // '.' component; eliminate.
+	           src += 2
+	           continue
+	         } else if path[src+1] == '.' && (src + 2 == end || IsPathSeparator(path[src+2])) {
+	           // '..' component.  Back up if possible.
+	           if component_count > 0 {
+	             dst = components[component_count - 1]
+	             src += 3
+	             component_count--
+	           } else {
+	             *dst++ = *src++
+	             *dst++ = *src++
+	             *dst++ = *src++
+	           }
+	           continue
+	         }
+	       }
+
+	       if IsPathSeparator(path[src]) {
+	         src++
+	         continue
+	       }
+
+	       if component_count == kMaxPathComponents {
+	         Fatal("path has too many components : %s", path)
+	       }
+	       components[component_count] = dst
+	       component_count++
+
+	       for src != end && !IsPathSeparator(path[src]) {
+	         *dst++ = *src++
+	       }
+	       *dst++ = *src++  // Copy '/' or final \0 character as well.
+	     }
+
+	     if dst == start {
+	       *dst++ = '.'
+	       *dst++ = '\0'
+	     }
+
+	     len2 = dst - start - 1
+	     bits := 0
+	     bits_mask := 1
+
+	     for c := start; c < start + len2; c++ {
+	       switch path[c] {
+	         case '\\':
+	           bits |= bits_mask
+	           *c = '/'
+	           NINJA_FALLTHROUGH
+	         case '/':
+	           bits_mask <<= 1
+	       }
+	     }
+
+	     *slash_bits = bits
+	*/
+	return path
+}
+
 /*
-// Canonicalize a path like "foo/../bar.h" into just "bar.h".
-// |slash_bits| has bits set starting from lowest for a backslash that was
-// normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path *string, slash_bits *uint64) {
-  len2 := path.size()
-  str := 0
-  if len2 > 0 {
-    str = &(*path)[0]
-  }
-  CanonicalizePath(str, &len2, slash_bits)
-  path.resize(len2)
-}
-
-func IsPathSeparator(c char) bool {
-  return c == '/' || c == '\\'
-}
-
-// Canonicalize a path like "foo/../bar.h" into just "bar.h".
-// |slash_bits| has bits set starting from lowest for a backslash that was
-// normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path *char, len2 *uint, slash_bits *uint64) {
-  // WARNING: this function is performance-critical; please benchmark
-  // any changes you make to it.
-  if *len2 == 0 {
-    return
-  }
-
-  kMaxPathComponents := 60
-  char* components[kMaxPathComponents]
-  component_count := 0
-
-  start := path
-  dst := start
-  src := start
-  string end = start + *len2
-
-  if IsPathSeparator(*src) {
-
-    // network path starts with //
-    if *len2 > 1 && IsPathSeparator(*(src + 1)) {
-      src += 2
-      dst += 2
-    } else {
-      src++
-      dst++
-    }
-  }
-
-  while src < end {
-    if *src == '.' {
-      if src + 1 == end || IsPathSeparator(src[1]) {
-        // '.' component; eliminate.
-        src += 2
-        continue
-      } else if src[1] == '.' && (src + 2 == end || IsPathSeparator(src[2])) {
-        // '..' component.  Back up if possible.
-        if component_count > 0 {
-          dst = components[component_count - 1]
-          src += 3
-          component_count--
-        } else {
-          *dst++ = *src++
-          *dst++ = *src++
-          *dst++ = *src++
-        }
-        continue
-      }
-    }
-
-    if IsPathSeparator(*src) {
-      src++
-      continue
-    }
-
-    if component_count == kMaxPathComponents {
-      Fatal("path has too many components : %s", path)
-    }
-    components[component_count] = dst
-    component_count++
-
-    while src != end && !IsPathSeparator(*src) {
-      *dst++ = *src++
-    }
-    *dst++ = *src++  // Copy '/' or final \0 character as well.
-  }
-
-  if dst == start {
-    *dst++ = '.'
-    *dst++ = '\0'
-  }
-
-  *len2 = dst - start - 1
-  bits := 0
-  bits_mask := 1
-
-  for c := start; c < start + *len2; c++ {
-    switch (*c) {
-      case '\\':
-        bits |= bits_mask
-        *c = '/'
-        NINJA_FALLTHROUGH
-      case '/':
-        bits_mask <<= 1
-    }
-  }
-
-  *slash_bits = bits
-}
-
 func IsKnownShellSafeCharacter(ch char) inline bool {
   if 'A' <= ch && ch <= 'Z' {
   	return true

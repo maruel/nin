@@ -745,29 +745,34 @@ func (e *Edge) GetBinding(key string) string {
 	return ""
 }
 
-/*
 func (e *Edge) GetBindingBool(key string) bool {
-	return !GetBinding(key).empty()
+	return e.GetBinding(key) != ""
 }
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	env := NewEdgeEnv(this, kDoNotEscape)
-	return env.LookupVariable("depfile")
+	//TODO
+	//env := NewEdgeEnv(e, kDoNotEscape)
+	//return env.LookupVariable("depfile")
+	return ""
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	env := NewEdgeEnv(this, kDoNotEscape)
-	return env.LookupVariable("dyndep")
+	//TODO
+	//env := NewEdgeEnv(e, kDoNotEscape)
+	//return env.LookupVariable("dyndep")
+	return ""
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	env := NewEdgeEnv(this, kDoNotEscape)
-	return env.LookupVariable("rspfile")
+	//TODO
+	//env := NewEdgeEnv(e, kDoNotEscape)
+	//return env.LookupVariable("rspfile")
+	return ""
 }
-*/
+
 func (e *Edge) Dump(prefix string) {
 	printf("%s[ ", prefix)
 	for _, i := range e.inputs_ {
@@ -845,25 +850,26 @@ func (n *Node) Dump(prefix string) {
 		(*e).Dump(" +- ")
 	}
 }
-
+*/
 // Load implicit dependencies for \a edge.
 // @return false on error (without filling \a err if info is just missing
 //                          or out of date).
 func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 	deps_type := edge.GetBinding("deps")
-	if !deps_type.empty() {
-		return LoadDepsFromLog(edge, err)
+	if len(deps_type) != 0 {
+		return i.LoadDepsFromLog(edge, err)
 	}
 
 	depfile := edge.GetUnescapedDepfile()
 	if len(depfile) != 0 {
-		return LoadDepFile(edge, depfile, err)
+		return i.LoadDepFile(edge, depfile, err)
 	}
 
 	// No deps to load.
 	return true
 }
 
+/*
 type matches struct {
 	/*
 	   bool operator()(const Node* node) const {
@@ -879,84 +885,87 @@ func Newmatches(i int) matches {
 		i_: i,
 	}
 }
-
+*/
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	METRIC_RECORD("depfile load")
-	// Read depfile content.  Treat a missing depfile as empty.
-	content := ""
-	switch i.disk_interface_.ReadFile(path, &content, err) {
-	case Okay:
-		break
-	case NotFound:
-		err = nil
-		break
-	case OtherError:
-		*err = "loading '" + path + "': " + *err
-		return false
-	}
-	// On a missing depfile: return false and empty *err.
-	if len(content) == 0 {
-		EXPLAIN("depfile '%s' is missing", path)
-		return false
-	}
+	//TODO
+	/*
+			//METRIC_RECORD("depfile load")
+			// Read depfile content.  Treat a missing depfile as empty.
+			content := ""
+			switch i.disk_interface_.ReadFile(path, &content, err) {
+			case Okay:
+				break
+			case NotFound:
+				err = nil
+				break
+			case OtherError:
+				*err = "loading '" + path + "': " + *err
+				return false
+			}
+			// On a missing depfile: return false and empty *err.
+			if len(content) == 0 {
+				EXPLAIN("depfile '%s' is missing", path)
+				return false
+			}
 
-	x := DepfileParserOptions()
-	if i.depfile_parser_options_ != nil {
-		x = *i.depfile_parser_options_
-	}
-	depfile := NewDepfileParser(x)
-	depfile_err := ""
-	if !depfile.Parse(&content, &depfile_err) {
-		*err = path + ": " + depfile_err
-		return false
-	}
+			x := DepfileParserOptions()
+			if i.depfile_parser_options_ != nil {
+				x = *i.depfile_parser_options_
+			}
+			depfile := NewDepfileParser(x)
+			depfile_err := ""
+			if !depfile.Parse(&content, &depfile_err) {
+				*err = path + ": " + depfile_err
+				return false
+			}
 
-	if depfile.outs_.empty() {
-		*err = path + ": no outputs declared"
-		return false
-	}
+			if depfile.outs_.empty() {
+				*err = path + ": no outputs declared"
+				return false
+			}
 
-	var unused uint64
-	primary_out := depfile.outs_.begin()
-	CanonicalizePath(primary_out.str_, &primary_out.len_, &unused)
+			var unused uint64
+			primary_out := depfile.outs_.begin()
+			CanonicalizePath(primary_out.str_, &primary_out.len_, &unused)
 
-	// Check that this depfile matches the edge's output, if not return false to
-	// mark the edge as dirty.
-	first_output := edge.outputs_[0]
-	opath := string(first_output.path())
-	if opath != *primary_out {
-		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out.AsString())
-		return false
-	}
+			// Check that this depfile matches the edge's output, if not return false to
+			// mark the edge as dirty.
+			first_output := edge.outputs_[0]
+			opath := string(first_output.path())
+			if opath != *primary_out {
+				EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out.AsString())
+				return false
+			}
 
-	// Ensure that all mentioned outputs are outputs of the edge.
-	for o := depfile.outs_.begin(); o != depfile.outs_.end(); o++ {
-		m := matches(o)
-		if find_if(edge.outputs_.begin(), edge.outputs_.end(), m) == edge.outputs_.end() {
-			*err = path + ": depfile mentions '" + o.AsString() + "' as an output, but no such output was declared"
-			return false
-		}
-	}
-
-	return ProcessDepfileDeps(edge, &depfile.ins_, err)
+			// Ensure that all mentioned outputs are outputs of the edge.
+			for o := depfile.outs_.begin(); o != depfile.outs_.end(); o++ {
+				m := matches(o)
+				if find_if(edge.outputs_.begin(), edge.outputs_.end(), m) == edge.outputs_.end() {
+					*err = path + ": depfile mentions '" + o.AsString() + "' as an output, but no such output was declared"
+					return false
+				}
+			}
+		return i.ProcessDepfileDeps(edge, &depfile.ins_, err)
+	*/
+	return false
 }
 
 // Process loaded implicit dependencies for \a edge and update the graph
 // @return false on error (without filling \a err if info is just missing)
-func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins *[]string, err *string) bool {
+func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string, err *string) bool {
 	// Preallocate space in edge->inputs_ to be filled in below.
-	implicit_dep := PreallocateSpace(edge, depfile_ins.size())
+	implicit_dep := i.PreallocateSpace(edge, len(depfile_ins))
 
 	// Add all its in-edges.
-	for i := depfile_ins.begin(); i != depfile_ins.end(); i++ {
+	for _, j := range depfile_ins {
 		var slash_bits uint64
-		CanonicalizePath(i.str_, &i.len_, &slash_bits)
-		node := i.state_.GetNode(*i, slash_bits)
-		*implicit_dep = node
+		j = CanonicalizePath(j, &slash_bits)
+		node := i.state_.GetNode(j, slash_bits)
+		//*implicit_dep = node
 		node.AddOutEdge(edge)
-		CreatePhonyInEdge(node)
+		i.CreatePhonyInEdge(node)
 		implicit_dep++
 	}
 
@@ -973,22 +982,22 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		deps = i.deps_log_.GetDeps(output)
 	}
 	if deps == nil {
-		EXPLAIN("deps for '%s' are missing", output.path())
+		//EXPLAIN("deps for '%s' are missing", output.path())
 		return false
 	}
 
 	// Deps are invalid if the output is newer than the deps.
 	if output.mtime() > deps.mtime {
-		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.path(), deps.mtime, output.mtime())
+		//EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.path(), deps.mtime, output.mtime())
 		return false
 	}
 
-	implicit_dep := PreallocateSpace(edge, deps.node_count)
-	for i := 0; i < deps.node_count; i++ {
-		node := deps.nodes[i]
-		*implicit_dep = node
+	implicit_dep := i.PreallocateSpace(edge, deps.node_count)
+	for j := 0; j < deps.node_count; j++ {
+		node := deps.nodes[j]
+		//*implicit_dep = node
 		node.AddOutEdge(edge)
-		CreatePhonyInEdge(node)
+		i.CreatePhonyInEdge(node)
 		implicit_dep++
 	}
 	return true
@@ -997,23 +1006,27 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	edge.inputs_.insert(edge.inputs_.end()-edge.order_only_deps_, count, 0)
-	edge.implicit_deps_ += count
-	return edge.inputs_.end() - edge.order_only_deps_ - count
+	//TODO
+	/*
+		edge.inputs_.insert(edge.inputs_.end()-edge.order_only_deps_, count, 0)
+		edge.implicit_deps_ += count
+		return edge.inputs_.end() - edge.order_only_deps_ - count
+	*/
+	return 0
 }
 
 // If we don't have a edge that generates this input already,
 // create one; this makes us not abort if the input is missing,
 // but instead will rebuild in that circumstance.
 func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
-	if node.in_edge() {
+	if node.in_edge() != nil {
 		return
 	}
 
 	phony_edge := i.state_.AddEdge(&kPhonyRule)
 	phony_edge.generated_by_dep_loader_ = true
 	node.set_in_edge(phony_edge)
-	phony_edge.outputs_.push_back(node)
+	phony_edge.outputs_ = append(phony_edge.outputs_, node)
 
 	// RecomputeDirty might not be called for phony_edge if a previous call
 	// to RecomputeDirty had caused the file to be stat'ed.  Because previous
@@ -1023,4 +1036,3 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 	// this node, it will simply set outputs_ready_ to the correct value.
 	phony_edge.outputs_ready_ = true
 }
-*/
