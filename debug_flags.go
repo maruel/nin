@@ -14,9 +14,20 @@
 
 package ginja
 
+import (
+	"fmt"
+	"os"
+)
+
 var (
 	g_explaining             = false
 	g_keep_depfile           = false
 	g_keep_rsp               = false
 	g_experimental_statcache = true
 )
+
+func EXPLAIN(f string, i ...interface{}) {
+	if g_explaining {
+		fmt.Fprintf(os.Stderr, "ninja explain: "+f+"\n", i...)
+	}
+}

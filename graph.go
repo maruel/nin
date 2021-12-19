@@ -14,6 +14,8 @@
 
 package ginja
 
+import "bytes"
+
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
 type Node struct {
@@ -70,6 +72,7 @@ func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool 
 	return Stat(disk_interface, err)
 }
 */
+
 // Mark as not-yet-stat()ed and not dirty.
 func (n *Node) ResetState() {
 	n.mtime_ = -1
@@ -94,12 +97,11 @@ func (n *Node) path() string {
 	return n.path_
 }
 
-/*
 // Get |path()| but use slash_bits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
 	return PathDecanonicalized(n.path_, n.slash_bits_)
 }
-*/
+
 func (n *Node) slash_bits() uint64 {
 	return n.slash_bits_
 }
@@ -299,14 +301,17 @@ func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
 	}
 	return true
 }
-
+*/
 // If the file doesn't exist, set the mtime_ from its dependencies
 func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
-	if !exists() {
-		n.mtime_ = max(n.mtime_, mtime)
+	if !n.exists() {
+		if mtime > n.mtime_ {
+			n.mtime_ = mtime
+		}
 	}
 }
 
+/*
 // Update the |dirty_| state of the given node by inspecting its input edge.
 // Examine inputs, outputs, and command lines to judge whether an edge
 // needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
@@ -314,8 +319,9 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
 	var stack []*Node
-	return RecomputeDirty(node, &stack, err)
+	return d.RecomputeDirty(node, &stack, err)
 }
+*/
 
 // Update the |dirty_| state of the given node by inspecting its input edge.
 // Examine inputs, outputs, and command lines to judge whether an edge
@@ -323,299 +329,307 @@ func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
 // state accordingly.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string) bool {
-	edge := node.in_edge()
-	if edge == nil {
-		// If we already visited this leaf node then we are done.
-		if node.status_known() {
-			return true
-		}
-		// This node has no in-edge; it is dirty if it is missing.
-		if !node.StatIfNecessary(d.disk_interface_, err) {
-			return false
-		}
-		if !node.exists() {
-			EXPLAIN("%s has no in-edge and is missing", node.path())
-		}
-		node.set_dirty(!node.exists())
-		return true
-	}
+	panic("TODO")
+	/*
+			edge := node.in_edge()
+			if edge == nil {
+				// If we already visited this leaf node then we are done.
+				if node.status_known() {
+					return true
+				}
+				// This node has no in-edge; it is dirty if it is missing.
+				if !node.StatIfNecessary(d.disk_interface_, err) {
+					return false
+				}
+				if !node.exists() {
+					EXPLAIN("%s has no in-edge and is missing", node.path())
+				}
+				node.set_dirty(!node.exists())
+				return true
+			}
 
-	// If we already finished this edge then we are done.
-	if edge.mark_ == VisitDone {
-		return true
-	}
+			// If we already finished this edge then we are done.
+			if edge.mark_ == VisitDone {
+				return true
+			}
 
-	// If we encountered this edge earlier in the call stack we have a cycle.
-	if !VerifyDAG(node, stack, err) {
-		return false
-	}
-
-	// Mark the edge temporarily while in the call stack.
-	edge.mark_ = VisitInStack
-	stack.push_back(node)
-
-	dirty := false
-	edge.outputs_ready_ = true
-	edge.deps_missing_ = false
-
-	if !edge.deps_loaded_ {
-		// This is our first encounter with this edge.
-		// If there is a pending dyndep file, visit it now:
-		// * If the dyndep file is ready then load it now to get any
-		//   additional inputs and outputs for this and other edges.
-		//   Once the dyndep file is loaded it will no longer be pending
-		//   if any other edges encounter it, but they will already have
-		//   been updated.
-		// * If the dyndep file is not ready then since is known to be an
-		//   input to this edge, the edge will not be considered ready below.
-		//   Later during the build the dyndep file will become ready and be
-		//   loaded to update this edge before it can possibly be scheduled.
-		if edge.dyndep_ && edge.dyndep_.dyndep_pending() {
-			if !RecomputeDirty(edge.dyndep_, stack, err) {
+			// If we encountered this edge earlier in the call stack we have a cycle.
+			if !VerifyDAG(node, stack, err) {
 				return false
 			}
 
-			if !edge.dyndep_.in_edge() || edge.dyndep_.in_edge().outputs_ready() {
-				// The dyndep file is ready, so load it now.
-				if !LoadDyndeps(edge.dyndep_, err) {
+			// Mark the edge temporarily while in the call stack.
+			edge.mark_ = VisitInStack
+			*stack = append(*stack, node)
+
+			dirty := false
+			edge.outputs_ready_ = true
+			edge.deps_missing_ = false
+
+			if !edge.deps_loaded_ {
+				// This is our first encounter with this edge.
+				// If there is a pending dyndep file, visit it now:
+				// * If the dyndep file is ready then load it now to get any
+				//   additional inputs and outputs for this and other edges.
+				//   Once the dyndep file is loaded it will no longer be pending
+				//   if any other edges encounter it, but they will already have
+				//   been updated.
+				// * If the dyndep file is not ready then since is known to be an
+				//   input to this edge, the edge will not be considered ready below.
+				//   Later during the build the dyndep file will become ready and be
+				//   loaded to update this edge before it can possibly be scheduled.
+				if edge.dyndep_ && edge.dyndep_.dyndep_pending() {
+					if !d.RecomputeDirty(edge.dyndep_, stack, err) {
+						return false
+					}
+
+					if !edge.dyndep_.in_edge() || edge.dyndep_.in_edge().outputs_ready() {
+						// The dyndep file is ready, so load it now.
+						if !LoadDyndeps(edge.dyndep_, err) {
+							return false
+						}
+					}
+				}
+			}
+
+			// Load output mtimes so we can compare them to the most recent input below.
+			for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
+				if !(*o).StatIfNecessary(d.disk_interface_, err) {
 					return false
 				}
 			}
-		}
-	}
 
-	// Load output mtimes so we can compare them to the most recent input below.
-	for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-		if !(*o).StatIfNecessary(d.disk_interface_, err) {
-			return false
-		}
-	}
-
-	if !edge.deps_loaded_ {
-		// This is our first encounter with this edge.  Load discovered deps.
-		edge.deps_loaded_ = true
-		if !d.dep_loader_.LoadDeps(edge, err) {
-			if len(err) != 0 {
-				return false
-			}
-			// Failed to load dependency info: rebuild to regenerate it.
-			// LoadDeps() did EXPLAIN() already, no need to do it here.
-			dirty = true
-			edge.deps_missing_ = true
-		}
-	}
-
-	// Visit all inputs; we're dirty if any of the inputs are dirty.
-	most_recent_input := nil
-	for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
-		// Visit this input.
-		if !RecomputeDirty(*i, stack, err) {
-			return false
-		}
-
-		// If an input is not ready, neither are our outputs.
-		if in_edge := i.in_edge(); in_edge != nil {
-			if !in_edge.outputs_ready_ {
-				edge.outputs_ready_ = false
-			}
-		}
-
-		if !edge.is_order_only(i - edge.inputs_.begin()) {
-			// If a regular input is dirty (or missing), we're dirty.
-			// Otherwise consider mtime.
-			if (*i).dirty() {
-				EXPLAIN("%s is dirty", (*i).path())
-				dirty = true
-			} else {
-				if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
-					most_recent_input = *i
+			if !edge.deps_loaded_ {
+				// This is our first encounter with this edge.  Load discovered deps.
+				edge.deps_loaded_ = true
+				if !d.dep_loader_.LoadDeps(edge, err) {
+					if len(err) != 0 {
+						return false
+					}
+					// Failed to load dependency info: rebuild to regenerate it.
+					// LoadDeps() did EXPLAIN() already, no need to do it here.
+					dirty = true
+					edge.deps_missing_ = true
 				}
 			}
+
+			// Visit all inputs; we're dirty if any of the inputs are dirty.
+			most_recent_input := nil
+			for i := edge.inputs_.begin(); i != edge.inputs_.end(); i++ {
+				// Visit this input.
+				if !d.RecomputeDirty(*i, stack, err) {
+					return false
+				}
+
+				// If an input is not ready, neither are our outputs.
+				if in_edge := i.in_edge(); in_edge != nil {
+					if !in_edge.outputs_ready_ {
+						edge.outputs_ready_ = false
+					}
+				}
+
+				if !edge.is_order_only(i - edge.inputs_.begin()) {
+					// If a regular input is dirty (or missing), we're dirty.
+					// Otherwise consider mtime.
+					if (*i).dirty() {
+						EXPLAIN("%s is dirty", (*i).path())
+						dirty = true
+					} else {
+						if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
+							most_recent_input = *i
+						}
+					}
+				}
+			}
+
+			// We may also be dirty due to output state: missing outputs, out of
+			// date outputs, etc.  Visit all outputs and determine whether they're dirty.
+			if dirty == nil {
+				if !d.RecomputeOutputsDirty(edge, most_recent_input, &dirty, err) {
+					return false
+				}
+			}
+
+			// Finally, visit each output and update their dirty state if necessary.
+			for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
+				if dirty != nil {
+					(*o).MarkDirty()
+				}
+			}
+
+			// If an edge is dirty, its outputs are normally not ready.  (It's
+			// possible to be clean but still not be ready in the presence of
+			// order-only inputs.)
+			// But phony edges with no inputs have nothing to do, so are always
+			// ready.
+			if dirty && !(edge.is_phony() && edge.inputs_.empty()) {
+				edge.outputs_ready_ = false
+			}
+
+			// Mark the edge as finished during this walk now that it will no longer
+			// be in the call stack.
+			edge.mark_ = VisitDone
+			if (*stack)[len(*stack)-1] != node {
+				panic("oops")
+			}
+			stack = (*stack)[:len(*stack)-1]
+
+			return true
 		}
-	}
 
-	// We may also be dirty due to output state: missing outputs, out of
-	// date outputs, etc.  Visit all outputs and determine whether they're dirty.
-	if dirty == nil {
-		if !RecomputeOutputsDirty(edge, most_recent_input, &dirty, err) {
-			return false
-		}
-	}
+		func (d *DependencyScan) VerifyDAG(node *Node, stack *[]*Node, err *string) bool {
+			edge := node.in_edge()
+			if !edge != nil {
+				panic("oops")
+			}
 
-	// Finally, visit each output and update their dirty state if necessary.
-	for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-		if dirty != nil {
-			(*o).MarkDirty()
-		}
-	}
+			// If we have no temporary mark on the edge then we do not yet have a cycle.
+			if edge.mark_ != VisitInStack {
+				return true
+			}
 
-	// If an edge is dirty, its outputs are normally not ready.  (It's
-	// possible to be clean but still not be ready in the presence of
-	// order-only inputs.)
-	// But phony edges with no inputs have nothing to do, so are always
-	// ready.
-	if dirty && !(edge.is_phony() && edge.inputs_.empty()) {
-		edge.outputs_ready_ = false
-	}
+			// We have this edge earlier in the call stack.  Find it.
+			start := -1
+			for _, i := range stack {
+				if stack[i].in_edge() == edge {
+					start = i
+					break
+				}
+			}
+			if start == -1 {
+				panic("oops")
+			}
 
-	// Mark the edge as finished during this walk now that it will no longer
-	// be in the call stack.
-	edge.mark_ = VisitDone
-	if !stack.back() == node {
-		panic("oops")
-	}
-	stack.pop_back()
+			// Make the cycle clear by reporting its start as the node at its end
+			// instead of some other output of the starting edge.  For example,
+			// running 'ninja b' on
+			//   build a b: cat c
+			//   build c: cat a
+			// should report a -> c -> a instead of b -> c -> a.
+			*start = node
 
-	return true
-}
+			// Construct the error message rejecting the cycle.
+			*err = "dependency cycle: "
+			for i := start; i != stack.end(); i++ {
+				err.append((*i).path())
+				err.append(" . ")
+			}
+			err.append((*start).path())
 
-func (d *DependencyScan) VerifyDAG(node *Node, stack *[]*Node, err *string) bool {
-	edge := node.in_edge()
-	if !edge != nil {
-		panic("oops")
-	}
-
-	// If we have no temporary mark on the edge then we do not yet have a cycle.
-	if edge.mark_ != VisitInStack {
-		return true
-	}
-
-	// We have this edge earlier in the call stack.  Find it.
-	start := -1
-	for _, i := range stack {
-		if stack[i].in_edge() == edge {
-			start = i
-			break
-		}
-	}
-	if start == -1 {
-		panic("oops")
-	}
-
-	// Make the cycle clear by reporting its start as the node at its end
-	// instead of some other output of the starting edge.  For example,
-	// running 'ninja b' on
-	//   build a b: cat c
-	//   build c: cat a
-	// should report a -> c -> a instead of b -> c -> a.
-	*start = node
-
-	// Construct the error message rejecting the cycle.
-	*err = "dependency cycle: "
-	for i := start; i != stack.end(); i++ {
-		err.append((*i).path())
-		err.append(" . ")
-	}
-	err.append((*start).path())
-
-	if (start+1) == stack.end() && edge.maybe_phonycycle_diagnostic() {
-		// The manifest parser would have filtered out the self-referencing
-		// input if it were not configured to allow the error.
-		err.append(" [-w phonycycle=err]")
-	}
-
+			if (start+1) == stack.end() && edge.maybe_phonycycle_diagnostic() {
+				// The manifest parser would have filtered out the self-referencing
+				// input if it were not configured to allow the error.
+				err.append(" [-w phonycycle=err]")
+			}
+	*/
 	return false
 }
 
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
-	command := edge.EvaluateCommand(  true) // incl_rsp_file=
-	for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-		if RecomputeOutputDirty(edge, most_recent_input, command, *o) {
-			*outputs_dirty = true
-			return true
+	panic("TODO")
+	/*
+		command := edge.EvaluateCommand(true) // incl_rsp_file=
+		for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
+			if RecomputeOutputDirty(edge, most_recent_input, command, *o) {
+				*outputs_dirty = true
+				return true
+			}
 		}
-	}
+	*/
 	return true
 }
 
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
 func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Node, command string, output *Node) bool {
-	if edge.is_phony() {
-		// Phony edges don't write any output.  Outputs are only dirty if
-		// there are no inputs and we're missing the output.
-		if edge.inputs_.empty() && !output.exists() {
-			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.path())
-			return true
-		}
-
-		// Update the mtime with the newest input. Dependents can thus call mtime()
-		// on the fake node and get the latest mtime of the dependencies
-		if most_recent_input {
-			output.UpdatePhonyMtime(most_recent_input.mtime())
-		}
-
-		// Phony edges are clean, nothing to do
-		return false
-	}
-
-	entry := 0
-
-	// Dirty if we're missing the output.
-	if !output.exists() {
-		EXPLAIN("output %s doesn't exist", output.path())
-		return true
-	}
-
-	// Dirty if the output is older than the input.
-	if most_recent_input && output.mtime() < most_recent_input.mtime() {
-		output_mtime := output.mtime()
-
-		// If this is a restat rule, we may have cleaned the output with a restat
-		// rule in a previous run and stored the most recent input mtime in the
-		// build log.  Use that mtime instead, so that the file will only be
-		// considered dirty if an input was modified since the previous run.
-		used_restat := false
-		if edge.GetBindingBool("restat") && build_log() {
-			if entry := build_log().LookupByOutput(output.path()); entry != nil {
-				output_mtime = entry.mtime
-				used_restat = true
-			}
-		}
-
-		if output_mtime < most_recent_input.mtime() {
-			s := ""
-			if used_restat {
-				s = "restat of "
-			}
-			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
-			return true
-		}
-	}
-
-	if build_log() {
-		generator := edge.GetBindingBool("generator")
-		if entry == nil {
-			entry = build_log().LookupByOutput(output.path())
-		}
-		if entry {
-			if !generator && HashCommand(command) != entry.command_hash {
-				// May also be dirty due to the command changing since the last build.
-				// But if this is a generator rule, the command changing does not make us
-				// dirty.
-				EXPLAIN("command line changed for %s", output.path())
+	panic("TODO")
+	/*
+		if edge.is_phony() {
+			// Phony edges don't write any output.  Outputs are only dirty if
+			// there are no inputs and we're missing the output.
+			if edge.inputs_.empty() && !output.exists() {
+				EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.path())
 				return true
 			}
-			if most_recent_input && entry.mtime < most_recent_input.mtime() {
-				// May also be dirty due to the mtime in the log being older than the
-				// mtime of the most recent input.  This can occur even when the mtime
-				// on disk is newer if a previous run wrote to the output file but
-				// exited with an error or was interrupted.
-				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.path(), most_recent_input.path(), entry.mtime, most_recent_input.mtime())
+
+			// Update the mtime with the newest input. Dependents can thus call mtime()
+			// on the fake node and get the latest mtime of the dependencies
+			if most_recent_input {
+				output.UpdatePhonyMtime(most_recent_input.mtime())
+			}
+
+			// Phony edges are clean, nothing to do
+			return false
+		}
+
+		entry := 0
+
+		// Dirty if we're missing the output.
+		if !output.exists() {
+			EXPLAIN("output %s doesn't exist", output.path())
+			return true
+		}
+
+		// Dirty if the output is older than the input.
+		if most_recent_input && output.mtime() < most_recent_input.mtime() {
+			output_mtime := output.mtime()
+
+			// If this is a restat rule, we may have cleaned the output with a restat
+			// rule in a previous run and stored the most recent input mtime in the
+			// build log.  Use that mtime instead, so that the file will only be
+			// considered dirty if an input was modified since the previous run.
+			used_restat := false
+			if edge.GetBindingBool("restat") && build_log() {
+				if entry := build_log().LookupByOutput(output.path()); entry != nil {
+					output_mtime = entry.mtime
+					used_restat = true
+				}
+			}
+
+			if output_mtime < most_recent_input.mtime() {
+				s := ""
+				if used_restat {
+					s = "restat of "
+				}
+				EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
 				return true
 			}
 		}
-		if !entry && !generator {
-			EXPLAIN("command line not found in log for %s", output.path())
-			return true
-		}
-	}
 
+		if build_log() {
+			generator := edge.GetBindingBool("generator")
+			if entry == nil {
+				entry = build_log().LookupByOutput(output.path())
+			}
+			if entry {
+				if !generator && HashCommand(command) != entry.command_hash {
+					// May also be dirty due to the command changing since the last build.
+					// But if this is a generator rule, the command changing does not make us
+					// dirty.
+					EXPLAIN("command line changed for %s", output.path())
+					return true
+				}
+				if most_recent_input && entry.mtime < most_recent_input.mtime() {
+					// May also be dirty due to the mtime in the log being older than the
+					// mtime of the most recent input.  This can occur even when the mtime
+					// on disk is newer if a previous run wrote to the output file but
+					// exited with an error or was interrupted.
+					EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.path(), most_recent_input.path(), entry.mtime, most_recent_input.mtime())
+					return true
+				}
+			}
+			if !entry && !generator {
+				EXPLAIN("command line not found in log for %s", output.path())
+				return true
+			}
+		}
+	*/
 	return false
 }
 
+/*
 // Load a dyndep file from the given node's path and update the
 // build graph with the new information.  One overload accepts
 // a caller-owned 'DyndepFile' object in which to store the
@@ -623,25 +637,26 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 func (d *DependencyScan) LoadDyndeps(node *Node, err *string) bool {
 	return d.dyndep_loader_.LoadDyndeps(node, err)
 }
+*/
 
 // Load a dyndep file from the given node's path and update the
 // build graph with the new information.  One overload accepts
 // a caller-owned 'DyndepFile' object in which to store the
 // information loaded from the dyndep file.
-func (d *DependencyScan) LoadDyndeps(node *Node, ddf *DyndepFile, err *string) bool {
+func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
 	return d.dyndep_loader_.LoadDyndeps(node, ddf, err)
 }
 
 // Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
-	for i := e.inputs_.begin(); i != e.inputs_.end(); i++ {
-		if (*i).in_edge() && !(*i).in_edge().outputs_ready() {
+	for _, i := range e.inputs_ {
+		if i.in_edge() != nil && !i.in_edge().outputs_ready() {
 			return false
 		}
 	}
 	return true
 }
-*/
+
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
 	lookups_       []string
@@ -714,7 +729,7 @@ func (e *EdgeEnv) MakePathList(span **Node, size uint, sep char) string {
 		if len(result) != 0 {
 			result = sep + result
 		}
-		path := (*i).PathDecanonicalized()
+		path := i.PathDecanonicalized()
 		if e.escape_in_out_ == kShellEscape {
 			GetWin32EscapedString(path, &result)
 		} else {
@@ -810,29 +825,31 @@ func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	return is_phony() && e.outputs_.size() == 1 && e.implicit_outs_ == 0 &&
 		e.implicit_deps_ == 0
 }
+*/
 
 // static
-func (n *Node) PathDecanonicalized(path string, slash_bits uint64) string {
-	result := path
-	mask := 1
-	c := &result[0]
+func PathDecanonicalized(path string, slash_bits uint64) string {
+	result := []byte(path)
+	mask := uint64(1)
+	c := 0
 	for {
-		c = strchr(c, '/')
-		if c == nil {
+		c = bytes.IndexByte(result[c:], '/')
+		if c == -1 {
 			break
 		}
-		if slash_bits & mask {
-			*c = '\\'
+		if slash_bits&mask != 0 {
+			result[c] = '\\'
 		}
 		c++
 		mask <<= 1
 	}
-	return result
+	return string(result)
 }
 
+/*
 func (n *Node) Dump(prefix string) {
 	s := ""
-	if !exists() {
+	if !n.exists() {
 		s = " (:missing)"
 	}
 	t := " clean"
