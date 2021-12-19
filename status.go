@@ -23,6 +23,16 @@ import (
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
 type Status interface {
+	PlanHasTotalEdges(total int)
+	BuildEdgeStarted(edge *Edge, start_time_millis int64)
+	BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string)
+	BuildLoadDyndeps()
+	BuildStarted()
+	BuildFinished()
+
+	Info(msg string, i ...interface{})
+	Warning(msg string, i ...interface{})
+	Error(msg string, i ...interface{})
 }
 
 // Implementation of the Status interface that prints the status as

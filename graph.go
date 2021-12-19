@@ -65,7 +65,7 @@ func NewNode(path string, slash_bits uint64) *Node {
 
 /*
 // Return false on error.
-func (n *Node) StatIfNecessary(disk_interface *DiskInterface, err *string) bool {
+func (n *Node) StatIfNecessary(disk_interface DiskInterface, err *string) bool {
 	if status_known() {
 		return true
 	}
@@ -240,12 +240,12 @@ type EdgeSet map[*Edge]struct{}
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
 	state_                  *State
-	disk_interface_         *DiskInterface
+	disk_interface_         DiskInterface
 	deps_log_               *DepsLog
 	depfile_parser_options_ *DepfileParserOptions
 }
 
-func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
+func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
 		state_:                  state,
 		disk_interface_:         disk_interface,
@@ -262,12 +262,12 @@ func (i *ImplicitDepLoader) deps_log() *DepsLog {
 // and updating the dirty/outputs_ready state of all the nodes and edges.
 type DependencyScan struct {
 	build_log_      *BuildLog
-	disk_interface_ *DiskInterface
+	disk_interface_ DiskInterface
 	dep_loader_     ImplicitDepLoader
 	dyndep_loader_  DyndepLoader
 }
 
-func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface *DiskInterface, depfile_parser_options *DepfileParserOptions) DependencyScan {
+func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
 		build_log_:      build_log,
 		disk_interface_: disk_interface,
@@ -289,7 +289,7 @@ func (d *DependencyScan) deps_log() *DepsLog {
 
 /*
 // Return false on error.
-func (n *Node) Stat(disk_interface *DiskInterface, err *string) bool {
+func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
 	METRIC_RECORD("node stat")
 	n.mtime_ = disk_interface.Stat(n.path_, err)
 	if n.mtime_ == -1 {

@@ -36,10 +36,10 @@ type DyndepFile map[*Edge]Dyndeps
 // referenced via the "dyndep" attribute in build files.
 type DyndepLoader struct {
 	state_          *State
-	disk_interface_ *DiskInterface
+	disk_interface_ DiskInterface
 }
 
-func NewDyndepLoader(state *State, disk_interface *DiskInterface) DyndepLoader {
+func NewDyndepLoader(state *State, disk_interface DiskInterface) DyndepLoader {
 	return DyndepLoader{
 		state_:          state,
 		disk_interface_: disk_interface,
