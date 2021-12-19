@@ -12,51 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "unsafe"
 
 // MurmurHash2, by Austin Appleby
-static inline
-func MurmurHash2(key *void, len2 uint) unsigned int {
-  seed := 0xDECAFBAD
-  m := 0x5bd1e995
-  r := 24
-  unsigned int h = seed ^ len2
-  data := (const unsigned char*)key
-  while len2 >= 4 {
-    var k unsigned int
-    memcpy(&k, data, sizeof k)
-    k *= m
-    k ^= k >> r
-    k *= m
-    h *= m
-    h ^= k
-    data += 4
-    len2 -= 4
-  }
-  switch (len2) {
-  case 3: h ^= data[2] << 16
-          NINJA_FALLTHROUGH
-  case 2: h ^= data[1] << 8
-          NINJA_FALLTHROUGH
-  case 1: h ^= data[0]
-    h *= m
-  }
-  h ^= h >> 13
-  h *= m
-  h ^= h >> 15
-  return h
+func MurmurHash2(key []byte, len2 uint32) uint32 {
+	const seed = uint32(0xDECAFBAD)
+	const m = uint32(0x5bd1e995)
+	const r = 24
+	h := uint32(seed ^ len2)
+	data := 0
+	for len2 >= 4 {
+		k := *(*uint32)(unsafe.Pointer(&key[data*4]))
+		k *= m
+		k ^= k >> r
+		k *= m
+		h *= m
+		h ^= k
+		data += 4
+		len2 -= 4
+	}
+	switch len2 {
+	case 3:
+		h ^= uint32(key[data*4+2]) << 16
+		fallthrough
+	case 2:
+		h ^= uint32(key[data*4+1]) << 8
+		fallthrough
+	case 1:
+		h ^= uint32(key[data*4])
+		h *= m
+	}
+	h ^= h >> 13
+	h *= m
+	h ^= h >> 15
+	return h
 }
 
+/*
 template<>
 type hash struct {
 
   size_t operator()(string key) const {
     return MurmurHash2(key.str_, key.len_)
   }
-}
+
 type argument_type string
 type result_type uint
 
@@ -88,4 +89,4 @@ type ExternalStringHashMap struct {
 }
 type Type unordered_map<string, V>
 type Type hash_map<string, V, StringPieceCmp>
-
+*/
