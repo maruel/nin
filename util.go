@@ -12,74 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"fmt"
+	"os"
+)
 
 // Have a generic fall-through for different versions of C/C++.
 
-
 // Log a fatal message and exit.
-func Fatal(msg string, ...) {
-  var ap va_list
-  fprintf(stderr, "ninja: fatal: ")
-  va_start(ap, msg)
-  vfprintf(stderr, msg, ap)
-  va_end(ap)
-  fprintf(stderr, "\n")
-  // On Windows, some tools may inject extra threads.
-  // exit() may block on locks held by those threads, so forcibly exit.
-  fflush(stderr)
-  fflush(stdout)
-  ExitProcess(1)
+func Fatal(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "ninja: fatal: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
+	// On Windows, some tools may inject extra threads.
+	// exit() may block on locks held by those threads, so forcibly exit.
+	os.Stderr.Sync()
+	os.Stdout.Sync()
+	os.Exit(1)
 }
 
 // Log a warning message.
-func Warning(msg string, ap va_list) {
-  fprintf(stderr, "ninja: warning: ")
-  vfprintf(stderr, msg, ap)
-  fprintf(stderr, "\n")
-}
-
-// Log a warning message.
-func Warning(msg string, ...) {
-  var ap va_list
-  va_start(ap, msg)
-  Warning(msg, ap)
-  va_end(ap)
+func Warning(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "ninja: warning: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // Log an error message.
-func Error(msg string, ap va_list) {
-  fprintf(stderr, "ninja: error: ")
-  vfprintf(stderr, msg, ap)
-  fprintf(stderr, "\n")
-}
-
-// Log an error message.
-func Error(msg string, ...) {
-  var ap va_list
-  va_start(ap, msg)
-  Error(msg, ap)
-  va_end(ap)
+func Error(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "ninja: error: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // Log an informational message.
-func Info(msg string, ap va_list) {
-  fprintf(stdout, "ninja: ")
-  vfprintf(stdout, msg, ap)
-  fprintf(stdout, "\n")
+func Info(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stdout, "ninja: ")
+	fmt.Fprintf(os.Stdout, msg, s...)
+	fmt.Fprintf(os.Stdout, "\n")
 }
 
-// Log an informational message.
-func Info(msg string, ...) {
-  var ap va_list
-  va_start(ap, msg)
-  Info(msg, ap)
-  va_end(ap)
-}
-
+/*
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
@@ -591,4 +566,4 @@ func Truncate(path string, size uint, err *string) bool {
   }
   return true
 }
-
+*/
