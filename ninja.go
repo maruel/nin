@@ -72,7 +72,8 @@ func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	}
 }
 
-//typedef int (NinjaMain::*ToolFunc)(const Options*, int, char**)
+type ToolFunc func(*Options, []string) int
+
 func (n *NinjaMain) IsPathDead(s string) bool {
 	nd := n.state_.LookupNode(s)
 	if nd != nil && nd.in_edge() != nil {
@@ -104,7 +105,7 @@ type Tool struct {
 	desc string
 
 	// Implementation of the tool.
-	//func NinjaMain::ToolFunc
+	tool ToolFunc
 }
 
 // When to run the tool.
@@ -870,38 +871,38 @@ func (n *NinjaMain) ToolUrtle(options *Options, argc int, argv *char*) int {
 func ChooseTool(tool_name string) *Tool {
   static const Tool kTools[] = {
     { "browse", "browse dependency graph in a web browser",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
+      RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
     { "msvc", "build helper for MSVC cl.exe (EXPERIMENTAL)",
-      Tool::RUN_AFTER_FLAGS, &NinjaMain::ToolMSVC },
+      RUN_AFTER_FLAGS, &NinjaMain::ToolMSVC },
     { "clean", "clean built files",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolClean },
+      RUN_AFTER_LOAD, &NinjaMain::ToolClean },
     { "commands", "list all commands required to rebuild given targets",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolCommands },
+      RUN_AFTER_LOAD, &NinjaMain::ToolCommands },
     { "deps", "show dependencies stored in the deps log",
-      Tool::RUN_AFTER_LOGS, &NinjaMain::ToolDeps },
+      RUN_AFTER_LOGS, &NinjaMain::ToolDeps },
     { "missingdeps", "check deps log dependencies on generated files",
-      Tool::RUN_AFTER_LOGS, &NinjaMain::ToolMissingDeps },
+      RUN_AFTER_LOGS, &NinjaMain::ToolMissingDeps },
     { "graph", "output graphviz dot file for targets",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolGraph },
+      RUN_AFTER_LOAD, &NinjaMain::ToolGraph },
     { "query", "show inputs/outputs for a path",
-      Tool::RUN_AFTER_LOGS, &NinjaMain::ToolQuery },
+      RUN_AFTER_LOGS, &NinjaMain::ToolQuery },
     { "targets",  "list targets by their rule or depth in the DAG",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolTargets },
+      RUN_AFTER_LOAD, &NinjaMain::ToolTargets },
     { "compdb",  "dump JSON compilation database to stdout",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolCompilationDatabase },
+      RUN_AFTER_LOAD, &NinjaMain::ToolCompilationDatabase },
     { "recompact",  "recompacts ninja-internal data structures",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolRecompact },
+      RUN_AFTER_LOAD, &NinjaMain::ToolRecompact },
     { "restat",  "restats all outputs in the build log",
-      Tool::RUN_AFTER_FLAGS, &NinjaMain::ToolRestat },
+      RUN_AFTER_FLAGS, &NinjaMain::ToolRestat },
     { "rules",  "list all rules",
-      Tool::RUN_AFTER_LOAD, &NinjaMain::ToolRules },
+      RUN_AFTER_LOAD, &NinjaMain::ToolRules },
     { "cleandead",  "clean built files that are no longer produced by the manifest",
-      Tool::RUN_AFTER_LOGS, &NinjaMain::ToolCleanDead },
+      RUN_AFTER_LOGS, &NinjaMain::ToolCleanDead },
     { "urtle", nil,
-      Tool::RUN_AFTER_FLAGS, &NinjaMain::ToolUrtle },
+      RUN_AFTER_FLAGS, &NinjaMain::ToolUrtle },
     { "wincodepage", "print the Windows code page used by ninja",
-      Tool::RUN_AFTER_FLAGS, &NinjaMain::ToolWinCodePage },
-    { nil, nil, Tool::RUN_AFTER_FLAGS, nil }
+      RUN_AFTER_FLAGS, &NinjaMain::ToolWinCodePage },
+    { nil, nil, RUN_AFTER_FLAGS, nil }
   }
 
   if tool_name == "list" {
@@ -1266,7 +1267,7 @@ func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) i
   return -1
 }
 */
-func main() {
+func Main() {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing NinjaMain.
 	config := BuildConfig{}
@@ -1280,7 +1281,7 @@ func main() {
 	/*
 	  exit_code := ReadFlags(&argc, &argv, &options, &config)
 	  if exit_code >= 0 {
-	    exit(exit_code)
+	    os.Exit(exit_code)
 	  }
 	*/
 	status := NewStatusPrinter(&config)
@@ -1298,80 +1299,81 @@ func main() {
 		}
 	}
 	/*
-	  if options.tool && options.tool.when == Tool::RUN_AFTER_FLAGS {
-	    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
-	    // by other tools.
-	    NinjaMain ninja(ninja_command, config)
-	    exit((ninja.*options.tool.func)(&options, argc, argv))
-	  }
+		  if options.tool && options.tool.when == RUN_AFTER_FLAGS {
+		    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
+		    // by other tools.
+				ninja := NewNinjaMain (ninja_command, config)
+		    os.Exit((ninja.*options.tool.func)(&options, argc, argv))
+		  }
 
-	  // It'd be nice to use line buffering but MSDN says: "For some systems,
-	  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
-	  //  same as _IOFBF - Full Buffering."
-	  // Buffering used to be disabled in the LinePrinter constructor but that
-	  // now disables it too early and breaks -t deps performance (see issue #2018)
-	  // so we disable it here instead, but only when not running a tool.
-	  if !options.tool {
-	    setvbuf(stdout, nil, _IONBF, 0)
-	  }
-
-	  // Limit number of rebuilds, to prevent infinite loops.
-	  kCycleLimit := 100
-	  for cycle := 1; cycle <= kCycleLimit; cycle++ {
-	    NinjaMain ninja(ninja_command, config)
-
-	    var parser_opts ManifestParserOptions
-	    if options.dupe_edges_should_err {
-	      parser_opts.dupe_edge_action_ = kDupeEdgeActionError
-	    }
-	    if options.phony_cycle_should_err {
-	      parser_opts.phony_cycle_action_ = kPhonyCycleActionError
-	    }
-	    ManifestParser parser(&ninja.state_, &ninja.disk_interface_, parser_opts)
-	    err := ""
-	    if !parser.Load(options.input_file, &err) {
-	      status.Error("%s", err)
-	      exit(1)
-	    }
-
-	    if options.tool && options.tool.when == Tool::RUN_AFTER_LOAD {
-	      exit((ninja.*options.tool.func)(&options, argc, argv))
-	    }
-
-	    if !ninja.EnsureBuildDirExists() {
-	      exit(1)
-	    }
-
-	    if !ninja.OpenBuildLog() || !ninja.OpenDepsLog() {
-	      exit(1)
-	    }
-
-	    if options.tool && options.tool.when == Tool::RUN_AFTER_LOGS {
-	      exit((ninja.*options.tool.func)(&options, argc, argv))
-	    }
-
-	    // Attempt to rebuild the manifest before building anything else
-	    if ninja.RebuildManifest(options.input_file, &err, status) {
-	      // In dry_run mode the regeneration will succeed without changing the
-	      // manifest forever. Better to return immediately.
-	      if config.dry_run {
-	        exit(0)
-	      }
-	      // Start the build over with the new manifest.
-	      continue
-	    } else if len(err) != 0 {
-	      status.Error("rebuilding '%s': %s", options.input_file, err)
-	      exit(1)
-	    }
-
-	    result := ninja.RunBuild(argc, argv, status)
-	    if g_metrics {
-	      ninja.DumpMetrics()
-	    }
-	    exit(result)
-	  }
-
-	  status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
+		  // It'd be nice to use line buffering but MSDN says: "For some systems,
+		  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
+		  //  same as _IOFBF - Full Buffering."
+		  // Buffering used to be disabled in the LinePrinter constructor but that
+		  // now disables it too early and breaks -t deps performance (see issue #2018)
+		  // so we disable it here instead, but only when not running a tool.
+		  if !options.tool {
+		    setvbuf(stdout, nil, _IONBF, 0)
+		  }
 	*/
+	// Limit number of rebuilds, to prevent infinite loops.
+	kCycleLimit := 100
+	for cycle := 1; cycle <= kCycleLimit; cycle++ {
+		//ninja := NewNinjaMain(ninja_command, &config)
+
+		var parser_opts ManifestParserOptions
+		if options.dupe_edges_should_err {
+			parser_opts.dupe_edge_action_ = kDupeEdgeActionError
+		}
+		if options.phony_cycle_should_err {
+			parser_opts.phony_cycle_action_ = kPhonyCycleActionError
+		}
+		/* TODO
+		parser := NewManifestParser(&ninja.state_, &ninja.disk_interface_, parser_opts)
+		err := ""
+		if !parser.Load(options.input_file, &err) {
+			status.Error("%s", err)
+			os.Exit(1)
+		}
+
+		if options.tool && options.tool.when == RUN_AFTER_LOAD {
+			os.Exit(ninja.options.tool(&options, args))
+		}
+
+		if !ninja.EnsureBuildDirExists() {
+			os.Exit(1)
+		}
+
+		if !ninja.OpenBuildLog() || !ninja.OpenDepsLog() {
+			os.Exit(1)
+		}
+
+		if options.tool && options.tool.when == RUN_AFTER_LOGS {
+			os.Exit(ninja.options.tool(&options, args))
+		}
+
+		// Attempt to rebuild the manifest before building anything else
+		if ninja.RebuildManifest(options.input_file, &err, status) {
+			// In dry_run mode the regeneration will succeed without changing the
+			// manifest forever. Better to return immediately.
+			if config.dry_run {
+				os.Exit(0)
+			}
+			// Start the build over with the new manifest.
+			continue
+		} else if len(err) != 0 {
+			status.Error("rebuilding '%s': %s", options.input_file, err)
+			os.Exit(1)
+		}
+
+		result := ninja.RunBuild(argc, argv, status)
+		if g_metrics {
+			ninja.DumpMetrics()
+		}
+		os.Exit(result)
+		*/
+	}
+
+	status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
 	os.Exit(1)
 }

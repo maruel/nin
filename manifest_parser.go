@@ -12,54 +12,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
-
 type DupeEdgeAction int
+
 const (
-  kDupeEdgeActionWarn DupeEdgeAction = iota
-  kDupeEdgeActionError
+	kDupeEdgeActionWarn DupeEdgeAction = iota
+	kDupeEdgeActionError
 )
 
 type PhonyCycleAction int
+
 const (
-  kPhonyCycleActionWarn PhonyCycleAction = iota
-  kPhonyCycleActionError
+	kPhonyCycleActionWarn PhonyCycleAction = iota
+	kPhonyCycleActionError
 )
 
 type ManifestParserOptions struct {
-  dupe_edge_action_ DupeEdgeAction
-  phony_cycle_action_ PhonyCycleAction
+	dupe_edge_action_   DupeEdgeAction
+	phony_cycle_action_ PhonyCycleAction
 }
+
 func NewManifestParserOptions() ManifestParserOptions {
 	return ManifestParserOptions{
-		dupe_edge_action_: kDupeEdgeActionWarn,
+		dupe_edge_action_:   kDupeEdgeActionWarn,
 		phony_cycle_action_: kPhonyCycleActionWarn,
 	}
 }
 
 // Parses .ninja files.
 type ManifestParser struct {
-
-  env_ *BindingEnv
-  options_ ManifestParserOptions
-  quiet_ bool
+	env_     *BindingEnv
+	options_ ManifestParserOptions
+	quiet_   bool
 }
+
 // Parse a text string of input.  Used by tests.
 func (m *ManifestParser) ParseTest(input string, err *string) bool {
-  m.quiet_ = true
-  return Parse("input", input, err)
+	m.quiet_ = true
+	// TODO return m.Parse("input", input, err)
+	return false
 }
 
-
-ManifestParser::ManifestParser(State* state, FileReader* file_reader, ManifestParserOptions options)
-    : Parser(state, file_reader),
-      options_(options), quiet_(false) {
-  env_ = &state.bindings_
+func NewManifestParser(state *State, file_reader FileReader, options ManifestParserOptions) ManifestParser {
+	return ManifestParser{
+		/* TODO
+		Parser:   NewParser(state, file_reader),
+		options_: options,
+		env_:     &state.bindings_,
+		*/
+	}
 }
 
+/*
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input string, err *string) bool {
   m.lexer_.Start(filename, input)
@@ -126,7 +131,8 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
   }
   return false  // not reached
 }
-
+*/
+/*
 // Parse various statement types.
 func (m *ManifestParser) ParsePool(err *string) bool {
   name := ""
@@ -487,4 +493,4 @@ func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
 
   return true
 }
-
+*/
