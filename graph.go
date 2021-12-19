@@ -891,7 +891,7 @@ func Newmatches(i int) matches {
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
 	//TODO
 	/*
-			//METRIC_RECORD("depfile load")
+			METRIC_RECORD("depfile load")
 			// Read depfile content.  Treat a missing depfile as empty.
 			content := ""
 			switch i.disk_interface_.ReadFile(path, &content, err) {

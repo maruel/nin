@@ -50,8 +50,8 @@ type Rule struct {
 	bindings_ Bindings
 }
 
-func NewRule(name string) Rule {
-	return Rule{name_: name}
+func NewRule(name string) *Rule {
+	return &Rule{name_: name}
 }
 
 func (r *Rule) name() string {
@@ -66,8 +66,8 @@ type BindingEnv struct {
 	parent_   *BindingEnv
 }
 
-func NewBindingEnv(parent *BindingEnv) BindingEnv {
-	return BindingEnv{
+func NewBindingEnv(parent *BindingEnv) *BindingEnv {
+	return &BindingEnv{
 		bindings_: map[string]string{},
 		rules_:    map[string]*Rule{},
 		parent_:   parent,

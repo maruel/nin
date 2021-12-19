@@ -33,8 +33,8 @@ type Pool struct {
 	delayed_ DelayedEdges
 }
 
-func NewPool(name string, depth int) Pool {
-	return Pool{
+func NewPool(name string, depth int) *Pool {
+	return &Pool{
 		name_:    name,
 		depth_:   depth,
 		delayed_: DelayedEdges{},

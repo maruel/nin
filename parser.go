@@ -35,7 +35,7 @@ func NewParser(state *State, file_reader FileReader) Parser {
 
 // Load and parse a file.
 func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
-	//METRIC_RECORD(".ninja parse")
+	METRIC_RECORD(".ninja parse")
 	contents := ""
 	read_err := ""
 	if p.file_reader_.ReadFile(filename, &contents, &read_err) != Okay {

@@ -19,6 +19,17 @@ import "time"
 // The Metrics module is used for the debug mode that dumps timing stats of
 // various actions.  To use, see METRIC_RECORD below.
 
+/// The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
+/// of a function to get timing stats recorded for each call of the function.
+func METRIC_RECORD(name string) {
+	/*
+		if g_metrics != nil {
+			metrics_h_metric := g_metrics.NewMetric(name)
+		}
+		metrics_h_scoped := ScopedMetric(metrics_h_metric)
+	*/
+}
+
 // A single metrics we're tracking, like "depfile load time".
 type Metric struct {
 	name string
