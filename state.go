@@ -75,12 +75,6 @@ type DelayedEdges map[*Edge]struct{}
 
 // Global state (file status) for a single run.
 type State struct {
-	/*
-		kDefaultPool Pool
-		kConsolePool Pool
-		kPhonyRule   Rule
-	*/
-
 	// Mapping of path -> Node.
 	paths_ Paths
 

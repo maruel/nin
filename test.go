@@ -14,48 +14,101 @@
 
 package ginja
 
-/*
-// A tiny testing framework inspired by googletest, but much simpler and
-// faster to compile. It supports most things commonly used from googltest. The
-// most noticeable things missing: EXPECT_* and ASSERT_* don't support
-// streaming notes to them with operator<<, and for failing tests the lhs and
-// rhs are not printed. That's so that this header does not have to include
-// sstream, which slows down building ninja_test almost 20%.
-class Test {
-  bool failed_
-  int assertion_failures_
-  Test() : failed_(false), assertion_failures_(0) {}
-  virtual ~Test() {}
-  func SetUp() {}
-  func TearDown() {}
-
-  func Failed() bool {
-	return failed_
-}
-  func AssertionFailures() int {
-	return assertion_failures_
-}
-  func AddAssertionFailure() {
-	assertion_failures_++
-}
-}
-
-void RegisterTest(testing::Test* (*)(), string)
-
-//extern testing::Test* g_current_test
-
-// Support utilities for tests.
-*/
+import (
+	"strings"
+	"testing"
+)
 
 // A base test fixture that includes a State object with a
 // builtin "cat" rule.
 type StateTestWithBuiltinRules struct {
+	t      *testing.T
 	state_ State
 }
 
-/*
-void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
-*/
+func NewStateTestWithBuiltinRules(t *testing.T) StateTestWithBuiltinRules {
+	s := StateTestWithBuiltinRules{
+		t:      t,
+		state_: NewState(),
+	}
+	s.AddCatRule(&s.state_)
+	return s
+}
+
+// Add a "cat" rule to \a state.  Used by some tests; it's
+// otherwise done by the ctor to state_.
+func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
+	s.AssertParse(state, "rule cat\n  command = cat $in > $out\n", ManifestParserOptions{})
+}
+
+// Short way to get a Node by its path from state_.
+func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
+	if strings.ContainsAny(path, "/\\") {
+		s.t.Fatal(path)
+	}
+	return s.state_.GetNode(path, 0)
+}
+
+//void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
+
+func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
+	parser := NewManifestParser(state, nil, opts)
+	err := ""
+	if !parser.ParseTest(input, &err) {
+		s.t.Fatal(err)
+	}
+	if "" != err {
+		s.t.Fatal(err)
+	}
+	s.VerifyGraph(state)
+}
+
+func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
+	s.t.Fatal("TODO")
+	/*
+		if HashCommand(expected) != actual {
+			panic(actual)
+		}
+	*/
+}
+
+func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
+	for _, e := range state.edges_ {
+		if len(e.outputs_) == 0 {
+			s.t.Fatal("all edges need at least one output")
+		}
+		for _, in_node := range e.inputs_ {
+			found := false
+			for _, oe := range in_node.out_edges() {
+				if oe == e {
+					found = true
+				}
+			}
+			if !found {
+				s.t.Fatal("each edge's inputs must have the edge as out-edge")
+			}
+		}
+		for _, out_node := range e.outputs_ {
+			if out_node.in_edge() != e {
+				s.t.Fatal("each edge's output must have the edge as in-edge")
+			}
+		}
+	}
+
+	// The union of all in- and out-edges of each nodes should be exactly edges_.
+	node_edge_set := map[*Edge]struct{}{}
+	for _, n := range state.paths_ {
+		if n.in_edge() != nil {
+			node_edge_set[n.in_edge()] = struct{}{}
+		}
+		for _, oe := range n.out_edges() {
+			node_edge_set[oe] = struct{}{}
+		}
+	}
+	if len(state.edges_) != len(node_edge_set) {
+		s.t.Fatal("the union of all in- and out-edges must match State.edges_")
+	}
+}
 
 // An implementation of DiskInterface that uses an in-memory representation
 // of disk state.  It also logs file accesses and directory creations
@@ -68,20 +121,7 @@ type VirtualFileSystem struct {
 	files_created_    map[string]struct{}
 
 	// A simple fake timestamp for file operations.
-	now_ int
-}
-
-func NewVirtualFileSystem() VirtualFileSystem {
-	return VirtualFileSystem{
-		now_: 1,
-	}
-}
-
-// Tick "time" forwards; subsequent file operations will be newer than
-// previous ones.
-func (v *VirtualFileSystem) Tick() int {
-	v.now_++
-	return v.now_
+	now_ TimeStamp
 }
 
 // An entry for a single in-memory file.
@@ -92,127 +132,29 @@ type Entry struct {
 }
 type FileMap map[string]Entry
 
-type ScopedTempDir struct {
-	// The temp directory containing our dir.
-	start_dir_ string
-	// The subdirectory name for our dir, or empty if it hasn't been set up.
-	temp_dir_name_ string
-}
-
-/*
-//extern "C" {
-        //extern char* mkdtemp(char* name_template)
-
-namespace {
-
-// Windows has no mkdtemp.  Implement it in terms of _mktemp_s.
-func mkdtemp(name_template *char) *char {
-  int err = _mktemp_s(name_template, strlen(name_template) + 1)
-  if err < 0 {
-    perror("_mktemp_s")
-    return nil
-  }
-
-  err = _mkdir(name_template)
-  if err < 0 {
-    perror("mkdir")
-    return nil
-  }
-
-  return name_template
-}
-
-func GetSystemTempDir() string {
-  char buf[1024]
-  if !GetTempPath(sizeof(buf), buf) {
-    return ""
-  }
-  return buf
-}
-
-}  // anonymous namespace
-
-StateTestWithBuiltinRules::StateTestWithBuiltinRules() {
-  AddCatRule(&state_)
-}
-
-// Add a "cat" rule to \a state.  Used by some tests; it's
-// otherwise done by the ctor to state_.
-func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
-  AssertParse(state, "rule cat\n  command = cat $in > $out\n")
-}
-
-// Short way to get a Node by its path from state_.
-func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
-  if !strpbrk(path, "/\\") { t.FailNow() }
-  return s.state_.GetNode(path, 0)
-}
-*/
-func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
-	parser := NewManifestParser(state, nil, opts)
-	err := ""
-	if !parser.ParseTest(input, &err) {
-		panic(err)
+func NewVirtualFileSystem() VirtualFileSystem {
+	return VirtualFileSystem{
+		files_:         FileMap{},
+		files_removed_: map[string]struct{}{},
+		files_created_: map[string]struct{}{},
+		now_:           1,
 	}
-	if "" != err {
-		panic(err)
-	}
-	s.VerifyGraph(state)
 }
 
-func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
-	panic("TODO")
-	/*
-		if HashCommand(expected) != actual {
-			panic(actual)
-		}
-	*/
-}
-
-func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
-	for _, e := range state.edges_ {
-		// All edges need at least one output.
-		if len(e.outputs_) == 0 {
-			panic(e.outputs_)
-		}
-		// Check that the edge's inputs have the edge as out-edge.
-		panic("TODO")
-		/*
-			for _, in_node := range e.inputs_ {
-				out_edges := in_node.out_edges()
-				if find(out_edges.begin() == out_edges.end(), *e), out_edges.end() { t.FailNow() }
-			}
-		*/
-		// Check that the edge's outputs have the edge as in-edge.
-		for _, out_node := range e.outputs_ {
-			if out_node.in_edge() != e {
-				panic(out_node)
-			}
-		}
-	}
-
-	// The union of all in- and out-edges of each nodes should be exactly edges_.
-	node_edge_set := map[*Edge]struct{}{}
-	for _, n := range state.paths_ {
-		if n.in_edge() != nil {
-			node_edge_set[n.in_edge()] = struct{}{}
-		}
-		panic("TODO")
-		//node_edge_set.insert(n.out_edges().begin(), n.out_edges().end())
-	}
-	panic("TODO")
-	//map[*Edge]struct{} edge_set(state.edges_.begin(), state.edges_.end())
-	//if node_edge_set != edge_set { t.FailNow() }
+// Tick "time" forwards; subsequent file operations will be newer than
+// previous ones.
+func (v *VirtualFileSystem) Tick() TimeStamp {
+	v.now_++
+	return v.now_
 }
 
 // "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {
-	panic("TODO")
-	/*
-		v.files_[path].mtime = v.now_
-		v.files_[path].contents = contents
-		v.files_created_.insert(path)
-	*/
+	f := v.files_[path]
+	f.mtime = v.now_
+	f.contents = contents
+	v.files_[path] = f
+	v.files_created_[path] = struct{}{}
 }
 
 // DiskInterface
@@ -262,6 +204,13 @@ func (v *VirtualFileSystem) RemoveFile(path string) int {
 		}
 	*/
 	return 0
+}
+
+type ScopedTempDir struct {
+	// The temp directory containing our dir.
+	start_dir_ string
+	// The subdirectory name for our dir, or empty if it hasn't been set up.
+	temp_dir_name_ string
 }
 
 /*

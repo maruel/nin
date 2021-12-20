@@ -12,37 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "testing"
 
 type GraphTest struct {
-
-  fs_ VirtualFileSystem
-  scan_ DependencyScan
+	StateTestWithBuiltinRules
+	fs_   VirtualFileSystem
+	scan_ DependencyScan
 }
-func NewGraphTest() GraphTest {
-	return GraphTest{
-		scan_: &state_, nil, nil, &fs_, nil,
+
+func NewGraphTest(t *testing.T) GraphTest {
+	g := GraphTest{
+		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
+		fs_:                       NewVirtualFileSystem(),
 	}
+	g.scan_ = NewDependencyScan(&g.state_, nil, nil, &g.fs_, nil)
+	return g
 }
 
 func TestGraphTest_MissingImplicit(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in | implicit\n"))
-  fs_.Create("in", "")
-  fs_.Create("out", "")
+	g := NewGraphTest(t)
+	t.Skip("TODO")
+	g.AssertParse(&g.state_, "build out: cat in | implicit\n", ManifestParserOptions{})
+	g.fs_.Create("in", "")
+	g.fs_.Create("out", "")
 
-  err := ""
-  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	err := ""
+	if !g.scan_.RecomputeDirty(g.GetNode("out"), nil, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  // A missing implicit dep *should* make the output dirty.
-  // (In fact, a build will fail.)
-  // This is a change from prior semantics of ninja.
-  if !GetNode("out").dirty() { t.Fatal("expected true") }
+	// A missing implicit dep *should* make the output dirty.
+	// (In fact, a build will fail.)
+	// This is a change from prior semantics of ninja.
+	if !g.GetNode("out").dirty() {
+		t.Fatal("expected true")
+	}
 }
 
+/*
 func TestGraphTest_ModifiedImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in | implicit\n"))
   fs_.Create("in", "")
@@ -688,4 +700,4 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
   if out1.mtime() != out1Mtime1 { t.Fatal("expected equal") }
   if !out1.dirty() { t.Fatal("expected true") }
 }
-
+*/

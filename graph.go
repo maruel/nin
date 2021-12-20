@@ -287,21 +287,23 @@ func (d *DependencyScan) deps_log() *DepsLog {
 	return d.dep_loader_.deps_log()
 }
 
-/*
 // Return false on error.
 func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
-	METRIC_RECORD("node stat")
-	n.mtime_ = disk_interface.Stat(n.path_, err)
-	if n.mtime_ == -1 {
-		return false
-	}
-	n.exists_ = ExistenceStatusMissing
-	if n.mtime_ != 0 {
-		n.exists_ = ExistenceStatusExists
-	}
+	panic("TODO")
+	/*
+		METRIC_RECORD("node stat")
+		n.mtime_ = disk_interface.Stat(n.path_, err)
+		if n.mtime_ == -1 {
+			return false
+		}
+		n.exists_ = ExistenceStatusMissing
+		if n.mtime_ != 0 {
+			n.exists_ = ExistenceStatusExists
+		}
+	*/
 	return true
 }
-*/
+
 // If the file doesn't exist, set the mtime_ from its dependencies
 func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 	if !n.exists() {
@@ -755,8 +757,9 @@ func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
 
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
+	panic("TODO")
 	//env := NewEdgeEnv(e, kShellEscape)
-	// TODO: return env.LookupVariable(key)
+	//return env.LookupVariable(key)
 	return ""
 }
 
@@ -766,7 +769,7 @@ func (e *Edge) GetBindingBool(key string) bool {
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	//TODO
+	panic("TODO")
 	//env := NewEdgeEnv(e, kDoNotEscape)
 	//return env.LookupVariable("depfile")
 	return ""
@@ -774,7 +777,7 @@ func (e *Edge) GetUnescapedDepfile() string {
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	//TODO
+	panic("TODO")
 	//env := NewEdgeEnv(e, kDoNotEscape)
 	//return env.LookupVariable("dyndep")
 	return ""
@@ -782,7 +785,7 @@ func (e *Edge) GetUnescapedDyndep() string {
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	//TODO
+	panic("TODO")
 	//env := NewEdgeEnv(e, kDoNotEscape)
 	//return env.LookupVariable("rspfile")
 	return ""
@@ -817,15 +820,12 @@ func (e *Edge) use_console() bool {
 	return e.pool() == kConsolePool
 }
 
-/*
 func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
 	// of the form "build a: phony ... a ...".   Restrict our
 	// "phonycycle" diagnostic option to the form it used.
-	return is_phony() && e.outputs_.size() == 1 && e.implicit_outs_ == 0 &&
-		e.implicit_deps_ == 0
+	return e.is_phony() && len(e.outputs_) == 1 && e.implicit_outs_ == 0 && e.implicit_deps_ == 0
 }
-*/
 
 // static
 func PathDecanonicalized(path string, slash_bits uint64) string {
@@ -846,28 +846,30 @@ func PathDecanonicalized(path string, slash_bits uint64) string {
 	return string(result)
 }
 
-/*
 func (n *Node) Dump(prefix string) {
-	s := ""
-	if !n.exists() {
-		s = " (:missing)"
-	}
-	t := " clean"
-	if dirty() {
-		t = " dirty"
-	}
-	printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, path(), this, mtime(), s, t)
-	if in_edge() {
-		in_edge().Dump("in-edge: ")
-	} else {
-		printf("no in-edge\n")
-	}
-	printf(" out edges:\n")
-	for e := out_edges().begin(); e != out_edges().end() && *e != nil; e++ {
-		(*e).Dump(" +- ")
-	}
+	panic("TODO")
+	/*
+		s := ""
+		if !n.exists() {
+			s = " (:missing)"
+		}
+		t := " clean"
+		if dirty() {
+			t = " dirty"
+		}
+		printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, path(), this, mtime(), s, t)
+		if in_edge() {
+			in_edge().Dump("in-edge: ")
+		} else {
+			printf("no in-edge\n")
+		}
+		printf(" out edges:\n")
+		for e := out_edges().begin(); e != out_edges().end() && *e != nil; e++ {
+			(*e).Dump(" +- ")
+		}
+	*/
 }
-*/
+
 // Load implicit dependencies for \a edge.
 // @return false on error (without filling \a err if info is just missing
 //                          or out of date).
@@ -906,7 +908,7 @@ func Newmatches(i int) matches {
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	//TODO
+	panic("TODO")
 	/*
 			METRIC_RECORD("depfile load")
 			// Read depfile content.  Treat a missing depfile as empty.
@@ -999,13 +1001,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		deps = i.deps_log_.GetDeps(output)
 	}
 	if deps == nil {
-		//EXPLAIN("deps for '%s' are missing", output.path())
+		EXPLAIN("deps for '%s' are missing", output.path())
 		return false
 	}
 
 	// Deps are invalid if the output is newer than the deps.
 	if output.mtime() > deps.mtime {
-		//EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.path(), deps.mtime, output.mtime())
+		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.path(), deps.mtime, output.mtime())
 		return false
 	}
 

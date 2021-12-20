@@ -209,11 +209,14 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		}
 	}
 
-	if rule.bindings_["rspfile"].empty() != rule.bindings_["rspfile_content"].empty() {
+	b1, ok1 := rule.bindings_["rspfile"]
+	b2, ok2 := rule.bindings_["rspfile_content"]
+	if ok1 != ok2 || (ok1 && b1.empty() != b2.empty()) {
 		return m.lexer_.Error("rspfile and rspfile_content need to be both specified", err)
 	}
 
-	if rule.bindings_["command"].empty() {
+	b, ok := rule.bindings_["command"]
+	if !ok || b.empty() {
 		return m.lexer_.Error("expected 'command =' line", err)
 	}
 	m.env_.AddRule(rule)
@@ -395,31 +398,28 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		edge.pool_ = pool
 	}
 
-	panic("TODO")
-	/*
-		edge.outputs_.reserve(outs.size())
-		for i := range outs {
-			path := outs[i].Evaluate(env)
-			if len(path) == 0 {
-				return m.lexer_.Error("empty path", err)
-			}
-			var slash_bits uint64
-			path = CanonicalizePath(path, &slash_bits)
-			if !m.state_.AddOut(edge, path, slash_bits) {
-				if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
-					m.lexer_.Error("multiple rules generate "+path, err)
-					return false
-				} else {
-					if !m.quiet_ {
-						Warning("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
-					}
-					if e-i <= static_cast < size_t > (implicit_outs) {
-						implicit_outs--
-					}
+	// TODO: edge.outputs_.reserve(outs.size())
+	for i := range outs {
+		path := outs[i].Evaluate(env)
+		if len(path) == 0 {
+			return m.lexer_.Error("empty path", err)
+		}
+		var slash_bits uint64
+		path = CanonicalizePath(path, &slash_bits)
+		if !m.state_.AddOut(edge, path, slash_bits) {
+			if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
+				m.lexer_.Error("multiple rules generate "+path, err)
+				return false
+			} else {
+				if !m.quiet_ {
+					Warning("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
+				}
+				if len(outs)-i <= implicit_outs {
+					implicit_outs--
 				}
 			}
 		}
-	*/
+	}
 	if len(edge.outputs_) == 0 {
 		// All outputs of the edge are already created by other edges. Don't add
 		// this edge.  Do this check before input nodes are connected to the edge.
@@ -428,27 +428,27 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 	edge.implicit_outs_ = implicit_outs
 
-	panic("TODO")
-	/*
-			edge.inputs_.reserve(ins.size())
-			for i := ins.begin(); i != ins.end(); i++ {
-				path := i.Evaluate(env)
-				if len(path) == 0 {
-					return m.lexer_.Error("empty path", err)
-				}
-				var slash_bits uint64
-				CanonicalizePath(&path, &slash_bits)
-				m.state_.AddIn(edge, path, slash_bits)
-			}
-		edge.implicit_deps_ = implicit
-		edge.order_only_deps_ = order_only
+	// TODO: edge.inputs_.reserve(ins.size())
+	for _, i := range ins {
+		path := i.Evaluate(env)
+		if len(path) == 0 {
+			return m.lexer_.Error("empty path", err)
+		}
+		var slash_bits uint64
+		path = CanonicalizePath(path, &slash_bits)
+		m.state_.AddIn(edge, path, slash_bits)
+	}
+	edge.implicit_deps_ = implicit
+	edge.order_only_deps_ = order_only
 
-		if m.options_.phony_cycle_action_ == kPhonyCycleActionWarn && edge.maybe_phonycycle_diagnostic() {
-			// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
-			// that reference themselves.  Ninja used to tolerate these in the
-			// build graph but that has since been fixed.  Filter them out to
-			// support users of those old CMake versions.
-			out := edge.outputs_[0]
+	if m.options_.phony_cycle_action_ == kPhonyCycleActionWarn && edge.maybe_phonycycle_diagnostic() {
+		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
+		// that reference themselves.  Ninja used to tolerate these in the
+		// build graph but that has since been fixed.  Filter them out to
+		// support users of those old CMake versions.
+		panic("TODO")
+		/*
+				out := edge.outputs_[0]
 			   vector<Node*>::iterator new_end = remove(edge.inputs_.begin(), edge.inputs_.end(), out)
 			   if new_end != edge.inputs_.end() {
 			     edge.inputs_.erase(new_end, edge.inputs_.end())
@@ -456,8 +456,8 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			       Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.path())
 			     }
 			   }
-		}
-	*/
+		*/
+	}
 
 	// Lookup, validate, and save any dyndep binding.  It will be used later
 	// to load generated dependency information dynamically, but it must
