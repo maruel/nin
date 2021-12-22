@@ -35,13 +35,6 @@ type ManifestParserOptions struct {
 	phony_cycle_action_ PhonyCycleAction
 }
 
-func NewManifestParserOptions() ManifestParserOptions {
-	return ManifestParserOptions{
-		dupe_edge_action_:   kDupeEdgeActionWarn,
-		phony_cycle_action_: kPhonyCycleActionWarn,
-	}
-}
-
 // Parses .ninja files.
 type ManifestParser struct {
 	Parser

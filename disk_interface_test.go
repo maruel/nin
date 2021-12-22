@@ -17,23 +17,12 @@ package ginja
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 )
 
 func DiskInterfaceTest(t *testing.T) RealDiskInterface {
-	old, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	temp_dir_ := t.TempDir()
-	if err := os.Chdir(temp_dir_); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(old); err != nil {
-			t.Error(err)
-		}
-	})
+	CreateTempDirAndEnter(t)
 	return NewRealDiskInterface()
 }
 
@@ -149,7 +138,9 @@ func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatCache(t *testing.T) {
-	t.Skip("TODO")
+	if runtime.GOOS != "windows" {
+		t.Skip("This test is used only on Windows in the C++ version")
+	}
 	disk_ := DiskInterfaceTest(t)
 	err := ""
 
@@ -322,14 +313,13 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 	}
 }
 
-/*
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	path := "path/with/double//slash/"
-	if !disk_.MakeDirs(path) {
+	if !MakeDirs(&disk_, path) {
 		t.Fatal("expected true")
 	}
-	f, _ := os.Open(path+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
+	f, _ := os.OpenFile(path+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
 	if f == nil {
 		t.Fatal("expected true")
 	}
@@ -337,19 +327,18 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	path2 := "another\\with\\back\\\\slashes\\"
-	if !disk_.MakeDirs(path2) {
+	if !MakeDirs(&disk_, path2) {
 		t.Fatal("expected true")
 	}
-	f2, _ = os.OpenFile(path2+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
-	if !f2 {
+	f2, _ := os.OpenFile(path2+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
+	if f2 == nil {
 		t.Fatal("expected true")
 	}
-	if err != f2.Close() {
+	if err := f2.Close(); err != nil {
 		t.Fatal("expected equal")
 	}
 }
-*/
-/*
+
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	kFileName := "file-to-remove"
@@ -368,8 +357,9 @@ func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 	if !Touch(kFileName) {
 		t.Fatal("expected true")
 	}
-	if 0 != system((string("attrib +R ") + kFileName)) {
-		t.Fatal("expected equal")
+	// Make it read-only.
+	if err := os.Chmod(kFileName, 0o400); err != nil {
+		t.Fatal(err)
 	}
 	if 0 != disk_.RemoveFile(kFileName) {
 		t.Fatal("expected equal")
@@ -378,7 +368,6 @@ func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 }
-*/
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
@@ -404,53 +393,67 @@ type StatTest struct {
 	stats_  []string
 }
 
-/*
-func NewStatTest() StatTest {
-	return StatTest{
-		scan_: &state_, nil, nil, this, nil,
-	}
-}
 func (s *StatTest) WriteFile(path string, contents string) bool {
-  if !false { panic("oops") }
-  return true
+	s.t.Fatal("oops")
+	return false
 }
 func (s *StatTest) MakeDir(path string) bool {
-  if !false { panic("oops") }
-  return false
+	s.t.Fatal("oops")
+	return false
 }
-func (s *StatTest) ReadFile(path string, contents *string, err *string) Status {
-  if !false { panic("oops") }
-  return NotFound
+func (s *StatTest) ReadFile(path string, contents *string, err *string) DiskStatus {
+	s.t.Fatal("oops")
+	return NotFound
 }
 func (s *StatTest) RemoveFile(path string) int {
-  if !false { panic("oops") }
-  return 0
+	s.t.Fatal("oops")
+	return 0
 }
 
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {
-  s.stats_.push_back(path)
-  i := s.mtimes_.find(path)
-  if i == s.mtimes_.end() {
-    return 0  // File not found.
-  }
-  return i.second
+	s.stats_ = append(s.stats_, path)
+	return s.mtimes_[path]
 }
 
+func NewStatTest(t *testing.T) *StatTest {
+	s := &StatTest{
+		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
+		mtimes_:                   map[string]TimeStamp{},
+	}
+	s.scan_ = NewDependencyScan(&s.state_, nil, nil, s, nil)
+	return s
+}
+
+/*
 func TestStatTest_Simple(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in\n"))
+	s := NewStatTest(t)
+	s.AssertParse(&s.state_, "build out: cat in\n", ManifestParserOptions{})
 
-  Node* out = GetNode("out")
-  err := ""
-  if !out.Stat(this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 1u != stats_.size() { t.Fatal("expected equal") }
-  scan_.RecomputeDirty(out, nil)
-  if 2u != stats_.size() { t.Fatal("expected equal") }
-  if "out" != stats_[0] { t.Fatal("expected equal") }
-  if "in" !=  stats_[1] { t.Fatal("expected equal") }
+	out := s.GetNode("out")
+	err := ""
+	if !out.Stat(s, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	s.scan_.RecomputeDirty(out, nil, nil)
+	if 2 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	if "out" != s.stats_[0] {
+		t.Fatal("expected equal")
+	}
+	if "in" != s.stats_[1] {
+		t.Fatal("expected equal")
+	}
 }
 
+/*
 func TestStatTest_TwoStep(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
 

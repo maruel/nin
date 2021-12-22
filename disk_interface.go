@@ -210,7 +210,6 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 	return true
 }
 
-/*
 // Create all the parent directories for path; like mkdir -p
 // `basename path`.
 func MakeDirs(d DiskInterface, path string) bool {
@@ -229,13 +228,12 @@ func MakeDirs(d DiskInterface, path string) bool {
 	}
 
 	// Directory doesn't exist.  Try creating its parent first.
-	success := d.MakeDirs(dir)
-	if success == nil {
+	success := MakeDirs(d, dir)
+	if !success {
 		return false
 	}
-	return MakeDir(dir)
+	return d.MakeDir(dir)
 }
-*/
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 	METRIC_RECORD("node stat")

@@ -112,10 +112,12 @@ func MurmurHash64A(key *void, len2 uint) uint64 {
   h ^= h >> r
   return h
 }
-func HashCommand(command string) uint64{
-  return MurmurHash64A(command, len(command))
-}
 */
+
+func HashCommand(command string) uint64 {
+	panic("TODO")
+	//return MurmurHash64A(command, len(command))
+}
 
 func NewLogEntry(output string) LogEntry {
 	return LogEntry{

@@ -15,6 +15,7 @@
 package ginja
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -49,8 +50,6 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 	return s.state_.GetNode(path, 0)
 }
 
-//void AssertParse(State* state, string input, ManifestParserOptions = ManifestParserOptions())
-
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
 	parser := NewManifestParser(state, nil, opts)
 	err := ""
@@ -64,12 +63,9 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 }
 
 func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
-	s.t.Fatal("TODO")
-	/*
-		if HashCommand(expected) != actual {
-			panic(actual)
-		}
-	*/
+	if HashCommand(expected) != actual {
+		s.t.Fatalf("want %08x; got %08x", expected, actual)
+	}
 }
 
 func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
@@ -114,7 +110,7 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
 // of disk state.  It also logs file accesses and directory creations
 // so it can be used by tests to verify disk access patterns.
 type VirtualFileSystem struct {
-	directories_made_ []string
+	directories_made_ map[string]struct{}
 	files_read_       []string
 	files_            FileMap
 	files_removed_    map[string]struct{}
@@ -134,10 +130,11 @@ type FileMap map[string]Entry
 
 func NewVirtualFileSystem() VirtualFileSystem {
 	return VirtualFileSystem{
-		files_:         FileMap{},
-		files_removed_: map[string]struct{}{},
-		files_created_: map[string]struct{}{},
-		now_:           1,
+		directories_made_: map[string]struct{}{},
+		files_:            FileMap{},
+		files_removed_:    map[string]struct{}{},
+		files_created_:    map[string]struct{}{},
+		now_:              1,
 	}
 }
 
@@ -173,7 +170,7 @@ func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
 }
 
 func (v *VirtualFileSystem) MakeDir(path string) bool {
-	v.directories_made_ = append(v.directories_made_, path)
+	v.directories_made_[path] = struct{}{}
 	return true // success
 }
 
@@ -189,74 +186,31 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {
-	panic("TODO")
-	/*
-		if find(v.directories_made_.begin(), v.directories_made_.end(), path) != v.directories_made_.end() {
-			return -1
+	if _, ok := v.directories_made_[path]; ok {
+		return -1
+	}
+	if _, ok := v.files_[path]; ok {
+		delete(v.files_, path)
+		v.files_removed_[path] = struct{}{}
+		return 0
+	}
+	return 1
+}
+
+// CreateTempDirAndEnter creates a temporary directory and "cd" into it.
+func CreateTempDirAndEnter(t *testing.T) string {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	temp_dir := t.TempDir()
+	if err := os.Chdir(temp_dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(old); err != nil {
+			t.Error(err)
 		}
-		i := v.files_.find(path)
-		if i != v.files_.end() {
-			v.files_.erase(i)
-			v.files_removed_.insert(path)
-			return 0
-		} else {
-			return 1
-		}
-	*/
-	return 0
+	})
+	return temp_dir
 }
-
-type ScopedTempDir struct {
-	// The temp directory containing our dir.
-	start_dir_ string
-	// The subdirectory name for our dir, or empty if it hasn't been set up.
-	temp_dir_name_ string
-}
-
-/*
-// Create a temporary directory and chdir into it.
-func (s *ScopedTempDir) CreateAndEnter(name string) {
-  // First change into the system temp dir and save it for cleanup.
-  s.start_dir_ = GetSystemTempDir()
-  if s.start_dir_.empty() {
-    Fatal("couldn't get system temp dir")
-  }
-  if chdir(s.start_dir_) < 0 {
-    Fatal("chdir: %s", strerror(errno))
-  }
-
-  // Create a temporary subdirectory of that.
-  char name_template[1024]
-  strcpy(name_template, name)
-  strcat(name_template, "-XXXXXX")
-  tempname := mkdtemp(name_template)
-  if tempname == nil {
-    Fatal("mkdtemp: %s", strerror(errno))
-  }
-  s.temp_dir_name_ = tempname
-
-  // chdir into the new temporary directory.
-  if chdir(s.temp_dir_name_) < 0 {
-    Fatal("chdir: %s", strerror(errno))
-  }
-}
-
-// Clean up the temporary directory.
-func (s *ScopedTempDir) Cleanup() {
-  if s.temp_dir_name_.empty() {
-    return  // Something went wrong earlier.
-  }
-
-  // Move out of the directory we're about to clobber.
-  if chdir(s.start_dir_) < 0 {
-    Fatal("chdir: %s", strerror(errno))
-  }
-
-  string command = "rmdir /s /q " + s.temp_dir_name_
-  if system(command) < 0 {
-    Fatal("system: %s", strerror(errno))
-  }
-
-  s.temp_dir_name_ = nil
-}
-*/
