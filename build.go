@@ -199,14 +199,12 @@ func (p *Plan) Reset() {
 	p.want_ = nil
 }
 
-/*
 // Add a target to our plan (including all its dependencies).
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
 func (p *Plan) AddTarget(target *Node, err *string) bool {
 	return p.AddSubTarget(target, nil, err, nil)
 }
-*/
 
 func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
 	panic("TODO")
@@ -714,16 +712,15 @@ func (b *Builder) Cleanup() {
 	*/
 }
 
-/*
 // Add a target to the build, scanning dependencies.
 // @return false on error.
-func (b *Builder) AddTarget(name string, err *string) *Node {
+func (b *Builder) AddTargetName(name string, err *string) *Node {
 	node := b.state_.LookupNode(name)
 	if node == nil {
 		*err = "unknown target: '" + name + "'"
 		return nil
 	}
-	if !AddTarget(node, err) {
+	if !b.AddTarget(node, err) {
 		return nil
 	}
 	return node
@@ -732,7 +729,7 @@ func (b *Builder) AddTarget(name string, err *string) *Node {
 // Add a target to the build, scanning dependencies.
 // @return false on error.
 func (b *Builder) AddTarget(target *Node, err *string) bool {
-	if !b.scan_.RecomputeDirty(target, err) {
+	if !b.scan_.RecomputeDirty(target, nil, err) {
 		return false
 	}
 
@@ -748,7 +745,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 
 	return true
 }
-*/
+
 // Returns true if the build targets are already up to date.
 func (b *Builder) AlreadyUpToDate() bool {
 	return !b.plan_.more_to_do()

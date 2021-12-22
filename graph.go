@@ -958,7 +958,6 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
 	}
-
 	return true
 }
 
@@ -985,7 +984,7 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	implicit_dep := i.PreallocateSpace(edge, deps.node_count)
 	for j := 0; j < deps.node_count; j++ {
 		node := deps.nodes[j]
-		//*implicit_dep = node
+		edge.inputs_[implicit_dep] = node
 		node.AddOutEdge(edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
@@ -996,9 +995,9 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	edge.inputs_ = append(edge.inputs_, make([]*Node, len(edge.inputs_)-edge.order_only_deps_+count)...)
+	edge.inputs_ = append(edge.inputs_, make([]*Node, count)...)
 	edge.implicit_deps_ += count
-	return len(edge.inputs_) - edge.order_only_deps_ - count
+	return len(edge.inputs_) - count
 }
 
 // If we don't have a edge that generates this input already,
