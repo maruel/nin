@@ -14,7 +14,9 @@
 
 package ginja
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestState_Basic(t *testing.T) {
 	state := NewState()
@@ -41,13 +43,13 @@ func TestState_Basic(t *testing.T) {
 		t.Fatal(got)
 	}
 
-	if !state.GetNode("in1", 0).dirty() {
-		t.FailNow()
+	if state.GetNode("in1", 0).dirty() {
+		t.Fatal("dirty")
 	}
-	if !state.GetNode("in2", 0).dirty() {
-		t.FailNow()
+	if state.GetNode("in2", 0).dirty() {
+		t.Fatal("dirty")
 	}
-	if !state.GetNode("out", 0).dirty() {
-		t.FailNow()
+	if state.GetNode("out", 0).dirty() {
+		t.Fatal("dirty")
 	}
 }

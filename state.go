@@ -115,26 +115,27 @@ func (p *Pool) DelayEdge(edge *Edge) {
 	p.delayed_[edge] = struct{}{}
 }
 
-/*
 // Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
-	it := p.delayed_.begin()
-	for it != p.delayed_.end() {
-		edge := *it
-		if p.current_use_+edge.weight() > p.depth_ {
-			break
+	panic("TODO")
+	/*
+		it := p.delayed_.begin()
+		for it != p.delayed_.end() {
+			edge := *it
+			if p.current_use_+edge.weight() > p.depth_ {
+				break
+			}
+			ready_queue.insert(edge)
+			EdgeScheduled(*edge)
+			it++
 		}
-		ready_queue.insert(edge)
-		EdgeScheduled(*edge)
-		it++
-	}
-	p.delayed_.erase(p.delayed_.begin(), it)
+		p.delayed_.erase(p.delayed_.begin(), it)
+	*/
 }
-*/
 
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
-	printf("%s (%d/%d) .\n", p.name_, p.current_use_, p.depth_)
+	printf("%s (%d/%d) ->\n", p.name_, p.current_use_, p.depth_)
 	for it := range p.delayed_ {
 		printf("\t")
 		it.Dump("")
@@ -167,11 +168,7 @@ func (s *State) AddPool(pool *Pool) {
 }
 
 func (s *State) LookupPool(pool_name string) *Pool {
-	i, ok := s.pools_[pool_name]
-	if !ok {
-		return nil
-	}
-	return i
+	return s.pools_[pool_name]
 }
 
 func (s *State) AddEdge(rule *Rule) *Edge {
@@ -199,23 +196,26 @@ func (s *State) LookupNode(path string) *Node {
 	return p
 }
 
-/*
 func (s *State) SpellcheckNode(path string) *Node {
-	kAllowReplacements := true
-	kMaxValidEditDistance := 3
+	panic("TODO")
+	/*
+		kAllowReplacements := true
+		kMaxValidEditDistance := 3
 
-	min_distance := kMaxValidEditDistance + 1
-	result := nil
-	for i := s.paths_.begin(); i != s.paths_.end(); i++ {
-		distance := EditDistance(i.first, path, kAllowReplacements, kMaxValidEditDistance)
-		if distance < min_distance && i.second {
-			min_distance = distance
-			result = i.second
+		min_distance := kMaxValidEditDistance + 1
+		result := nil
+		for i := s.paths_.begin(); i != s.paths_.end(); i++ {
+			distance := EditDistance(i.first, path, kAllowReplacements, kMaxValidEditDistance)
+			if distance < min_distance && i.second {
+				min_distance = distance
+				result = i.second
+			}
 		}
-	}
-	return result
+		return result
+	*/
+	return nil
 }
-*/
+
 func (s *State) AddIn(edge *Edge, path string, slash_bits uint64) {
 	node := s.GetNode(path, slash_bits)
 	edge.inputs_ = append(edge.inputs_, node)
@@ -284,6 +284,7 @@ func (s *State) Reset() {
 
 // Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
+	// TODO(maruel): Print in order.
 	for _, node := range s.paths_ {
 		s := "unknown"
 		if node.status_known() {

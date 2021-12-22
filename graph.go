@@ -434,7 +434,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string)
 		if !edge.is_order_only(j) {
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
-			if (*i).dirty() {
+			if i.dirty() {
 				EXPLAIN("%s is dirty", i.path())
 				dirty = true
 			} else {
@@ -696,7 +696,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 		if i != len(e.lookups_) {
 			cycle := ""
 			for ; i < len(e.lookups_); i++ {
-				cycle += e.lookups_[i] + " . "
+				cycle += e.lookups_[i] + " -> "
 			}
 			cycle += var2
 			Fatal(("cycle in rule variables: " + cycle))
@@ -721,14 +721,14 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	result := ""
 	for _, i := range span {
 		if len(result) != 0 {
-			result = string(sep) + result
+			result += string(sep)
 		}
 		path := i.PathDecanonicalized()
 		if e.escape_in_out_ == kShellEscape {
 			if runtime.GOOS == "windows" {
-				result = GetWin32EscapedString(path)
+				result += GetWin32EscapedString(path)
 			} else {
-				result = GetShellEscapedString(path)
+				result += GetShellEscapedString(path)
 			}
 		} else {
 			result += path
@@ -786,7 +786,7 @@ func (e *Edge) Dump(prefix string) {
 			printf("%s ", i.path())
 		}
 	}
-	printf("--%s. ", e.rule_.name())
+	printf("--%s-> ", e.rule_.name())
 	for _, i := range e.outputs_ {
 		printf("%s ", i.path())
 	}
