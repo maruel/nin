@@ -425,7 +425,6 @@ func NewStatTest(t *testing.T) *StatTest {
 	return s
 }
 
-/*
 func TestStatTest_Simple(t *testing.T) {
 	s := NewStatTest(t)
 	s.AssertParse(&s.state_, "build out: cat in\n", ManifestParserOptions{})
@@ -453,54 +452,99 @@ func TestStatTest_Simple(t *testing.T) {
 	}
 }
 
-/*
 func TestStatTest_TwoStep(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
+	s := NewStatTest(t)
+	s.AssertParse(&s.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
-  Node* out = GetNode("out")
-  err := ""
-  if !out.Stat(this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 1u != stats_.size() { t.Fatal("expected equal") }
-  scan_.RecomputeDirty(out, nil)
-  if 3u != stats_.size() { t.Fatal("expected equal") }
-  if "out" != stats_[0] { t.Fatal("expected equal") }
-  if !GetNode("out").dirty() { t.Fatal("expected true") }
-  if "mid" !=  stats_[1] { t.Fatal("expected equal") }
-  if !GetNode("mid").dirty() { t.Fatal("expected true") }
-  if "in" !=  stats_[2] { t.Fatal("expected equal") }
+	out := s.GetNode("out")
+	err := ""
+	if !out.Stat(s, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	s.scan_.RecomputeDirty(out, nil, nil)
+	if 3 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	if "out" != s.stats_[0] {
+		t.Fatal("expected equal")
+	}
+	if !s.GetNode("out").dirty() {
+		t.Fatal("expected true")
+	}
+	if "mid" != s.stats_[1] {
+		t.Fatal("expected equal")
+	}
+	if !s.GetNode("mid").dirty() {
+		t.Fatal("expected true")
+	}
+	if "in" != s.stats_[2] {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestStatTest_Tree(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n"))
+	s := NewStatTest(t)
+	s.AssertParse(&s.state_, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n", ManifestParserOptions{})
 
-  Node* out = GetNode("out")
-  err := ""
-  if !out.Stat(this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 1u != stats_.size() { t.Fatal("expected equal") }
-  scan_.RecomputeDirty(out, nil)
-  if 1u + 6u != stats_.size() { t.Fatal("expected equal") }
-  if "mid1" != stats_[1] { t.Fatal("expected equal") }
-  if !GetNode("mid1").dirty() { t.Fatal("expected true") }
-  if "in11" != stats_[2] { t.Fatal("expected equal") }
+	out := s.GetNode("out")
+	err := ""
+	if !out.Stat(s, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	s.scan_.RecomputeDirty(out, nil, nil)
+	if 1+6 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	if "mid1" != s.stats_[1] {
+		t.Fatal("expected equal")
+	}
+	if !s.GetNode("mid1").dirty() {
+		t.Fatal("expected true")
+	}
+	if "in11" != s.stats_[2] {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestStatTest_Middle(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
+	s := NewStatTest(t)
+	s.AssertParse(&s.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
-  mtimes_["in"] = 1
-  mtimes_["mid"] = 0  // missing
-  mtimes_["out"] = 1
+	s.mtimes_["in"] = 1
+	s.mtimes_["mid"] = 0 // missing
+	s.mtimes_["out"] = 1
 
-  Node* out = GetNode("out")
-  err := ""
-  if !out.Stat(this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 1u != stats_.size() { t.Fatal("expected equal") }
-  scan_.RecomputeDirty(out, nil)
-  if GetNode("in").dirty() { t.Fatal("expected false") }
-  if !GetNode("mid").dirty() { t.Fatal("expected true") }
-  if !GetNode("out").dirty() { t.Fatal("expected true") }
+	out := s.GetNode("out")
+	err := ""
+	if !out.Stat(s, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(s.stats_) {
+		t.Fatal("expected equal")
+	}
+	s.scan_.RecomputeDirty(out, nil, nil)
+	if s.GetNode("in").dirty() {
+		t.Fatal("expected false")
+	}
+	if !s.GetNode("mid").dirty() {
+		t.Fatal("expected true")
+	}
+	if !s.GetNode("out").dirty() {
+		t.Fatal("expected true")
+	}
 }
-*/
