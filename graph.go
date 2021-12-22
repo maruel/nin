@@ -14,7 +14,10 @@
 
 package ginja
 
-import "bytes"
+import (
+	"bytes"
+	"runtime"
+)
 
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
@@ -289,18 +292,15 @@ func (d *DependencyScan) deps_log() *DepsLog {
 
 // Return false on error.
 func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
-	panic("TODO")
-	/*
-		METRIC_RECORD("node stat")
-		n.mtime_ = disk_interface.Stat(n.path_, err)
-		if n.mtime_ == -1 {
-			return false
-		}
-		n.exists_ = ExistenceStatusMissing
-		if n.mtime_ != 0 {
-			n.exists_ = ExistenceStatusExists
-		}
-	*/
+	METRIC_RECORD("node stat")
+	n.mtime_ = disk_interface.Stat(n.path_, err)
+	if n.mtime_ == -1 {
+		return false
+	}
+	n.exists_ = ExistenceStatusMissing
+	if n.mtime_ != 0 {
+		n.exists_ = ExistenceStatusExists
+	}
 	return true
 }
 
@@ -680,18 +680,17 @@ func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	}
 }
 
-/*
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
-		explicit_deps_count := e.edge_.inputs_.size() - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
-		s := "\n"
+		explicit_deps_count := len(e.edge_.inputs_) - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
+		s := byte('\n')
 		if var2 == "in" {
-			s = " "
+			s = ' '
 		}
-		return MakePathList(e.edge_.inputs_.data(), explicit_deps_count, s) //#else//return MakePathList(&edge_.inputs_[0], explicit_deps_count,//#endif
+		return e.MakePathList(e.edge_.inputs_[:explicit_deps_count], s)
 	} else if var2 == "out" {
-		explicit_outs_count = e.edge_.outputs_.size() - e.edge_.implicit_outs_
-		return MakePathList(&e.edge_.outputs_[0], explicit_outs_count, ' ')
+		explicit_outs_count := len(e.edge_.outputs_) - e.edge_.implicit_outs_
+		return e.MakePathList(e.edge_.outputs_[:explicit_outs_count], ' ')
 	}
 
 	if e.recursive_ {
@@ -713,34 +712,39 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 
 	// See notes on BindingEnv::LookupWithFallback.
 	eval := e.edge_.rule_.GetBinding(var2)
-	if e.recursive_ && eval {
-		e.lookups_.push_back(var2)
+	if e.recursive_ && eval != nil {
+		e.lookups_ = append(e.lookups_, var2)
 	}
 
 	// In practice, variables defined on rules never use another rule variable.
 	// For performance, only start checking for cycles after the first lookup.
 	e.recursive_ = true
-	return e.edge_.env_.LookupWithFallback(var2, eval, this)
+	return e.edge_.env_.LookupWithFallback(var2, eval, e)
 }
 
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
-func (e *EdgeEnv) MakePathList(span **Node, size uint, sep char) string {
+func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	result := ""
-	for i := span; i != span+size; i++ {
+	for _, i := range span {
 		if len(result) != 0 {
-			result = sep + result
+			result = string(sep) + result
 		}
 		path := i.PathDecanonicalized()
 		if e.escape_in_out_ == kShellEscape {
-			GetWin32EscapedString(path, &result)
+			panic("TODO")
+			if runtime.GOOS == "windows" {
+				result = GetWin32EscapedString(path)
+			} else {
+				result = GetShellEscapedString(path)
+			}
 		} else {
 			result += path
 		}
 	}
 	return result
 }
-*/
+
 // Expand all variables in a command and return it as a string.
 // If incl_rsp_file is enabled, the string will also contain the
 // full contents of a response file (if applicable)
@@ -757,10 +761,8 @@ func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
 
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
-	panic("TODO")
-	//env := NewEdgeEnv(e, kShellEscape)
-	//return env.LookupVariable(key)
-	return ""
+	env := NewEdgeEnv(e, kShellEscape)
+	return env.LookupVariable(key)
 }
 
 func (e *Edge) GetBindingBool(key string) bool {
@@ -769,26 +771,20 @@ func (e *Edge) GetBindingBool(key string) bool {
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	panic("TODO")
-	//env := NewEdgeEnv(e, kDoNotEscape)
-	//return env.LookupVariable("depfile")
-	return ""
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("depfile")
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	panic("TODO")
-	//env := NewEdgeEnv(e, kDoNotEscape)
-	//return env.LookupVariable("dyndep")
-	return ""
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("dyndep")
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	panic("TODO")
-	//env := NewEdgeEnv(e, kDoNotEscape)
-	//return env.LookupVariable("rspfile")
-	return ""
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("rspfile")
 }
 
 func (e *Edge) Dump(prefix string) {

@@ -68,205 +68,211 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	if len2 == 0 {
 		return path
 	}
-	/*
-	     kMaxPathComponents := 60
-	   	var components [kMaxPathComponents]byte
-	     component_count := 0
+	const kMaxPathComponents = 60
+	var components [kMaxPathComponents]int
+	component_count := 0
 
-	     start := path
-	     dst := start
-	     src := start
-	   	end := start + len2
+	start := 0
+	dst := 0
+	src := 0
+	end := 0 + len2
 
-	     if IsPathSeparator(*src) {
-	       // network path starts with //
-	       if len2 > 1 && IsPathSeparator(path[src + 1]) {
-	         src += 2
-	         dst += 2
-	       } else {
-	         src++
-	         dst++
-	       }
-	     }
+	if IsPathSeparator(path[src]) {
+		// network path starts with //
+		if len2 > 1 && IsPathSeparator(path[src+1]) {
+			src += 2
+			dst += 2
+		} else {
+			src++
+			dst++
+		}
+	}
 
-	     for src < end {
-	       if path[src] == '.' {
-	         if src + 1 == end || IsPathSeparator(path[src+1]) {
-	           // '.' component; eliminate.
-	           src += 2
-	           continue
-	         } else if path[src+1] == '.' && (src + 2 == end || IsPathSeparator(path[src+2])) {
-	           // '..' component.  Back up if possible.
-	           if component_count > 0 {
-	             dst = components[component_count - 1]
-	             src += 3
-	             component_count--
-	           } else {
-	             *dst++ = *src++
-	             *dst++ = *src++
-	             *dst++ = *src++
-	           }
-	           continue
-	         }
-	       }
+	for src < end {
+		if path[src] == '.' {
+			if src+1 == end || IsPathSeparator(path[src+1]) {
+				// '.' component; eliminate.
+				src += 2
+				continue
+			} else if path[src+1] == '.' && (src+2 == end || IsPathSeparator(path[src+2])) {
+				// '..' component.  Back up if possible.
+				if component_count > 0 {
+					dst = components[component_count-1]
+					src += 3
+					component_count--
+				} else {
+					panic("TODO")
+					/*
+					 *dst++ = *src++
+					 *dst++ = *src++
+					 *dst++ = *src++
+					 */
+				}
+				continue
+			}
+		}
 
-	       if IsPathSeparator(path[src]) {
-	         src++
-	         continue
-	       }
+		if IsPathSeparator(path[src]) {
+			src++
+			continue
+		}
 
-	       if component_count == kMaxPathComponents {
-	         Fatal("path has too many components : %s", path)
-	       }
-	       components[component_count] = dst
-	       component_count++
+		if component_count == kMaxPathComponents {
+			Fatal("path has too many components : %s", path)
+		}
+		components[component_count] = dst
+		component_count++
 
-	       for src != end && !IsPathSeparator(path[src]) {
-	         *dst++ = *src++
-	       }
-	       *dst++ = *src++  // Copy '/' or final \0 character as well.
-	     }
+		panic("TODO")
+		/*
+		   for src != end && !IsPathSeparator(path[src]) {
+		     *dst++ = *src++
+		   }
+		   *dst++ = *src++  // Copy '/' or final \0 character as well.
+		*/
+	}
 
-	     if dst == start {
-	       *dst++ = '.'
-	       *dst++ = '\0'
-	     }
+	if dst == start {
+		panic("TODO")
+		/*
+		 *dst++ = '.'
+		 *dst++ = '\0'
+		 */
+	}
 
-	     len2 = dst - start - 1
-	     bits := 0
-	     bits_mask := 1
+	len2 = dst - start - 1
+	bits := uint64(0)
+	bits_mask := uint64(1)
 
-	     for c := start; c < start + len2; c++ {
-	       switch path[c] {
-	         case '\\':
-	           bits |= bits_mask
-	           *c = '/'
-	           NINJA_FALLTHROUGH
-	         case '/':
-	           bits_mask <<= 1
-	       }
-	     }
+	for c := start; c < start+len2; c++ {
+		switch path[c] {
+		case '\\':
+			bits |= bits_mask
+			panic("TODO")
+			//*c = '/'
+			fallthrough
+		case '/':
+			bits_mask <<= 1
+		}
+	}
 
-	     *slash_bits = bits
-	*/
+	*slash_bits = bits
 	return path
 }
 
-/*
-func IsKnownShellSafeCharacter(ch char) inline bool {
-  if 'A' <= ch && ch <= 'Z' {
-  	return true
-  }
-  if 'a' <= ch && ch <= 'z' {
-  	return true
-  }
-  if '0' <= ch && ch <= '9' {
-  	return true
-  }
+func IsKnownShellSafeCharacter(ch byte) bool {
+	if 'A' <= ch && ch <= 'Z' {
+		return true
+	}
+	if 'a' <= ch && ch <= 'z' {
+		return true
+	}
+	if '0' <= ch && ch <= '9' {
+		return true
+	}
 
-  switch (ch) {
-    case '_':
-    case '+':
-    case '-':
-    case '.':
-    case '/':
-      return true
-    default:
-      return false
-  }
+	switch ch {
+	case '_', '+', '-', '.', '/':
+		return true
+	default:
+		return false
+	}
 }
 
-func IsKnownWin32SafeCharacter(ch char) inline bool {
-  switch (ch) {
-    case ' ':
-    case '"':
-      return false
-    default:
-      return true
-  }
+func IsKnownWin32SafeCharacter(ch byte) bool {
+	switch ch {
+	case ' ', '"':
+		return false
+	default:
+		return true
+	}
 }
 
-func StringNeedsShellEscaping(input string) inline bool {
-  for i := 0; i < input.size(); i++ {
-    if !IsKnownShellSafeCharacter(input[i]) {
-    	return true
-    }
-  }
-  return false
+func StringNeedsShellEscaping(input string) bool {
+	for i := range input {
+		if !IsKnownShellSafeCharacter(input[i]) {
+			return true
+		}
+	}
+	return false
 }
 
-func StringNeedsWin32Escaping(input string) inline bool {
-  for i := 0; i < input.size(); i++ {
-    if !IsKnownWin32SafeCharacter(input[i]) {
-    	return true
-    }
-  }
-  return false
+func StringNeedsWin32Escaping(input string) bool {
+	for i := range input {
+		if !IsKnownWin32SafeCharacter(input[i]) {
+			return true
+		}
+	}
+	return false
 }
 
 // Appends |input| to |*result|, escaping according to the whims of either
 // Bash, or Win32's CommandLineToArgvW().
 // Appends the string directly to |result| without modification if we can
 // determine that it contains no problematic characters.
-func GetShellEscapedString(input string, result *string) {
-  if !result { panic("oops") }
+func GetShellEscapedString(input string) string {
+	panic("TODO")
+	if !StringNeedsShellEscaping(input) {
+		return input
+	}
 
-  if !StringNeedsShellEscaping(input) {
-    result.append(input)
-    return
-  }
+	kQuote := byte('\'')
+	kEscapeSequence := "'\\'"
 
-  const char kQuote = '\''
-  const char kEscapeSequence[] = "'\\'"
+	result := string(kQuote)
 
-  result.push_back(kQuote)
-
-  span_begin := input.begin()
-  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
-    if *it == kQuote {
-      result.append(span_begin, it)
-      result.append(kEscapeSequence)
-      span_begin = it
-    }
-  }
-  result.append(span_begin, input.end())
-  result.push_back(kQuote)
+	span_begin := 0
+	end := len(input)
+	for it := 0; it != end; it++ {
+		if input[it] == kQuote {
+			result += input[span_begin:it]
+			result += kEscapeSequence
+			span_begin = it
+		}
+	}
+	result += input[span_begin:]
+	result += string(kQuote)
+	return result
 }
 
-func GetWin32EscapedString(input string, result *string) {
-  if !result { panic("oops") }
-  if !StringNeedsWin32Escaping(input) {
-    result.append(input)
-    return
-  }
+func GetWin32EscapedString(input string) string {
+	panic("TODO")
+	/*
+	  if !result { panic("oops") }
+	  if !StringNeedsWin32Escaping(input) {
+	    result.append(input)
+	    return
+	  }
 
-  const char kQuote = '"'
-  const char kBackslash = '\\'
+	  const char kQuote = '"'
+	  const char kBackslash = '\\'
 
-  result.push_back(kQuote)
-  consecutive_backslash_count := 0
-  span_begin := input.begin()
-  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
-    switch (*it) {
-      case kBackslash:
-        consecutive_backslash_count++
-        break
-      case kQuote:
-        result.append(span_begin, it)
-        result.append(consecutive_backslash_count + 1, kBackslash)
-        span_begin = it
-        consecutive_backslash_count = 0
-        break
-      default:
-        consecutive_backslash_count = 0
-        break
-    }
-  }
-  result.append(span_begin, input.end())
-  result.append(consecutive_backslash_count, kBackslash)
-  result.push_back(kQuote)
+	  result.push_back(kQuote)
+	  consecutive_backslash_count := 0
+	  span_begin := input.begin()
+	  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
+	    switch (*it) {
+	      case kBackslash:
+	        consecutive_backslash_count++
+	        break
+	      case kQuote:
+	        result.append(span_begin, it)
+	        result.append(consecutive_backslash_count + 1, kBackslash)
+	        span_begin = it
+	        consecutive_backslash_count = 0
+	        break
+	      default:
+	        consecutive_backslash_count = 0
+	        break
+	    }
+	  }
+	  result.append(span_begin, input.end())
+	  result.append(consecutive_backslash_count, kBackslash)
+	  result.push_back(kQuote)
+	*/
 }
 
+/*
 // Read a file to a string (in text mode: with CRLF conversion
 // on Windows).
 // Returns -errno and fills in \a err on error.
