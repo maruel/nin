@@ -24,6 +24,9 @@ func TestState_Basic(t *testing.T) {
 	command.AddSpecial("in")
 	command.AddText(" > ")
 	command.AddSpecial("out")
+	if got := command.Serialize(); got != "[cat ][$in][ > ][$out]" {
+		t.Fatal(got)
+	}
 
 	rule := NewRule("cat")
 	rule.AddBinding("command", &command)
@@ -34,7 +37,6 @@ func TestState_Basic(t *testing.T) {
 	state.AddIn(edge, "in2", 0)
 	state.AddOut(edge, "out", 0)
 
-	/* TODO
 	if got := edge.EvaluateCommand(false); got != "cat in1 in2 > out" {
 		t.Fatal(got)
 	}
@@ -48,5 +50,4 @@ func TestState_Basic(t *testing.T) {
 	if !state.GetNode("out", 0).dirty() {
 		t.FailNow()
 	}
-	*/
 }

@@ -16,6 +16,7 @@ package ginja
 
 import (
 	"bytes"
+	"fmt"
 	"runtime"
 )
 
@@ -834,27 +835,27 @@ func PathDecanonicalized(path string, slash_bits uint64) string {
 }
 
 func (n *Node) Dump(prefix string) {
-	panic("TODO")
-	/*
-		s := ""
-		if !n.exists() {
-			s = " (:missing)"
+	s := ""
+	if !n.exists() {
+		s = " (:missing)"
+	}
+	t := " clean"
+	if n.dirty() {
+		t = " dirty"
+	}
+	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.path(), n, n.mtime(), s, t)
+	if n.in_edge() != nil {
+		n.in_edge().Dump("in-edge: ")
+	} else {
+		fmt.Printf("no in-edge\n")
+	}
+	fmt.Printf(" out edges:\n")
+	for _, e := range n.out_edges() {
+		if e == nil {
+			break
 		}
-		t := " clean"
-		if dirty() {
-			t = " dirty"
-		}
-		printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, path(), this, mtime(), s, t)
-		if in_edge() {
-			in_edge().Dump("in-edge: ")
-		} else {
-			printf("no in-edge\n")
-		}
-		printf(" out edges:\n")
-		for e := out_edges().begin(); e != out_edges().end() && *e != nil; e++ {
-			(*e).Dump(" +- ")
-		}
-	*/
+		e.Dump(" +- ")
+	}
 }
 
 // Load implicit dependencies for \a edge.
@@ -875,87 +876,70 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 	return true
 }
 
-/*
-type matches struct {
-	/*
-	   bool operator()(const Node* node) const {
-	     string opath = string(node.path())
-	     return *i_ == opath
-	   }
-	* /
-	i_ int
-}
-
-func Newmatches(i int) matches {
-	return matches{
-		i_: i,
-	}
-}
-*/
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	panic("TODO")
-	/*
-			METRIC_RECORD("depfile load")
-			// Read depfile content.  Treat a missing depfile as empty.
-			content := ""
-			switch i.disk_interface_.ReadFile(path, &content, err) {
-			case Okay:
+	METRIC_RECORD("depfile load")
+	// Read depfile content.  Treat a missing depfile as empty.
+	content := ""
+	switch i.disk_interface_.ReadFile(path, &content, err) {
+	case Okay:
+		break
+	case NotFound:
+		err = nil
+		break
+	case OtherError:
+		*err = "loading '" + path + "': " + *err
+		return false
+	}
+	// On a missing depfile: return false and empty *err.
+	if len(content) == 0 {
+		EXPLAIN("depfile '%s' is missing", path)
+		return false
+	}
+
+	x := DepfileParserOptions{}
+	if i.depfile_parser_options_ != nil {
+		x = *i.depfile_parser_options_
+	}
+	depfile := NewDepfileParser(x)
+	depfile_err := ""
+	if !depfile.Parse([]byte(content), &depfile_err) {
+		*err = path + ": " + depfile_err
+		return false
+	}
+
+	if len(depfile.outs_) == 0 {
+		*err = path + ": no outputs declared"
+		return false
+	}
+
+	var unused uint64
+	primary_out := CanonicalizePath(depfile.outs_[0], &unused)
+
+	// Check that this depfile matches the edge's output, if not return false to
+	// mark the edge as dirty.
+	first_output := edge.outputs_[0]
+	if first_output.path() != primary_out {
+		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out)
+		return false
+	}
+
+	// Ensure that all mentioned outputs are outputs of the edge.
+	for _, o := range depfile.outs_ {
+		found := false
+		for _, n := range edge.outputs_ {
+			if n.path() == o {
+				found = true
 				break
-			case NotFound:
-				err = nil
-				break
-			case OtherError:
-				*err = "loading '" + path + "': " + *err
-				return false
 			}
-			// On a missing depfile: return false and empty *err.
-			if len(content) == 0 {
-				EXPLAIN("depfile '%s' is missing", path)
-				return false
-			}
-
-			x := DepfileParserOptions()
-			if i.depfile_parser_options_ != nil {
-				x = *i.depfile_parser_options_
-			}
-			depfile := NewDepfileParser(x)
-			depfile_err := ""
-			if !depfile.Parse(&content, &depfile_err) {
-				*err = path + ": " + depfile_err
-				return false
-			}
-
-			if depfile.outs_.empty() {
-				*err = path + ": no outputs declared"
-				return false
-			}
-
-			var unused uint64
-			primary_out := depfile.outs_.begin()
-			CanonicalizePath(primary_out.str_, &primary_out.len_, &unused)
-
-			// Check that this depfile matches the edge's output, if not return false to
-			// mark the edge as dirty.
-			first_output := edge.outputs_[0]
-			opath := string(first_output.path())
-			if opath != *primary_out {
-				EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out.AsString())
-				return false
-			}
-
-			// Ensure that all mentioned outputs are outputs of the edge.
-			for o := depfile.outs_.begin(); o != depfile.outs_.end(); o++ {
-				m := matches(o)
-				if find_if(edge.outputs_.begin(), edge.outputs_.end(), m) == edge.outputs_.end() {
-					*err = path + ": depfile mentions '" + o.AsString() + "' as an output, but no such output was declared"
-					return false
-				}
-			}
-		return i.ProcessDepfileDeps(edge, &depfile.ins_, err)
-	*/
-	return false
+		}
+		if !found {
+			*err = path + ": depfile mentions '" + o + "' as an output, but no such output was declared"
+			return false
+		}
+	}
+	return i.ProcessDepfileDeps(edge, depfile.ins_, err)
 }
 
 // Process loaded implicit dependencies for \a edge and update the graph
@@ -969,7 +953,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 		var slash_bits uint64
 		j = CanonicalizePath(j, &slash_bits)
 		node := i.state_.GetNode(j, slash_bits)
-		//*implicit_dep = node
+		edge.inputs_[implicit_dep] = node
 		node.AddOutEdge(edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
@@ -1012,13 +996,9 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	//TODO
-	/*
-		edge.inputs_.insert(edge.inputs_.end()-edge.order_only_deps_, count, 0)
-		edge.implicit_deps_ += count
-		return edge.inputs_.end() - edge.order_only_deps_ - count
-	*/
-	return 0
+	edge.inputs_ = append(edge.inputs_, make([]*Node, len(edge.inputs_)-edge.order_only_deps_+count)...)
+	edge.implicit_deps_ += count
+	return len(edge.inputs_) - edge.order_only_deps_ - count
 }
 
 // If we don't have a edge that generates this input already,

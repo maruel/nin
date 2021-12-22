@@ -75,24 +75,32 @@ func TestGraphTest_ModifiedImplicit(t *testing.T) {
 	}
 }
 
-/*
 func TestGraphTest_FunkyMakefilePath(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule catdep\n  depfile = $out.d\n  command = cat $in > $out\nbuild out.o: catdep foo.cc\n"))
-  fs_.Create("foo.cc",  "")
-  fs_.Create("out.o.d", "out.o: ./foo/../implicit.h\n")
-  fs_.Create("out.o", "")
-  fs_.Tick()
-  fs_.Create("implicit.h", "")
+	t.Skip("TODO")
+	g := NewGraphTest(t)
+	g.AssertParse(&g.state_, "rule catdep\n  depfile = $out.d\n  command = cat $in > $out\nbuild out.o: catdep foo.cc\n", ManifestParserOptions{})
+	g.fs_.Create("foo.cc", "")
+	g.fs_.Create("out.o.d", "out.o: ./foo/../implicit.h\n")
+	g.fs_.Create("out.o", "")
+	g.fs_.Tick()
+	g.fs_.Create("implicit.h", "")
 
-  err := ""
-  if !scan_.RecomputeDirty(GetNode("out.o"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	err := ""
+	if !g.scan_.RecomputeDirty(g.GetNode("out.o"), nil, &err) {
+		t.Fatal(err)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
 
-  // implicit.h has changed, though our depfile refers to it with a
-  // non-canonical path; we should still find it.
-  if !GetNode("out.o").dirty() { t.Fatal("expected true") }
+	// implicit.h has changed, though our depfile refers to it with a
+	// non-canonical path; we should still find it.
+	if !g.GetNode("out.o").dirty() {
+		t.Fatal("expected true")
+	}
 }
 
+/*
 func TestGraphTest_ExplicitImplicit(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule catdep\n  depfile = $out.d\n  command = cat $in > $out\nbuild implicit.h: cat data\nbuild out.o: catdep foo.cc || implicit.h\n"))
   fs_.Create("implicit.h", "")
