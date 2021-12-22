@@ -33,7 +33,6 @@ func NewGraphTest(t *testing.T) GraphTest {
 
 func TestGraphTest_MissingImplicit(t *testing.T) {
 	g := NewGraphTest(t)
-	t.Skip("TODO")
 	g.AssertParse(&g.state_, "build out: cat in | implicit\n", ManifestParserOptions{})
 	g.fs_.Create("in", "")
 	g.fs_.Create("out", "")
