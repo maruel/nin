@@ -53,22 +53,29 @@ func TestGraphTest_MissingImplicit(t *testing.T) {
 	}
 }
 
-/*
 func TestGraphTest_ModifiedImplicit(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat in | implicit\n"))
-  fs_.Create("in", "")
-  fs_.Create("out", "")
-  fs_.Tick()
-  fs_.Create("implicit", "")
+	g := NewGraphTest(t)
+	g.AssertParse(&g.state_, "build out: cat in | implicit\n", ManifestParserOptions{})
+	g.fs_.Create("in", "")
+	g.fs_.Create("out", "")
+	g.fs_.Tick()
+	g.fs_.Create("implicit", "")
 
-  err := ""
-  if !scan_.RecomputeDirty(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	err := ""
+	if !g.scan_.RecomputeDirty(g.GetNode("out"), nil, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  // A modified implicit dep should make the output dirty.
-  if !GetNode("out").dirty() { t.Fatal("expected true") }
+	// A modified implicit dep should make the output dirty.
+	if !g.GetNode("out").dirty() {
+		t.Fatal("expected true")
+	}
 }
 
+/*
 func TestGraphTest_FunkyMakefilePath(t *testing.T) {
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "rule catdep\n  depfile = $out.d\n  command = cat $in > $out\nbuild out.o: catdep foo.cc\n"))
   fs_.Create("foo.cc",  "")

@@ -528,104 +528,98 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
-	panic("TODO")
-	/*
-		command := edge.EvaluateCommand(true) // incl_rsp_file=
-		for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-			if RecomputeOutputDirty(edge, most_recent_input, command, *o) {
-				*outputs_dirty = true
-				return true
-			}
+	command := edge.EvaluateCommand(true) // incl_rsp_file=
+	for _, o := range edge.outputs_ {
+		if d.RecomputeOutputDirty(edge, most_recent_input, command, o) {
+			*outputs_dirty = true
+			return true
 		}
-	*/
+	}
 	return true
 }
 
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
 func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Node, command string, output *Node) bool {
-	panic("TODO")
-	/*
-		if edge.is_phony() {
-			// Phony edges don't write any output.  Outputs are only dirty if
-			// there are no inputs and we're missing the output.
-			if edge.inputs_.empty() && !output.exists() {
-				EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.path())
-				return true
-			}
-
-			// Update the mtime with the newest input. Dependents can thus call mtime()
-			// on the fake node and get the latest mtime of the dependencies
-			if most_recent_input {
-				output.UpdatePhonyMtime(most_recent_input.mtime())
-			}
-
-			// Phony edges are clean, nothing to do
-			return false
-		}
-
-		entry := 0
-
-		// Dirty if we're missing the output.
-		if !output.exists() {
-			EXPLAIN("output %s doesn't exist", output.path())
+	if edge.is_phony() {
+		// Phony edges don't write any output.  Outputs are only dirty if
+		// there are no inputs and we're missing the output.
+		if len(edge.inputs_) == 0 && !output.exists() {
+			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.path())
 			return true
 		}
 
-		// Dirty if the output is older than the input.
-		if most_recent_input && output.mtime() < most_recent_input.mtime() {
-			output_mtime := output.mtime()
+		// Update the mtime with the newest input. Dependents can thus call mtime()
+		// on the fake node and get the latest mtime of the dependencies
+		if most_recent_input != nil {
+			output.UpdatePhonyMtime(most_recent_input.mtime())
+		}
 
-			// If this is a restat rule, we may have cleaned the output with a restat
-			// rule in a previous run and stored the most recent input mtime in the
-			// build log.  Use that mtime instead, so that the file will only be
-			// considered dirty if an input was modified since the previous run.
-			used_restat := false
-			if edge.GetBindingBool("restat") && build_log() {
-				if entry := build_log().LookupByOutput(output.path()); entry != nil {
-					output_mtime = entry.mtime
-					used_restat = true
-				}
-			}
+		// Phony edges are clean, nothing to do
+		return false
+	}
 
-			if output_mtime < most_recent_input.mtime() {
-				s := ""
-				if used_restat {
-					s = "restat of "
-				}
-				EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
-				return true
+	var entry *LogEntry
+
+	// Dirty if we're missing the output.
+	if !output.exists() {
+		EXPLAIN("output %s doesn't exist", output.path())
+		return true
+	}
+
+	// Dirty if the output is older than the input.
+	if most_recent_input != nil && output.mtime() < most_recent_input.mtime() {
+		output_mtime := output.mtime()
+
+		// If this is a restat rule, we may have cleaned the output with a restat
+		// rule in a previous run and stored the most recent input mtime in the
+		// build log.  Use that mtime instead, so that the file will only be
+		// considered dirty if an input was modified since the previous run.
+		used_restat := false
+		if edge.GetBindingBool("restat") && d.build_log() != nil {
+			if entry = d.build_log().LookupByOutput(output.path()); entry != nil {
+				output_mtime = entry.mtime
+				used_restat = true
 			}
 		}
 
-		if build_log() {
-			generator := edge.GetBindingBool("generator")
-			if entry == nil {
-				entry = build_log().LookupByOutput(output.path())
+		if output_mtime < most_recent_input.mtime() {
+			s := ""
+			if used_restat {
+				s = "restat of "
 			}
-			if entry {
-				if !generator && HashCommand(command) != entry.command_hash {
-					// May also be dirty due to the command changing since the last build.
-					// But if this is a generator rule, the command changing does not make us
-					// dirty.
-					EXPLAIN("command line changed for %s", output.path())
-					return true
-				}
-				if most_recent_input && entry.mtime < most_recent_input.mtime() {
-					// May also be dirty due to the mtime in the log being older than the
-					// mtime of the most recent input.  This can occur even when the mtime
-					// on disk is newer if a previous run wrote to the output file but
-					// exited with an error or was interrupted.
-					EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.path(), most_recent_input.path(), entry.mtime, most_recent_input.mtime())
-					return true
-				}
+			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
+			return true
+		}
+	}
+
+	if d.build_log() != nil {
+		generator := edge.GetBindingBool("generator")
+		if entry == nil {
+			entry = d.build_log().LookupByOutput(output.path())
+		}
+		if entry != nil {
+			if !generator && HashCommand(command) != entry.command_hash {
+				// May also be dirty due to the command changing since the last build.
+				// But if this is a generator rule, the command changing does not make us
+				// dirty.
+				EXPLAIN("command line changed for %s", output.path())
+				return true
 			}
-			if !entry && !generator {
-				EXPLAIN("command line not found in log for %s", output.path())
+			if most_recent_input != nil && entry.mtime < most_recent_input.mtime() {
+				// May also be dirty due to the mtime in the log being older than the
+				// mtime of the most recent input.  This can occur even when the mtime
+				// on disk is newer if a previous run wrote to the output file but
+				// exited with an error or was interrupted.
+				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.path(), most_recent_input.path(), entry.mtime, most_recent_input.mtime())
 				return true
 			}
 		}
-	*/
+		if entry == nil && !generator {
+			EXPLAIN("command line not found in log for %s", output.path())
+			return true
+		}
+	}
 	return false
 }
 

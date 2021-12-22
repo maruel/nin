@@ -126,12 +126,12 @@ func NewLogEntry(output string) LogEntry {
 }
 
 /*
-BuildLog::LogEntry::LogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
+NewLogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
   : output(output), command_hash(command_hash),
     start_time(start_time), end_time(end_time), mtime(restat_mtime)
 {}
 
-BuildLog::BuildLog()
+NewBuildLog()
   : log_file_(nil), needs_recompaction_(false) {}
 
 BuildLog::~BuildLog() {
@@ -395,16 +395,14 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 
   return LOAD_SUCCESS
 }
+*/
 
 // Lookup a previously-run command by its output path.
-func (b *BuildLog) LookupByOutput(path string) *BuildLog::LogEntry {
-  i := b.entries_.find(path)
-  if i != b.entries_.end() {
-    return i.second
-  }
-  return nil
+func (b *BuildLog) LookupByOutput(path string) *LogEntry {
+	return b.entries_[path]
 }
 
+/*
 // Serialize an entry into a log file.
 func (b *BuildLog) WriteEntry(f *FILE, entry *LogEntry) bool {
   return fprintf(f, "%d\t%d\t%" PRId64 "\t%s\t%" PRIx64 "\n", entry.start_time, entry.end_time, entry.mtime, entry.output, entry.command_hash) > 0
