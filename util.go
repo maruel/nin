@@ -17,6 +17,7 @@ package ginja
 import (
 	"fmt"
 	"os"
+	"runtime"
 )
 
 // Have a generic fall-through for different versions of C/C++.
@@ -62,6 +63,8 @@ func IsPathSeparator(c byte) bool {
 // |slash_bits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
 func CanonicalizePath(path string, slash_bits *uint64) string {
+	// TODO(maruel): Call site should be the lexers, so that it's done as a
+	// single pass.
 	// WARNING: this function is performance-critical; please benchmark
 	// any changes you make to it.
 	len2 := len(path)
@@ -72,16 +75,23 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	var components [kMaxPathComponents]int
 	component_count := 0
 
+	// TODO(maruel): Optimize once the rest kinda works.
+	p := []byte(path + "\x00")
 	start := 0
 	dst := 0
 	src := 0
 	end := 0 + len2
 
-	if IsPathSeparator(path[src]) {
-		// network path starts with //
-		if len2 > 1 && IsPathSeparator(path[src+1]) {
-			src += 2
-			dst += 2
+	if IsPathSeparator(p[src]) {
+		if runtime.GOOS == "windows" {
+			// network path starts with //
+			if len2 > 1 && IsPathSeparator(p[src+1]) {
+				src += 2
+				dst += 2
+			} else {
+				src++
+				dst++
+			}
 		} else {
 			src++
 			dst++
@@ -89,30 +99,29 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	}
 
 	for src < end {
-		if path[src] == '.' {
-			if src+1 == end || IsPathSeparator(path[src+1]) {
+		if p[src] == '.' {
+			if src+1 == end || IsPathSeparator(p[src+1]) {
 				// '.' component; eliminate.
 				src += 2
 				continue
-			} else if path[src+1] == '.' && (src+2 == end || IsPathSeparator(path[src+2])) {
+			} else if p[src+1] == '.' && (src+2 == end || IsPathSeparator(p[src+2])) {
 				// '..' component.  Back up if possible.
 				if component_count > 0 {
 					dst = components[component_count-1]
 					src += 3
 					component_count--
 				} else {
-					panic("TODO")
-					/*
-					 *dst++ = *src++
-					 *dst++ = *src++
-					 *dst++ = *src++
-					 */
+					p[dst] = p[src]
+					p[dst+1] = p[src+1]
+					p[dst+2] = p[src+2]
+					dst += 3
+					src += 3
 				}
 				continue
 			}
 		}
 
-		if IsPathSeparator(path[src]) {
+		if IsPathSeparator(p[src]) {
 			src++
 			continue
 		}
@@ -123,41 +132,45 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 		components[component_count] = dst
 		component_count++
 
-		panic("TODO")
-		/*
-		   for src != end && !IsPathSeparator(path[src]) {
-		     *dst++ = *src++
-		   }
-		   *dst++ = *src++  // Copy '/' or final \0 character as well.
-		*/
+		for src != end && !IsPathSeparator(p[src]) {
+			p[dst] = p[src]
+			dst++
+			src++
+		}
+		// Copy '/' or final \0 character as well.
+		p[dst] = p[src]
+		dst++
+		src++
 	}
 
 	if dst == start {
-		panic("TODO")
-		/*
-		 *dst++ = '.'
-		 *dst++ = '\0'
-		 */
+		p[dst] = '.'
+		p[dst+1] = '\x00'
+		dst += 2
 	}
 
 	len2 = dst - start - 1
-	bits := uint64(0)
-	bits_mask := uint64(1)
+	p = p[:len2]
+	if runtime.GOOS == "windows" {
+		bits := uint64(0)
+		bits_mask := uint64(1)
 
-	for c := start; c < start+len2; c++ {
-		switch path[c] {
-		case '\\':
-			bits |= bits_mask
-			panic("TODO")
-			//*c = '/'
-			fallthrough
-		case '/':
-			bits_mask <<= 1
+		for c := start; c < start+len2; c++ {
+			switch p[c] {
+			case '\\':
+				bits |= bits_mask
+				p[c] = '/'
+				fallthrough
+			case '/':
+				bits_mask <<= 1
+			}
 		}
-	}
 
-	*slash_bits = bits
-	return path
+		*slash_bits = bits
+	} else {
+		*slash_bits = 0
+	}
+	return string(p)
 }
 
 func IsKnownShellSafeCharacter(ch byte) bool {
