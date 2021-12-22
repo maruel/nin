@@ -2584,7 +2584,7 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
 
   err := ""
   if builder_.AddTarget("out", &err) { t.Fatal("expected false") }
-  if "dependency cycle: circ . in . circ" != err { t.Fatal("expected equal") }
+  if "dependency cycle: circ -> in -> circ" != err { t.Fatal("expected equal") }
 }
 
 func TestBuildTest_DyndepBuild(t *testing.T) {
@@ -2827,7 +2827,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
   if builder_.Build(&err) { t.Fatal("expected false") }
   // Depending on how the pointers in Plan::ready_ work out, we could have
   // discovered the cycle from either starting point.
-  if !err == "dependency cycle: circ . in . circ" || err == "dependency cycle: in . circ . in" { t.Fatal("expected true") }
+  if !err == "dependency cycle: circ -> in -> circ" || err == "dependency cycle: in -> circ -> in" { t.Fatal("expected true") }
 }
 
 func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {

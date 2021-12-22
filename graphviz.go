@@ -65,18 +65,18 @@ func (g *GraphViz) AddTarget(node *Node) {
     // Can draw simply.
     // Note extra space before label text -- this is cosmetic and feels
     // like a graphviz bug.
-    printf("\"%p\" . \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
+    printf("\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
   } else {
     printf("\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.rule_.name())
     for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-      printf("\"%p\" . \"%p\"\n", edge, *out)
+      printf("\"%p\" -> \"%p\"\n", edge, *out)
     }
     for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
       string order_only = ""
       if edge.is_order_only(in - edge.inputs_.begin()) {
         order_only = " style=dotted"
       }
-      printf("\"%p\" . \"%p\" [arrowhead=none%s]\n", (*in), edge, order_only)
+      printf("\"%p\" -> \"%p\" [arrowhead=none%s]\n", (*in), edge, order_only)
     }
   }
 

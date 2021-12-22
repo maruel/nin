@@ -303,7 +303,7 @@ func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
 
   err := ""
   if scan_.RecomputeDirty(GetNode("a"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: a . a [-w phonycycle=err]" != err { t.Fatal("expected equal") }
+  if "dependency cycle: a -> a [-w phonycycle=err]" != err { t.Fatal("expected equal") }
 }
 
 func TestGraphTest_DependencyCycle(t *testing.T) {
@@ -311,35 +311,35 @@ func TestGraphTest_DependencyCycle(t *testing.T) {
 
   err := ""
   if scan_.RecomputeDirty(GetNode("out"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: out . mid . in . pre . out" != err { t.Fatal("expected equal") }
+  if "dependency cycle: out -> mid -> in -> pre -> out" != err { t.Fatal("expected equal") }
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
   err := ""
   AssertParse(&state_, "build a b: cat a\n")
   if scan_.RecomputeDirty(GetNode("b"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: a . a" != err { t.Fatal("expected equal") }
+  if "dependency cycle: a -> a" != err { t.Fatal("expected equal") }
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build b a: cat a\n"))
   if scan_.RecomputeDirty(GetNode("b"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: a . a" != err { t.Fatal("expected equal") }
+  if "dependency cycle: a -> a" != err { t.Fatal("expected equal") }
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build a b: cat c\nbuild c: cat a\n"))
   if scan_.RecomputeDirty(GetNode("b"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: a . c . a" != err { t.Fatal("expected equal") }
+  if "dependency cycle: a -> c -> a" != err { t.Fatal("expected equal") }
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes4(t *testing.T) {
   err := ""
   ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build d: cat c\nbuild c: cat b\nbuild b: cat a\nbuild a e: cat d\nbuild f: cat e\n"))
   if scan_.RecomputeDirty(GetNode("f"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: a . d . c . b . a" != err { t.Fatal("expected equal") }
+  if "dependency cycle: a -> d -> c -> b -> a" != err { t.Fatal("expected equal") }
 }
 
 // Verify that cycles in graphs with multiple outputs are handled correctly
@@ -350,7 +350,7 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 
   err := ""
   if scan_.RecomputeDirty(GetNode("a"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: b . b" != err { t.Fatal("expected equal") }
+  if "dependency cycle: b -> b" != err { t.Fatal("expected equal") }
 
   // Despite the depfile causing edge to be a cycle (it has outputs a and b,
   // but the depfile also adds b as an input), the deps should have been loaded
@@ -367,7 +367,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 
   err := ""
   if scan_.RecomputeDirty(GetNode("a"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: b . c . b" != err { t.Fatal("expected equal") }
+  if "dependency cycle: b -> c -> b" != err { t.Fatal("expected equal") }
 
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
@@ -385,7 +385,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 
   err := ""
   if scan_.RecomputeDirty(GetNode("d"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: b . c . b" != err { t.Fatal("expected equal") }
+  if "dependency cycle: b -> c -> b" != err { t.Fatal("expected equal") }
 
   // Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
   // but c's in_edge has b as input but the depfile also adds |edge| as
@@ -671,7 +671,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
   Edge* edge = GetNode("out").in_edge()
   err := ""
   if scan_.RecomputeDirty(GetNode("out"), &err) { t.Fatal("expected false") }
-  if "dependency cycle: circ . in . circ" != err { t.Fatal("expected equal") }
+  if "dependency cycle: circ -> in -> circ" != err { t.Fatal("expected equal") }
 
   // Verify that "out.d" was loaded exactly once despite
   // circular reference discovered from dyndep file.
