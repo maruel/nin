@@ -732,7 +732,6 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 		}
 		path := i.PathDecanonicalized()
 		if e.escape_in_out_ == kShellEscape {
-			panic("TODO")
 			if runtime.GOOS == "windows" {
 				result = GetWin32EscapedString(path)
 			} else {

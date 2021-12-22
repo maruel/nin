@@ -224,7 +224,9 @@ func StringNeedsWin32Escaping(input string) bool {
 // Appends the string directly to |result| without modification if we can
 // determine that it contains no problematic characters.
 func GetShellEscapedString(input string) string {
-	panic("TODO")
+	if input == "" {
+		panic("oops")
+	}
 	if !StringNeedsShellEscaping(input) {
 		return input
 	}
@@ -249,40 +251,43 @@ func GetShellEscapedString(input string) string {
 }
 
 func GetWin32EscapedString(input string) string {
-	panic("TODO")
-	/*
-	  if !result { panic("oops") }
-	  if !StringNeedsWin32Escaping(input) {
-	    result.append(input)
-	    return
-	  }
+	if input == "" {
+		panic("oops")
+	}
+	if !StringNeedsWin32Escaping(input) {
+		return input
+	}
 
-	  const char kQuote = '"'
-	  const char kBackslash = '\\'
+	kQuote := '"'
+	kBackslash := '\\'
 
-	  result.push_back(kQuote)
-	  consecutive_backslash_count := 0
-	  span_begin := input.begin()
-	  for string::const_iterator it = input.begin(), end = input.end(); it != end; it++ {
-	    switch (*it) {
-	      case kBackslash:
-	        consecutive_backslash_count++
-	        break
-	      case kQuote:
-	        result.append(span_begin, it)
-	        result.append(consecutive_backslash_count + 1, kBackslash)
-	        span_begin = it
-	        consecutive_backslash_count = 0
-	        break
-	      default:
-	        consecutive_backslash_count = 0
-	        break
-	    }
-	  }
-	  result.append(span_begin, input.end())
-	  result.append(consecutive_backslash_count, kBackslash)
-	  result.push_back(kQuote)
-	*/
+	result := string(kQuote)
+	consecutive_backslash_count := 0
+	span_begin := 0
+	for it, c := range input {
+		switch c {
+		case kBackslash:
+			consecutive_backslash_count++
+			break
+		case kQuote:
+			result += input[span_begin:it]
+			for j := 0; j < consecutive_backslash_count+1; j++ {
+				result += string(kBackslash)
+			}
+			span_begin = it
+			consecutive_backslash_count = 0
+			break
+		default:
+			consecutive_backslash_count = 0
+			break
+		}
+	}
+	result += input[span_begin:]
+	for j := 0; j < consecutive_backslash_count; j++ {
+		result += string(kBackslash)
+	}
+	result += string(kQuote)
+	return result
 }
 
 /*

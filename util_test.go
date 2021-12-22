@@ -18,6 +18,8 @@ import (
 	"runtime"
 	"strconv"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestCanonicalizePath_PathSamples(t *testing.T) {
@@ -411,48 +413,39 @@ func TestCanonicalizePath_NotNullTerminated(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 }
-
+*/
 func TestPathEscaping_TortureTest(t *testing.T) {
-	result := ""
-
-	GetWin32EscapedString("foo bar\\\"'$@d!st!c'\\path'\\", &result)
-	if "\"foo bar\\\\\\\"'$@d!st!c'\\path'\\\\\"" != result {
-		t.Fatal("expected equal")
+	got := GetWin32EscapedString("foo bar\\\"'$@d!st!c'\\path'\\")
+	if diff := cmp.Diff("\"foo bar\\\\\\\"'$@d!st!c'\\path'\\\\\"", got); diff != "" {
+		t.Fatalf("+want, -got: %s", diff)
 	}
-	result = nil
-
-	GetShellEscapedString("foo bar\"/'$@d!st!c'/path'", &result)
-	if "'foo bar\"/'\\''$@d!st!c'\\''/path'\\'''" != result {
-		t.Fatal("expected equal")
+	got = GetShellEscapedString("foo bar\"/'$@d!st!c'/path'")
+	if diff := cmp.Diff("'foo bar\"/'\\''$@d!st!c'\\''/path'\\'''", got); diff != "" {
+		t.Fatalf("+want, -got: %s", diff)
 	}
 }
 
 func TestPathEscaping_SensiblePathsAreNotNeedlesslyEscaped(t *testing.T) {
 	path := "some/sensible/path/without/crazy/characters.c++"
-	result := ""
-
-	GetWin32EscapedString(path, &result)
-	if path != result {
-		t.Fatal("expected equal")
+	got := GetWin32EscapedString(path)
+	if diff := cmp.Diff(path, got); diff != "" {
+		t.Fatalf("+want, -got: %s", diff)
 	}
-	result = nil
-
-	GetShellEscapedString(path, &result)
-	if path != result {
-		t.Fatal("expected equal")
+	got = GetShellEscapedString(path)
+	if diff := cmp.Diff(path, got); diff != "" {
+		t.Fatalf("+want, -got: %s", diff)
 	}
 }
 
 func TestPathEscaping_SensibleWin32PathsAreNotNeedlesslyEscaped(t *testing.T) {
 	path := "some\\sensible\\path\\without\\crazy\\characters.c++"
-	result := ""
-
-	GetWin32EscapedString(path, &result)
+	result := GetWin32EscapedString(path)
 	if path != result {
 		t.Fatal("expected equal")
 	}
 }
 
+/*
 func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
 	stripped := StripAnsiEscapeCodes("foo\x33")
 	if "foo" != stripped {
