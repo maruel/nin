@@ -30,14 +30,25 @@ func ParseVersion(version string) (int, int) {
 	if end == -1 {
 		end = len(version)
 	}
-	major, _ := strconv.Atoi(version[:end])
+	major, _ := strconv.Atoi(keepNumbers(version[:end]))
 	minor := 0
 	if end != len(version) {
 		start := end + 1
 		end = strings.Index(version[start:], ".")
-		minor, _ = strconv.Atoi(version[start:end])
+		if end == -1 {
+			end = len(version)
+		}
+		minor, _ = strconv.Atoi(keepNumbers(version[start:end]))
 	}
 	return major, minor
+}
+
+func keepNumbers(s string) string {
+	i := strings.IndexFunc(s, func(r rune) bool { return r < '0' || r > '9' })
+	if i != -1 {
+		return s[:i]
+	}
+	return s
 }
 
 // Check whether a version is compatible with the current Ninja version,
