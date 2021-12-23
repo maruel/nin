@@ -12,28 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"strconv"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestJSONTest_RegularAscii(t *testing.T) {
-  if EncodeJSONString("foo bar") != "foo bar" { t.Fatal("expected equal") }
+	data := []struct {
+		in   string
+		want string
+	}{
+		{"foo bar", "foo bar"},
+		{
+			"\"\\\b\f\n\r\t",
+			"\\\"\\\\\\b\\f\\n\\r\\t",
+		},
+		{"\x01\x1f", "\\u0001\\u001f"},
+		{
+			// "你好",
+			"\xe4\xbd\xa0\xe5\xa5\xbd",
+			"\xe4\xbd\xa0\xe5\xa5\xbd",
+		},
+	}
+	for i, l := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			got := EncodeJSONString(l.in)
+			if diff := cmp.Diff(l.want, got); diff != "" {
+				t.Fatalf("+want, -got: %s", diff)
+			}
+		})
+	}
 }
-
-func TestJSONTest_EscapedChars(t *testing.T) {
-  if EncodeJSONString("\"\\\b\f\n\r\t") != "\\\"\\\\\\b\\f\\n\\r\\t" { t.Fatal("expected equal") }
-}
-
-// codepoints between 0 and 0x1f should be escaped
-func TestJSONTest_ControlChars(t *testing.T) {
-  if EncodeJSONString("\x01\x1f") != "\\u0001\\u001f" { t.Fatal("expected equal") }
-}
-
-// Leave them alone as JSON accepts unicode literals
-// out of control character range
-func TestJSONTest_UTF8(t *testing.T) {
-  string utf8str = "\xe4\xbd\xa0\xe5\xa5\xbd"
-  if EncodeJSONString(utf8str) != utf8str { t.Fatal("expected equal") }
-}
-

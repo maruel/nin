@@ -15,12 +15,45 @@
 package ginja
 
 import (
-	"encoding/json"
 	"os"
 )
 
+func EncodeJSONString(in string) string {
+	hex_digits := "0123456789abcdef"
+	out := ""
+	//out.reserve(in.length() * 1.2)
+	for _, c := range in {
+		switch c {
+		case '\b':
+			out += "\\b"
+		case '\f':
+			out += "\\f"
+		case '\n':
+			out += "\\n"
+		case '\r':
+			out += "\\r"
+		case '\t':
+			out += "\\t"
+		case '\\':
+			out += "\\\\"
+		case '"':
+			out += "\\\""
+		default:
+			if 0x0 <= c && c < 0x20 {
+				out += "\\u00"
+				out += hex_digits[c>>4 : (c>>4)+1]
+				out += hex_digits[c&0xf : (c&0xf)+1]
+			} else {
+				out += string(c)
+			}
+		}
+	}
+	return out
+}
+
 // Print a string in JSON format to stdout without enclosing quotes
 func PrintJSONString(in string) {
-	b, _ := json.Marshal(in)
-	_, _ = os.Stdout.Write(b)
+	//b, _ := json.Marshal(in)
+	b := EncodeJSONString(in)
+	_, _ = os.Stdout.WriteString(b)
 }
