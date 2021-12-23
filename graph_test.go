@@ -622,10 +622,10 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	if g.GetNode("dd").dyndep_pending() {
 		t.Fatal("expected false")
@@ -669,10 +669,10 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	if g.GetNode("dd").dyndep_pending() {
 		t.Fatal("expected false")
@@ -790,10 +790,10 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd1"), DyndepFile{}, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	if !g.GetNode("dd2").dyndep_pending() {
 		t.Fatal("expected true")
@@ -817,10 +817,10 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	if g.GetNode("dd").dyndep_pending() {
 		t.Fatal("expected false")
@@ -949,10 +949,10 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
 
 	err := ""
 	if !g.scan_.RecomputeDirty(g.GetNode("out"), nil, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 
 	if g.GetNode("in").dirty() {
@@ -980,10 +980,10 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 
 	err := ""
 	if !g.scan_.RecomputeDirty(g.GetNode("out"), nil, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 
 	if g.GetNode("in").dirty() {

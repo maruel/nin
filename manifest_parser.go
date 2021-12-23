@@ -366,7 +366,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	// Bindings on edges are rare, so allocate per-edge envs only when needed.
 	has_indent_token := m.lexer_.PeekToken(INDENT)
 	env := m.env_
-	if !has_indent_token {
+	if has_indent_token {
 		env = NewBindingEnv(m.env_)
 	}
 	for has_indent_token {

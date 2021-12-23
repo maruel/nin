@@ -14,6 +14,11 @@
 
 package ginja
 
+import (
+	"fmt"
+	"sort"
+)
+
 // An interface for a scope for variable (e.g. "$foo") lookups.
 type Env interface {
 	LookupVariable(v string) string
@@ -31,6 +36,16 @@ type TokenListItem struct {
 	second TokenType
 }
 
+func (t *TokenListItem) String() string {
+	out := fmt.Sprintf("%q:", t.first)
+	if t.second == RAW {
+		out += "RAW"
+	} else {
+		out += "SPECIAL"
+	}
+	return out
+}
+
 type TokenList []TokenListItem
 
 // A tokenized string that contains variable references.
@@ -41,6 +56,16 @@ type EvalString struct {
 
 func (e *EvalString) Clear()      { e.parsed_ = nil }
 func (e *EvalString) empty() bool { return len(e.parsed_) == 0 }
+func (e *EvalString) String() string {
+	out := ""
+	for i, t := range e.parsed_ {
+		if i != 0 {
+			out += ","
+		}
+		out += t.String()
+	}
+	return out
+}
 
 type Bindings map[string]*EvalString
 
@@ -61,6 +86,23 @@ func (r *Rule) name() string {
 	return r.name_
 }
 
+func (r *Rule) String() string {
+	out := "Rule:" + r.name_ + "{"
+	names := make([]string, 0, len(r.bindings_))
+	for n := range r.bindings_ {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for i, n := range names {
+		if i != 0 {
+			out += ","
+		}
+		out += n + ":" + r.bindings_[n].String()
+	}
+	out += "}"
+	return out
+}
+
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
 type BindingEnv struct {
@@ -75,6 +117,33 @@ func NewBindingEnv(parent *BindingEnv) *BindingEnv {
 		rules_:    map[string]*Rule{},
 		parent_:   parent,
 	}
+}
+
+func (b *BindingEnv) String() string {
+	out := "BindingEnv{"
+	if b.parent_ != nil {
+		out += "(has parent)"
+	}
+	out += "\n  Bindings:"
+	names := make([]string, 0, len(b.bindings_))
+	for n := range b.bindings_ {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		out += "\n    " + n + ":" + b.bindings_[n]
+	}
+	out += "\n  Rules:"
+	names = make([]string, 0, len(b.rules_))
+	for n := range b.rules_ {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		out += "\n    " + n + ":" + b.rules_[n].String()
+	}
+	out += "\n}"
+	return out
 }
 
 func (b *BindingEnv) LookupVariable(v string) string {
@@ -116,6 +185,7 @@ func (r *Rule) AddBinding(key string, val *EvalString) {
 }
 
 func (r *Rule) GetBinding(key string) *EvalString {
+	//log.Printf("Rule.GetBinding(%s): %#v", key, r.bindings_[key])
 	return r.bindings_[key]
 }
 

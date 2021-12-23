@@ -147,15 +147,13 @@ func TestParserTest_InNewline(t *testing.T) {
 }
 
 func TestParserTest_Variables(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	p.AssertParse("l = one-letter-test\nrule link\n  command = ld $l $extra $with_under -o $out $in\n\nextra = -pthread\nwith_under = -under\nbuild a: link b c\nnested1 = 1\nnested2 = $nested1/2\nbuild supernested: link x\n  extra = $nested2/3\n")
 
 	if 2 != len(p.state.edges_) {
-		t.Fatal("expected equal")
+		t.Fatalf("%v", p.state.edges_)
 	}
 	edge := p.state.edges_[0]
-
 	if got := edge.EvaluateCommand(false); "ld one-letter-test -pthread -under -o a b c" != got {
 		t.Fatal(got)
 	}
@@ -170,7 +168,6 @@ func TestParserTest_Variables(t *testing.T) {
 }
 
 func TestParserTest_VariableScope(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	p.AssertParse("foo = bar\nrule cmd\n  command = cmd $foo $in $out\n\nbuild inner: cmd a\n  foo = baz\nbuild outer: cmd b\n\n") // Extra newline after build line tickles a regression.
 
