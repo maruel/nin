@@ -64,5 +64,5 @@ and more details.
 ## Getting ginja
 
 ```
-go install github.com/maruel/ginja@latest
+go install github.com/maruel/ginja/cmd/ginja@latest
 ```

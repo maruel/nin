@@ -194,11 +194,9 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 			return false
 		}
 	}
-	/* TODO?
-	if fflush(d.file_) != 0 {
+	if err := d.file_.Sync(); err != nil {
 		return false
 	}
-	*/
 
 	// Update in-memory representation.
 	deps := NewDeps(mtime, node_count)
@@ -544,12 +542,9 @@ func (d *DepsLog) RecordId(node *Node) bool {
 		panic(1)
 		return false
 	}
-	/* TODO
-	   if fflush(d.file_) != 0 {
-	     return false
-	   }
-	*/
-	//fmt.Printf("DepsLog.RecordId(%s) = %d\n", node.path_, id)
+	if err := d.file_.Sync(); err != nil {
+		return false
+	}
 	node.set_id(id)
 	d.nodes_ = append(d.nodes_, node)
 
@@ -594,11 +589,9 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 			return false
 		}
 	}
-	/* TODO
-	if fflush(d.file_) != 0 {
+	if err := d.file_.Sync(); err != nil {
 		return false
 	}
-	*/
 	d.file_path_ = ""
 	return true
 }
