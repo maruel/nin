@@ -1267,6 +1267,7 @@ func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) i
   return -1
 }
 */
+
 func Main() {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing NinjaMain.
