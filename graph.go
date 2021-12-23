@@ -514,7 +514,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 	*err = "dependency cycle: "
 	for i := start; i != len(stack); i++ {
 		*err += stack[i].path()
-		*err += " . "
+		*err += " -> "
 	}
 	*err += stack[start].path()
 

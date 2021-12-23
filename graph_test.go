@@ -391,7 +391,6 @@ func TestGraphTest_DepfileOverrideParent(t *testing.T) {
 
 // Verify that building a nested phony rule prints "no work to do"
 func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build n1: phony \nbuild n2: phony n1\n", ManifestParserOptions{})
 	err := ""
@@ -402,7 +401,7 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	var plan_ Plan
+	plan_ := NewPlan(nil)
 	if !plan_.AddTarget(g.GetNode("n2"), &err) {
 		t.Fatal("expected true")
 	}
@@ -419,7 +418,6 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 }
 
 func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	var parser_opts ManifestParserOptions
 	parser_opts.phony_cycle_action_ = kPhonyCycleActionError
@@ -430,12 +428,11 @@ func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
 		t.Fatal("expected false")
 	}
 	if "dependency cycle: a -> a [-w phonycycle=err]" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 }
 
 func TestGraphTest_DependencyCycle(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build out: cat mid\nbuild mid: cat in\nbuild in: cat pre\nbuild pre: cat out\n", ManifestParserOptions{})
 
@@ -449,7 +446,6 @@ func TestGraphTest_DependencyCycle(t *testing.T) {
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	err := ""
 	g.AssertParse(&g.state_, "build a b: cat a\n", ManifestParserOptions{})
@@ -462,7 +458,6 @@ func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	err := ""
 	g.AssertParse(&g.state_, "build b a: cat a\n", ManifestParserOptions{})
@@ -475,7 +470,6 @@ func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	err := ""
 	g.AssertParse(&g.state_, "build a b: cat c\nbuild c: cat a\n", ManifestParserOptions{})
@@ -488,7 +482,6 @@ func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
 }
 
 func TestGraphTest_CycleInEdgesButNotInNodes4(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	err := ""
 	g.AssertParse(&g.state_, "build d: cat c\nbuild c: cat b\nbuild b: cat a\nbuild a e: cat d\nbuild f: cat e\n", ManifestParserOptions{})
@@ -503,7 +496,6 @@ func TestGraphTest_CycleInEdgesButNotInNodes4(t *testing.T) {
 // Verify that cycles in graphs with multiple outputs are handled correctly
 // in RecomputeDirty() and don't cause deps to be loaded multiple times.
 func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule deprule\n   depfile = dep.d\n   command = unused\nbuild a b: deprule\n", ManifestParserOptions{})
 	g.fs_.Create("dep.d", "a: b\n")
@@ -530,7 +522,6 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 
 // Like CycleWithLengthZeroFromDepfile but with a higher cycle length.
 func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule deprule\n   depfile = dep.d\n   command = unused\nrule r\n   command = unused\nbuild a b: deprule\nbuild c: r b\n", ManifestParserOptions{})
 	g.fs_.Create("dep.d", "a: c\n")
@@ -558,7 +549,6 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 // Like CycleWithLengthOneFromDepfile but building a node one hop away from
 // the cycle.
 func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule deprule\n   depfile = dep.d\n   command = unused\nrule r\n   command = unused\nbuild a b: deprule\nbuild c: r b\nbuild d: r a\n", ManifestParserOptions{})
 	g.fs_.Create("dep.d", "a: c\n")
