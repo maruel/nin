@@ -152,7 +152,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if !d.lexer_.ReadPath(&out, err) {
 			return false
 		}
-		if out.empty() {
+		if !out.empty() {
 			return d.lexer_.Error("explicit outputs not supported", err)
 		}
 	}
@@ -229,7 +229,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		dyndeps.restat_ = value != ""
 	}
 
-	dyndeps.implicit_inputs_ = make([]*Node, len(ins))
+	dyndeps.implicit_inputs_ = make([]*Node, 0, len(ins))
 	for _, i := range ins {
 		path := i.Evaluate(d.env_)
 		if len(path) == 0 {
@@ -241,7 +241,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		dyndeps.implicit_inputs_ = append(dyndeps.implicit_inputs_, n)
 	}
 
-	dyndeps.implicit_outputs_ = make([]*Node, len(outs))
+	dyndeps.implicit_outputs_ = make([]*Node, 0, len(outs))
 	for _, i := range outs {
 		path := i.Evaluate(d.env_)
 		if len(path) == 0 {

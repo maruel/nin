@@ -37,7 +37,7 @@ func NewDyndepParserTest(t *testing.T) *DyndepParserTest {
 func assertParse(t *testing.T, input string, state *State) {
 	parser := NewManifestParser(state, nil, ManifestParserOptions{})
 	err := ""
-	if !parser.ParseTest("rule touch\n  command = touch $out\nbuild out otherout: touch\n", &err) {
+	if !parser.ParseTest(input, &err) {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -221,7 +221,6 @@ func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
 }
 
 func TestDyndepParserTest_OutDuplicate(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out: dyndep\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -235,7 +234,6 @@ func TestDyndepParserTest_OutDuplicate(t *testing.T) {
 }
 
 func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild otherout: dyndep\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -301,7 +299,6 @@ func TestDyndepParserTest_OutEOF(t *testing.T) {
 }
 
 func TestDyndepParserTest_OutNoRule(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out:"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -315,7 +312,6 @@ func TestDyndepParserTest_OutNoRule(t *testing.T) {
 }
 
 func TestDyndepParserTest_OutBadRule(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: touch"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -329,7 +325,6 @@ func TestDyndepParserTest_OutBadRule(t *testing.T) {
 }
 
 func TestDyndepParserTest_BuildEOF(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -343,7 +338,6 @@ func TestDyndepParserTest_BuildEOF(t *testing.T) {
 }
 
 func TestDyndepParserTest_ExplicitOut(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out exp: dyndep\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -357,7 +351,6 @@ func TestDyndepParserTest_ExplicitOut(t *testing.T) {
 }
 
 func TestDyndepParserTest_ExplicitIn(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep exp\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -371,7 +364,6 @@ func TestDyndepParserTest_ExplicitIn(t *testing.T) {
 }
 
 func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep ||\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -385,7 +377,6 @@ func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
 }
 
 func TestDyndepParserTest_BadBinding(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\n  not_restat = 1\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -399,7 +390,6 @@ func TestDyndepParserTest_BadBinding(t *testing.T) {
 }
 
 func TestDyndepParserTest_RestatTwice(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n  restat = 1\n"
 	parser := NewDyndepParser(&d.state_, &d.fs_, d.dyndep_file_)
@@ -413,7 +403,6 @@ func TestDyndepParserTest_RestatTwice(t *testing.T) {
 }
 
 func TestDyndepParserTest_NoImplicit(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out: dyndep\n")
 
@@ -436,7 +425,6 @@ func TestDyndepParserTest_NoImplicit(t *testing.T) {
 }
 
 func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out | : dyndep |\n")
 
@@ -459,7 +447,6 @@ func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitIn(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out: dyndep | impin\n")
 
@@ -477,7 +464,7 @@ func TestDyndepParserTest_ImplicitIn(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 1 != len(i.implicit_inputs_) {
-		t.Fatal("expected equal")
+		t.Fatal(i.implicit_inputs_)
 	}
 	if "impin" != i.implicit_inputs_[0].path() {
 		t.Fatal("expected equal")
@@ -485,7 +472,6 @@ func TestDyndepParserTest_ImplicitIn(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitIns(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out: dyndep | impin1 impin2\n")
 
@@ -514,7 +500,6 @@ func TestDyndepParserTest_ImplicitIns(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitOut(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out | impout: dyndep\n")
 
@@ -540,7 +525,6 @@ func TestDyndepParserTest_ImplicitOut(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out | impout1 impout2 : dyndep\n")
 
@@ -569,7 +553,6 @@ func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
 }
 
 func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out | impout1 impout2: dyndep | impin1 impin2\n")
 
@@ -604,7 +587,6 @@ func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
 }
 
 func TestDyndepParserTest_Restat(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n")
 
@@ -627,7 +609,6 @@ func TestDyndepParserTest_Restat(t *testing.T) {
 }
 
 func TestDyndepParserTest_OtherOutput(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	d.AssertParse("ninja_dyndep_version = 1\nbuild otherout: dyndep\n")
 
@@ -650,7 +631,6 @@ func TestDyndepParserTest_OtherOutput(t *testing.T) {
 }
 
 func TestDyndepParserTest_MultipleEdges(t *testing.T) {
-	t.Skip("TODO")
 	d := NewDyndepParserTest(t)
 	assertParse(t, "build out2: touch\n", &d.state_)
 	if 2 != len(d.state_.edges_) {
