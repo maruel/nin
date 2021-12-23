@@ -14,7 +14,12 @@
 
 package ginja
 
-import "os"
+import (
+	"bytes"
+	"encoding/binary"
+	"io"
+	"os"
+)
 
 // As build commands run they can output extra dependency information
 // (e.g. header dependencies for C source) dynamically.  DepsLog collects
@@ -77,28 +82,27 @@ type Deps struct {
 	nodes      []*Node
 }
 
-func NewDeps(mtime TimeStamp, node_count int) Deps {
-	return Deps{
+func NewDeps(mtime TimeStamp, node_count int) *Deps {
+	return &Deps{
 		mtime:      mtime,
 		node_count: node_count,
 		nodes:      make([]*Node, node_count),
 	}
 }
 
-/*
 // Used for tests.
-func (d *DepsLog) nodes() *[]*Node {
-	return &d.nodes_
+func (d *DepsLog) nodes() []*Node {
+	return d.nodes_
 }
-func (d *DepsLog) deps() *[]*Deps {
-	return &d.deps_
+func (d *DepsLog) deps() []*Deps {
+	return d.deps_
 }
-*/
 
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.
-const DepsLogFileSignature = "# ninjadeps\n"
-const DepsLogCurrentVersion = 4
+var DepsLogFileSignature = []byte("# ninjadeps\n")
+
+const DepsLogCurrentVersion = uint32(4)
 
 // Record size is currently limited to less than the full 32 bit, due to
 // internal buffers having to have this size.
@@ -121,91 +125,88 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 }
 
 func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
-	panic("TODO")
-	/*
-		// Track whether there's any new data to be recorded.
-		made_change := false
+	node_count := len(nodes)
+	// Track whether there's any new data to be recorded.
+	made_change := false
 
-		// Assign ids to all nodes that are missing one.
-		if node.id() < 0 {
-			if !d.RecordId(node) {
+	// Assign ids to all nodes that are missing one.
+	if node.id() < 0 {
+		if !d.RecordId(node) {
+			return false
+		}
+		made_change = true
+	}
+	for i := 0; i < node_count; i++ {
+		if nodes[i].id() < 0 {
+			if !d.RecordId(nodes[i]) {
 				return false
 			}
 			made_change = true
 		}
-		for i := 0; i < node_count; i++ {
-			if nodes[i].id() < 0 {
-				if !d.RecordId(nodes[i]) {
-					return false
-				}
-				made_change = true
-			}
-		}
+	}
 
-		// See if the new data is different than the existing data, if any.
-		if !made_change {
-			deps := GetDeps(node)
-			if !deps || deps.mtime != mtime || deps.node_count != node_count {
-				made_change = true
-			} else {
-				for i := 0; i < node_count; i++ {
-					if deps.nodes[i] != nodes[i] {
-						made_change = true
-						break
-					}
+	// See if the new data is different than the existing data, if any.
+	if !made_change {
+		deps := d.GetDeps(node)
+		if deps == nil || deps.mtime != mtime || deps.node_count != node_count {
+			made_change = true
+		} else {
+			for i := 0; i < node_count; i++ {
+				if deps.nodes[i] != nodes[i] {
+					made_change = true
+					break
 				}
 			}
 		}
+	}
 
-		// Don't write anything if there's no new info.
-		if !made_change {
-			return true
-		}
+	// Don't write anything if there's no new info.
+	if !made_change {
+		return true
+	}
 
-		// Update on-disk representation.
-		size := uint32(4 * (1 + 2 + node_count))
-		if size > kMaxRecordSize {
-			errno = ERANGE
-			return false
-		}
+	// Update on-disk representation.
+	size := uint32(4 * (1 + 2 + node_count))
+	if size > kMaxRecordSize {
+		//errno = ERANGE
+		return false
+	}
 
-		if !OpenForWriteIfNeeded() {
-			return false
-		}
-		size |= 0x80000000 // Deps record: set high bit.
-		if fwrite(&size, 4, 1, d.file_) < 1 {
-			return false
-		}
-		id := node.id()
-		if fwrite(&id, 4, 1, d.file_) < 1 {
-			return false
-		}
-		mtime_part := static_cast < uint32_t > (mtime & 0xffffffff)
-		if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
-			return false
-		}
-		mtime_part = static_cast < uint32_t > ((mtime >> 32) & 0xffffffff)
-		if fwrite(&mtime_part, 4, 1, d.file_) < 1 {
-			return false
-		}
-		for i := 0; i < node_count; i++ {
-			id = nodes[i].id()
-			if fwrite(&id, 4, 1, d.file_) < 1 {
-				return false
-			}
-		}
-		if fflush(d.file_) != 0 {
-			return false
-		}
+	if !d.OpenForWriteIfNeeded() {
+		return false
+	}
+	size |= 0x80000000 // Deps record: set high bit.
 
-		// Update in-memory representation.
-		deps := NewDeps(mtime, node_count)
-		for i := 0; i < node_count; i++ {
-			deps.nodes[i] = nodes[i]
+	if err := binary.Write(d.file_, binary.LittleEndian, size); err != nil {
+		return false
+	}
+	if err := binary.Write(d.file_, binary.LittleEndian, uint32(node.id())); err != nil {
+		return false
+	}
+	if err := binary.Write(d.file_, binary.LittleEndian, uint32(mtime&0xffffffff)); err != nil {
+		return false
+	}
+	if err := binary.Write(d.file_, binary.LittleEndian, uint32((mtime>>32)&0xffffffff)); err != nil {
+		return false
+	}
+	for i := 0; i < node_count; i++ {
+		if err := binary.Write(d.file_, binary.LittleEndian, uint32(nodes[i].id())); err != nil {
+			return false
 		}
-		UpdateDeps(node.id(), deps)
-
+	}
+	/* TODO?
+	if fflush(d.file_) != 0 {
+		return false
+	}
 	*/
+
+	// Update in-memory representation.
+	deps := NewDeps(mtime, node_count)
+	for i := 0; i < node_count; i++ {
+		deps.nodes[i] = nodes[i]
+	}
+	d.UpdateDeps(node.id(), deps)
+
 	return true
 }
 
@@ -218,151 +219,178 @@ func (d *DepsLog) Close() {
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
-	panic("TODO")
-	/*
-	     METRIC_RECORD(".ninja_deps load")
-	   	buf := [kMaxRecordSize + 1]byte{}
-	     FILE* f = fopen(path, "rb")
-	     if f == nil {
-	       if errno == ENOENT {
-	         return LOAD_NOT_FOUND
-	       }
-	       *err = strerror(errno)
-	       return LOAD_ERROR
-	     }
+	METRIC_RECORD(".ninja_deps load")
+	buf := [kMaxRecordSize + 1]byte{}
+	f, err2 := os.Open(path)
+	if f == nil {
+		if os.IsNotExist(err2) {
+			return LOAD_NOT_FOUND
+		}
+		*err = err2.Error()
+		return LOAD_ERROR
+	}
 
-	     valid_header := true
-	     version := 0
-	     if !fgets(buf, sizeof(buf), f) || fread(&version, 4, 1, f) < 1 {
-	       valid_header = false
-	     }
-	     // Note: For version differences, this should migrate to the new format.
-	     // But the v1 format could sometimes (rarely) end up with invalid data, so
-	     // don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
-	     // and there was no release with it, so pretend that it never happened.)
-	     if !valid_header || strcmp(buf, DepsLogFileSignature) != 0 || version != DepsLogCurrentVersion {
-	       if version == 1 {
-	         *err = "deps log version change; rebuilding"
-	       } else {
-	         *err = "bad deps log signature or version; starting over"
-	       }
-	       fclose(f)
-	       unlink(path)
-	       // Don't report this as a failure.  An empty deps log will cause
-	       // us to rebuild the outputs anyway.
-	       return LOAD_SUCCESS
-	     }
+	valid_header := true
+	version := uint32(0)
+	if _, err := f.Read(buf[:len(DepsLogFileSignature)]); err != nil {
+		valid_header = false
+	} else if err := binary.Read(f, binary.LittleEndian, &version); err != nil {
+		valid_header = false
+	}
+	// Note: For version differences, this should migrate to the new format.
+	// But the v1 format could sometimes (rarely) end up with invalid data, so
+	// don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
+	// and there was no release with it, so pretend that it never happened.)
+	if !valid_header || !bytes.Equal(buf[:len(DepsLogFileSignature)], DepsLogFileSignature) || version != DepsLogCurrentVersion {
+		if version == 1 {
+			*err = "deps log version change; rebuilding"
+		} else {
+			*err = "bad deps log signature or version; starting over"
+		}
+		f.Close()
+		os.Remove(path)
+		// Don't report this as a failure.  An empty deps log will cause
+		// us to rebuild the outputs anyway.
+		return LOAD_SUCCESS
+	}
+	offset := len(DepsLogFileSignature) + 4
+	read_failed := false
+	unique_dep_record_count := 0
+	total_dep_record_count := 0
+	for {
+		var size uint32
+		if err2 := binary.Read(f, binary.LittleEndian, &size); err2 != nil {
+			if err2 != io.EOF {
+				read_failed = true
+				*err = err2.Error()
+			}
+			break
+		}
+		offset += 4
+		is_deps := (size >> 31) != 0
+		size = size & 0x7FFFFFFF
 
-	     var offset int32
-	     read_failed := false
-	     unique_dep_record_count := 0
-	     total_dep_record_count := 0
-	     for ; ;  {
-	       offset = ftell(f)
+		if size > kMaxRecordSize {
+			read_failed = true
+			panic("size")
+			break
+		}
+		if _, err2 := f.Read(buf[:size]); err2 != nil {
+			read_failed = true
+			*err = err2.Error()
+			break
+		}
+		offset += int(size)
 
-	       var size uint32
-	       if fread(&size, 4, 1, f) < 1 {
-	         if !feof(f) {
-	           read_failed = true
-	         }
-	         break
-	       }
-	       bool is_deps = (size >> 31) != 0
-	       size = size & 0x7FFFFFFF
+		if is_deps {
+			if size%4 != 0 {
+				panic("oops")
+			}
+			//deps_data := reinterpret_cast<int*>(buf)
+			// TODO(maruel): Not super efficient but looking for correctness now.
+			// Optimize later.
+			r := bytes.NewReader(buf[:size])
+			out_id := uint32(0)
+			if err2 := binary.Read(r, binary.LittleEndian, &out_id); err2 != nil {
+				panic(err2)
+			}
+			var mtime TimeStamp
+			if err2 := binary.Read(r, binary.LittleEndian, &mtime); err2 != nil {
+				panic(err2)
+			}
+			deps_count := int(size)/4 - 3
 
-	       if size > kMaxRecordSize || fread(buf, size, 1, f) < 1 {
-	         read_failed = true
-	         break
-	       }
+			deps := NewDeps(mtime, deps_count)
+			for i := 0; i < deps_count; i++ {
+				v := uint32(0)
+				if err2 := binary.Read(r, binary.LittleEndian, &v); err2 != nil {
+					panic(err2)
+				}
+				if int(v) >= len(d.nodes_) {
+					panic("oops")
+				}
+				if d.nodes_[v] == nil {
+					panic("oops")
+				}
+				deps.nodes[i] = d.nodes_[v]
+			}
 
-	       if is_deps {
-	         if !size % 4 == 0 { panic("oops") }
-	         deps_data := reinterpret_cast<int*>(buf)
-	         out_id := deps_data[0]
-	         var mtime TimeStamp
-	         mtime = (TimeStamp)(((uint64_t)(unsigned int)deps_data[2] << 32) | (uint64_t)(unsigned int)deps_data[1])
-	         deps_data += 3
-	         int deps_count = (size / 4) - 3
+			total_dep_record_count++
+			if !d.UpdateDeps(int(out_id), deps) {
+				unique_dep_record_count++
+			}
+		} else {
+			path_size := size - 4
+			if path_size <= 0 {
+				panic("oops")
+			} // CanonicalizePath() rejects empty paths.
+			// There can be up to 3 bytes of padding.
+			if buf[path_size-1] == '\x00' {
+				path_size--
+			}
+			if buf[path_size-1] == '\x00' {
+				path_size--
+			}
+			if buf[path_size-1] == '\x00' {
+				path_size--
+			}
+			subpath := string(buf[:path_size])
+			// It is not necessary to pass in a correct slash_bits here. It will
+			// either be a Node that's in the manifest (in which case it will already
+			// have a correct slash_bits that GetNode will look up), or it is an
+			// implicit dependency from a .d which does not affect the build command
+			// (and so need not have its slashes maintained).
+			node := state.GetNode(subpath, 0)
 
-	         deps := new Deps(mtime, deps_count)
-	         for i := 0; i < deps_count; i++ {
-	           if !deps_data[i] < (int)d.nodes_.size() { panic("oops") }
-	           if !d.nodes_[deps_data[i]] { panic("oops") }
-	           deps.nodes[i] = d.nodes_[deps_data[i]]
-	         }
+			// Check that the expected index matches the actual index. This can only
+			// happen if two ninja processes write to the same deps log concurrently.
+			// (This uses unary complement to make the checksum look less like a
+			// dependency record entry.)
+			checksum := uint32(0) // *reinterpret_cast<unsigned*>(buf + size - 4)
+			if err2 := binary.Read(bytes.NewReader(buf[size-4:]), binary.LittleEndian, &checksum); err2 != nil {
+				panic(err2)
+			}
+			expected_id := ^checksum
+			id := len(d.nodes_)
+			if id != int(expected_id) {
+				read_failed = true
+				panic(expected_id)
+				break
+			}
 
-	         total_dep_record_count++
-	         if !UpdateDeps(out_id, deps) {
-	           unique_dep_record_count++
-	         }
-	       } else {
-	         int path_size = size - 4
-	         if !path_size > 0 { panic("oops") }  // CanonicalizePath() rejects empty paths.
-	         // There can be up to 3 bytes of padding.
-	         if buf[path_size - 1] == '\0' {
-	         	path_size--
-	         }
-	         if buf[path_size - 1] == '\0' {
-	         	path_size--
-	         }
-	         if buf[path_size - 1] == '\0' {
-	         	path_size--
-	         }
-	         string subpath(buf, path_size)
-	         // It is not necessary to pass in a correct slash_bits here. It will
-	         // either be a Node that's in the manifest (in which case it will already
-	         // have a correct slash_bits that GetNode will look up), or it is an
-	         // implicit dependency from a .d which does not affect the build command
-	         // (and so need not have its slashes maintained).
-	         node := state.GetNode(subpath, 0)
+			if node.id() >= 0 {
+				panic("oops")
+			}
+			node.set_id(id)
+			d.nodes_ = append(d.nodes_, node)
+		}
+	}
 
-	         // Check that the expected index matches the actual index. This can only
-	         // happen if two ninja processes write to the same deps log concurrently.
-	         // (This uses unary complement to make the checksum look less like a
-	         // dependency record entry.)
-	         unsigned checksum = *reinterpret_cast<unsigned*>(buf + size - 4)
-	         int expected_id = ~checksum
-	         id := d.nodes_.size()
-	         if id != expected_id {
-	           read_failed = true
-	           break
-	         }
+	if read_failed {
+		// An error occurred while loading; try to recover by truncating the
+		// file to the last fully-read record.
+		if *err == "" {
+			*err = "premature end of file"
+		}
+		f.Close()
 
-	         if !node.id() < 0 { panic("oops") }
-	         node.set_id(id)
-	         d.nodes_.push_back(node)
-	       }
-	     }
+		if err := f.Truncate(0); err != nil {
+			return LOAD_ERROR
+		}
 
-	     if read_failed {
-	       // An error occurred while loading; try to recover by truncating the
-	       // file to the last fully-read record.
-	       if ferror(f) {
-	         *err = strerror(ferror(f))
-	       } else {
-	         *err = "premature end of file"
-	       }
-	       fclose(f)
+		// The truncate succeeded; we'll just report the load error as a
+		// warning because the build can proceed.
+		*err += "; recovering"
+		return LOAD_SUCCESS
+	}
+	f.Close()
 
-	       if !Truncate(path, offset, err) {
-	         return LOAD_ERROR
-	       }
-
-	       // The truncate succeeded; we'll just report the load error as a
-	       // warning because the build can proceed.
-	       *err += "; recovering"
-	       return LOAD_SUCCESS
-	     }
-
-	     fclose(f)
-
-	     // Rebuild the log if there are too many dead records.
-	     kMinCompactionEntryCount := 1000
-	     kCompactionRatio := 3
-	     if total_dep_record_count > kMinCompactionEntryCount && total_dep_record_count > unique_dep_record_count * kCompactionRatio {
-	       d.needs_recompaction_ = true
-	     }
-	*/
+	// Rebuild the log if there are too many dead records.
+	kMinCompactionEntryCount := 1000
+	kCompactionRatio := 3
+	if total_dep_record_count > kMinCompactionEntryCount && total_dep_record_count > unique_dep_record_count*kCompactionRatio {
+		d.needs_recompaction_ = true
+	}
 	return LOAD_SUCCESS
 }
 
@@ -392,61 +420,61 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 
 // Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
-	panic("TODO")
-	/*
-	   METRIC_RECORD(".ninja_deps recompact")
+	METRIC_RECORD(".ninja_deps recompact")
 
-	   Close()
-	   string temp_path = path + ".recompact"
+	d.Close()
+	temp_path := path + ".recompact"
 
-	   // OpenForWrite() opens for append.  Make sure it's not appending to a
-	   // left-over file from a previous recompaction attempt that crashed somehow.
-	   unlink(temp_path)
+	// OpenForWrite() opens for append.  Make sure it's not appending to a
+	// left-over file from a previous recompaction attempt that crashed somehow.
+	if err2 := os.Remove(temp_path); err2 != nil && !os.IsNotExist(err2) {
+		*err = err2.Error()
+		return false
+	}
 
-	   var new_log DepsLog
-	   if !new_log.OpenForWrite(temp_path, err) {
-	     return false
-	   }
+	new_log := NewDepsLog()
+	if !new_log.OpenForWrite(temp_path, err) {
+		return false
+	}
 
-	   // Clear all known ids so that new ones can be reassigned.  The new indices
-	   // will refer to the ordering in new_log, not in the current log.
-	   for i := d.nodes_.begin(); i != d.nodes_.end(); i++ {
-	     (*i).set_id(-1)
-	   }
+	// Clear all known ids so that new ones can be reassigned.  The new indices
+	// will refer to the ordering in new_log, not in the current log.
+	for _, i := range d.nodes_ {
+		i.set_id(-1)
+	}
 
-	   // Write out all deps again.
-	   for old_id := 0; old_id < (int)d.deps_.size(); old_id++ {
-	     deps := d.deps_[old_id]
-	     if deps == nil {  // If nodes_[old_id] is a leaf, it has no deps.
-	     	continue
-	     }
+	// Write out all deps again.
+	for old_id := 0; old_id < len(d.deps_); old_id++ {
+		deps := d.deps_[old_id]
+		if deps == nil { // If nodes_[old_id] is a leaf, it has no deps.
+			continue
+		}
 
-	     if !IsDepsEntryLiveFor(d.nodes_[old_id]) {
-	       continue
-	     }
+		if !d.IsDepsEntryLiveFor(d.nodes_[old_id]) {
+			continue
+		}
 
-	     if !new_log.RecordDeps(d.nodes_[old_id], deps.mtime, deps.node_count, deps.nodes) {
-	       new_log.Close()
-	       return false
-	     }
-	   }
+		if !new_log.RecordDeps(d.nodes_[old_id], deps.mtime, deps.nodes) {
+			new_log.Close()
+			return false
+		}
+	}
 
-	   new_log.Close()
+	new_log.Close()
 
-	   // All nodes now have ids that refer to new_log, so steal its data.
-	   d.deps_.swap(new_log.deps_)
-	   d.nodes_.swap(new_log.nodes_)
+	// All nodes now have ids that refer to new_log, so steal its data.
+	d.deps_ = new_log.deps_
+	d.nodes_ = new_log.nodes_
 
-	   if unlink(path) < 0 {
-	     *err = strerror(errno)
-	     return false
-	   }
+	if err2 := os.Remove(path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 
-	   if rename(temp_path, path) < 0 {
-	     *err = strerror(errno)
-	     return false
-	   }
-	*/
+	if err2 := os.Rename(temp_path, path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 	return true
 }
 
@@ -469,60 +497,61 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
-	panic("TODO")
-	/*
-	   if out_id >= (int)d.deps_.size() {
-	     d.deps_.resize(out_id + 1)
-	   }
-
-	   bool delete_old = d.deps_[out_id] != nil
-	   if delete_old {
-	     delete d.deps_[out_id]
-	   }
-	   d.deps_[out_id] = deps
-	   return delete_old
-	*/
-	return false
+	if out_id >= len(d.deps_) {
+		d.deps_ = append(d.deps_, make([]*Deps, out_id+1)...)
+	}
+	existed := d.deps_[out_id] != nil
+	d.deps_[out_id] = deps
+	return existed
 }
 
 // Write a node name record, assigning it an id.
 func (d *DepsLog) RecordId(node *Node) bool {
-	panic("TODO")
-	/*
-	   path_size := node.path().size()
-	   int padding = (4 - path_size % 4) % 4  // Pad path to 4 byte boundary.
+	path_size := len(node.path())
+	padding := (4 - path_size%4) % 4 // Pad path to 4 byte boundary.
 
-	   unsigned size = path_size + padding + 4
-	   if size > kMaxRecordSize {
-	     errno = ERANGE
-	     return false
-	   }
+	size := uint32(path_size + padding + 4)
+	if size > kMaxRecordSize {
+		panic(1)
+		//errno = ERANGE
+		return false
+	}
 
-	   if !d.OpenForWriteIfNeeded() {
-	     return false
-	   }
-	   if fwrite(&size, 4, 1, d.file_) < 1 {
-	     return false
-	   }
-	   if fwrite(node.path().data(), path_size, 1, d.file_) < 1 {
-	     if !!node.path().empty() { panic("oops") }
-	     return false
-	   }
-	   if padding && fwrite("\0\0", padding, 1, d.file_) < 1 {
-	     return false
-	   }
-	   id := d.nodes_.size()
-	   unsigned checksum = ~(unsigned)id
-	   if fwrite(&checksum, 4, 1, d.file_) < 1 {
-	     return false
-	   }
+	if !d.OpenForWriteIfNeeded() {
+		panic(1)
+		return false
+	}
+	if err := binary.Write(d.file_, binary.LittleEndian, size); err != nil {
+		panic(1)
+		return false
+	}
+	if _, err := d.file_.Write([]byte(node.path())); err != nil {
+		if node.path() == "" {
+			panic("oops")
+		}
+		panic(1)
+		return false
+	}
+	if padding != 0 {
+		if _, err := d.file_.Write(make([]byte, padding)); err != nil {
+			panic(1)
+			return false
+		}
+	}
+	id := len(d.nodes_)
+	checksum := ^uint32(id)
+	if err := binary.Write(d.file_, binary.LittleEndian, checksum); err != nil {
+		panic(1)
+		return false
+	}
+	/* TODO
 	   if fflush(d.file_) != 0 {
 	     return false
 	   }
-
-	   node.set_id(id)
-	   d.nodes_.push_back(node)
 	*/
+	//fmt.Printf("DepsLog.RecordId(%s) = %d\n", node.path_, id)
+	node.set_id(id)
+	d.nodes_ = append(d.nodes_, node)
 
 	return true
 }
@@ -533,34 +562,42 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	if d.file_path_ == "" {
 		return true
 	}
-	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE, 0o644)
+	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if d.file_ == nil {
+		panic(1)
 		return false
 	}
-	panic("TODO")
-	/*
-		// Set the buffer size to this and flush the file buffer after every record
-		// to make sure records aren't written partially.
-		if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize+1) != 0 {
+	/* TODO
+	// Set the buffer size to this and flush the file buffer after every record
+	// to make sure records aren't written partially.
+	if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize+1) != 0 {
+		return false
+	}
+	SetCloseOnExec(fileno(d.file_))
+	*/
+
+	// Opening a file in append mode doesn't set the file pointer to the file's
+	// end on Windows. Do that explicitly.
+	offset, err := d.file_.Seek(0, os.SEEK_END)
+	if err != nil {
+		panic(1)
+		return false
+	}
+
+	if offset == 0 {
+		if _, err := d.file_.Write(DepsLogFileSignature); err != nil {
+			panic(err)
 			return false
 		}
-		SetCloseOnExec(fileno(d.file_))
-
-		// Opening a file in append mode doesn't set the file pointer to the file's
-		// end on Windows. Do that explicitly.
-		fseek(d.file_, 0, SEEK_END)
-
-		if ftell(d.file_) == 0 {
-			if fwrite(DepsLogFileSignature, sizeof(DepsLogFileSignature)-1, 1, d.file_) < 1 {
-				return false
-			}
-			if fwrite(&DepsLogCurrentVersion, 4, 1, d.file_) < 1 {
-				return false
-			}
-		}
-		if fflush(d.file_) != 0 {
+		if err := binary.Write(d.file_, binary.LittleEndian, DepsLogCurrentVersion); err != nil {
+			panic(err)
 			return false
 		}
+	}
+	/* TODO
+	if fflush(d.file_) != 0 {
+		return false
+	}
 	*/
 	d.file_path_ = ""
 	return true
