@@ -14,7 +14,10 @@
 
 package ginja
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 type GraphTest struct {
 	StateTestWithBuiltinRules
@@ -288,12 +291,14 @@ func TestGraphTest_RootNodes(t *testing.T) {
 }
 
 func TestGraphTest_VarInOutPathEscaping(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build a$ b: cat no'space with$ space$$ no\"space2\n", ManifestParserOptions{})
 
 	edge := g.GetNode("a b").in_edge()
-	want := "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\""
+	want := "cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'"
+	if runtime.GOOS == "windows" {
+		want = "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\""
+	}
 	if got := edge.EvaluateCommand(false); want != got {
 		t.Fatalf("want %q, got %q", want, got)
 	}
@@ -322,7 +327,6 @@ func TestGraphTest_DepfileWithCanonicalizablePath(t *testing.T) {
 
 // Regression test for https://github.com/ninja-build/ninja/issues/404
 func TestGraphTest_DepfileRemoved(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule catdep\n  depfile = $out.d\n  command = cat $in > $out\nbuild ./out.o: catdep ./foo.cc\n", ManifestParserOptions{})
 	g.fs_.Create("foo.h", "")
@@ -580,7 +584,9 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 }
 
 func TestGraphTest_Decanonicalize(t *testing.T) {
-	t.Skip("TODO")
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build out\\out1: cat src\\in1\nbuild out\\out2/out3\\out4: cat mid1\nbuild out3 out4\\foo: cat mid1\n", ManifestParserOptions{})
 
@@ -765,8 +771,8 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
 	}
 }
 
-/*
 func TestGraphTest_DyndepLoadOutputWithMultipleRules1(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out1 | out-twice.imp: r in1\nbuild out2: r in2 || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
@@ -784,6 +790,7 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules1(t *testing.T) {
 }
 
 func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out1: r in1 || dd1\n  dyndep = dd1\nbuild out2: r in2 || dd2\n  dyndep = dd2\n", ManifestParserOptions{})
 	g.fs_.Create("dd1", "ninja_dyndep_version = 1\nbuild out1 | out-twice.imp: dyndep\n")
@@ -811,6 +818,7 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 }
 
 func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out1: r in1 || dd\n  dyndep = dd\nbuild out2: r in2 || dd\n  dyndep = dd\nbuild outNot: r in3 || dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out1 | out1imp: dyndep | in1imp\nbuild out2: dyndep | in2imp\n  restat = 1\n")
@@ -915,6 +923,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileMissing(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
@@ -942,6 +951,7 @@ func TestGraphTest_DyndepFileError(t *testing.T) {
 }
 
 func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep | in\n")
@@ -971,6 +981,7 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileReady(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild dd: r dd-in\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd-in", "")
@@ -1066,6 +1077,7 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild dd1: r dd1-in\nbuild dd2-in: r || dd1\n  dyndep = dd1\nbuild dd2: r dd2-in\nbuild out: r || dd2\n  dyndep = dd2\n", ManifestParserOptions{})
 	g.fs_.Create("dd1", "")
@@ -1104,6 +1116,7 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileCircular(t *testing.T) {
+	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r in || dd\n  depfile = out.d\n  dyndep = dd\nbuild in: r circ\n", ManifestParserOptions{})
 	g.fs_.Create("out.d", "out: inimp\n")
@@ -1140,7 +1153,6 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 }
-*/
 
 // Check that phony's dependencies' mtimes are propagated.
 func TestGraphTest_PhonyDepsMtimes(t *testing.T) {

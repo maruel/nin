@@ -22,15 +22,15 @@ type Dyndeps struct {
 	implicit_outputs_ []*Node
 }
 
-func NewDyndeps() Dyndeps {
-	return Dyndeps{}
+func NewDyndeps() *Dyndeps {
+	return &Dyndeps{}
 }
 
 // Store data loaded from one dyndep file.  Map from an edge
 // to its dynamically-discovered dependency information.
 // This is a struct rather than a typedef so that we can
 // forward-declare it in other headers.
-type DyndepFile map[*Edge]Dyndeps
+type DyndepFile map[*Edge]*Dyndeps
 
 // DyndepLoader loads dynamically discovered dependencies, as
 // referenced via the "dyndep" attribute in build files.
@@ -86,7 +86,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool
 
 		ddi.used_ = true
 		dyndeps := ddi
-		if !d.UpdateEdge(edge, &dyndeps, err) {
+		if !d.UpdateEdge(edge, dyndeps, err) {
 			return false
 		}
 	}

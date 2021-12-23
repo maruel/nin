@@ -886,7 +886,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	case Okay:
 		break
 	case NotFound:
-		err = nil
+		*err = ""
 		break
 	case OtherError:
 		*err = "loading '" + path + "': " + *err
