@@ -14,7 +14,10 @@
 
 package ginja
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 type ParserTest struct {
 	t     *testing.T
@@ -218,13 +221,16 @@ func TestParserTest_Comment(t *testing.T) {
 }
 
 func TestParserTest_Dollars(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	p.AssertParse("rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n")
 	if "$dollar" != p.state.bindings_.LookupVariable("x") {
 		t.Fatal("expected equal")
 	}
-	if "$dollarbar$baz$blah" != p.state.edges_[0].EvaluateCommand(false) {
+	want := "'$dollar'bar$baz$blah"
+	if runtime.GOOS == "windows" {
+		want = "$dollarbar$baz$blah"
+	}
+	if want != p.state.edges_[0].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
 }
@@ -268,7 +274,9 @@ func TestParserTest_CanonicalizeFile(t *testing.T) {
 }
 
 func TestParserTest_CanonicalizeFileBackslashes(t *testing.T) {
-	t.Skip("TODO")
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in\\1 in\\\\2\nbuild in\\1: cat\nbuild in\\2: cat\n")
 
@@ -325,7 +333,9 @@ func TestParserTest_CanonicalizePaths(t *testing.T) {
 }
 
 func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
-	t.Skip("TODO")
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\nbuild .\\out2.o: cat .\\bar/baz\\..\\foo.cc\nbuild .\\out3.o: cat .\\bar\\baz\\..\\foo3.cc\n")
 
@@ -418,13 +428,12 @@ func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 }
 
 func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	p.AssertParse("build a: phony a\n")
 
 	node := p.state.LookupNode("a")
 	edge := node.in_edge()
-	if len(edge.inputs_) == 0 {
+	if len(edge.inputs_) != 0 {
 		t.Fatal("expected true")
 	}
 }
@@ -886,7 +895,6 @@ func TestParserTest_Errors(t *testing.T) {
 }
 
 func TestParserTest_MissingInput(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	local_state := NewState()
 	parser := NewManifestParser(&local_state, &p.fs_, ManifestParserOptions{})
@@ -957,7 +965,6 @@ func TestParserTest_SubNinja(t *testing.T) {
 }
 
 func TestParserTest_MissingSubNinja(t *testing.T) {
-	t.Skip("TODO")
 	p := NewParserTest(t)
 	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
 	err := ""
@@ -965,7 +972,7 @@ func TestParserTest_MissingSubNinja(t *testing.T) {
 		t.Fatal("expected false")
 	}
 	if "input:1: loading 'foo.ninja': No such file or directory\nsubninja foo.ninja\n                  ^ near here" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 }
 

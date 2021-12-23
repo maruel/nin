@@ -181,7 +181,7 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 		*contents = i.contents
 		return Okay
 	}
-	*err = "Not found"
+	*err = "No such file or directory"
 	return NotFound
 }
 

@@ -709,7 +709,6 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 }
 
 func TestGraphTest_DyndepLoadMissingFile(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
@@ -913,7 +912,6 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileMissing(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
