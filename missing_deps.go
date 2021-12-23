@@ -73,10 +73,15 @@ func (m *MissingDependencyPrinter) OnMissingDep(node *Node, path string, generat
 
 func NewMissingDependencyScanner(delegate MissingDependencyScannerDelegate, deps_log *DepsLog, state *State, disk_interface DiskInterface) MissingDependencyScanner {
 	return MissingDependencyScanner{
-		delegate_:       delegate,
-		deps_log_:       deps_log,
-		state_:          state,
-		disk_interface_: disk_interface,
+		delegate_:           delegate,
+		deps_log_:           deps_log,
+		state_:              state,
+		disk_interface_:     disk_interface,
+		seen_:               map[*Node]struct{}{},
+		nodes_missing_deps_: map[*Node]struct{}{},
+		generated_nodes_:    map[*Node]struct{}{},
+		generator_rules_:    map[*Rule]struct{}{},
+		adjacency_map_:      AdjacencyMap{},
 	}
 }
 
