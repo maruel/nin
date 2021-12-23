@@ -59,7 +59,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 	if "" != err {
 		s.t.Fatal(err)
 	}
-	s.VerifyGraph(state)
+	VerifyGraph(s.t, state)
 }
 
 func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
@@ -68,10 +68,10 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 	}
 }
 
-func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
+func VerifyGraph(t *testing.T, state *State) {
 	for _, e := range state.edges_ {
 		if len(e.outputs_) == 0 {
-			s.t.Fatal("all edges need at least one output")
+			t.Fatal("all edges need at least one output")
 		}
 		for _, in_node := range e.inputs_ {
 			found := false
@@ -81,12 +81,12 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
 				}
 			}
 			if !found {
-				s.t.Fatal("each edge's inputs must have the edge as out-edge")
+				t.Fatal("each edge's inputs must have the edge as out-edge")
 			}
 		}
 		for _, out_node := range e.outputs_ {
 			if out_node.in_edge() != e {
-				s.t.Fatal("each edge's output must have the edge as in-edge")
+				t.Fatal("each edge's output must have the edge as in-edge")
 			}
 		}
 	}
@@ -102,7 +102,7 @@ func (s *StateTestWithBuiltinRules) VerifyGraph(state *State) {
 		}
 	}
 	if len(state.edges_) != len(node_edge_set) {
-		s.t.Fatal("the union of all in- and out-edges must match State.edges_")
+		t.Fatal("the union of all in- and out-edges must match State.edges_")
 	}
 }
 

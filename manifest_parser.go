@@ -49,12 +49,13 @@ func (m *ManifestParser) ParseTest(input string, err *string) bool {
 	return m.Parse("input", input, err)
 }
 
-func NewManifestParser(state *State, file_reader FileReader, options ManifestParserOptions) ManifestParser {
-	return ManifestParser{
-		Parser:   NewParser(state, file_reader),
+func NewManifestParser(state *State, file_reader FileReader, options ManifestParserOptions) *ManifestParser {
+	m := &ManifestParser{
 		options_: options,
 		env_:     state.bindings_,
 	}
+	m.Parser = NewParser(state, file_reader, m)
+	return m
 }
 
 // Parse a file, given its contents as a string.
@@ -439,17 +440,17 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to
 		// support users of those old CMake versions.
-		panic("TODO")
-		/*
-				out := edge.outputs_[0]
-			   vector<Node*>::iterator new_end = remove(edge.inputs_.begin(), edge.inputs_.end(), out)
-			   if new_end != edge.inputs_.end() {
-			     edge.inputs_.erase(new_end, edge.inputs_.end())
-			     if !m.quiet_ {
-			       Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.path())
-			     }
-			   }
-		*/
+		out := edge.outputs_[0]
+		for i, n := range edge.inputs_ {
+			if n == out {
+				copy(edge.inputs_[i:], edge.inputs_[i+1:])
+				edge.inputs_ = edge.inputs_[:len(edge.inputs_)-1]
+				if !m.quiet_ {
+					Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.path())
+				}
+				break
+			}
+		}
 	}
 
 	// Lookup, validate, and save any dyndep binding.  It will be used later
@@ -461,13 +462,16 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		dyndep = CanonicalizePath(dyndep, &slash_bits)
 		edge.dyndep_ = m.state_.GetNode(dyndep, slash_bits)
 		edge.dyndep_.set_dyndep_pending(true)
-		/*
-		   vector<Node*>::iterator dgi =find(edge.inputs_.begin(), edge.inputs_.end(), edge.dyndep_)
-		   if dgi == edge.inputs_.end() {
-		     return m.lexer_.Error("dyndep '" + dyndep + "' is not an input", err)
-		   }
-		*/
-		panic("TODO")
+		found := false
+		for _, n := range edge.inputs_ {
+			if n == edge.dyndep_ {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return m.lexer_.Error("dyndep '"+dyndep+"' is not an input", err)
+		}
 	}
 	return true
 }

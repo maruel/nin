@@ -26,11 +26,12 @@ func (d *DyndepParser) ParseTest(input string, err *string) bool {
 	return d.Parse("input", input, err)
 }
 
-func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFile) DyndepParser {
-	return DyndepParser{
-		Parser:       NewParser(state, file_reader),
+func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFile) *DyndepParser {
+	d := &DyndepParser{
 		dyndep_file_: dyndep_file,
 	}
+	d.Parser = NewParser(state, file_reader, d)
+	return d
 }
 
 // Parse a file, given its contents as a string.

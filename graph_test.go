@@ -1140,6 +1140,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 }
+*/
 
 // Check that phony's dependencies' mtimes are propagated.
 func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
@@ -1193,4 +1194,3 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 		t.Fatal("expected true")
 	}
 }
-*/
