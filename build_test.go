@@ -2306,7 +2306,7 @@ func (b *BuildWithDepsLogTest) TearDown() {
   b.temp_dir_.Cleanup()
 }
 
-// Run a straightforwad build where the deps log is used.
+// Run a straightforward build where the deps log is used.
 func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
   err := ""
   // Note: in1 was created by the superclass SetUp().

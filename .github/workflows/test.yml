@@ -51,8 +51,17 @@ jobs:
         path: ~/go
         key: "${{runner.os}}-gopkg-${{hashFiles('go.sum', '.github/workflows/*.yml')}}"
 
-      # Fetch the tools before checking out, so they don't modify go.mod/go.sum.
+      # Run tests first because it's important.
+    - name: 'Check: go test -cover'
+      run: go test -timeout=120s -covermode=count -coverprofile coverage.txt ./...
+    - uses: codecov/codecov-action@v2
+    - name: 'Cleanup'
+      if: always()
+      run: rm coverage.txt
+
+      # Fetch the tools.
     - name: 'go get necessary tools'
+      if: always()
       run: >
         cd ..;
         go get -u -v
@@ -134,15 +143,6 @@ jobs:
           false
         fi
 
-      # Run tests last since it's potentially the slowest step.
-    - name: 'Check: go test -cover'
-      if: always()
-      run: go test -timeout=120s -covermode=count -coverprofile coverage.txt ./...
-      # Don't send code coverage if anything failed to reduce spam.
-    - uses: codecov/codecov-action@v2
-      if: always()
-    - name: 'Cleanup'
-      run: rm coverage.txt
       # Don't run go test -race if anything failed, to speed up the results.
     - name: 'Check: go test -race'
       run: go test -timeout=120s -race ./...

@@ -382,7 +382,8 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 	if edge.AllInputsReady() {
 		if want != kWantNothing {
-			want = p.ScheduleWork(edge, want)
+			// TODO: want =
+			p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of
 			// its dependents.

@@ -8,18 +8,17 @@ set -eu
 
 if ! re2go -help &> /dev/null; then
   echo "re2go is needed to generate the high performance regexp."
-  echo "Install with:"
+  echo "Installing"
   echo ""
-  echo "git clone -b 2.2 https://github.com/skvadrik/re2c ../re2c"
-  echo "mkdir ../re2c/out"
-  echo "cd ../re2c/out"
-  echo "cmake .."
-  echo "cmake --build . -j 16"
-  echo "cd -"
-  echo 'export PATH=$PATH:$(pwd)/../re2c/out'
-  echo ""
-  echo "then run this command again."
-  exit 1
+  git clone -b 2.2 https://github.com/skvadrik/re2c ../re2c
+  mkdir ../re2c/out
+  cd ../re2c/out
+  cmake ..
+  cmake --build . -j 4
+  cd -
+  export PATH=$PATH:$(pwd)/../re2c/out
+elif [[ -f ../re2c/out/re2go ]]; then
+  export PATH=$PATH:$(pwd)/../re2c/out
 fi
 
 echo "Generating depfile_parser.go"
