@@ -136,6 +136,7 @@ jobs:
 
       # Run tests last since it's potentially the slowest step.
     - name: 'Check: go test -cover'
+      if: always()
       run: go test -timeout=60s -covermode=count -coverprofile coverage.txt ./...
       # Don't send code coverage if anything failed to reduce spam.
     - uses: codecov/codecov-action@v2
@@ -148,6 +149,7 @@ jobs:
       run: go test -timeout=60s -bench . -benchtime=100ms -cpu=1 ./...
 
     - name: "Check: tree is clean"
+      if: always()
       run: |
         # Nothing should have changed in the tree up to that point and no
         # unsuspected file was created.
@@ -160,6 +162,7 @@ jobs:
         fi
 
     - name: "Check: go generate doesn't modify files"
+      if: always()
       run: |
         go generate ./...
         # TODO(maruel): Due to https://github.com/golang/go/issues/40276, ignore
@@ -175,6 +178,7 @@ jobs:
         fi
 
     - name: "Check: go mod tidy doesn't modify files"
+      if: always()
       run: |
         go mod tidy
         TOUCHED=$(git status --porcelain --ignored)
