@@ -12,387 +12,680 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
-
-type CompareEdgesByOutput struct {
-}
-func (c *CompareEdgesByOutput) cmp(a *Edge, b *Edge) bool {
-  return a.outputs_[0].path() < b.outputs_[0].path()
-}
+import (
+	"sort"
+	"testing"
+)
 
 // Fixture for tests involving Plan.
 // Though Plan doesn't use State, it's useful to have one around
 // to create Nodes and Edges.
 type PlanTest struct {
-  plan_ Plan
-
-  void TestPoolWithDepthOne(stringtest_case)
+	StateTestWithBuiltinRules
+	plan_ Plan
 }
+
+func NewPlanTest(t *testing.T) *PlanTest {
+	return &PlanTest{
+		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
+		plan_:                     NewPlan(nil),
+	}
+}
+
 // Because FindWork does not return Edges in any sort of predictable order,
 // provide a means to get available Edges in order and in a format which is
 // easy to write tests around.
-func (p *PlanTest) FindWorkSorted(ret *deque<Edge*>, count int) {
-  for i := 0; i < count; i++ {
-    if !p.plan_.more_to_do() { t.Fatal("expected true") }
-    edge := p.plan_.FindWork()
-    if !edge { t.Fatal("expected true") }
-    ret.push_back(edge)
-  }
-  if p.plan_.FindWork() { t.Fatal("expected false") }
-  sort(ret.begin(), ret.end(), CompareEdgesByOutput::cmp)
+func (p *PlanTest) FindWorkSorted(count int) []*Edge {
+	var out []*Edge
+	for i := 0; i < count; i++ {
+		if !p.plan_.more_to_do() {
+			p.t.Fatal("expected true")
+		}
+		edge := p.plan_.FindWork()
+		if edge == nil {
+			p.t.Fatal("expected true")
+		}
+		out = append(out, edge)
+	}
+	if p.plan_.FindWork() != nil {
+		p.t.Fatal("expected false")
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].outputs_[0].path() < out[j].outputs_[0].path()
+	})
+	return out
 }
 
 func TestPlanTest_Basic(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n"))
-  GetNode("mid").MarkDirty()
-  GetNode("out").MarkDirty()
-  err := ""
-  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	p.GetNode("mid").MarkDirty()
+	p.GetNode("out").MarkDirty()
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  edge := plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "mid" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "mid" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "mid" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if "mid" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "out" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.more_to_do() { t.Fatal("expected false") }
-  edge = plan_.FindWork()
-  if 0 != edge { t.Fatal("expected equal") }
+	if p.plan_.more_to_do() {
+		t.Fatal("expected false")
+	}
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test that two outputs from one rule can be handled as inputs to the next.
 func TestPlanTest_DoubleOutputDirect(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n"))
-  GetNode("mid1").MarkDirty()
-  GetNode("mid2").MarkDirty()
-  GetNode("out").MarkDirty()
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n", ManifestParserOptions{})
+	p.GetNode("mid1").MarkDirty()
+	p.GetNode("mid2").MarkDirty()
+	p.GetNode("out").MarkDirty()
 
-  err := ""
-  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  var edge *Edge
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat in
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat in
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat mid1 mid2
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat mid1 mid2
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if edge { t.Fatal("expected false") }  // done
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected false")
+	} // done
 }
 
 // Test that two outputs from one rule can eventually be routed to another.
 func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n"))
-  GetNode("a1").MarkDirty()
-  GetNode("a2").MarkDirty()
-  GetNode("b1").MarkDirty()
-  GetNode("b2").MarkDirty()
-  GetNode("out").MarkDirty()
-  err := ""
-  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n", ManifestParserOptions{})
+	p.GetNode("a1").MarkDirty()
+	p.GetNode("a2").MarkDirty()
+	p.GetNode("b1").MarkDirty()
+	p.GetNode("b2").MarkDirty()
+	p.GetNode("out").MarkDirty()
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  var edge *Edge
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat in
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat in
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat a1
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat a1
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat a2
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat a2
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat b1 b2
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat b1 b2
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if edge { t.Fatal("expected false") }  // done
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected false")
+	} // done
 }
 
 // Test that two edges from one output can both execute.
 func TestPlanTest_DoubleDependent(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n"))
-  GetNode("mid").MarkDirty()
-  GetNode("a1").MarkDirty()
-  GetNode("a2").MarkDirty()
-  GetNode("out").MarkDirty()
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	p.GetNode("mid").MarkDirty()
+	p.GetNode("a1").MarkDirty()
+	p.GetNode("a2").MarkDirty()
+	p.GetNode("out").MarkDirty()
 
-  err := ""
-  if !plan_.AddTarget(GetNode("out"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  var edge *Edge
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat in
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat in
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat mid
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat mid
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat mid
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat mid
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }  // cat a1 a2
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	} // cat a1 a2
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if edge { t.Fatal("expected false") }  // done
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected false")
+	} // done
 }
 
 func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&p.state_, test_case))
-  GetNode("out1").MarkDirty()
-  GetNode("out2").MarkDirty()
-  err := ""
-  if !p.plan_.AddTarget(GetNode("out1"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !p.plan_.AddTarget(GetNode("out2"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !p.plan_.more_to_do() { t.Fatal("expected true") }
+	p.AssertParse(&p.state_, test_case, ManifestParserOptions{})
+	p.GetNode("out1").MarkDirty()
+	p.GetNode("out2").MarkDirty()
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out1"), &err) {
+		p.t.Fatal("expected true")
+	}
+	if "" != err {
+		p.t.Fatal("expected equal")
+	}
+	if !p.plan_.AddTarget(p.GetNode("out2"), &err) {
+		p.t.Fatal("expected true")
+	}
+	if "" != err {
+		p.t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		p.t.Fatal("expected true")
+	}
 
-  edge := p.plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out1" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		p.t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		p.t.Fatal("expected equal")
+	}
+	if "out1" != edge.outputs_[0].path() {
+		p.t.Fatal("expected equal")
+	}
 
-  // This will be false since poolcat is serialized
-  if p.plan_.FindWork() { t.Fatal("expected false") }
+	// This will be false since poolcat is serialized
+	if p.plan_.FindWork() != nil {
+		p.t.Fatal("expected false")
+	}
 
-  p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		p.t.Fatal("expected equal")
+	}
 
-  edge = p.plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "in" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out2" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		p.t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		p.t.Fatal("expected equal")
+	}
+	if "out2" != edge.outputs_[0].path() {
+		p.t.Fatal("expected equal")
+	}
 
-  if p.plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.FindWork() != nil {
+		p.t.Fatal("expected false")
+	}
 
-  p.plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		p.t.Fatal("expected equal")
+	}
 
-  if p.plan_.more_to_do() { t.Fatal("expected false") }
-  edge = p.plan_.FindWork()
-  if 0 != edge { t.Fatal("expected equal") }
+	if p.plan_.more_to_do() {
+		p.t.Fatal("expected false")
+	}
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		p.t.Fatal("expected equal")
+	}
 }
 
 func TestPlanTest_PoolWithDepthOne(t *testing.T) {
-  TestPoolWithDepthOne( "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.TestPoolWithDepthOne("pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
 }
 
 func TestPlanTest_ConsolePool(t *testing.T) {
-  TestPoolWithDepthOne( "rule poolcat\n  command = cat $in > $out\n  pool = console\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.TestPoolWithDepthOne("rule poolcat\n  command = cat $in > $out\n  pool = console\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
 }
 
 func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n" ))
-  // Mark all the out* nodes dirty
-  for i := 0; i < 3; i++ {
-    GetNode("out" + string(1, '1' + static_cast<char>(i))).MarkDirty()
-    GetNode("outb" + string(1, '1' + static_cast<char>(i))).MarkDirty()
-  }
-  GetNode("allTheThings").MarkDirty()
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n", ManifestParserOptions{})
+	// Mark all the out* nodes dirty
+	for i := 0; i < 3; i++ {
+		t.Skip("TODO")
+		//p.GetNode("out" + string(1, '1'+static_cast < char > (i))).MarkDirty()
+		//p.GetNode("outb" + string(1, '1'+static_cast < char > (i))).MarkDirty()
+	}
+	p.GetNode("allTheThings").MarkDirty()
 
-  err := ""
-  if !plan_.AddTarget(GetNode("allTheThings"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("allTheThings"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  var edges deque<Edge*>
-  FindWorkSorted(&edges, 5)
+	edges := p.FindWorkSorted(5)
 
-  for i := 0; i < 4; i++ {
-    edge := edges[i]
-    if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
-    string base_name(i < 2 ? "out" : "outb")
-    if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.Fatal("expected equal") }
-  }
+	for i := 0; i < 4; i++ {
+		edge := edges[i]
+		if "in" != edge.inputs_[0].path() {
+			t.Fatal("expected equal")
+		}
+		/*
+			base_name := "outb"
+			if i < 2 {
+				base_name = "out"
+			}
+		*/
+		t.Skip("TODO")
+		//if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.Fatal("expected equal") }
+	}
 
-  // outb3 is exempt because it has an empty pool
-  edge := edges[4]
-  if !edge { t.Fatal("expected true") }
-  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "outb3" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	// outb3 is exempt because it has an empty pool
+	edge := edges[4]
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "outb3" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  // finish out1
-  plan_.EdgeFinished(edges.front(), Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
-  edges.pop_front()
+	// finish out1
+	p.plan_.EdgeFinished(edges[0], kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	edges = edges[1:]
 
-  // out3 should be available
-  out3 := plan_.FindWork()
-  if !out3 { t.Fatal("expected true") }
-  if "in" !=  out3.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out3" != out3.outputs_[0].path() { t.Fatal("expected equal") }
+	// out3 should be available
+	out3 := p.plan_.FindWork()
+	if out3 == nil {
+		t.Fatal("expected true")
+	}
+	if "in" != out3.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "out3" != out3.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 
-  plan_.EdgeFinished(out3, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(out3, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 
-  for it := edges.begin(); it != edges.end(); it++ {
-    plan_.EdgeFinished(*it, Plan::kEdgeSucceeded, &err)
-    if "" != err { t.Fatal("expected equal") }
-  }
+	for _, it := range edges {
+		p.plan_.EdgeFinished(it, kEdgeSucceeded, &err)
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+	}
 
-  last := plan_.FindWork()
-  if !last { t.Fatal("expected true") }
-  if "allTheThings" != last.outputs_[0].path() { t.Fatal("expected equal") }
+	last := p.plan_.FindWork()
+	if last == nil {
+		t.Fatal("expected true")
+	}
+	if "allTheThings" != last.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  plan_.EdgeFinished(last, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(last, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.more_to_do() { t.Fatal("expected false") }
-  if plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.more_to_do() {
+		t.Fatal("expected false")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 }
 
 func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n"))
-  GetNode("foo.cpp").MarkDirty()
-  GetNode("foo.cpp.obj").MarkDirty()
-  GetNode("bar.cpp").MarkDirty()
-  GetNode("bar.cpp.obj").MarkDirty()
-  GetNode("libfoo.a").MarkDirty()
-  GetNode("all").MarkDirty()
-  err := ""
-  if !plan_.AddTarget(GetNode("all"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n", ManifestParserOptions{})
+	p.GetNode("foo.cpp").MarkDirty()
+	p.GetNode("foo.cpp.obj").MarkDirty()
+	p.GetNode("bar.cpp").MarkDirty()
+	p.GetNode("bar.cpp.obj").MarkDirty()
+	p.GetNode("libfoo.a").MarkDirty()
+	p.GetNode("all").MarkDirty()
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("all"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  edge := nil
+	initial_edges := p.FindWorkSorted(2)
 
-  var initial_edges deque<Edge*>
-  FindWorkSorted(&initial_edges, 2)
+	edge := initial_edges[1] // Foo first
+	if "foo.cpp" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = initial_edges[1]  // Foo first
-  if "foo.cpp" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
+	if "foo.cpp" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "foo.cpp" != edge.inputs_[1].path() {
+		t.Fatal("expected equal")
+	}
+	if "foo.cpp.obj" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if plan_.FindWork() { t.Fatal("expected false") }
-  if "foo.cpp" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "foo.cpp" != edge.inputs_[1].path() { t.Fatal("expected equal") }
-  if "foo.cpp.obj" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = initial_edges[0] // Now for bar
+	if "bar.cpp" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = initial_edges[0]  // Now for bar
-  if "bar.cpp" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
+	if "bar.cpp" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "bar.cpp" != edge.inputs_[1].path() {
+		t.Fatal("expected equal")
+	}
+	if "bar.cpp.obj" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if plan_.FindWork() { t.Fatal("expected false") }
-  if "bar.cpp" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "bar.cpp" != edge.inputs_[1].path() { t.Fatal("expected equal") }
-  if "bar.cpp.obj" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
+	if "foo.cpp.obj" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "bar.cpp.obj" != edge.inputs_[1].path() {
+		t.Fatal("expected equal")
+	}
+	if "libfoo.a" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if plan_.FindWork() { t.Fatal("expected false") }
-  if "foo.cpp.obj" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "bar.cpp.obj" != edge.inputs_[1].path() { t.Fatal("expected equal") }
-  if "libfoo.a" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
+	if "libfoo.a" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "all" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if plan_.FindWork() { t.Fatal("expected false") }
-  if "libfoo.a" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "all" != edge.outputs_[0].path() { t.Fatal("expected equal") }
-  plan_.EdgeFinished(edge, Plan::kEdgeSucceeded, &err)
-  if "" != err { t.Fatal("expected equal") }
-
-  edge = plan_.FindWork()
-  if edge { t.Fatal("expected false") }
-  if plan_.more_to_do() { t.Fatal("expected false") }
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected false")
+	}
+	if p.plan_.more_to_do() {
+		t.Fatal("expected false")
+	}
 }
 
 func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
-  ASSERT_NO_FATAL_FAILURE(AssertParse(&state_, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n"))
-  GetNode("out1").MarkDirty()
-  GetNode("out2").MarkDirty()
-  err := ""
-  if !plan_.AddTarget(GetNode("out1"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.AddTarget(GetNode("out2"), &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if !plan_.more_to_do() { t.Fatal("expected true") }
+	t.Skip("TODO")
+	p := NewPlanTest(t)
+	p.AssertParse(&p.state_, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n", ManifestParserOptions{})
+	p.GetNode("out1").MarkDirty()
+	p.GetNode("out2").MarkDirty()
+	err := ""
+	if !p.plan_.AddTarget(p.GetNode("out1"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.AddTarget(p.GetNode("out2"), &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	}
 
-  edge := plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "in" !=  edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out1" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge := p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "out1" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  // This will be false since poolcat is serialized
-  if plan_.FindWork() { t.Fatal("expected false") }
+	// This will be false since poolcat is serialized
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 
-  plan_.EdgeFinished(edge, Plan::kEdgeFailed, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeFailed, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  edge = plan_.FindWork()
-  if !edge { t.Fatal("expected true") }
-  if "in" != edge.inputs_[0].path() { t.Fatal("expected equal") }
-  if "out2" != edge.outputs_[0].path() { t.Fatal("expected equal") }
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if "in" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "out2" != edge.outputs_[0].path() {
+		t.Fatal("expected equal")
+	}
 
-  if plan_.FindWork() { t.Fatal("expected false") }
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
 
-  plan_.EdgeFinished(edge, Plan::kEdgeFailed, &err)
-  if "" != err { t.Fatal("expected equal") }
+	p.plan_.EdgeFinished(edge, kEdgeFailed, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if !plan_.more_to_do() { t.Fatal("expected true") } // Jobs have failed
-  edge = plan_.FindWork()
-  if 0 != edge { t.Fatal("expected equal") }
+	if !p.plan_.more_to_do() {
+		t.Fatal("expected true")
+	} // Jobs have failed
+	edge = p.plan_.FindWork()
+	if edge != nil {
+		t.Fatal("expected equal")
+	}
 }
 
+/*
 // Fake implementation of CommandRunner, useful for tests.
 type FakeCommandRunner struct {
 
@@ -402,6 +695,7 @@ type FakeCommandRunner struct {
   fs_ *VirtualFileSystem
 }
 func NewFakeCommandRunner(fs *VirtualFileSystem) FakeCommandRunner {
+	p := NewPlanTest(t)
 	return FakeCommandRunner{
 		max_active_edges_: 1,
 		fs_: fs,
@@ -462,7 +756,7 @@ func (b *BuildTest) RebuildTarget(target string, manifest string, log_path strin
   if state != nil {
     pstate = state
   }
-  ASSERT_NO_FATAL_FAILURE(AddCatRule(pstate))
+  p.AddCatRule(pstate))
   AssertParse(pstate, manifest)
 
   err := ""
@@ -2825,7 +3119,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
   if "" != err { t.Fatal("expected equal") }
 
   if builder_.Build(&err) { t.Fatal("expected false") }
-  // Depending on how the pointers in Plan::ready_ work out, we could have
+  // Depending on how the pointers in ready_ work out, we could have
   // discovered the cycle from either starting point.
   if !err == "dependency cycle: circ -> in -> circ" || err == "dependency cycle: in -> circ -> in" { t.Fatal("expected true") }
 }
@@ -2894,7 +3188,7 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
   if !builder_.Build(&err) { t.Fatal("expected true") }
   if "" != err { t.Fatal("expected equal") }
   if 3u != command_runner_.commands_ran_.size() { t.Fatal("expected equal") }
-  // Depending on how the pointers in Plan::ready_ work out, the first
+  // Depending on how the pointers in ready_ work out, the first
   // two commands may have run in either order.
   if !(command_runner_.commands_ran_[0] == "touch out1 out1.imp" && command_runner_.commands_ran_[1] == "cp zdd-in zdd") || (command_runner_.commands_ran_[1] == "touch out1 out1.imp" && command_runner_.commands_ran_[0] == "cp zdd-in zdd") { t.Fatal("expected true") }
   if "cp out1 out2" != command_runner_.commands_ran_[2] { t.Fatal("expected equal") }
@@ -3003,4 +3297,4 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
   if "touch tmp" != command_runner_.commands_ran_[3] { t.Fatal("expected equal") }
   if "touch out" != command_runner_.commands_ran_[4] { t.Fatal("expected equal") }
 }
-
+*/

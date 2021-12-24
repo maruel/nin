@@ -36,7 +36,13 @@ type Plan struct {
 
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
-	return p.wanted_edges_ > 0 && p.command_edges_ > 0
+	if p.wanted_edges_ > 0 && p.command_edges_ > 0 {
+		if len(p.ready_) == 0 {
+			panic("oops")
+		}
+		return true
+	}
+	return false
 }
 
 // Number of edges with commands to run.
@@ -197,8 +203,8 @@ func NewPlan(builder *Builder) Plan {
 func (p *Plan) Reset() {
 	p.command_edges_ = 0
 	p.wanted_edges_ = 0
-	p.ready_ = nil
-	p.want_ = nil
+	p.want_ = map[*Edge]Want{}
+	p.ready_ = EdgeSet{}
 }
 
 // Add a target to our plan (including all its dependencies).
@@ -282,6 +288,7 @@ func (p *Plan) FindWork() *Edge {
 // The edge may be delayed from running, for example if it's a member of a
 // currently-full pool.
 func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
+	//log.Printf("ScheduleWork()")
 	if want == kWantToFinish {
 		// This edge has already been scheduled.  We can get here again if an edge
 		// and one of its dependencies share an order-only input, or if a node
@@ -375,7 +382,6 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 	if edge.AllInputsReady() {
 		if want != kWantNothing {
-			panic("TODO")
 			want = p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of

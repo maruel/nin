@@ -366,12 +366,12 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		if *err == "" {
 			*err = "premature end of file"
 		}
-		f.Close()
 
 		if err := f.Truncate(0); err != nil {
-			panic(err)
+			f.Close()
 			return LOAD_ERROR
 		}
+		f.Close()
 
 		// The truncate succeeded; we'll just report the load error as a
 		// warning because the build can proceed.
