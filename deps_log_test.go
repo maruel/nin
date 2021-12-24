@@ -563,7 +563,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 
 // Run the truncation-recovery logic.
 func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
-	t.Skip("TODO")
+	t.Skip("TODO; the load is still succeeding. This is not critical for release.")
 	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	// Create a file with some entries.
 	{

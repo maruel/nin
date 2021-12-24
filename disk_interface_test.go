@@ -394,19 +394,19 @@ type StatTest struct {
 }
 
 func (s *StatTest) WriteFile(path string, contents string) bool {
-	s.t.Fatal("oops")
+	panic("M-A")
 	return false
 }
 func (s *StatTest) MakeDir(path string) bool {
-	s.t.Fatal("oops")
+	panic("M-A")
 	return false
 }
 func (s *StatTest) ReadFile(path string, contents *string, err *string) DiskStatus {
-	s.t.Fatal("oops")
+	panic("M-A")
 	return NotFound
 }
 func (s *StatTest) RemoveFile(path string) int {
-	s.t.Fatal("oops")
+	panic("M-A")
 	return 0
 }
 

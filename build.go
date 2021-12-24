@@ -38,7 +38,7 @@ type Plan struct {
 func (p *Plan) more_to_do() bool {
 	if p.wanted_edges_ > 0 && p.command_edges_ > 0 {
 		if len(p.ready_) == 0 {
-			panic("oops")
+			panic("M-A")
 		}
 		return true
 	}
@@ -297,7 +297,7 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
 		return want
 	}
 	if want != kWantToStart {
-		panic("oops")
+		panic("M-A")
 	}
 	want = kWantToFinish
 
@@ -319,7 +319,7 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
 func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	want, ok := p.want_[edge]
 	if !ok {
-		panic("oops")
+		panic("M-A")
 	}
 	directly_wanted := want != kWantNothing
 
@@ -547,11 +547,11 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// information an output is now known to be dirty, so we want the edge.
 		edge := n.in_edge()
 		if edge == nil || !edge.outputs_ready() {
-			panic("oops")
+			panic("M-A")
 		}
 		want_e, ok := p.want_[edge]
 		if !ok {
-			panic("oops")
+			panic("M-A")
 		}
 		if want_e == kWantNothing {
 			p.want_[edge] = kWantToStart
@@ -753,7 +753,7 @@ func (b *Builder) AlreadyUpToDate() bool {
 // It is an error to call this function when AlreadyUpToDate() is true.
 func (b *Builder) Build(err *string) bool {
 	if b.AlreadyUpToDate() {
-		panic("oops")
+		panic("M-A")
 	}
 
 	panic("TODO")
@@ -1011,8 +1011,8 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		}
 
 		if !deps_type.empty() && !b.config_.dry_run {
-			if !!edge.outputs_.empty() && "should have been rejected by parser" {
-				panic("oops")
+			if edge.outputs_.empty() && "should have been rejected by parser" {
+				panic("M-A")
 			}
 			for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
 				deps_mtime := b.disk_interface_.Stat((*o).path(), err)

@@ -117,7 +117,7 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 	}
 
 	if d.file_ != nil {
-		panic("oops")
+		panic("M-A")
 	}
 	d.file_path_ = path // we don't actually open the file right now, but will do
 	// so on the first write attempt
@@ -279,7 +279,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
 		if is_deps {
 			if size%4 != 0 || size < 12 {
-				panic("oops")
+				panic("M-A")
 			}
 			// TODO(maruel): Not super efficient but looking for correctness now.
 			// Optimize later.
@@ -301,10 +301,10 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 					panic(err2)
 				}
 				if int(v) >= len(d.nodes_) {
-					panic("oops")
+					panic("M-A")
 				}
 				if d.nodes_[v] == nil {
-					panic("oops")
+					panic("M-A")
 				}
 				deps.nodes[i] = d.nodes_[v]
 			}
@@ -316,7 +316,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		} else {
 			path_size := size - 4
 			if path_size <= 0 {
-				panic("oops")
+				panic("M-A")
 			} // CanonicalizePath() rejects empty paths.
 			// There can be up to 3 bytes of padding.
 			if buf[path_size-1] == '\x00' {
@@ -353,7 +353,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 
 			if node.id() >= 0 {
-				panic("oops")
+				panic("M-A")
 			}
 			node.set_id(id)
 			d.nodes_ = append(d.nodes_, node)
@@ -522,7 +522,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
 	}
 	if _, err := d.file_.Write([]byte(node.path())); err != nil {
 		if node.path() == "" {
-			panic("oops")
+			panic("M-A")
 		}
 		panic(1)
 		return false

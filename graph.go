@@ -473,7 +473,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string)
 	// be in the call stack.
 	edge.mark_ = VisitDone
 	if (*stack)[len(*stack)-1] != node {
-		panic("oops")
+		panic("M-A")
 	}
 	*stack = (*stack)[:len(*stack)-1]
 	return true
@@ -482,7 +482,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string)
 func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool {
 	edge := node.in_edge()
 	if edge == nil {
-		panic("oops")
+		panic("M-A")
 	}
 
 	// If we have no temporary mark on the edge then we do not yet have a cycle.
@@ -499,7 +499,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 		}
 	}
 	if start == -1 {
-		panic("oops")
+		panic("M-A")
 	}
 
 	// Make the cycle clear by reporting its start as the node at its end

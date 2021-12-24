@@ -14,20 +14,19 @@
 
 package ginja
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
-const kTestDepsLogFilename = "MissingDepTest-tempdepslog"
-
-/*
-type MissingDependencyTestDelegate : public MissingDependencyScannerDelegate {
-  func OnMissingDep(node *Node, path string, generator *Rule) {}
+type MissingDependencyTestDelegate struct {
 }
-*/
+
+func (m *MissingDependencyTestDelegate) OnMissingDep(node *Node, path string, generator *Rule) {}
 
 type MissingDependencyScannerTest struct {
-	t *testing.T
-	//delegate_ MissingDependencyTestDelegate
-	delegate_       MissingDependencyScannerDelegate
+	t               *testing.T
+	delegate_       MissingDependencyTestDelegate
 	generator_rule_ *Rule
 	compile_rule_   *Rule
 	deps_log_       DepsLog
@@ -45,8 +44,9 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 		state_:          NewState(),
 		filesystem_:     NewVirtualFileSystem(),
 	}
-	m.scanner_ = NewMissingDependencyScanner(m.delegate_, &m.deps_log_, &m.state_, &m.filesystem_)
+	m.scanner_ = NewMissingDependencyScanner(&m.delegate_, &m.deps_log_, &m.state_, &m.filesystem_)
 	err := ""
+	kTestDepsLogFilename := filepath.Join(t.TempDir(), "MissingDepTest-tempdepslog")
 	m.deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
 	if err != "" {
 		t.Fatal(err)
@@ -57,10 +57,12 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 func (m *MissingDependencyScannerTest) scanner() *MissingDependencyScanner {
 	return &m.scanner_
 }
+
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
 	node_deps := []*Node{m.state_.LookupNode(to)}
 	m.deps_log_.RecordDeps(m.state_.LookupNode(from), 0, node_deps)
 }
+
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 	err := ""
 	nodes := m.state_.RootNodes(&err)
@@ -88,20 +90,39 @@ func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string,
 	from_edge := from_node.in_edge()
 	m.state_.AddIn(from_edge, to, 0)
 }
+
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
-	/* TODO
 	flaky_node := m.state_.LookupNode(flaky)
-	if 1 != m.scanner().nodes_missing_deps_.count(flaky_node) {
+	if 1 != countNodes(m.scanner().nodes_missing_deps_, flaky_node) {
 		m.t.Fatal("expected equal")
 	}
 	generated_node := m.state_.LookupNode(generated)
-	if 1 != m.scanner().generated_nodes_.count(generated_node) {
+	if 1 != countNodes(m.scanner().generated_nodes_, generated_node) {
 		m.t.Fatal("expected equal")
 	}
-	if 1 != m.scanner().generator_rules_.count(rule) {
+	if 1 != countRules(m.scanner().generator_rules_, rule) {
 		m.t.Fatal("expected equal")
 	}
-	*/
+}
+
+func countNodes(items map[*Node]struct{}, item *Node) int {
+	c := 0
+	for i := range items {
+		if i == item {
+			c++
+		}
+	}
+	return c
+}
+
+func countRules(items map[*Rule]struct{}, item *Rule) int {
+	c := 0
+	for i := range items {
+		if i == item {
+			c++
+		}
+	}
+	return c
 }
 
 func TestMissingDependencyScannerTest_EmptyGraph(t *testing.T) {
@@ -122,7 +143,6 @@ func TestMissingDependencyScannerTest_NoMissingDep(t *testing.T) {
 }
 
 func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
-	t.Skip("TODO")
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	// compiled_object uses generated_header, without a proper dependency
@@ -141,7 +161,6 @@ func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
 }
 
 func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
-	t.Skip("TODO")
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	// Adding the direct dependency fixes the missing dep
@@ -154,7 +173,6 @@ func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
 }
 
 func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
-	t.Skip("TODO")
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	// Adding an indirect dependency also fixes the issue
@@ -170,7 +188,6 @@ func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
 }
 
 func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
-	t.Skip("TODO")
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	m.RecordDepsLogDep("generated_header", "compiled_object")

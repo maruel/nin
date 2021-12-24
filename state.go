@@ -110,7 +110,7 @@ func (p *Pool) EdgeFinished(edge *Edge) {
 // adds the given edge to this Pool to be delayed.
 func (p *Pool) DelayEdge(edge *Edge) {
 	if p.depth_ == 0 {
-		panic("oops")
+		panic("M-A")
 	}
 	p.delayed_[edge] = struct{}{}
 }

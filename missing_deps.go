@@ -122,7 +122,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 
 func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node) {
 	edge := node.in_edge()
-	var deplog_edges map[*Edge]struct{}
+	deplog_edges := map[*Edge]struct{}{}
 	for i := 0; i < len(dep_nodes); i++ {
 		deplog_node := dep_nodes[i]
 		// Special exception: A dep on build.ninja can be used to mean "always
@@ -147,9 +147,18 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node
 	}
 
 	if len(missing_deps) != 0 {
-		var missing_deps_rule_names map[string]struct{}
+		missing_deps_rule_names := map[string]struct{}{}
 		for _, ne := range missing_deps {
+			if ne == nil {
+				panic("M-A")
+			}
 			for i := 0; i < len(dep_nodes); i++ {
+				if dep_nodes[i].in_edge() == nil {
+					panic("M-A")
+				}
+				if m.delegate_ == nil {
+					panic("M-A")
+				}
 				if dep_nodes[i].in_edge() == ne {
 					m.generated_nodes_[dep_nodes[i]] = struct{}{}
 					m.generator_rules_[ne.rule()] = struct{}{}

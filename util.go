@@ -225,7 +225,7 @@ func StringNeedsWin32Escaping(input string) bool {
 // determine that it contains no problematic characters.
 func GetShellEscapedString(input string) string {
 	if input == "" {
-		panic("oops")
+		panic("M-A")
 	}
 	if !StringNeedsShellEscaping(input) {
 		return input
@@ -252,7 +252,7 @@ func GetShellEscapedString(input string) string {
 
 func GetWin32EscapedString(input string) string {
 	if input == "" {
-		panic("oops")
+		panic("M-A")
 	}
 	if !StringNeedsWin32Escaping(input) {
 		return input
