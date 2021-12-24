@@ -658,7 +658,6 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 }
 
 func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
-	t.Skip("TODO") // Order
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out1: r in || dd\n  dyndep = dd\nbuild out2: r in\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out1: dyndep | out2\n")
@@ -802,7 +801,6 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 }
 
 func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out1: r in1 || dd\n  dyndep = dd\nbuild out2: r in2 || dd\n  dyndep = dd\nbuild outNot: r in3 || dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out1 | out1imp: dyndep | in1imp\nbuild out2: dyndep | in2imp\n  restat = 1\n")
@@ -820,7 +818,6 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if g.GetNode("dd").dyndep_pending() {
 		t.Fatal("expected false")
 	}
-
 	edge1 := g.GetNode("out1").in_edge()
 	if 2 != len(edge1.outputs_) {
 		t.Fatal("expected equal")
@@ -841,7 +838,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if "in1imp" != edge1.inputs_[1].path() {
-		t.Fatal("expected equal")
+		t.Fatal(edge1.inputs_[1].path())
 	}
 	if "dd" != edge1.inputs_[2].path() {
 		t.Fatal("expected equal")
@@ -934,7 +931,6 @@ func TestGraphTest_DyndepFileError(t *testing.T) {
 }
 
 func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep | in\n")
@@ -964,7 +960,6 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
 }
 
 func TestGraphTest_DyndepFileReady(t *testing.T) {
-	t.Skip("TODO")
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild dd: r dd-in\nbuild out: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs_.Create("dd-in", "")
