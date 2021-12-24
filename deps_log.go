@@ -183,10 +183,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	if err := binary.Write(d.file_, binary.LittleEndian, uint32(node.id())); err != nil {
 		return false
 	}
-	if err := binary.Write(d.file_, binary.LittleEndian, uint32(mtime&0xffffffff)); err != nil {
-		return false
-	}
-	if err := binary.Write(d.file_, binary.LittleEndian, uint32((mtime>>32)&0xffffffff)); err != nil {
+	if err := binary.Write(d.file_, binary.LittleEndian, mtime); err != nil {
 		return false
 	}
 	for i := 0; i < node_count; i++ {
@@ -194,9 +191,11 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 			return false
 		}
 	}
+	/* TODO: Evaluate the performance impact.
 	if err := d.file_.Sync(); err != nil {
 		return false
 	}
+	*/
 
 	// Update in-memory representation.
 	deps := NewDeps(mtime, node_count)
@@ -228,6 +227,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		return LOAD_ERROR
 	}
 
+	// TODO(maruel): Read the file all at once then use a buffer.
 	valid_header := true
 	version := uint32(0)
 	if _, err := f.Read(buf[:len(DepsLogFileSignature)]); err != nil {
@@ -251,7 +251,6 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		// us to rebuild the outputs anyway.
 		return LOAD_SUCCESS
 	}
-	offset := len(DepsLogFileSignature) + 4
 	read_failed := false
 	unique_dep_record_count := 0
 	total_dep_record_count := 0
@@ -264,10 +263,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 			break
 		}
-		offset += 4
-		is_deps := (size >> 31) != 0
+		is_deps := size&0x80000000 != 0
 		size = size & 0x7FFFFFFF
-
+		//log.Printf("is_deps=%t; size=%d", is_deps, size)
 		if size > kMaxRecordSize {
 			read_failed = true
 			panic("size")
@@ -278,13 +276,11 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			*err = err2.Error()
 			break
 		}
-		offset += int(size)
 
 		if is_deps {
-			if size%4 != 0 {
+			if size%4 != 0 || size < 12 {
 				panic("oops")
 			}
-			//deps_data := reinterpret_cast<int*>(buf)
 			// TODO(maruel): Not super efficient but looking for correctness now.
 			// Optimize later.
 			r := bytes.NewReader(buf[:size])
@@ -373,6 +369,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		f.Close()
 
 		if err := f.Truncate(0); err != nil {
+			panic(err)
 			return LOAD_ERROR
 		}
 
@@ -542,9 +539,11 @@ func (d *DepsLog) RecordId(node *Node) bool {
 		panic(1)
 		return false
 	}
+	/* TODO: Evaluate the performance impact.
 	if err := d.file_.Sync(); err != nil {
 		return false
 	}
+	*/
 	node.set_id(id)
 	d.nodes_ = append(d.nodes_, node)
 

@@ -111,7 +111,6 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 }
 
 func TestDepsLogTest_LotsOfDeps(t *testing.T) {
-	t.Skip("TODO")
 	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	kNumDeps := 100000 // More than 64k.
 
@@ -594,8 +593,12 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	// Shorten the file, corrupting the last record.
 	{
 		file_size := getFileSize(t, kTestFilename)
-		if err := os.Truncate(kTestFilename, int64(file_size-2)); err != nil {
+		const cut = 2
+		if err := os.Truncate(kTestFilename, int64(file_size-cut)); err != nil {
 			t.Fatal(err)
+		}
+		if f2 := getFileSize(t, kTestFilename); f2 != file_size-cut {
+			t.Fatal(f2)
 		}
 	}
 
@@ -614,7 +617,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 
 		// The truncated entry should've been discarded.
 		if nil != log.GetDeps(state.GetNode("out2.o", 0)) {
-			t.Fatal("expected equal")
+			t.Fatal("expected out2.o to be stripped")
 		}
 
 		if !log.OpenForWrite(kTestFilename, &err) {
