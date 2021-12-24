@@ -995,9 +995,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	edge.inputs_ = append(edge.inputs_, make([]*Node, count)...)
+	offset := len(edge.inputs_) - edge.order_only_deps_
+	old := edge.inputs_
+	edge.inputs_ = make([]*Node, len(old)+count)
+	copy(edge.inputs_, old[:offset])
+	copy(edge.inputs_[offset+count:], old[offset:])
 	edge.implicit_deps_ += count
-	return len(edge.inputs_) - count
+	return len(edge.inputs_) - edge.order_only_deps_ - count
 }
 
 // If we don't have a edge that generates this input already,

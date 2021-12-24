@@ -46,16 +46,6 @@ func NewDyndepLoader(state *State, disk_interface DiskInterface) DyndepLoader {
 	}
 }
 
-/*
-// Load a dyndep file from the given node's path and update the
-// build graph with the new information.  One overload accepts
-// a caller-owned 'DyndepFile' object in which to store the
-// information loaded from the dyndep file.
-func (d *DyndepLoader) LoadDyndeps(node *Node, err *string) bool {
-	return d.LoadDyndeps(node, DyndepFile{}, err)
-}
-*/
-
 // Load a dyndep file from the given node's path and update the
 // build graph with the new information.  One overload accepts
 // a caller-owned 'DyndepFile' object in which to store the
@@ -130,7 +120,12 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 	}
 
 	// Add the dyndep-discovered inputs to the edge.
-	edge.inputs_ = append(edge.inputs_[:len(edge.inputs_)-edge.order_only_deps_], dyndeps.implicit_inputs_...)
+	old := edge.inputs_
+	edge.inputs_ = make([]*Node, len(edge.inputs_)+len(dyndeps.implicit_inputs_))
+	offset := len(edge.inputs_) - edge.order_only_deps_
+	copy(edge.inputs_, old[:offset])
+	copy(edge.inputs_[offset:], dyndeps.implicit_inputs_)
+	copy(edge.inputs_[offset+len(dyndeps.implicit_inputs_):], old[offset:])
 	edge.implicit_deps_ += len(dyndeps.implicit_inputs_)
 	// Add this edge as outgoing from each new input.
 	for _, i := range dyndeps.implicit_inputs_ {
