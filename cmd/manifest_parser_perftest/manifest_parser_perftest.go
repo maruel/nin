@@ -107,7 +107,7 @@ func mainImpl() error {
 		}
 		total += times[i]
 	}
-	fmt.Printf("min %dms  max %dms  avg %.1fms\n", min, max, total/time.Duration(len(times)))
+	fmt.Printf("min %s  max %s  avg %s\n", min, max, total/time.Duration(len(times)))
 	return nil
 }
 
