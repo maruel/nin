@@ -110,20 +110,20 @@ func (p *Pool) DelayEdge(edge *Edge) {
 
 // Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
-	panic("TODO")
-	/*
-		it := 0
-		for it != len(p.delayed_) {
-			edge := p.delayed_[it]
-			if p.current_use_+edge.weight() > p.depth_ {
-				break
-			}
-			ready_queue[edge] = struct{}{}
-			p.EdgeScheduled(edge)
-			it++
+	// TODO(maruel): Redo without using the internals.
+	p.delayed_.recreate()
+	for len(p.delayed_.sorted) != 0 {
+		// Do a peek first, then pop.
+		edge := p.delayed_.sorted[len(p.delayed_.sorted)-1]
+		if p.current_use_+edge.weight() > p.depth_ {
+			break
 		}
-		p.delayed_.erase(p.delayed_.begin(), it)
-	*/
+		if ed := p.delayed_.Pop(); ed != edge {
+			panic("M-A")
+		}
+		ready_queue.Add(edge)
+		p.EdgeScheduled(edge)
+	}
 }
 
 // Dump the Pool and its edges (useful for debugging).

@@ -249,6 +249,9 @@ func (e *EdgeSet) IsEmpty() bool {
 }
 
 func (e *EdgeSet) Add(ed *Edge) {
+	if ed == nil {
+		panic("M-A")
+	}
 	e.edges[ed] = struct{}{}
 	e.dirty = true
 }
@@ -260,26 +263,47 @@ func (e *EdgeSet) Pop() *Edge {
 	}
 	// Do not set dirty.
 	ed := e.sorted[len(e.sorted)-1]
+	e.sorted = e.sorted[:len(e.sorted)-1]
 	delete(e.edges, ed)
 	return ed
 }
 
 func (e *EdgeSet) recreate() {
-	if e.dirty {
-		// TODO(maruel): cap().
-		if len(e.sorted) < len(e.edges) {
-			e.sorted = make([]*Edge, len(e.edges))
-		}
-		i := 0
-		for k := range e.edges {
-			e.sorted[i] = k
-		}
-		// Sort in reverse order, so that Pop() removes the last item.
-		sort.Slice(e.sorted, func(i, j int) bool {
-			return e.sorted[i].id_ >= e.sorted[j].id_
-		})
-		e.dirty = false
+	if !e.dirty {
+		return
 	}
+	e.dirty = false
+	if len(e.edges) == 0 {
+		if len(e.sorted) != 0 {
+			e.sorted = e.sorted[:0]
+		}
+		return
+	}
+	// Resize e.sorted to be the same size as e.edges
+	le := len(e.edges)
+	if cap(e.sorted) < le {
+		e.sorted = make([]*Edge, le)
+	} else {
+		delta := le - len(e.sorted)
+		if delta < 0 {
+			// TODO(maruel): Not sure how to tell the Go compiler to do it as a
+			// single operation.
+			for i := 0; i < delta; i++ {
+				e.sorted = append(e.sorted, nil)
+			}
+		} else if delta > 0 {
+			e.sorted = e.sorted[:le]
+		}
+	}
+	i := 0
+	for k := range e.edges {
+		e.sorted[i] = k
+		i++
+	}
+	// Sort in reverse order, so that Pop() removes the last (smallest) item.
+	sort.Slice(e.sorted, func(i, j int) bool {
+		return e.sorted[i].id_ > e.sorted[j].id_
+	})
 }
 
 // ImplicitDepLoader loads implicit dependencies, as referenced via the

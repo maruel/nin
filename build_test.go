@@ -59,7 +59,6 @@ func (p *PlanTest) FindWorkSorted(count int) []*Edge {
 }
 
 func TestPlanTest_Basic(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 	p.GetNode("mid").MarkDirty()
@@ -86,8 +85,8 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if p.plan_.FindWork() != nil {
-		t.Fatal("expected false")
+	if e := p.plan_.FindWork(); e != nil {
+		t.Fatalf("%#v", e)
 	}
 
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -122,7 +121,6 @@ func TestPlanTest_Basic(t *testing.T) {
 
 // Test that two outputs from one rule can be handled as inputs to the next.
 func TestPlanTest_DoubleOutputDirect(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n", ManifestParserOptions{})
 	p.GetNode("mid1").MarkDirty()
@@ -166,7 +164,6 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 
 // Test that two outputs from one rule can eventually be routed to another.
 func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n", ManifestParserOptions{})
 	p.GetNode("a1").MarkDirty()
@@ -229,7 +226,6 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 
 // Test that two edges from one output can both execute.
 func TestPlanTest_DoubleDependent(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 	p.GetNode("mid").MarkDirty()
@@ -362,13 +358,11 @@ func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
 }
 
 func TestPlanTest_PoolWithDepthOne(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.TestPoolWithDepthOne("pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
 }
 
 func TestPlanTest_ConsolePool(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.TestPoolWithDepthOne("rule poolcat\n  command = cat $in > $out\n  pool = console\nbuild out1: poolcat in\nbuild out2: poolcat in\n")
 }
