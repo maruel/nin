@@ -545,7 +545,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 		t.Fatal("expected false")
 	}
 	if "bar.cpp" != edge.inputs_[0].path() {
-		t.Fatal("expected equal")
+		t.Fatal(edge.inputs_[0].path())
 	}
 	if "bar.cpp" != edge.inputs_[1].path() {
 		t.Fatal("expected equal")
@@ -607,7 +607,6 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 }
 
 func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n", ManifestParserOptions{})
 	p.GetNode("out1").MarkDirty()

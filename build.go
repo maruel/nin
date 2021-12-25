@@ -39,9 +39,6 @@ type Plan struct {
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
 	if p.wanted_edges_ > 0 && p.command_edges_ > 0 {
-		if p.ready_.IsEmpty() {
-			panic("M-A")
-		}
 		return true
 	}
 	return false
