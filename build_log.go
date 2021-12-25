@@ -185,42 +185,47 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime
   }
   return true
 }
+*/
 
 func (b *BuildLog) Close() {
-  OpenForWriteIfNeeded()  // create the file even if nothing has been recorded
-  if b.log_file_ {
-    fclose(b.log_file_)
-  }
-  b.log_file_ = nil
+	b.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
+	if b.log_file_ != nil {
+		b.log_file_.Close()
+	}
+	b.log_file_ = nil
 }
 
 // Should be called before using log_file_. When false is returned, errno
 // will be set.
 func (b *BuildLog) OpenForWriteIfNeeded() bool {
-  if b.log_file_ || b.log_file_path_.empty() {
-    return true
-  }
-  b.log_file_ = fopen(b.log_file_path_, "ab")
-  if !b.log_file_ {
-    return false
-  }
-  if setvbuf(b.log_file_, nil, _IOLBF, BUFSIZ) != 0 {
-    return false
-  }
-  SetCloseOnExec(fileno(b.log_file_))
+	panic("TODO")
+	/*
+	   if b.log_file_ || b.log_file_path_.empty() {
+	     return true
+	   }
+	   b.log_file_ = fopen(b.log_file_path_, "ab")
+	   if !b.log_file_ {
+	     return false
+	   }
+	   if setvbuf(b.log_file_, nil, _IOLBF, BUFSIZ) != 0 {
+	     return false
+	   }
+	   SetCloseOnExec(fileno(b.log_file_))
 
-  // Opening a file in append mode doesn't set the file pointer to the file's
-  // end on Windows. Do that explicitly.
-  fseek(b.log_file_, 0, SEEK_END)
+	   // Opening a file in append mode doesn't set the file pointer to the file's
+	   // end on Windows. Do that explicitly.
+	   fseek(b.log_file_, 0, SEEK_END)
 
-  if ftell(b.log_file_) == 0 {
-    if fprintf(b.log_file_, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
-      return false
-    }
-  }
-  return true
+	   if ftell(b.log_file_) == 0 {
+	     if fprintf(b.log_file_, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
+	       return false
+	     }
+	   }
+	*/
+	return true
 }
 
+/*
 type LineReader struct {
 
   file_ *FILE

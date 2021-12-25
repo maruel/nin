@@ -230,8 +230,8 @@ func (e *Edge) is_implicit_out(index int) bool {
 	return index >= len(e.outputs_)-e.implicit_outs_
 }
 
-//type EdgeSet map[*Edge]struct{}
-
+// EdgeSet acts as a sorted set of *Edge, so map[*Edge]struct{} but with sorted
+// pop.
 type EdgeSet struct {
 	edges  map[*Edge]struct{}
 	dirty  bool

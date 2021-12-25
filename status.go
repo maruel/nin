@@ -113,69 +113,70 @@ func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int64) {
 	}
 }
 
-/*
 func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string) {
-	s.time_millis_ = end_time_millis
-	s.finished_edges_++
+	panic("TODO")
+	/*
+		s.time_millis_ = end_time_millis
+		s.finished_edges_++
 
-	if edge.use_console() {
-		s.printer_.SetConsoleLocked(false)
-	}
-
-	if s.config_.verbosity == QUIET {
-		return
-	}
-
-	if !edge.use_console() {
-		s.PrintStatus(edge, end_time_millis)
-	}
-
-	s.running_edges_--
-
-	// Print the command that is spewing before printing its output.
-	if !success {
-		outputs := ""
-		for _, o := range edge {
-			outputs += o.path() + " "
-		}
-		if s.printer_.supports_color() {
-			s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
-		} else {
-			s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
-		}
-		s.printer_.PrintOnNewLine(edge.EvaluateCommand() + "\n")
-	}
-
-	if len(output) != 0 {
-		// ninja sets stdout and stderr of subprocesses to a pipe, to be able to
-		// check if the output is empty. Some compilers, e.g. clang, check
-		// isatty(stderr) to decide if they should print colored output.
-		// To make it possible to use colored output with ninja, subprocesses should
-		// be run with a flag that forces them to always print color escape codes.
-		// To make sure these escape codes don't show up in a file if ninja's output
-		// is piped to a file, ninja strips ansi escape codes again if it's not
-		// writing to a |smart_terminal_|.
-		// (Launching subprocesses in pseudo ttys doesn't work because there are
-		// only a few hundred available on some systems, and ninja can launch
-		// thousands of parallel compile commands.)
-		final_output := ""
-		if !s.printer_.supports_color() {
-			final_output = StripAnsiEscapeCodes(output)
-		} else {
-			final_output = output
+		if edge.use_console() {
+			s.printer_.SetConsoleLocked(false)
 		}
 
-		// TODO(maruel): Use an existing Go package.
-			// Fix extra CR being added on Windows, writing out CR CR LF (#773)
-			//_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
+		if s.config_.verbosity == QUIET {
+			return
+		}
 
-			s.printer_.PrintOnNewLine(final_output)
+		if !edge.use_console() {
+			s.PrintStatus(edge, end_time_millis)
+		}
 
-			//_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
+		s.running_edges_--
 
-	}
+		// Print the command that is spewing before printing its output.
+		if !success {
+			outputs := ""
+			for _, o := range edge {
+				outputs += o.path() + " "
+			}
+			if s.printer_.supports_color() {
+				s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
+			} else {
+				s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
+			}
+			s.printer_.PrintOnNewLine(edge.EvaluateCommand() + "\n")
+		}
+
+		if len(output) != 0 {
+			// ninja sets stdout and stderr of subprocesses to a pipe, to be able to
+			// check if the output is empty. Some compilers, e.g. clang, check
+			// isatty(stderr) to decide if they should print colored output.
+			// To make it possible to use colored output with ninja, subprocesses should
+			// be run with a flag that forces them to always print color escape codes.
+			// To make sure these escape codes don't show up in a file if ninja's output
+			// is piped to a file, ninja strips ansi escape codes again if it's not
+			// writing to a |smart_terminal_|.
+			// (Launching subprocesses in pseudo ttys doesn't work because there are
+			// only a few hundred available on some systems, and ninja can launch
+			// thousands of parallel compile commands.)
+			final_output := ""
+			if !s.printer_.supports_color() {
+				final_output = StripAnsiEscapeCodes(output)
+			} else {
+				final_output = output
+			}
+
+			// TODO(maruel): Use an existing Go package.
+				// Fix extra CR being added on Windows, writing out CR CR LF (#773)
+				//_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
+
+				s.printer_.PrintOnNewLine(final_output)
+
+				//_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
+
+		}
+	*/
 }
-*/
 
 func (s *StatusPrinter) BuildLoadDyndeps() {
 	// The DependencyScan calls EXPLAIN() to print lines explaining why

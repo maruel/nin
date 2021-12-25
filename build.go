@@ -97,11 +97,11 @@ func NewResult() Result {
 	}
 }
 
-/*
-func (c *CommandRunner) success() bool {
-	return c.status == ExitSuccess
+func (r *Result) success() bool {
+	return r.status == ExitSuccess
 }
 
+/*
 func (c *CommandRunner) GetActiveEdges() []*Edge {
 	return nil
 }
@@ -188,6 +188,13 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
 	result.edge = d.finished_[len(d.finished_)-1]
 	d.finished_ = d.finished_[:len(d.finished_)-1]
 	return true
+}
+
+func (d *DryRunCommandRunner) GetActiveEdges() []*Edge {
+	return nil
+}
+
+func (d *DryRunCommandRunner) Abort() {
 }
 
 func NewPlan(builder *Builder) Plan {
@@ -589,9 +596,9 @@ func (p *Plan) Dump() {
 	// TODO(maruel): Uses inner knowledge
 	fmt.Printf("ready:\n")
 	p.ready_.recreate()
-	for _, it := range p.ready_.sorted {
+	for i := range p.ready_.sorted {
 		fmt.Printf("\t")
-		it.Dump("")
+		p.ready_.sorted[len(p.ready_.sorted)-1-i].Dump("")
 	}
 }
 
@@ -601,8 +608,8 @@ type RealCommandRunner struct {
 	subproc_to_edge_ map[*Subprocess]*Edge
 }
 
-func NewRealCommandRunner(config *BuildConfig) RealCommandRunner {
-	return RealCommandRunner{
+func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
+	return &RealCommandRunner{
 		config_: config,
 	}
 }
@@ -615,48 +622,55 @@ func (r *RealCommandRunner) GetActiveEdges() []*Edge {
 	return edges
 }
 
-/*
 func (r *RealCommandRunner) Abort() {
-	r.subprocs_.Clear()
+	panic("TODO")
+	//r.subprocs_.Clear()
 }
 
-/*
 func (r *RealCommandRunner) CanRunMore() bool {
-	subproc_number := len(r.subprocs_.running_) + len(r.subprocs_.finished_)
-  return subproc_number < r.config_.parallelism && ((r.subprocs_.running_.empty() || r.config_.max_load_average <= 0.) || r.GetLoadAverage() < r.config_.max_load_average)
+	panic("TODO")
+	/*
+		subproc_number := len(r.subprocs_.running_) + len(r.subprocs_.finished_)
+		return subproc_number < r.config_.parallelism && ((r.subprocs_.running_.empty() || r.config_.max_load_average <= 0.) || r.GetLoadAverage() < r.config_.max_load_average)
+	*/
+	return false
 }
 
 func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
-	command := edge.EvaluateCommand()
-	subproc := r.subprocs_.Add(command, edge.use_console())
-	if subproc == nil {
-		return false
-	}
-	r.subproc_to_edge_.insert(make_pair(subproc, edge))
-
+	panic("TODO")
+	/*
+		command := edge.EvaluateCommand()
+		subproc := r.subprocs_.Add(command, edge.use_console())
+		if subproc == nil {
+			return false
+		}
+		r.subproc_to_edge_.insert(make_pair(subproc, edge))
+	*/
 	return true
 }
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-	var subproc *Subprocess
-	for subproc = r.subprocs_.NextFinished(); subproc == nil; subproc = r.subprocs_.NextFinished() {
-		interrupted := r.subprocs_.DoWork()
-		if interrupted != nil {
-			return false
+	panic("TODO")
+	/*
+		var subproc *Subprocess
+		for subproc = r.subprocs_.NextFinished(); subproc == nil; subproc = r.subprocs_.NextFinished() {
+			interrupted := r.subprocs_.DoWork()
+			if interrupted != nil {
+				return false
+			}
 		}
-	}
 
-	result.status = subproc.Finish()
-	result.output = subproc.GetOutput()
+		result.status = subproc.Finish()
+		result.output = subproc.GetOutput()
 
-	e := r.subproc_to_edge_.find(subproc)
-	result.edge = e.second
-	r.subproc_to_edge_.erase(e)
+		e := r.subproc_to_edge_.find(subproc)
+		result.edge = e.second
+		r.subproc_to_edge_.erase(e)
 
-	delete(subproc)
+		delete(subproc)
+	*/
 	return true
 }
-*/
 
 func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, status Status, start_time_millis int64) *Builder {
 	b := &Builder{
@@ -666,8 +680,7 @@ func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log
 		start_time_millis_: start_time_millis,
 		disk_interface_:    disk_interface,
 	}
-	panic("TODO")
-	//b.plan_ = b
+	b.plan_ = NewPlan(b)
 	b.scan_ = NewDependencyScan(state, build_log, deps_log, disk_interface, &b.config_.depfile_parser_options)
 	return b
 }
@@ -757,102 +770,99 @@ func (b *Builder) Build(err *string) bool {
 		panic("M-A")
 	}
 
-	panic("TODO")
-	/*
-		b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
-		pending_commands := 0
-		failures_allowed := b.config_.failures_allowed
+	b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
+	pending_commands := 0
+	failures_allowed := b.config_.failures_allowed
 
-		// Set up the command runner if we haven't done so already.
-		if !b.command_runner_.get() {
-			if b.config_.dry_run {
-				b.command_runner_.reset(NewDryRunCommandRunner())
-			} else {
-				b.command_runner_.reset(NewRealCommandRunner(b.config_))
-			}
+	// Set up the command runner if we haven't done so already.
+	if b.command_runner_ == nil {
+		if b.config_.dry_run {
+			b.command_runner_ = &DryRunCommandRunner{}
+		} else {
+			b.command_runner_ = NewRealCommandRunner(b.config_)
 		}
+	}
 
-		// We are about to start the build process.
-		b.status_.BuildStarted()
+	// We are about to start the build process.
+	b.status_.BuildStarted()
 
-		// This main loop runs the entire build process.
-		// It is structured like this:
-		// First, we attempt to start as many commands as allowed by the
-		// command runner.
-		// Second, we attempt to wait for / reap the next finished command.
-		for b.plan_.more_to_do() {
-			// See if we can start any more commands.
-			if failures_allowed && b.command_runner_.CanRunMore() {
-				if edge := b.plan_.FindWork(); edge != nil {
-					if edge.GetBindingBool("generator") {
-						b.scan_.build_log().Close()
-					}
+	// This main loop runs the entire build process.
+	// It is structured like this:
+	// First, we attempt to start as many commands as allowed by the
+	// command runner.
+	// Second, we attempt to wait for / reap the next finished command.
+	for b.plan_.more_to_do() {
+		// See if we can start any more commands.
+		if failures_allowed != 0 && b.command_runner_.CanRunMore() {
+			if edge := b.plan_.FindWork(); edge != nil {
+				if edge.GetBindingBool("generator") {
+					b.scan_.build_log().Close()
+				}
 
-					if !StartEdge(edge, err) {
-						Cleanup()
+				if !b.StartEdge(edge, err) {
+					b.Cleanup()
+					b.status_.BuildFinished()
+					return false
+				}
+
+				if edge.is_phony() {
+					if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
+						b.Cleanup()
 						b.status_.BuildFinished()
 						return false
 					}
-
-					if edge.is_phony() {
-						if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
-							Cleanup()
-							b.status_.BuildFinished()
-							return false
-						}
-					} else {
-						pending_commands++
-					}
-
-					// We made some progress; go back to the main loop.
-					continue
-				}
-			}
-
-			// See if we can reap any finished commands.
-			if pending_commands {
-				var result Result
-				if !b.command_runner_.WaitForCommand(&result) || result.status == ExitInterrupted {
-					Cleanup()
-					b.status_.BuildFinished()
-					*err = "interrupted by user"
-					return false
+				} else {
+					pending_commands++
 				}
 
-				pending_commands--
-				if !FinishCommand(&result, err) {
-					Cleanup()
-					b.status_.BuildFinished()
-					return false
-				}
-
-				if !result.success() {
-					if failures_allowed {
-						failures_allowed--
-					}
-				}
-
-				// We made some progress; start the main loop over.
+				// We made some progress; go back to the main loop.
 				continue
 			}
+		}
 
-			// If we get here, we cannot make any more progress.
-			b.status_.BuildFinished()
-			if failures_allowed == 0 {
-				if b.config_.failures_allowed > 1 {
-					*err = "subcommands failed"
-				} else {
-					*err = "subcommand failed"
-				}
-			} else if failures_allowed < b.config_.failures_allowed {
-				*err = "cannot make progress due to previous errors"
-			} else {
-				*err = "stuck [this is a bug]"
+		// See if we can reap any finished commands.
+		if pending_commands != 0 {
+			var result Result
+			if !b.command_runner_.WaitForCommand(&result) || result.status == ExitInterrupted {
+				b.Cleanup()
+				b.status_.BuildFinished()
+				*err = "interrupted by user"
+				return false
 			}
 
-			return false
+			pending_commands--
+			if !b.FinishCommand(&result, err) {
+				b.Cleanup()
+				b.status_.BuildFinished()
+				return false
+			}
+
+			if !result.success() {
+				if failures_allowed != 0 {
+					failures_allowed--
+				}
+			}
+
+			// We made some progress; start the main loop over.
+			continue
 		}
-	*/
+
+		// If we get here, we cannot make any more progress.
+		b.status_.BuildFinished()
+		if failures_allowed == 0 {
+			if b.config_.failures_allowed > 1 {
+				*err = "subcommands failed"
+			} else {
+				*err = "subcommand failed"
+			}
+		} else if failures_allowed < b.config_.failures_allowed {
+			*err = "cannot make progress due to previous errors"
+		} else {
+			*err = "stuck [this is a bug]"
+		}
+
+		return false
+	}
 	b.status_.BuildFinished()
 	return true
 }
