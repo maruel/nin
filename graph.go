@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
+	"sort"
 )
 
 // Information about a node in the dependency graph: the file, whether
@@ -211,6 +212,8 @@ func (e *Edge) rule() *Rule {
 func (e *Edge) pool() *Pool {
 	return e.pool_
 }
+
+// If this ever gets changed, update DelayedEdgesSet to take this into account.
 func (e *Edge) weight() int {
 	return 1
 }
@@ -227,16 +230,57 @@ func (e *Edge) is_implicit_out(index int) bool {
 	return index >= len(e.outputs_)-e.implicit_outs_
 }
 
-/*
-type EdgeCmp struct {
-  bool operator()(const Edge* a, const Edge* b) const {
-    return a.id_ < b.id_
-  }
-}
-type EdgeSet map[Edge*, EdgeCmp]struct{}
-*/
+//type EdgeSet map[*Edge]struct{}
 
-type EdgeSet map[*Edge]struct{}
+type EdgeSet struct {
+	edges  map[*Edge]struct{}
+	dirty  bool
+	sorted []*Edge
+}
+
+func NewEdgeSet() *EdgeSet {
+	return &EdgeSet{
+		edges: make(map[*Edge]struct{}),
+	}
+}
+
+func (e *EdgeSet) IsEmpty() bool {
+	return len(e.edges) == 0
+}
+
+func (e *EdgeSet) Add(ed *Edge) {
+	e.edges[ed] = struct{}{}
+	e.dirty = true
+}
+
+func (e *EdgeSet) Pop() *Edge {
+	e.recreate()
+	if len(e.sorted) == 0 {
+		return nil
+	}
+	// Do not set dirty.
+	ed := e.sorted[len(e.sorted)-1]
+	delete(e.edges, ed)
+	return ed
+}
+
+func (e *EdgeSet) recreate() {
+	if e.dirty {
+		// TODO(maruel): cap().
+		if len(e.sorted) < len(e.edges) {
+			e.sorted = make([]*Edge, len(e.edges))
+		}
+		i := 0
+		for k := range e.edges {
+			e.sorted[i] = k
+		}
+		// Sort in reverse order, so that Pop() removes the last item.
+		sort.Slice(e.sorted, func(i, j int) bool {
+			return e.sorted[i].id_ >= e.sorted[j].id_
+		})
+		e.dirty = false
+	}
+}
 
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.

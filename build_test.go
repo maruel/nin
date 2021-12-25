@@ -77,7 +77,7 @@ func TestPlanTest_Basic(t *testing.T) {
 
 	edge := p.plan_.FindWork()
 	if edge == nil {
-		t.Fatal("expected true")
+		t.Fatalf("plan is inconsistent: %#v", p.plan_)
 	}
 	if "in" != edge.inputs_[0].path() {
 		t.Fatal("expected equal")

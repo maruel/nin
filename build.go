@@ -14,6 +14,8 @@
 
 package ginja
 
+import "fmt"
+
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
 type Plan struct {
@@ -23,7 +25,7 @@ type Plan struct {
 	// we want for the edge.
 	want_ map[*Edge]Want
 
-	ready_ EdgeSet
+	ready_ *EdgeSet
 
 	builder_ *Builder
 
@@ -37,7 +39,7 @@ type Plan struct {
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
 	if p.wanted_edges_ > 0 && p.command_edges_ > 0 {
-		if len(p.ready_) == 0 {
+		if p.ready_.IsEmpty() {
 			panic("M-A")
 		}
 		return true
@@ -194,7 +196,7 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
 func NewPlan(builder *Builder) Plan {
 	return Plan{
 		want_:    map[*Edge]Want{},
-		ready_:   EdgeSet{},
+		ready_:   NewEdgeSet(),
 		builder_: builder,
 	}
 }
@@ -204,7 +206,7 @@ func (p *Plan) Reset() {
 	p.command_edges_ = 0
 	p.wanted_edges_ = 0
 	p.want_ = map[*Edge]Want{}
-	p.ready_ = EdgeSet{}
+	p.ready_ = NewEdgeSet()
 }
 
 // Add a target to our plan (including all its dependencies).
@@ -236,8 +238,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 	want, ok := p.want_[edge]
 	if !ok {
 		p.want_[edge] = kWantNothing
-	}
-	if len(dyndep_walk) != 0 && want == kWantToFinish {
+	} else if len(dyndep_walk) != 0 && want == kWantToFinish {
 		return false // Don't need to do anything with already-scheduled edge.
 	}
 
@@ -245,6 +246,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 	// mark it now.
 	if node.dirty() && want == kWantNothing {
 		want = kWantToStart
+		p.want_[edge] = want
 		p.EdgeWanted(edge)
 		if len(dyndep_walk) == 0 && edge.AllInputsReady() {
 			p.want_[edge] = p.ScheduleWork(edge, want)
@@ -255,7 +257,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		dyndep_walk[edge] = struct{}{}
 	}
 
-	if !ok {
+	if ok {
 		return true // We've already processed the inputs.
 	}
 
@@ -277,11 +279,7 @@ func (p *Plan) EdgeWanted(edge *Edge) {
 // Pop a ready edge off the queue of edges to build.
 // Returns NULL if there's no work to do.
 func (p *Plan) FindWork() *Edge {
-	for e := range p.ready_ {
-		delete(p.ready_, e)
-		return e
-	}
-	return nil
+	return p.ready_.Pop()
 }
 
 // Submits a ready edge as a candidate for execution.
@@ -304,10 +302,10 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
 	pool := edge.pool()
 	if pool.ShouldDelayEdge() {
 		pool.DelayEdge(edge)
-		pool.RetrieveReadyEdges(&p.ready_)
+		pool.RetrieveReadyEdges(p.ready_)
 	} else {
 		pool.EdgeScheduled(edge)
-		p.ready_[edge] = struct{}{}
+		p.ready_.Add(edge)
 	}
 	return want
 }
@@ -327,7 +325,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	if directly_wanted {
 		edge.pool().EdgeFinished(edge)
 	}
-	edge.pool().RetrieveReadyEdges(&p.ready_)
+	edge.pool().RetrieveReadyEdges(p.ready_)
 
 	// The rest of this function only applies to successful commands.
 	if result != kEdgeSucceeded {
@@ -584,14 +582,20 @@ func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
 
 // Dumps the current state of the plan.
 func (p *Plan) Dump() {
-	printf("pending: %d\n", len(p.want_))
+	fmt.Printf("pending: %d\n", len(p.want_))
 	for e, w := range p.want_ {
 		if w != kWantNothing {
 			printf("want ")
 		}
 		e.Dump("")
 	}
-	printf("ready: %d\n", len(p.ready_))
+	// TODO(maruel): Uses inner knowledge
+	fmt.Printf("ready:\n")
+	p.ready_.recreate()
+	for _, it := range p.ready_.sorted {
+		fmt.Printf("\t")
+		it.Dump("")
+	}
 }
 
 type RealCommandRunner struct {

@@ -14,6 +14,8 @@
 
 package ginja
 
+import "fmt"
+
 // A pool for delayed edges.
 // Pools are scoped to a State. Edges within a State will share Pools. A Pool
 // will keep a count of the total 'weight' of the currently scheduled edges. If
@@ -30,14 +32,14 @@ type Pool struct {
 	current_use_ int
 	depth_       int
 
-	delayed_ DelayedEdges
+	delayed_ *DelayedEdges
 }
 
 func NewPool(name string, depth int) *Pool {
 	return &Pool{
 		name_:    name,
 		depth_:   depth,
-		delayed_: DelayedEdges{},
+		delayed_: NewEdgeSet(),
 	}
 }
 
@@ -60,18 +62,9 @@ func (p *Pool) ShouldDelayEdge() bool {
 	return p.depth_ != 0
 }
 
-/*
-type WeightedEdgeCmp struct {
-  bool operator()(const Edge* a, const Edge* b) const {
-    if (!a) return b
-    if (!b) return false
-    int weight_diff = a.weight() - b.weight()
-    return ((weight_diff < 0) || (weight_diff == 0 && EdgeCmp()(a, b)))
-  }
-  }
-*/
-//type DelayedEdges map[Edge*, WeightedEdgeCmp]struct{}
-type DelayedEdges map[*Edge]struct{}
+// The C++ code checks for Edge.weight() before checking for the id. In
+// practice weight is hardcoded to 1.
+type DelayedEdges = EdgeSet
 
 // Global state (file status) for a single run.
 type State struct {
@@ -112,21 +105,21 @@ func (p *Pool) DelayEdge(edge *Edge) {
 	if p.depth_ == 0 {
 		panic("M-A")
 	}
-	p.delayed_[edge] = struct{}{}
+	p.delayed_.Add(edge)
 }
 
 // Pool will add zero or more edges to the ready_queue
 func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
 	panic("TODO")
 	/*
-		it := p.delayed_.begin()
-		for it != p.delayed_.end() {
-			edge := *it
+		it := 0
+		for it != len(p.delayed_) {
+			edge := p.delayed_[it]
 			if p.current_use_+edge.weight() > p.depth_ {
 				break
 			}
-			ready_queue.insert(edge)
-			EdgeScheduled(*edge)
+			ready_queue[edge] = struct{}{}
+			p.EdgeScheduled(edge)
 			it++
 		}
 		p.delayed_.erase(p.delayed_.begin(), it)
@@ -135,9 +128,11 @@ func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
 
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
-	printf("%s (%d/%d) ->\n", p.name_, p.current_use_, p.depth_)
-	for it := range p.delayed_ {
-		printf("\t")
+	fmt.Printf("%s (%d/%d) ->\n", p.name_, p.current_use_, p.depth_)
+	// TODO(maruel): Use inner knowledge
+	p.delayed_.recreate()
+	for _, it := range p.delayed_.sorted {
+		fmt.Printf("\t")
 		it.Dump("")
 	}
 }
@@ -293,10 +288,10 @@ func (s *State) Dump() {
 				s = "dirty"
 			}
 		}
-		printf("%s %s [id:%d]\n", node.path(), s, node.id())
+		fmt.Printf("%s %s [id:%d]\n", node.path(), s, node.id())
 	}
 	if len(s.pools_) != 0 {
-		printf("resource_pools:\n")
+		fmt.Printf("resource_pools:\n")
 		for _, p := range s.pools_ {
 			if p.name() != "" {
 				p.Dump()
