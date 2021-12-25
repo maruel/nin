@@ -14,10 +14,14 @@
 
 package ginja
 
-import "os"
+import (
+	"io"
+	"os"
+)
 
 // Can answer questions about the manifest for the BuildLog.
-type BuildLogUser struct {
+type BuildLogUser interface {
+	IsPathDead(s string) bool
 }
 
 // Store a log of every command ran for every build.
@@ -52,8 +56,8 @@ type LogEntry struct {
 //type Entries ExternalStringHashMap<LogEntry*>::Type
 type Entries map[string]*LogEntry
 
-func (b *BuildLog) entries() *Entries {
-	return &b.entries_
+func (b *BuildLog) entries() Entries {
+	return b.entries_
 }
 
 // On AIX, inttypes.h gets indirectly included by build_log.h.
@@ -131,61 +135,64 @@ NewLogEntry(string output, uint64_t command_hash, int start_time, int end_time, 
     start_time(start_time), end_time(end_time), mtime(restat_mtime)
 {}
 
-NewBuildLog()
-  : log_file_(nil), needs_recompaction_(false) {}
-
 BuildLog::~BuildLog() {
   Close()
 }
+*/
 
 // Prepares writing to the log file without actually opening it - that will
 // happen when/if it's needed
-func (b *BuildLog) OpenForWrite(path string, user *BuildLogUser, err *string) bool {
-  if b.needs_recompaction_ {
-    if !Recompact(path, user, err) {
-      return false
-    }
-  }
+func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) bool {
+	panic("TODO")
+	/*
+	  if b.needs_recompaction_ {
+	    if !Recompact(path, user, err) {
+	      return false
+	    }
+	  }
 
-  if !!b.log_file_ { panic("oops") }
-  b.log_file_path_ = path  // we don't actually open the file right now, but will
-                          // do so on the first write attempt
-  return true
+	  if !!b.log_file_ { panic("oops") }
+	  b.log_file_path_ = path  // we don't actually open the file right now, but will
+	                          // do so on the first write attempt
+	*/
+	return true
 }
 
 func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime TimeStamp) bool {
-  command := edge.EvaluateCommand(true)
-  command_hash := LogEntry::HashCommand(command)
-  for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-    path := (*out).path()
-    i := b.entries_.find(path)
-    var log_entry *LogEntry
-    if i != b.entries_.end() {
-      log_entry = i.second
-    } else {
-      log_entry = new LogEntry(path)
-      b.entries_.insert(Entries::value_type(log_entry.output, log_entry))
-    }
-    log_entry.command_hash = command_hash
-    log_entry.start_time = start_time
-    log_entry.end_time = end_time
-    log_entry.mtime = mtime
+	panic("TODO")
+	/*
+	  command := edge.EvaluateCommand(true)
+	  command_hash := LogEntry::HashCommand(command)
+	  for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
+	    path := (*out).path()
+	    i := b.entries_.find(path)
+	    var log_entry *LogEntry
+	    if i != b.entries_.end() {
+	      log_entry = i.second
+	    } else {
+	      log_entry = new LogEntry(path)
+	      b.entries_[log_entry.output] = log_entry
+	    }
+	    log_entry.command_hash = command_hash
+	    log_entry.start_time = start_time
+	    log_entry.end_time = end_time
+	    log_entry.mtime = mtime
 
-    if !OpenForWriteIfNeeded() {
-      return false
-    }
-    if b.log_file_ {
-      if !WriteEntry(b.log_file_, *log_entry) {
-        return false
-      }
-      if fflush(b.log_file_) != 0 {
-          return false
-      }
-    }
-  }
-  return true
+	    if !OpenForWriteIfNeeded() {
+	      return false
+	    }
+	    if b.log_file_ {
+	      if !WriteEntry(b.log_file_, *log_entry) {
+	        return false
+	      }
+	      if fflush(b.log_file_) != 0 {
+	          return false
+	      }
+	    }
+	  }
+	*/
+	return true
 }
-*/
 
 func (b *BuildLog) Close() {
 	b.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
@@ -280,241 +287,249 @@ func (l *LineReader) ReadLine(line_start *char*, line_end *char*) bool {
   *line_end = l.line_end_
   return true
 }
+*/
 
 // Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
-  METRIC_RECORD(".ninja_log load")
-  FILE* file = fopen(path, "r")
-  if file == nil {
-    if errno == ENOENT {
-      return LOAD_NOT_FOUND
-    }
-    *err = strerror(errno)
-    return LOAD_ERROR
-  }
+	METRIC_RECORD(".ninja_log load")
+	panic("TODO")
+	/*
+	  FILE* file = fopen(path, "r")
+	  if file == nil {
+	    if errno == ENOENT {
+	      return LOAD_NOT_FOUND
+	    }
+	    *err = strerror(errno)
+	    return LOAD_ERROR
+	  }
 
-  log_version := 0
-  unique_entry_count := 0
-  total_entry_count := 0
+	  log_version := 0
+	  unique_entry_count := 0
+	  total_entry_count := 0
 
-  LineReader reader(file)
-  line_start := 0
-  line_end := 0
-  for reader.ReadLine(&line_start, &line_end) {
-    if !log_version {
-      sscanf(line_start, BuildLogFileSignature, &log_version)
+	  LineReader reader(file)
+	  line_start := 0
+	  line_end := 0
+	  for reader.ReadLine(&line_start, &line_end) {
+	    if !log_version {
+	      sscanf(line_start, BuildLogFileSignature, &log_version)
 
-      if log_version < BuildLogOldestSupportedVersion {
-        *err = ("build log version invalid, perhaps due to being too old; starting over")
-        fclose(file)
-        unlink(path)
-        // Don't report this as a failure.  An empty build log will cause
-        // us to rebuild the outputs anyway.
-        return LOAD_SUCCESS
-      }
-    }
+	      if log_version < BuildLogOldestSupportedVersion {
+	        *err = ("build log version invalid, perhaps due to being too old; starting over")
+	        fclose(file)
+	        unlink(path)
+	        // Don't report this as a failure.  An empty build log will cause
+	        // us to rebuild the outputs anyway.
+	        return LOAD_SUCCESS
+	      }
+	    }
 
-    // If no newline was found in this chunk, read the next.
-    if !line_end {
-      continue
-    }
+	    // If no newline was found in this chunk, read the next.
+	    if !line_end {
+	      continue
+	    }
 
-    const char kFieldSeparator = '\t'
+	    const char kFieldSeparator = '\t'
 
-    start := line_start
-    char* end = (char*)memchr(start, kFieldSeparator, line_end - start)
-    if end == nil {
-      continue
-    }
-    *end = 0
+	    start := line_start
+	    char* end = (char*)memchr(start, kFieldSeparator, line_end - start)
+	    if end == nil {
+	      continue
+	    }
+	    *end = 0
 
-    int start_time = 0, end_time = 0
-    restat_mtime := 0
+	    int start_time = 0, end_time = 0
+	    restat_mtime := 0
 
-    start_time = atoi(start)
-    start = end + 1
+	    start_time = atoi(start)
+	    start = end + 1
 
-    end = (char*)memchr(start, kFieldSeparator, line_end - start)
-    if end == nil {
-      continue
-    }
-    *end = 0
-    end_time = atoi(start)
-    start = end + 1
+	    end = (char*)memchr(start, kFieldSeparator, line_end - start)
+	    if end == nil {
+	      continue
+	    }
+	    *end = 0
+	    end_time = atoi(start)
+	    start = end + 1
 
-    end = (char*)memchr(start, kFieldSeparator, line_end - start)
-    if end == nil {
-      continue
-    }
-    *end = 0
-    restat_mtime = strtoll(start, nil, 10)
-    start = end + 1
+	    end = (char*)memchr(start, kFieldSeparator, line_end - start)
+	    if end == nil {
+	      continue
+	    }
+	    *end = 0
+	    restat_mtime = strtoll(start, nil, 10)
+	    start = end + 1
 
-    end = (char*)memchr(start, kFieldSeparator, line_end - start)
-    if end == nil {
-      continue
-    }
-    string output = string(start, end - start)
+	    end = (char*)memchr(start, kFieldSeparator, line_end - start)
+	    if end == nil {
+	      continue
+	    }
+	    string output = string(start, end - start)
 
-    start = end + 1
-    end = line_end
+	    start = end + 1
+	    end = line_end
 
-    var entry *LogEntry
-    i := b.entries_.find(output)
-    if i != b.entries_.end() {
-      entry = i.second
-    } else {
-      entry = new LogEntry(output)
-      b.entries_.insert(Entries::value_type(entry.output, entry))
-      unique_entry_count++
-    }
-    total_entry_count++
+	    var entry *LogEntry
+	    i := b.entries_.find(output)
+	    if i != b.entries_.end() {
+	      entry = i.second
+	    } else {
+	      entry = new LogEntry(output)
+	      b.entries_[entry.output] = entry
+	      unique_entry_count++
+	    }
+	    total_entry_count++
 
-    entry.start_time = start_time
-    entry.end_time = end_time
-    entry.mtime = restat_mtime
-    if log_version >= 5 {
-      char c = *end; *end = '\0'
-      entry.command_hash = (uint64_t)strtoull(start, nil, 16)
-      *end = c
-    } else {
-      entry.command_hash = LogEntry::HashCommand(string(start, end - start))
-    }
-  }
-  fclose(file)
+	    entry.start_time = start_time
+	    entry.end_time = end_time
+	    entry.mtime = restat_mtime
+	    if log_version >= 5 {
+	      char c = *end; *end = '\0'
+	      entry.command_hash = (uint64_t)strtoull(start, nil, 16)
+	      *end = c
+	    } else {
+	      entry.command_hash = LogEntry::HashCommand(string(start, end - start))
+	    }
+	  }
+	  fclose(file)
 
-  if !line_start {
-    return LOAD_SUCCESS // file was empty
-  }
+	  if !line_start {
+	    return LOAD_SUCCESS // file was empty
+	  }
 
-  // Decide whether it's time to rebuild the log:
-  // - if we're upgrading versions
-  // - if it's getting large
-  kMinCompactionEntryCount := 100
-  kCompactionRatio := 3
-  if log_version < BuildLogCurrentVersion {
-    b.needs_recompaction_ = true
-  } else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
-    b.needs_recompaction_ = true
-  }
+	  // Decide whether it's time to rebuild the log:
+	  // - if we're upgrading versions
+	  // - if it's getting large
+	  kMinCompactionEntryCount := 100
+	  kCompactionRatio := 3
+	  if log_version < BuildLogCurrentVersion {
+	    b.needs_recompaction_ = true
+	  } else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count * kCompactionRatio {
+	    b.needs_recompaction_ = true
+	  }
+	*/
 
-  return LOAD_SUCCESS
+	return LOAD_SUCCESS
 }
-*/
 
 // Lookup a previously-run command by its output path.
 func (b *BuildLog) LookupByOutput(path string) *LogEntry {
 	return b.entries_[path]
 }
 
-/*
 // Serialize an entry into a log file.
-func (b *BuildLog) WriteEntry(f *FILE, entry *LogEntry) bool {
-  return fprintf(f, "%d\t%d\t%" PRId64 "\t%s\t%" PRIx64 "\n", entry.start_time, entry.end_time, entry.mtime, entry.output, entry.command_hash) > 0
+func (b *BuildLog) WriteEntry(f io.Writer, entry *LogEntry) bool {
+	panic("TODO")
+	/*
+	   return fprintf(f, "%d\t%d\t%" PRId64 "\t%s\t%" PRIx64 "\n", entry.start_time, entry.end_time, entry.mtime, entry.output, entry.command_hash) > 0
+	*/
 }
 
 // Rewrite the known log entries, throwing away old data.
-func (b *BuildLog) Recompact(path string, user *BuildLogUser, err *string) bool {
-  METRIC_RECORD(".ninja_log recompact")
+func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
+	METRIC_RECORD(".ninja_log recompact")
 
-  Close()
-  string temp_path = path + ".recompact"
-  FILE* f = fopen(temp_path, "wb")
-  if f == nil {
-    *err = strerror(errno)
-    return false
-  }
+	panic("TODO")
+	/*
+	  Close()
+	  string temp_path = path + ".recompact"
+	  FILE* f = fopen(temp_path, "wb")
+	  if f == nil {
+	    *err = strerror(errno)
+	    return false
+	  }
 
-  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
-    *err = strerror(errno)
-    fclose(f)
-    return false
-  }
+	  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
+	    *err = strerror(errno)
+	    fclose(f)
+	    return false
+	  }
 
-  var dead_outputs []string
-  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
-    if user.IsPathDead(i.first) {
-      dead_outputs.push_back(i.first)
-      continue
-    }
+	  var dead_outputs []string
+	  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
+	    if user.IsPathDead(i.first) {
+	      dead_outputs.push_back(i.first)
+	      continue
+	    }
 
-    if !WriteEntry(f, *i.second) {
-      *err = strerror(errno)
-      fclose(f)
-      return false
-    }
-  }
+	    if !WriteEntry(f, *i.second) {
+	      *err = strerror(errno)
+	      fclose(f)
+	      return false
+	    }
+	  }
 
-  for i := 0; i < dead_outputs.size(); i++ {
-    b.entries_.erase(dead_outputs[i])
-  }
+	  for i := 0; i < dead_outputs.size(); i++ {
+	    b.entries_.erase(dead_outputs[i])
+	  }
 
-  fclose(f)
-  if unlink(path) < 0 {
-    *err = strerror(errno)
-    return false
-  }
+	  fclose(f)
+	  if unlink(path) < 0 {
+	    *err = strerror(errno)
+	    return false
+	  }
 
-  if rename(temp_path, path) < 0 {
-    *err = strerror(errno)
-    return false
-  }
-
-  return true
+	  if rename(temp_path, path) < 0 {
+	    *err = strerror(errno)
+	    return false
+	  }
+	*/
+	return true
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path string, disk_interface *DiskInterface, output_count int, outputs *char*, err *string) bool {
-  METRIC_RECORD(".ninja_log restat")
+func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_count int, outputs []string, err *string) bool {
+	METRIC_RECORD(".ninja_log restat")
+	panic("TODO")
+	/*
+	   Close()
+	   string temp_path = path.AsString() + ".restat"
+	   FILE* f = fopen(temp_path, "wb")
+	   if f == nil {
+	     *err = strerror(errno)
+	     return false
+	   }
 
-  Close()
-  string temp_path = path.AsString() + ".restat"
-  FILE* f = fopen(temp_path, "wb")
-  if f == nil {
-    *err = strerror(errno)
-    return false
-  }
+	   if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
+	     *err = strerror(errno)
+	     fclose(f)
+	     return false
+	   }
+	   for i := b.entries_.begin(); i != b.entries_.end(); i++ {
+	     skip := output_count > 0
+	     for j := 0; j < output_count; j++ {
+	       if i.second.output == outputs[j] {
+	         skip = false
+	         break
+	       }
+	     }
+	     if skip == nil {
+	       mtime := disk_interface.Stat(i.second.output, err)
+	       if mtime == -1 {
+	         fclose(f)
+	         return false
+	       }
+	       i.second.mtime = mtime
+	     }
 
-  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
-    *err = strerror(errno)
-    fclose(f)
-    return false
-  }
-  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
-    skip := output_count > 0
-    for j := 0; j < output_count; j++ {
-      if i.second.output == outputs[j] {
-        skip = false
-        break
-      }
-    }
-    if skip == nil {
-      mtime := disk_interface.Stat(i.second.output, err)
-      if mtime == -1 {
-        fclose(f)
-        return false
-      }
-      i.second.mtime = mtime
-    }
+	     if !WriteEntry(f, *i.second) {
+	       *err = strerror(errno)
+	       fclose(f)
+	       return false
+	     }
+	   }
 
-    if !WriteEntry(f, *i.second) {
-      *err = strerror(errno)
-      fclose(f)
-      return false
-    }
-  }
+	   fclose(f)
+	   if unlink(path.str_) < 0 {
+	     *err = strerror(errno)
+	     return false
+	   }
 
-  fclose(f)
-  if unlink(path.str_) < 0 {
-    *err = strerror(errno)
-    return false
-  }
+	   if rename(temp_path, path.str_) < 0 {
+	     *err = strerror(errno)
+	     return false
+	   }
+	*/
 
-  if rename(temp_path, path.str_) < 0 {
-    *err = strerror(errno)
-    return false
-  }
-
-  return true
+	return true
 }
-*/
