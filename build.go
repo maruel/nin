@@ -415,40 +415,44 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 
 		// If all non-order-only inputs for this edge are now clean,
 		// we might have changed the dirty state of the outputs.
-		panic("TODO")
-		/*
-		   vector<Node*>::iterator begin = (*oe).inputs_.begin(), end = (*oe).inputs_.end() - (*oe).order_only_deps_
-		   if find_if(begin, end, MEM_FN(&Node::dirty)) == end {
-		     // Recompute most_recent_input.
-		     most_recent_input := nil
-		     for i := begin; i != end; i++ {
-		       if !most_recent_input || i.mtime() > most_recent_input.mtime() {
-		         most_recent_input = i
-		       }
-		     }
+		end := len(oe.inputs_) - oe.order_only_deps_
+		found := false
+		for i := 0; i < end; i++ {
+			if oe.inputs_[i].dirty() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Recompute most_recent_input.
+			most_recent_input := -1
+			for i := 0; i != end; i++ {
+				if most_recent_input == -1 || oe.inputs_[i].mtime() > oe.inputs_[most_recent_input].mtime() {
+					most_recent_input = i
+				}
+			}
 
-		     // Now, this edge is dirty if any of the outputs are dirty.
-		     // If the edge isn't dirty, clean the outputs and mark the edge as not
-		     // wanted.
-		     outputs_dirty := false
-		     if !scan.RecomputeOutputsDirty(*oe, most_recent_input, &outputs_dirty, err) {
-		       return false
-		     }
-		     if !outputs_dirty {
-		       for o := (*oe).outputs_.begin(); o != (*oe).outputs_.end(); o++ {
-		         if !CleanNode(scan, *o, err) {
-		           return false
-		         }
-		       }
+			// Now, this edge is dirty if any of the outputs are dirty.
+			// If the edge isn't dirty, clean the outputs and mark the edge as not
+			// wanted.
+			outputs_dirty := false
+			if !scan.RecomputeOutputsDirty(oe, oe.inputs_[most_recent_input], &outputs_dirty, err) {
+				return false
+			}
+			if !outputs_dirty {
+				for _, o := range oe.outputs_ {
+					if !p.CleanNode(scan, o, err) {
+						return false
+					}
+				}
 
-		       want_e.second = kWantNothing
-		       p.wanted_edges_--
-		       if !(*oe).is_phony() {
-		         p.command_edges_--
-		       }
-		     }
-		   }
-		*/
+				p.want_[oe] = kWantNothing
+				p.wanted_edges_--
+				if !oe.is_phony() {
+					p.command_edges_--
+				}
+			}
+		}
 	}
 	return true
 }
@@ -685,43 +689,41 @@ func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log
 	return b
 }
 
+// TODO(maruel): Make sure it's always called where important.
 func (b *Builder) Destructor() {
 	b.Cleanup()
 }
 
 // Clean up after interrupted commands by deleting output files.
 func (b *Builder) Cleanup() {
-	panic("TODO")
-	/*
-		if b.command_runner_.get() {
-			active_edges := b.command_runner_.GetActiveEdges()
-			b.command_runner_.Abort()
+	if b.command_runner_ != nil {
+		active_edges := b.command_runner_.GetActiveEdges()
+		b.command_runner_.Abort()
 
-			for e := active_edges.begin(); e != active_edges.end(); e++ {
-				depfile := (*e).GetUnescapedDepfile()
-				for o := (*e).outputs_.begin(); o != (*e).outputs_.end(); o++ {
-					// Only delete this output if it was actually modified.  This is
-					// important for things like the generator where we don't want to
-					// delete the manifest file if we can avoid it.  But if the rule
-					// uses a depfile, always delete.  (Consider the case where we
-					// need to rebuild an output because of a modified header file
-					// mentioned in a depfile, and the command touches its depfile
-					// but is interrupted before it touches its output file.)
-					err := ""
-					new_mtime := b.disk_interface_.Stat((*o).path(), &err)
-					if new_mtime == -1 { // Log and ignore Stat() errors.
-						b.status_.Error("%s", err)
-					}
-					if !depfile.empty() || (*o).mtime() != new_mtime {
-						b.disk_interface_.RemoveFile((*o).path())
-					}
+		for _, e := range active_edges {
+			depfile := e.GetUnescapedDepfile()
+			for _, o := range e.outputs_ {
+				// Only delete this output if it was actually modified.  This is
+				// important for things like the generator where we don't want to
+				// delete the manifest file if we can avoid it.  But if the rule
+				// uses a depfile, always delete.  (Consider the case where we
+				// need to rebuild an output because of a modified header file
+				// mentioned in a depfile, and the command touches its depfile
+				// but is interrupted before it touches its output file.)
+				err := ""
+				new_mtime := b.disk_interface_.Stat(o.path(), &err)
+				if new_mtime == -1 { // Log and ignore Stat() errors.
+					b.status_.Error("%s", err)
 				}
-				if len(depfile) != 0 {
-					b.disk_interface_.RemoveFile(depfile)
+				if depfile != "" || o.mtime() != new_mtime {
+					b.disk_interface_.RemoveFile(o.path())
 				}
 			}
+			if len(depfile) != 0 {
+				b.disk_interface_.RemoveFile(depfile)
+			}
 		}
-	*/
+	}
 }
 
 // Add a target to the build, scanning dependencies.

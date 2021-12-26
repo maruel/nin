@@ -2054,7 +2054,6 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 }
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch-implicit-dep-out\n  command = touch $test_dependency ; sleep 1 ; touch $out\n  generator = 1\nbuild out.imp: touch-implicit-dep-out | inimp inimp2\n  test_dependency = inimp\n", ManifestParserOptions{})
 	b.fs_.Create("inimp", "")
@@ -2129,7 +2128,6 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 }
 
 func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch-fail-tick2\n  command = touch-fail-tick2\nbuild out1: touch-fail-tick2 in\n", ManifestParserOptions{})
 
@@ -2247,7 +2245,6 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 }
 
 func TestBuildWithLogTest_RestatTest(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ManifestParserOptions{})
 
@@ -2339,7 +2336,6 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 }
 
 func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	// If a restat rule doesn't create its output, and the output didn't
 	// exist before the rule was run, consider that behavior equivalent
@@ -2391,7 +2387,6 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 }
 
 func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nrule touch\n  command = touch\nbuild out1: true in\nbuild out2 out3: touch out1\nbuild out4: touch out2\n", ManifestParserOptions{})
 
@@ -2518,7 +2513,6 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 }
 
 func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule generate-depfile\n  command = touch $out ; echo \"$out: $test_dependency\" > $depfile\nbuild out: generate-depfile\n  test_dependency = inimp\n  depfile = out.d\n", ManifestParserOptions{})
 	b.fs_.Create("inimp", "")
@@ -2553,19 +2547,14 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 	}
 }
 
-/* TODO(maruel): Add.
-type BuildDryRun struct {
+func NewBuildDryRunTest(t *testing.T) *BuildWithLogTest {
+	b := NewBuildWithLogTest(t)
+	b.config_.dry_run = true
+	return b
 }
-func NewBuildDryRun() BuildDryRun {
-	return BuildDryRun{
-	}
-	{ b.config_.dry_run = true; }
-}
-*/
 
 func TestBuildDryRun_AllCommandsShown(t *testing.T) {
-	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildDryRunTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ManifestParserOptions{})
 
 	b.fs_.Create("out1", "")
@@ -2758,7 +2747,6 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 }
 
 func TestBuildTest_InterruptCleanup(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	b.AssertParse(&b.state_, "rule interrupt\n  command = interrupt\nrule touch-interrupt\n  command = touch-interrupt\nbuild out1: interrupt in1\nbuild out2: touch-interrupt in2\n", ManifestParserOptions{})
 
@@ -3512,7 +3500,6 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 
 // Check that a restat rule generating a header cancels compilations correctly.
 func TestBuildTest_RestatDepfileDependency(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nbuild header.h: true header.in\nbuild out: cat in1\n  depfile = in1.d\n", ManifestParserOptions{}) // Would be "write if out-of-date" in reality
 
@@ -3539,7 +3526,6 @@ func TestBuildTest_RestatDepfileDependency(t *testing.T) {
 // Check that a restat rule generating a header cancels compilations correctly,
 // depslog case.
 func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithDepsLogTest(t)
 	err := ""
 	// Note: in1 was created by the superclass SetUp().
@@ -3822,7 +3808,9 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 }
 
 func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
-	t.Skip("TODO")
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
 	b := NewBuildWithDepsLogTest(t)
 	err := ""
 	manifest := "rule cc\n  command = cc $in\n  depfile = $out.d\n  deps = gcc\nbuild a/b\\c\\d/e/fo$ o.o: cc x\\y/z\\foo.c\n"
@@ -3936,7 +3924,6 @@ func TestBuildTest_RestatMissingDepfile(t *testing.T) {
 // Check that a restat rule doesn't clear an edge if the deps are missing.
 // https://github.com/ninja-build/ninja/issues/603
 func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithDepsLogTest(t)
 	manifest := "rule true\n  command = true\n  restat = 1\nbuild header.h: true header.in\nbuild out: cat header.h\n  deps = gcc\n  depfile = out.d\n" // Would be "write if out-of-date" in reality.
 
@@ -3953,7 +3940,7 @@ func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
 	// Sanity: this rebuild should be NOOP
 	b.RebuildTarget("out", manifest, "build_log", "ninja_deps", nil)
 	if 0 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+		t.Fatalf("Expected no command; %#v", b.command_runner_.commands_ran_)
 	}
 
 	// Touch 'header.in', blank dependencies log (create a different one).

@@ -91,15 +91,15 @@ func MurmurHash64A(data []byte) uint64 {
 	r := 47
 	len2 := uint64(len(data))
 	h := seed ^ (len2 * m)
-	for offset := 0; len2 >= 8; len2 -= 8 {
+	for ; len2 >= 8; len2 -= 8 {
 		// TODO(maruel): Assumes little endian.
-		k := *(*uint64)(unsafe.Pointer(&data[offset]))
+		k := *(*uint64)(unsafe.Pointer(&data[0]))
 		k *= m
 		k ^= k >> r
 		k *= m
 		h ^= k
 		h *= m
-		offset += 8
+		data = data[8:]
 	}
 	switch len2 & 7 {
 	case 7:
@@ -324,6 +324,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		if e != nil {
 			break
 		}
+		line = line[:len(line)-1]
 		if log_version == 0 {
 			_, _ = fmt.Sscanf(line, BuildLogFileSignature, &log_version)
 
@@ -380,7 +381,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		entry.end_time = int32(end_time)
 		entry.mtime = TimeStamp(restat_mtime)
 		if log_version >= 5 {
-			entry.command_hash, _ = strconv.ParseUint(line, 16, 32)
+			entry.command_hash, _ = strconv.ParseUint(line, 16, 64)
 		} else {
 			entry.command_hash = HashCommand(line)
 		}

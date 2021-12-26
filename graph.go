@@ -380,18 +380,6 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 	}
 }
 
-/*
-// Update the |dirty_| state of the given node by inspecting its input edge.
-// Examine inputs, outputs, and command lines to judge whether an edge
-// needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
-// state accordingly.
-// Returns false on failure.
-func (d *DependencyScan) RecomputeDirty(node *Node, err *string) bool {
-	var stack []*Node
-	return d.RecomputeDirty(node, &stack, err)
-}
-*/
-
 // Update the |dirty_| state of the given node by inspecting its input edge.
 // Examine inputs, outputs, and command lines to judge whether an edge
 // needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
