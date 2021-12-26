@@ -667,7 +667,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	c.fs_.Create("out1", "")
 	c.fs_.Create("out2", "")
 
-	var log1 BuildLog
+	log1 := NewBuildLog()
 	err := ""
 	if !log1.OpenForWrite(kTestFilename, c, &err) {
 		t.Fatal("expected true")
@@ -679,7 +679,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	log1.RecordCommand(state.edges_[1], 20, 25, 0)
 	log1.Close()
 
-	var log2 BuildLog
+	log2 := NewBuildLog()
 	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -786,7 +786,7 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	c.fs_.Create("out1", "")
 	c.fs_.Create("out2", "")
 
-	var log1 BuildLog
+	log1 := NewBuildLog()
 	err := ""
 	if !log1.OpenForWrite(kTestFilename, c, &err) {
 		t.Fatal("expected true")
@@ -798,7 +798,7 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	log1.RecordCommand(state.edges_[1], 20, 25, 0)
 	log1.Close()
 
-	var log2 BuildLog
+	log2 := NewBuildLog()
 	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}

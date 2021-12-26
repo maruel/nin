@@ -1034,67 +1034,65 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 }
 
 func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix string, deps_nodes *[]*Node, err *string) bool {
-	panic("TODO")
-	/*
-	   if deps_type == "msvc" {
-	     var parser CLParser
-	     output := ""
-	     if !parser.Parse(result.output, deps_prefix, &output, err) {
-	       return false
-	     }
-	     result.output = output
-	     for i := parser.includes_.begin(); i != parser.includes_.end(); i++ {
-	       // ~0 is assuming that with MSVC-parsed headers, it's ok to always make
-	       // all backslashes (as some of the slashes will certainly be backslashes
-	       // anyway). This could be fixed if necessary with some additional
-	       // complexity in IncludesNormalize::Relativize.
-	       *deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
-	     }
-	   } else if deps_type == "gcc" {
-	     depfile := result.edge.GetUnescapedDepfile()
-	     if len(depfile) == 0 {
-	       *err = string("edge with deps=gcc but no depfile makes no sense")
-	       return false
-	     }
+	if deps_type == "msvc" {
+		parser := NewCLParser()
+		output := ""
+		if !parser.Parse(result.output, deps_prefix, &output, err) {
+			return false
+		}
+		result.output = output
+		for i := range parser.includes_ {
+			// ~0 is assuming that with MSVC-parsed headers, it's ok to always make
+			// all backslashes (as some of the slashes will certainly be backslashes
+			// anyway). This could be fixed if necessary with some additional
+			// complexity in IncludesNormalize::Relativize.
+			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
+		}
+	} else if deps_type == "gcc" {
+		depfile := result.edge.GetUnescapedDepfile()
+		if len(depfile) == 0 {
+			*err = "edge with deps=gcc but no depfile makes no sense"
+			return false
+		}
 
-	     // Read depfile content.  Treat a missing depfile as empty.
-	     content := ""
-	     switch (b.disk_interface_.ReadFile(depfile, &content, err)) {
-	     case Okay:
-	       break
-	     case NotFound:
-	       err = nil
-	       break
-	     case OtherError:
-	       return false
-	     }
-	     if len(content) == 0 {
-	       return true
-	     }
+		// Read depfile content.  Treat a missing depfile as empty.
+		content := ""
+		switch b.disk_interface_.ReadFile(depfile, &content, err) {
+		case Okay:
+			break
+		case NotFound:
+			err = nil
+			break
+		case OtherError:
+			return false
+		}
+		if len(content) == 0 {
+			return true
+		}
 
-	     DepfileParser deps(b.config_.depfile_parser_options)
-	     if !deps.Parse(&content, err) {
-	       return false
-	     }
+		deps := NewDepfileParser(b.config_.depfile_parser_options)
+		// TODO(maruel): Memory copy.
+		if !deps.Parse([]byte(content), err) {
+			return false
+		}
 
-	     // XXX check depfile matches expected output.
-	     deps_nodes.reserve(deps.ins_.size())
-	     for i := deps.ins_.begin(); i != deps.ins_.end(); i++ {
-	       var slash_bits uint64
-	       CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
-	       deps_nodes.push_back(b.state_.GetNode(i, slash_bits))
-	     }
+		// XXX check depfile matches expected output.
+		//deps_nodes.reserve(deps.ins_.size())
+		for _, i := range deps.ins_ {
+			var slash_bits uint64
+			i = CanonicalizePath(i, &slash_bits)
+			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, slash_bits))
+		}
 
-	     if !g_keep_depfile {
-	       if b.disk_interface_.RemoveFile(depfile) < 0 {
-	         *err = string("deleting depfile: ") + strerror(errno) + string("\n")
-	         return false
-	       }
-	     }
-	   } else {
-	     Fatal("unknown deps type '%s'", deps_type)
-	   }
-	*/
+		if !g_keep_depfile {
+			if b.disk_interface_.RemoveFile(depfile) < 0 {
+				*err = "deleting depfile: TODO\n"
+				return false
+			}
+		}
+	} else {
+		Fatal("unknown deps type '%s'", deps_type)
+	}
 	return true
 }
 

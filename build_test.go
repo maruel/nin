@@ -731,43 +731,57 @@ func (b *BuildTest) IsPathDead(s string) bool {
 // State of command_runner_ and logs contents (if specified) ARE MODIFIED.
 // Handy to check for NOOP builds, and higher-level rebuild tests.
 func (b *BuildTest) RebuildTarget(target, manifest, log_path, deps_path string, state *State) {
-	b.t.Skip("TODO")
-	/*
-		State local_state, *pstate = &local_state
-		if state != nil {
-			pstate = state
-		}
-		b.AddCatRule(pstate))
-		b.AssertParse(pstate, manifest)
+	pstate := state
+	if pstate == nil {
+		local_state := NewState()
+		pstate = &local_state
+	}
+	b.AddCatRule(pstate)
+	b.AssertParse(pstate, manifest, ManifestParserOptions{})
 
-		err := ""
-		BuildLog build_log, *pbuild_log = nil
-		if log_path {
-			if !build_log.Load(log_path, &err) { t.Fatal("expected true") }
-			if !build_log.OpenForWrite(log_path, *this, &err) { t.Fatal("expected true") }
-			if "" != err { t.Fatal("expected equal") }
-			pbuild_log = &build_log
+	err := ""
+	var pbuild_log *BuildLog
+	if log_path != "" {
+		build_log := NewBuildLog()
+		if s := build_log.Load(log_path, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
+			b.t.Fatalf("%s = %d: %s", log_path, s, err)
 		}
-
-		DepsLog deps_log, *pdeps_log = nil
-		if deps_path {
-			if deps_log.Load(deps_path, pstate, &err)!=LOAD_SUCCESS { t.Fatal("expected true") }
-			if !deps_log.OpenForWrite(deps_path, &err) { t.Fatal("expected true") }
-			if "" != err { t.Fatal("expected equal") }
-			pdeps_log = &deps_log
+		if !build_log.OpenForWrite(log_path, b, &err) {
+			b.t.Fatal(err)
 		}
-
-		builder:=NewBuilder (pstate, &b.config_, pbuild_log, pdeps_log, &b.fs_, &b.status_, 0)
-		if builder.AddTargetName(target, &err)!=nil { t.Fatal("expected true") }
-
-		b.command_runner_.commands_ran_ = nil
-		builder.command_runner_=&b.command_runner_
-		if !builder.AlreadyUpToDate() {
-			build_res := builder.Build(&err)
-			if !build_res { t.Fatal("expected true") }
+		if "" != err {
+			b.t.Fatal(err)
 		}
-		builder.command_runner_ = nil
-	*/
+		pbuild_log = &build_log
+	}
+
+	var pdeps_log *DepsLog
+	if deps_path != "" {
+		deps_log := NewDepsLog()
+		if s := deps_log.Load(deps_path, pstate, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
+			b.t.Fatalf("%s = %d: %s", deps_path, s, err)
+		}
+		if !deps_log.OpenForWrite(deps_path, &err) {
+			b.t.Fatal("expected true")
+		}
+		if "" != err {
+			b.t.Fatal("expected equal")
+		}
+		pdeps_log = &deps_log
+	}
+
+	builder := NewBuilder(pstate, &b.config_, pbuild_log, pdeps_log, &b.fs_, &b.status_, 0)
+	if builder.AddTargetName(target, &err) == nil {
+		b.t.Fatal(err)
+	}
+
+	b.command_runner_.commands_ran_ = nil
+	builder.command_runner_ = &b.command_runner_
+	if !builder.AlreadyUpToDate() {
+		if !builder.Build(&err) {
+			b.t.Fatal(err)
+		}
+	}
 }
 
 // CommandRunner impl
@@ -963,7 +977,6 @@ func TestBuildTest_OneStep(t *testing.T) {
 }
 
 func TestBuildTest_OneStep2(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Given a target with one dirty input,
 	// we should rebuild the target.
@@ -3747,7 +3760,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 	b.fs_.Create("in1", "")
 	b.fs_.Tick()
 
-	var build_log BuildLog
+	build_log := NewBuildLog()
 
 	{
 		state := NewState()
@@ -3968,6 +3981,7 @@ func TestBuildTest_RestatMissingDepfile(t *testing.T) {
 // Check that a restat rule doesn't clear an edge if the deps are missing.
 // https://github.com/ninja-build/ninja/issues/603
 func TestBuildWithDepsLogTest_RestatMissingDepfileDepslog(t *testing.T) {
+	t.Skip("TODO")
 	b := NewBuildTest(t)
 	manifest := "rule true\n  command = true\n  restat = 1\nbuild header.h: true header.in\nbuild out: cat header.h\n  deps = gcc\n  depfile = out.d\n" // Would be "write if out-of-date" in reality.
 
