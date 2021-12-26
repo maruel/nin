@@ -827,8 +827,8 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 		if len(edge.inputs_) == 0 {
 			f.t.Fatal("oops")
 		}
-		if len(edge.outputs_) == 1 {
-			f.t.Fatal("oops")
+		if len(edge.outputs_) != 1 {
+			f.t.Fatalf("%#v", edge.outputs_)
 		}
 		content := ""
 		err := ""
@@ -4153,7 +4153,6 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// and reject a syntax error in it.
@@ -4177,7 +4176,6 @@ func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can have dependents that do not specify
 	// it as their dyndep binding.
@@ -4215,7 +4213,6 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge.
@@ -4251,7 +4248,6 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge that is already the output of another edge.
@@ -4282,7 +4278,6 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) 
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge that is already the output of another
@@ -4317,7 +4312,6 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) 
 }
 
 func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new input to an edge.
@@ -4355,7 +4349,6 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that one edge has an implicit output that is also an implicit
@@ -4437,19 +4430,15 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	if "cp tmp out" != b.command_runner_.commands_ran_[2] {
 		t.Fatal("expected equal")
 	}
-	t.Skip("TODO")
-	/*
-		if 1 != b.fs_.files_created_.count("tmp.imp") {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.AlreadyUpToDate() {
-			t.Fatal("expected true")
-		}
-	*/
+	if _, ok := b.fs_.files_created_["tmp.imp"]; ok {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.AlreadyUpToDate() {
+		t.Fatal("expected true")
+	}
 }
 
 func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge is actually wanted due to a missing implicit output.
@@ -4523,7 +4512,6 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// and reject a circular dependency.
@@ -4551,7 +4539,6 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
 }
 
 func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildWithLogTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge has a restat binding.
@@ -4617,7 +4604,6 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover a
 	// new input that itself is an output from an edge that has already
@@ -4667,7 +4653,6 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
 }
 
 func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a clean dyndep file can depend on a dirty dyndep file
 	// and be loaded properly after the dirty one is built and loaded.
@@ -4715,7 +4700,6 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
 }
 
 func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that dyndep files can add to an edge new implicit inputs that
 	// correspond to implicit outputs added to other edges by other dyndep
@@ -4761,7 +4745,6 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
 }
 
 func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can discover a new input whose
 	// edge also has a dyndep file that is ready to load immediately.
@@ -4804,7 +4787,6 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
 }
 
 func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can discover a new input whose
 	// edge also has a dyndep file that needs to be built.

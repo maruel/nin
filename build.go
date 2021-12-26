@@ -471,62 +471,53 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	// Starting with those already in the plan, walk newly-reachable portion
 	// of the graph through the dyndep-discovered dependencies.
 
-	panic("TODO")
-	/*
-	  // Find edges in the the build plan for which we have new dyndep info.
-	  var dyndep_roots []DyndepFile::const_iterator
-	  for oe := ddf.begin(); oe != ddf.end(); oe++ {
-	    edge := oe.first
+	// Find edges in the the build plan for which we have new dyndep info.
+	var dyndep_roots []*Edge
+	for edge := range ddf {
+		// If the edge outputs are ready we do not need to consider it here.
+		if edge.outputs_ready() {
+			continue
+		}
 
-	    // If the edge outputs are ready we do not need to consider it here.
-	    if edge.outputs_ready() {
-	      continue
-	    }
+		// If the edge has not been encountered before then nothing already in the
+		// plan depends on it so we do not need to consider the edge yet either.
+		if _, ok := p.want_[edge]; !ok {
+			continue
+		}
 
-	    want_e := p.want_.find(edge)
+		// This edge is already in the plan so queue it for the walk.
+		dyndep_roots = append(dyndep_roots, edge)
+	}
 
-	    // If the edge has not been encountered before then nothing already in the
-	    // plan depends on it so we do not need to consider the edge yet either.
-	    if want_e == p.want_.end() {
-	      continue
-	    }
+	// Walk dyndep-discovered portion of the graph to add it to the build plan.
+	dyndep_walk := map[*Edge]struct{}{}
+	for _, oe := range dyndep_roots {
+		for _, i := range ddf[oe].implicit_inputs_ {
+			if !p.AddSubTarget(i, oe.outputs_[0], err, dyndep_walk) && *err != "" {
+				return false
+			}
+		}
+	}
 
-	    // This edge is already in the plan so queue it for the walk.
-	    dyndep_roots.push_back(oe)
-	  }
+	// Add out edges from this node that are in the plan (just as
+	// NodeFinished would have without taking the dyndep code path).
+	for _, oe := range node.out_edges() {
+		if _, ok := p.want_[oe]; !ok {
+			continue
+		}
+		dyndep_walk[oe] = struct{}{}
+	}
 
-	  // Walk dyndep-discovered portion of the graph to add it to the build plan.
-	  var dyndep_walk map[*Edge]struct{}
-	  for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
-	    oe := *oei
-	    for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
-	      if !AddSubTarget(i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
-	        return false
-	      }
-	    }
-	  }
-
-	  // Add out edges from this node that are in the plan (just as
-	  // NodeFinished would have without taking the dyndep code path).
-	  for oe := node.out_edges().begin(); oe != node.out_edges().end(); oe++ {
-	    want_e := p.want_.find(*oe)
-	    if want_e == p.want_.end() {
-	      continue
-	    }
-	    dyndep_walk.insert(want_e.first)
-	  }
-
-	  // See if any encountered edges are now ready.
-	  for wi := dyndep_walk.begin(); wi != dyndep_walk.end(); wi++ {
-	    want_e := p.want_.find(*wi)
-	    if want_e == p.want_.end() {
-	      continue
-	    }
-	    if !EdgeMaybeReady(want_e, err) {
-	      return false
-	    }
-	  }
-	*/
+	// See if any encountered edges are now ready.
+	for wi := range dyndep_walk {
+		want, ok := p.want_[wi]
+		if !ok {
+			continue
+		}
+		if !p.EdgeMaybeReady(wi, want, err) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -551,7 +542,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// build it if the outputs were not known to be dirty.  With dyndep
 		// information an output is now known to be dirty, so we want the edge.
 		edge := n.in_edge()
-		if edge == nil || !edge.outputs_ready() {
+		if edge == nil || edge.outputs_ready() {
 			panic("M-A")
 		}
 		want_e, ok := p.want_[edge]
