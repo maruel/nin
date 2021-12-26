@@ -16,6 +16,8 @@ package ginja
 
 import (
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"testing"
 )
@@ -373,9 +375,8 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	p.AssertParse(&p.state_, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n", ManifestParserOptions{})
 	// Mark all the out* nodes dirty
 	for i := 0; i < 3; i++ {
-		t.Skip("TODO")
-		//p.GetNode("out" + string(1, '1'+static_cast < char > (i))).MarkDirty()
-		//p.GetNode("outb" + string(1, '1'+static_cast < char > (i))).MarkDirty()
+		p.GetNode(fmt.Sprintf("out%d", i+1)).MarkDirty()
+		p.GetNode(fmt.Sprintf("outb%d", i+1)).MarkDirty()
 	}
 	p.GetNode("allTheThings").MarkDirty()
 
@@ -394,14 +395,13 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		if "in" != edge.inputs_[0].path() {
 			t.Fatal("expected equal")
 		}
-		/*
-			base_name := "outb"
-			if i < 2 {
-				base_name = "out"
-			}
-		*/
-		t.Skip("TODO")
-		//if base_name + string(1 != '1' + (i % 2)), edge.outputs_[0].path() { t.Fatal("expected equal") }
+		base_name := "outb"
+		if i < 2 {
+			base_name = "out"
+		}
+		if want := fmt.Sprintf("%s%d", base_name, 1+(i%2)); want != edge.outputs_[0].path() {
+			t.Fatal(want)
+		}
 	}
 
 	// outb3 is exempt because it has an empty pool
@@ -1236,42 +1236,39 @@ func TestBuildTest_MissingTarget(t *testing.T) {
 }
 
 func TestBuildTest_MakeDirs(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildTest(t)
-		err := ""
+	b := NewBuildTest(t)
+	err := ""
 
-		b.AssertParse(&b.state_, "build subdir\\dir2\\file: cat in1\n", ManifestParserOptions{})
-		if b.builder_.AddTargetName("subdir/dir2/file", &err) == nil {
-			t.Fatal("expected true")
-		}
+	p := filepath.Join("subdir", "dir2", "file")
+	b.AssertParse(&b.state_, "build "+p+": cat in1\n", ManifestParserOptions{})
+	if b.builder_.AddTargetName("subdir/dir2/file", &err) == nil {
+		t.Fatal(err)
+	}
 
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 2 != len(b.fs_.directories_made_) {
-			t.Fatal("expected equal")
-		}
-		if "subdir" != b.fs_.directories_made_[0] {
-			t.Fatal("expected equal")
-		}
-		if "subdir/dir2" != b.fs_.directories_made_[1] {
-			t.Fatal("expected equal")
-		}
-	*/
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 2 != len(b.fs_.directories_made_) {
+		t.Fatalf("%#v", b.fs_.directories_made_)
+	}
+	if _, ok := b.fs_.directories_made_["subdir"]; !ok {
+		t.Fatal("expected equal")
+	}
+	if _, ok := b.fs_.directories_made_["subdir/dir2"]; !ok {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_DepFileMissing(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n, ManifestParserOptions{}", ManifestParserOptions{})
+	b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n", ManifestParserOptions{})
 	b.fs_.Create("foo.c", "")
 
 	if b.builder_.AddTargetName("fo o.o", &err) == nil {
@@ -1289,45 +1286,42 @@ func TestBuildTest_DepFileMissing(t *testing.T) {
 }
 
 func TestBuildTest_DepFileOK(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildTest(t)
-		err := ""
-		orig_edges := len(b.state_.edges_)
-		b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
-		edge := b.state_.edges_.back()
+	b := NewBuildTest(t)
+	err := ""
+	orig_edges := len(b.state_.edges_)
+	b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
+	edge := b.state_.edges_[len(b.state_.edges_)-1]
 
-		b.fs_.Create("foo.c", "")
-		GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
-		b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-		if b.builder_.AddTargetName("foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.fs_.files_read_) {
-			t.Fatal("expected equal")
-		}
-		if "foo.o.d" != b.fs_.files_read_[0] {
-			t.Fatal("expected equal")
-		}
+	b.fs_.Create("foo.c", "")
+	b.GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
+	b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
+	if b.builder_.AddTargetName("foo.o", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.fs_.files_read_) {
+		t.Fatal("expected equal")
+	}
+	if "foo.o.d" != b.fs_.files_read_[0] {
+		t.Fatal("expected equal")
+	}
 
-		// Expect three new edges: one generating foo.o, and two more from
-		// loading the depfile.
-		if orig_edges+3 != len(b.state_.edges_) {
-			t.Fatal("expected equal")
-		}
-		// Expect our edge to now have three inputs: foo.c and two headers.
-		if 3 != len(edge.inputs_) {
-			t.Fatal("expected equal")
-		}
+	// Expect three new edges: one generating foo.o, and two more from
+	// loading the depfile.
+	if orig_edges+3 != len(b.state_.edges_) {
+		t.Fatal("expected equal")
+	}
+	// Expect our edge to now have three inputs: foo.c and two headers.
+	if 3 != len(edge.inputs_) {
+		t.Fatalf("%#v", edge.inputs_)
+	}
 
-		// Expect the command line we generate to only use the original input.
-		if "cc foo.c" != edge.EvaluateCommand() {
-			t.Fatal("expected equal")
-		}
-	*/
+	// Expect the command line we generate to only use the original input.
+	if "cc foo.c" != edge.EvaluateCommand(false) {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_DepFileParseError(t *testing.T) {
@@ -1380,123 +1374,120 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 }
 
 func TestBuildTest_OrderOnlyDeps(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildTest(t)
-		err := ""
-		b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c || otherfile\n", ManifestParserOptions{})
-		edge := b.state_.edges_.back()
+	b := NewBuildTest(t)
+	err := ""
+	b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c || otherfile\n", ManifestParserOptions{})
+	edge := b.state_.edges_[len(b.state_.edges_)-1]
 
-		b.fs_.Create("foo.c", "")
-		b.fs_.Create("otherfile", "")
-		b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-		if b.builder_.AddTargetName("foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+	b.fs_.Create("foo.c", "")
+	b.fs_.Create("otherfile", "")
+	b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
+	if b.builder_.AddTargetName("foo.o", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-		// One explicit, two implicit, one order only.
-		if 4 != len(edge.inputs_) {
-			t.Fatal("expected equal")
-		}
-		if 2 != edge.implicit_deps_ {
-			t.Fatal("expected equal")
-		}
-		if 1 != edge.order_only_deps_ {
-			t.Fatal("expected equal")
-		}
-		// Verify the inputs are in the order we expect
-		// (explicit then implicit then orderonly).
-		if "foo.c" != edge.inputs_[0].path() {
-			t.Fatal("expected equal")
-		}
-		if "blah.h" != edge.inputs_[1].path() {
-			t.Fatal("expected equal")
-		}
-		if "bar.h" != edge.inputs_[2].path() {
-			t.Fatal("expected equal")
-		}
-		if "otherfile" != edge.inputs_[3].path() {
-			t.Fatal("expected equal")
-		}
+	// One explicit, two implicit, one order only.
+	if 4 != len(edge.inputs_) {
+		t.Fatal("expected equal")
+	}
+	if 2 != edge.implicit_deps_ {
+		t.Fatal("expected equal")
+	}
+	if 1 != edge.order_only_deps_ {
+		t.Fatal("expected equal")
+	}
+	// Verify the inputs are in the order we expect
+	// (explicit then implicit then orderonly).
+	if "foo.c" != edge.inputs_[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "blah.h" != edge.inputs_[1].path() {
+		t.Fatal("expected equal")
+	}
+	if "bar.h" != edge.inputs_[2].path() {
+		t.Fatal("expected equal")
+	}
+	if "otherfile" != edge.inputs_[3].path() {
+		t.Fatal("expected equal")
+	}
 
-		// Expect the command line we generate to only use the original input.
-		if "cc foo.c" != edge.EvaluateCommand() {
-			t.Fatal("expected equal")
-		}
+	// Expect the command line we generate to only use the original input.
+	if "cc foo.c" != edge.EvaluateCommand(false) {
+		t.Fatal("expected equal")
+	}
 
-		// explicit dep dirty, expect a rebuild.
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+	// explicit dep dirty, expect a rebuild.
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-		b.fs_.Tick()
+	b.fs_.Tick()
 
-		// Recreate the depfile, as it should have been deleted by the build.
-		b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
+	// Recreate the depfile, as it should have been deleted by the build.
+	b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
 
-		// implicit dep dirty, expect a rebuild.
-		b.fs_.Create("blah.h", "")
-		b.fs_.Create("bar.h", "")
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+	// implicit dep dirty, expect a rebuild.
+	b.fs_.Create("blah.h", "")
+	b.fs_.Create("bar.h", "")
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("foo.o", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-		b.fs_.Tick()
+	b.fs_.Tick()
 
-		// Recreate the depfile, as it should have been deleted by the build.
-		b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
+	// Recreate the depfile, as it should have been deleted by the build.
+	b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
 
-		// order only dep dirty, no rebuild.
-		b.fs_.Create("otherfile", "")
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.AlreadyUpToDate() {
-			t.Fatal("expected true")
-		}
+	// order only dep dirty, no rebuild.
+	b.fs_.Create("otherfile", "")
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("foo.o", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.AlreadyUpToDate() {
+		t.Fatal("expected true")
+	}
 
-		// implicit dep missing, expect rebuild.
-		b.fs_.RemoveFile("bar.h")
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
-	*/
+	// implicit dep missing, expect rebuild.
+	b.fs_.RemoveFile("bar.h")
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("foo.o", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
@@ -1578,48 +1569,48 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 }
 
 func TestBuildTest_DepFileCanonicalize(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildTest(t)
-		err := ""
-		orig_edges := len(b.state_.edges_)
-		b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild gen/stuff\\things/foo.o: cc x\\y/z\\foo.c\n", ManifestParserOptions{})
-		edge := b.state_.edges_.back()
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+	b := NewBuildTest(t)
+	err := ""
+	orig_edges := len(b.state_.edges_)
+	b.AssertParse(&b.state_, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild gen/stuff\\things/foo.o: cc x\\y/z\\foo.c\n", ManifestParserOptions{})
+	edge := b.state_.edges_[len(b.state_.edges_)-1]
 
-		b.fs_.Create("x/y/z/foo.c", "")
-		b.GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
-		// Note, different slashes from manifest.
-		b.fs_.Create("gen/stuff\\things/foo.o.d", "gen\\stuff\\things\\foo.o: blah.h bar.h\n")
-		if b.builder_.AddTargetName("gen/stuff/things/foo.o", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.fs_.files_read_) {
-			t.Fatal("expected equal")
-		}
-		// The depfile path does not get Canonicalize as it seems unnecessary.
-		if "gen/stuff\\things/foo.o.d" != b.fs_.files_read_[0] {
-			t.Fatal("expected equal")
-		}
+	b.fs_.Create("x/y/z/foo.c", "")
+	b.GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
+	// Note, different slashes from manifest.
+	b.fs_.Create("gen/stuff\\things/foo.o.d", "gen\\stuff\\things\\foo.o: blah.h bar.h\n")
+	if b.builder_.AddTargetName("gen/stuff/things/foo.o", &err) == nil {
+		t.Fatal(err)
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.fs_.files_read_) {
+		t.Fatal("expected equal")
+	}
+	// The depfile path does not get Canonicalize as it seems unnecessary.
+	if "gen/stuff\\things/foo.o.d" != b.fs_.files_read_[0] {
+		t.Fatal("expected equal")
+	}
 
-		// Expect three new edges: one generating foo.o, and two more from
-		// loading the depfile.
-		if orig_edges+3 != len(b.state_.edges_) {
-			t.Fatal("expected equal")
-		}
-		// Expect our edge to now have three inputs: foo.c and two headers.
-		if 3 != len(edge.inputs_) {
-			t.Fatal("expected equal")
-		}
+	// Expect three new edges: one generating foo.o, and two more from
+	// loading the depfile.
+	if orig_edges+3 != len(b.state_.edges_) {
+		t.Fatal("expected equal")
+	}
+	// Expect our edge to now have three inputs: foo.c and two headers.
+	if 3 != len(edge.inputs_) {
+		t.Fatal("expected equal")
+	}
 
-		// Expect the command line we generate to only use the original input, and
-		// using the slashes from the manifest.
-		if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() {
-			t.Fatal("expected equal")
-		}
-	*/
+	// Expect the command line we generate to only use the original input, and
+	// using the slashes from the manifest.
+	if "cc x\\y/z\\foo.c" != edge.EvaluateCommand(false) {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_Phony(t *testing.T) {
@@ -2027,22 +2018,22 @@ func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
 	}
 }
 
-/*
 type BuildWithLogTest struct {
+	*BuildTest
 	build_log_ BuildLog
 }
 
-func NewBuildWithLogTest() BuildWithLogTest {
-	return BuildWithLogTest{}
-	{
-		b.builder_.SetBuildLog(&build_log_)
+func NewBuildWithLogTest(t *testing.T) *BuildWithLogTest {
+	b := &BuildWithLogTest{
+		BuildTest:  NewBuildTest(t),
+		build_log_: NewBuildLog(),
 	}
+	b.builder_.SetBuildLog(&b.build_log_)
+	return b
 }
-*/
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
-	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch\n  command = touch $out\n  generator = 1\nbuild out.imp: touch | in\n", ManifestParserOptions{})
 	b.fs_.Create("out.imp", "")
 	b.fs_.Tick()
@@ -2064,7 +2055,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch-implicit-dep-out\n  command = touch $test_dependency ; sleep 1 ; touch $out\n  generator = 1\nbuild out.imp: touch-implicit-dep-out | inimp inimp2\n  test_dependency = inimp\n", ManifestParserOptions{})
 	b.fs_.Create("inimp", "")
 	b.fs_.Create("out.imp", "")
@@ -2105,8 +2096,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 }
 
 func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
-	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule cc\n  command = cc\nbuild out1: cc in\n", ManifestParserOptions{})
 
 	// Create input/output that would be considered up to date when
@@ -2140,7 +2130,7 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 
 func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch-fail-tick2\n  command = touch-fail-tick2\nbuild out1: touch-fail-tick2 in\n", ManifestParserOptions{})
 
 	err := ""
@@ -2209,8 +2199,7 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 }
 
 func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
-	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule touch\n  command = touch\nbuild out1: touch\nbuild out2: touch in\n", ManifestParserOptions{})
 
 	err := ""
@@ -2259,7 +2248,7 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
 func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ManifestParserOptions{})
 
 	b.fs_.Create("out1", "")
@@ -2351,7 +2340,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 
 func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	// If a restat rule doesn't create its output, and the output didn't
 	// exist before the rule was run, consider that behavior equivalent
 	// to a rule that doesn't modify its existent output file.
@@ -2403,7 +2392,7 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 
 func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule true\n  command = true\n  restat = 1\nrule touch\n  command = touch\nbuild out1: true in\nbuild out2 out3: touch out1\nbuild out4: touch out2\n", ManifestParserOptions{})
 
 	// Create the necessary files
@@ -2459,7 +2448,7 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	t.Skip("TODO")
 	/*
-		b := NewBuildTest(t)
+		b := NewBuildWithLogTest(t)
 		b.AssertParse(&b.state_, "rule true\n  command = true\n  depfile = $out.d\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ManifestParserOptions{})
 
 		// Create all necessary files
@@ -2530,7 +2519,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
 func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	b.AssertParse(&b.state_, "rule generate-depfile\n  command = touch $out ; echo \"$out: $test_dependency\" > $depfile\nbuild out: generate-depfile\n  test_dependency = inimp\n  depfile = out.d\n", ManifestParserOptions{})
 	b.fs_.Create("inimp", "")
 	b.fs_.Tick()
@@ -2706,65 +2695,65 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	t.Skip("TODO")
 	/*
-		b := NewBuildTest(t)
-		b.AssertParse(&b.state_, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ManifestParserOptions{})
+		b := NewBuildWithLogTest(t)
+			b.AssertParse(&b.state_, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ManifestParserOptions{})
 
-		b.fs_.Create("out", "")
-		b.fs_.Tick()
-		b.fs_.Create("in", "")
+			b.fs_.Create("out", "")
+			b.fs_.Tick()
+			b.fs_.Create("in", "")
 
-		err := ""
-		if b.builder_.AddTargetName("out", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+			err := ""
+			if b.builder_.AddTargetName("out", &err) == nil {
+				t.Fatal("expected true")
+			}
+			if "" != err {
+				t.Fatal("expected equal")
+			}
 
-		// 1. Build for the 1st time (-> populate log)
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+			// 1. Build for the 1st time (-> populate log)
+			if !b.builder_.Build(&err) {
+				t.Fatal("expected true")
+			}
+			if 1 != len(b.command_runner_.commands_ran_) {
+				t.Fatal("expected equal")
+			}
 
-		// 2. Build again (no change)
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("out", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.AlreadyUpToDate() {
-			t.Fatal("expected true")
-		}
+			// 2. Build again (no change)
+			b.command_runner_.commands_ran_ = nil
+			b.state_.Reset()
+			if b.builder_.AddTargetName("out", &err) == nil {
+				t.Fatal("expected true")
+			}
+			if "" != err {
+				t.Fatal("expected equal")
+			}
+			if !b.builder_.AlreadyUpToDate() {
+				t.Fatal("expected true")
+			}
 
-		// 3. Alter the entry in the logfile
-		// (to simulate a change in the command line between 2 builds)
-		log_entry := build_log_.LookupByOutput("out")
-		if !nil != log_entry {
-			t.Fatal("expected true")
-		}
-		AssertHash("cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash)
-		log_entry.command_hash++ // Change the command hash to something else.
-		// Now expect the target to be rebuilt
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("out", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+			// 3. Alter the entry in the logfile
+			// (to simulate a change in the command line between 2 builds)
+			log_entry := build_log_.LookupByOutput("out")
+			if !nil != log_entry {
+				t.Fatal("expected true")
+			}
+			AssertHash("cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash)
+			log_entry.command_hash++ // Change the command hash to something else.
+			// Now expect the target to be rebuilt
+			b.command_runner_.commands_ran_ = nil
+			b.state_.Reset()
+			if b.builder_.AddTargetName("out", &err) == nil {
+				t.Fatal("expected true")
+			}
+			if "" != err {
+				t.Fatal("expected equal")
+			}
+			if !b.builder_.Build(&err) {
+				t.Fatal("expected true")
+			}
+			if 1 != len(b.command_runner_.commands_ran_) {
+				t.Fatal("expected equal")
+			}
 	*/
 }
 
@@ -3691,36 +3680,33 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 
-		t.Skip("TODO")
-		/*
-			edge := state.edges_.back()
+		edge := state.edges_[len(state.edges_)-1]
 
-			state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
-			if builder.AddTargetName("fo o.o", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
+		state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
+		if builder.AddTargetName("fo o.o", &err) == nil {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
 
-			// Expect three new edges: one generating fo o.o, and two more from
-			// loading the depfile.
-			if 3 != len(state.edges_) {
-				t.Fatal("expected equal")
-			}
-			// Expect our edge to now have three inputs: foo.c and two headers.
-			if 3 != len(edge.inputs_) {
-				t.Fatal("expected equal")
-			}
+		// Expect three new edges: one generating fo o.o, and two more from
+		// loading the depfile.
+		if 3 != len(state.edges_) {
+			t.Fatal("expected equal")
+		}
+		// Expect our edge to now have three inputs: foo.c and two headers.
+		if 3 != len(edge.inputs_) {
+			t.Fatal("expected equal")
+		}
 
-			// Expect the command line we generate to only use the original input.
-			if "cc foo.c" != edge.EvaluateCommand() {
-				t.Fatal("expected equal")
-			}
+		// Expect the command line we generate to only use the original input.
+		if "cc foo.c" != edge.EvaluateCommand(false) {
+			t.Fatal("expected equal")
+		}
 
-			deps_log.Close()
-			builder.command_runner_ = nil
-		*/
+		deps_log.Close()
+		builder.command_runner_ = nil
 	}
 }
 
@@ -3895,37 +3881,34 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 
-		t.Skip("TODO")
-		/*
-			edge := state.edges_.back()
+		edge := state.edges_[len(state.edges_)-1]
 
-			state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
-			if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
+		state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
+		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
 
-			// Expect three new edges: one generating fo o.o, and two more from
-			// loading the depfile.
-			if 3 != len(state.edges_) {
-				t.Fatal("expected equal")
-			}
-			// Expect our edge to now have three inputs: foo.c and two headers.
-			if 3 != len(edge.inputs_) {
-				t.Fatal("expected equal")
-			}
+		// Expect three new edges: one generating fo o.o, and two more from
+		// loading the depfile.
+		if 3 != len(state.edges_) {
+			t.Fatal("expected equal")
+		}
+		// Expect our edge to now have three inputs: foo.c and two headers.
+		if 3 != len(edge.inputs_) {
+			t.Fatal("expected equal")
+		}
 
-			// Expect the command line we generate to only use the original input.
-			// Note, slashes from manifest, not .d.
-			if "cc x\\y/z\\foo.c" != edge.EvaluateCommand() {
-				t.Fatal("expected equal")
-			}
+		// Expect the command line we generate to only use the original input.
+		// Note, slashes from manifest, not .d.
+		if "cc x\\y/z\\foo.c" != edge.EvaluateCommand(false) {
+			t.Fatal("expected equal")
+		}
 
-			deps_log.Close()
-			builder.command_runner_ = nil
-		*/
+		deps_log.Close()
+		builder.command_runner_ = nil
 	}
 }
 
@@ -4582,7 +4565,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
 
 func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	t.Skip("TODO")
-	b := NewBuildTest(t)
+	b := NewBuildWithLogTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge has a restat binding.
 	b.AssertParse(&b.state_, "rule true\n  command = true\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out1: true in || dd\n  dyndep = dd\nbuild out2: cat out1\n", ManifestParserOptions{})

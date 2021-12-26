@@ -110,6 +110,8 @@ func VerifyGraph(t *testing.T, state *State) {
 // of disk state.  It also logs file accesses and directory creations
 // so it can be used by tests to verify disk access patterns.
 type VirtualFileSystem struct {
+	// In the C++ code, it's an ordered set. The only test cases that depends on
+	// this is TestBuildTest_MakeDirs.
 	directories_made_ map[string]struct{}
 	files_read_       []string
 	files_            FileMap

@@ -214,7 +214,7 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 // `basename path`.
 func MakeDirs(d DiskInterface, path string) bool {
 	dir := DirName(path)
-	if dir == path {
+	if dir == path || dir == "." || dir == "" {
 		return true // Reached root; assume it's there.
 	}
 	err := ""

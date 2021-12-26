@@ -883,20 +883,20 @@ func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	return e.is_phony() && len(e.outputs_) == 1 && e.implicit_outs_ == 0 && e.implicit_deps_ == 0
 }
 
-// static
 func PathDecanonicalized(path string, slash_bits uint64) string {
+	// TODO(maruel): Memory allocation.
 	result := []byte(path)
 	mask := uint64(1)
-	c := 0
-	for {
-		c = bytes.IndexByte(result[c:], '/')
-		if c == -1 {
+
+	for c := 0; ; c++ {
+		d := bytes.IndexByte(result[c:], '/')
+		if d == -1 {
 			break
 		}
+		c += d
 		if slash_bits&mask != 0 {
 			result[c] = '\\'
 		}
-		c++
 		mask <<= 1
 	}
 	return string(result)
