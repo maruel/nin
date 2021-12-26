@@ -12,332 +12,542 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
-
-const char kTestFilename[] = "BuildLogTest-tempfile"
+import (
+	"path/filepath"
+	"testing"
+)
 
 type BuildLogTest struct {
+	StateTestWithBuiltinRules
 }
-func (b *BuildLogTest) SetUp() {
-  // In case a crashing test left a stale file behind.
-  unlink(kTestFilename)
+
+func NewBuildLogTest(t *testing.T) *BuildLogTest {
+	return &BuildLogTest{NewStateTestWithBuiltinRules(t)}
 }
-func (b *BuildLogTest) TearDown() {
-  unlink(kTestFilename)
-}
+
 func (b *BuildLogTest) IsPathDead(s string) bool {
 	return false
 }
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
-  AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n")
+	t.Skip("TODO")
+	b := NewBuildLogTest(t)
+	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
-  var log1 BuildLog
-  err := ""
-  if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  log1.RecordCommand(state_.edges_[0], 15, 18)
-  log1.RecordCommand(state_.edges_[1], 20, 25)
-  log1.Close()
+	var log1 BuildLog
+	err := ""
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	if !log1.OpenForWrite(kTestFilename, b, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	log1.RecordCommand(b.state_.edges_[0], 15, 18, 0)
+	log1.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+	log1.Close()
 
-  var log2 BuildLog
-  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	var log2 BuildLog
+	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  if 2u != log1.entries().size() { t.Fatal("expected equal") }
-  if 2u != log2.entries().size() { t.Fatal("expected equal") }
-  BuildLog::LogEntry* e1 = log1.LookupByOutput("out")
-  if !e1 { t.Fatal("expected true") }
-  BuildLog::LogEntry* e2 = log2.LookupByOutput("out")
-  if !e2 { t.Fatal("expected true") }
-  if !*e1 == *e2 { t.Fatal("expected true") }
-  if 15 != e1.start_time { t.Fatal("expected equal") }
-  if "out" != e1.output { t.Fatal("expected equal") }
+	if 2 != len(log1.entries()) {
+		t.Fatal("expected equal")
+	}
+	if 2 != len(log2.entries()) {
+		t.Fatal("expected equal")
+	}
+	e1 := log1.LookupByOutput("out")
+	if e1 == nil {
+		t.Fatal("expected true")
+	}
+	e2 := log2.LookupByOutput("out")
+	if e2 == nil {
+		t.Fatal("expected true")
+	}
+	if *e1 != *e2 {
+		t.Fatal("expected true")
+	}
+	if 15 != e1.start_time {
+		t.Fatal("expected equal")
+	}
+	if "out" != e1.output {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
-  const char kExpectedVersion[] = "# ninja log vX\n"
-  const size_t kVersionPos = strlen(kExpectedVersion) - 2  // Points at 'X'.
+	t.Skip("TODO")
+	b := NewBuildLogTest(t)
+	//kExpectedVersion := "# ninja log vX\n"
+	//kVersionPos := len(kExpectedVersion) - 2 // Points at 'X'.
 
-  var log BuildLog
-  string contents, err
+	var log BuildLog
+	//contents := ""
+	err := ""
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	if !log.OpenForWrite(kTestFilename, b, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	log.Close()
 
-  if !log.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  log.Close()
+	t.Skip("TODO")
+	/*
+		if 0 != b.ReadFile(kTestFilename, &contents, &err) {
+			t.Fatal("expected equal")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		if len(contents) >= kVersionPos {
+			contents[kVersionPos] = 'X'
+		}
+		if kExpectedVersion != contents {
+			t.Fatal("expected equal")
+		}
 
-  if 0 != ReadFile(kTestFilename, &contents, &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if contents.size() >= kVersionPos {
-    contents[kVersionPos] = 'X'
-  }
-  if kExpectedVersion != contents { t.Fatal("expected equal") }
+		// Opening the file anew shouldn't add a second version string.
+		if !log.OpenForWrite(kTestFilename, b, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		log.Close()
 
-  // Opening the file anew shouldn't add a second version string.
-  if !log.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  log.Close()
-
-  contents = nil
-  if 0 != ReadFile(kTestFilename, &contents, &err) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if contents.size() >= kVersionPos {
-    contents[kVersionPos] = 'X'
-  }
-  if kExpectedVersion != contents { t.Fatal("expected equal") }
+		contents = ""
+		if 0 != b.ReadFile(kTestFilename, &contents, &err) {
+			t.Fatal("expected equal")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		if len(contents) >= kVersionPos {
+			contents[kVersionPos] = 'X'
+		}
+		if kExpectedVersion != contents {
+			t.Fatal("expected equal")
+		}
+	*/
 }
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n")
-  fprintf(f, "0\t1\t2\tout\tcommand abc\n")
-  fprintf(f, "3\t4\t5\tout\tcommand def\n")
-  fclose(f)
+	t.Skip("TODO")
+	/*
+			b := NewBuildLogTest(t)
+			kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+		  FILE* f = fopen(kTestFilename, "wb")
+		  fprintf(f, "# ninja log v4\n")
+		  fprintf(f, "0\t1\t2\tout\tcommand abc\n")
+		  fprintf(f, "3\t4\t5\tout\tcommand def\n")
+		  fclose(f)
 
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+		  err := ""
+		  var log BuildLog
+		  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
+		  if "" != err { t.Fatal("expected equal") }
 
-  BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if !e { t.Fatal("expected true") }
-  ASSERT_NO_FATAL_FAILURE(AssertHash("command def", e.command_hash))
+			e := log.LookupByOutput("out")
+		  if !e { t.Fatal("expected true") }
+		  AssertHash("command def", e.command_hash)
+	*/
 }
 
 func TestBuildLogTest_Truncate(t *testing.T) {
-  AssertParse(&state_, "build out: cat mid\nbuild mid: cat in\n")
+	t.Skip("TODO")
+	b := NewBuildLogTest(t)
+	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 
-  {
-    var log1 BuildLog
-    err := ""
-    if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-    if "" != err { t.Fatal("expected equal") }
-    log1.RecordCommand(state_.edges_[0], 15, 18)
-    log1.RecordCommand(state_.edges_[1], 20, 25)
-    log1.Close()
-  }
+	{
+		var log1 BuildLog
+		err := ""
+		if !log1.OpenForWrite(kTestFilename, b, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		log1.RecordCommand(b.state_.edges_[0], 15, 18, 0)
+		log1.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+		log1.Close()
+	}
 
-  var statbuf stat
-  if 0 != stat(kTestFilename, &statbuf) { t.Fatal("expected equal") }
-  if statbuf.st_size <= 0 { t.Fatal("expected greater") }
+	t.Skip("TODO")
+	/*
+		var statbuf stat
+		if 0 != stat(kTestFilename, &statbuf) {
+			t.Fatal("expected equal")
+		}
+		if statbuf.st_size <= 0 {
+			t.Fatal("expected greater")
+		}
 
-  // For all possible truncations of the input file, assert that we don't
-  // crash when parsing.
-  for size := statbuf.st_size; size > 0; size-- {
-    var log2 BuildLog
-    err := ""
-    if !log2.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-    if "" != err { t.Fatal("expected equal") }
-    log2.RecordCommand(state_.edges_[0], 15, 18)
-    log2.RecordCommand(state_.edges_[1], 20, 25)
-    log2.Close()
+		// For all possible truncations of the input file, assert that we don't
+		// crash when parsing.
+		for size := statbuf.st_size; size > 0; size-- {
+			var log2 BuildLog
+			err := ""
+			if !log2.OpenForWrite(kTestFilename, b, &err) {
+				t.Fatal("expected true")
+			}
+			if "" != err {
+				t.Fatal("expected equal")
+			}
+			log2.RecordCommand(b.state_.edges_[0], 15, 18, 0)
+			log2.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+			log2.Close()
 
-    if !Truncate(kTestFilename, size, &err) { t.Fatal("expected true") }
+			if !Truncate(kTestFilename, size, &err) {
+				t.Fatal("expected true")
+			}
 
-    var log3 BuildLog
-    err = nil
-    if !log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() { t.Fatal("expected true") }
-  }
+			var log3 BuildLog
+			err = nil
+			if !log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() {
+				t.Fatal("expected true")
+			}
+		}
+	*/
 }
 
 func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v3\n")
-  fprintf(f, "123 456 0 out command\n")
-  fclose(f)
+	t.Skip("TODO")
+	/*
+		b := NewBuildLogTest(t)
+		kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+		FILE * f = fopen(kTestFilename, "wb")
+		fprintf(f, "# ninja log v3\n")
+		fprintf(f, "123 456 0 out command\n")
+		fclose(f)
 
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if err.find("version") == string::npos { t.Fatal("expected different") }
+		err := ""
+		var log BuildLog
+		if !log.Load(kTestFilename, &err) {
+			t.Fatal("expected true")
+		}
+		if err.find("version") == string::npos { t.Fatal("expected different") }
+	*/
 }
 
 func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n")
-  fprintf(f, "123\t456\t456\tout with space\tcommand\n")
-  fclose(f)
+	t.Skip("TODO")
+	/*
+		b := NewBuildLogTest(t)
+		FILE * f = fopen(kTestFilename, "wb")
+		fprintf(f, "# ninja log v4\n")
+		fprintf(f, "123\t456\t456\tout with space\tcommand\n")
+		fclose(f)
 
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+		err := ""
+		var log BuildLog
+		if !log.Load(kTestFilename, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
 
-  BuildLog::LogEntry* e = log.LookupByOutput("out with space")
-  if !e { t.Fatal("expected true") }
-  if 123 != e.start_time { t.Fatal("expected equal") }
-  if 456 != e.end_time { t.Fatal("expected equal") }
-  if 456 != e.mtime { t.Fatal("expected equal") }
-  ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
+		e := log.LookupByOutput("out with space")
+		if !e {
+			t.Fatal("expected true")
+		}
+		if 123 != e.start_time {
+			t.Fatal("expected equal")
+		}
+		if 456 != e.end_time {
+			t.Fatal("expected equal")
+		}
+		if 456 != e.mtime {
+			t.Fatal("expected equal")
+		}
+		AssertHash("command", e.command_hash)
+	*/
 }
 
 func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
-  // Old versions of ninja accidentally wrote multiple version headers to the
-  // build log on Windows. This shouldn't crash, and the second version header
-  // should be ignored.
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n")
-  fprintf(f, "123\t456\t456\tout\tcommand\n")
-  fprintf(f, "# ninja log v4\n")
-  fprintf(f, "456\t789\t789\tout2\tcommand2\n")
-  fclose(f)
+	t.Skip("TODO")
+	/*
+		b := NewBuildLogTest(t)
+		// Old versions of ninja accidentally wrote multiple version headers to the
+		// build log on Windows. This shouldn't crash, and the second version header
+		// should be ignored.
+		FILE * f = fopen(kTestFilename, "wb")
+		fprintf(f, "# ninja log v4\n")
+		fprintf(f, "123\t456\t456\tout\tcommand\n")
+		fprintf(f, "# ninja log v4\n")
+		fprintf(f, "456\t789\t789\tout2\tcommand2\n")
+		fclose(f)
 
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+		err := ""
+		var log BuildLog
+		if !log.Load(kTestFilename, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
 
-  BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if !e { t.Fatal("expected true") }
-  if 123 != e.start_time { t.Fatal("expected equal") }
-  if 456 != e.end_time { t.Fatal("expected equal") }
-  if 456 != e.mtime { t.Fatal("expected equal") }
-  ASSERT_NO_FATAL_FAILURE(AssertHash("command", e.command_hash))
+		e := log.LookupByOutput("out")
+		if !e {
+			t.Fatal("expected true")
+		}
+		if 123 != e.start_time {
+			t.Fatal("expected equal")
+		}
+		if 456 != e.end_time {
+			t.Fatal("expected equal")
+		}
+		if 456 != e.mtime {
+			t.Fatal("expected equal")
+		}
+		AssertHash("command", e.command_hash)
 
-  e = log.LookupByOutput("out2")
-  if !e { t.Fatal("expected true") }
-  if 456 != e.start_time { t.Fatal("expected equal") }
-  if 789 != e.end_time { t.Fatal("expected equal") }
-  if 789 != e.mtime { t.Fatal("expected equal") }
-  ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
+		e = log.LookupByOutput("out2")
+		if !e {
+			t.Fatal("expected true")
+		}
+		if 456 != e.start_time {
+			t.Fatal("expected equal")
+		}
+		if 789 != e.end_time {
+			t.Fatal("expected equal")
+		}
+		if 789 != e.mtime {
+			t.Fatal("expected equal")
+		}
+		AssertHash("command2", e.command_hash)
+	*/
 }
 
 type TestDiskInterface struct {
 }
+
 func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
-  return 4
+	return 4
 }
 func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
-  if !false { panic("oops") }
-  return true
+	if !false {
+		panic("oops")
+	}
+	return true
 }
 func (t *TestDiskInterface) MakeDir(path string) bool {
-  if !false { panic("oops") }
-  return false
+	if !false {
+		panic("oops")
+	}
+	return false
 }
-func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) Status {
-  if !false { panic("oops") }
-  return NotFound
+func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
+	if !false {
+		panic("oops")
+	}
+	return NotFound
 }
 func (t *TestDiskInterface) RemoveFile(path string) int {
-  if !false { panic("oops") }
-  return 0
+	if !false {
+		panic("oops")
+	}
+	return 0
 }
 
 func TestBuildLogTest_Restat(t *testing.T) {
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n1\t2\t3\tout\tcommand\n")
-  fclose(f)
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if 3 != e.mtime { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	/*
+		b := NewBuildLogTest(t)
+		FILE * f = fopen(kTestFilename, "wb")
+		fprintf(f, "# ninja log v4\n1\t2\t3\tout\tcommand\n")
+		fclose(f)
+		err := ""
+		var log BuildLog
+		if !log.Load(kTestFilename, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		e := log.LookupByOutput("out")
+		if 3 != e.mtime {
+			t.Fatal("expected equal")
+		}
 
-  var testDiskInterface TestDiskInterface
-  char out2[] = { 'o', 'u', 't', '2', 0 }
-  char* filter2[] = { out2 }
-  if !log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  e = log.LookupByOutput("out")
-  if 3 != e.mtime { t.Fatal("expected equal") } // unchanged, since the filter doesn't match
+		var testDiskInterface TestDiskInterface
+		out2 := []byte{'o', 'u', 't', '2', 0}
+		filter2 := out2
+		if !log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.Fatal("expected true") }
+		if "" != err { t.Fatal("expected equal") }
+		e = log.LookupByOutput("out")
+		if 3 != e.mtime { t.Fatal("expected equal") } // unchanged, since the filter doesn't match
 
-  if !log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  e = log.LookupByOutput("out")
-  if 4 != e.mtime { t.Fatal("expected equal") }
+		if !log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.Fatal("expected true") }
+		if "" != err { t.Fatal("expected equal") }
+		e = log.LookupByOutput("out")
+		if 4 != e.mtime { t.Fatal("expected equal") }
+	*/
 }
 
 func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
-  // Ninja's build log buffer is currently 256kB. Lines longer than that are
-  // silently ignored, but don't affect parsing of other lines.
-  FILE* f = fopen(kTestFilename, "wb")
-  fprintf(f, "# ninja log v4\n")
-  fprintf(f, "123\t456\t456\tout\tcommand start")
-  for i := 0; i < (512 << 10) / strlen(" more_command"); i++ {
-    fputs(" more_command", f)
-  }
-  fprintf(f, "\n")
-  fprintf(f, "456\t789\t789\tout2\tcommand2\n")
-  fclose(f)
+	t.Skip("TODO")
+	/*
+		b := NewBuildLogTest(t)
+		// Ninja's build log buffer is currently 256kB. Lines longer than that are
+		// silently ignored, but don't affect parsing of other lines.
+		FILE * f = fopen(kTestFilename, "wb")
+		fprintf(f, "# ninja log v4\n")
+		fprintf(f, "123\t456\t456\tout\tcommand start")
+		for i := 0; i < (512<<10)/strlen(" more_command"); i++ {
+			fputs(" more_command", f)
+		}
+		fprintf(f, "\n")
+		fprintf(f, "456\t789\t789\tout2\tcommand2\n")
+		fclose(f)
 
-  err := ""
-  var log BuildLog
-  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+		err := ""
+		var log BuildLog
+		if !log.Load(kTestFilename, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
 
-  BuildLog::LogEntry* e = log.LookupByOutput("out")
-  if nil != e { t.Fatal("expected equal") }
+		e := log.LookupByOutput("out")
+		if nil != e {
+			t.Fatal("expected equal")
+		}
 
-  e = log.LookupByOutput("out2")
-  if !e { t.Fatal("expected true") }
-  if 456 != e.start_time { t.Fatal("expected equal") }
-  if 789 != e.end_time { t.Fatal("expected equal") }
-  if 789 != e.mtime { t.Fatal("expected equal") }
-  ASSERT_NO_FATAL_FAILURE(AssertHash("command2", e.command_hash))
+		e = log.LookupByOutput("out2")
+		if !e {
+			t.Fatal("expected true")
+		}
+		if 456 != e.start_time {
+			t.Fatal("expected equal")
+		}
+		if 789 != e.end_time {
+			t.Fatal("expected equal")
+		}
+		if 789 != e.mtime {
+			t.Fatal("expected equal")
+		}
+		AssertHash("command2", e.command_hash)
+	*/
 }
 
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
-  AssertParse(&state_, "build out out.d: cat\n")
+	t.Skip("TODO")
+	b := NewBuildLogTest(t)
+	b.AssertParse(&b.state_, "build out out.d: cat\n", ManifestParserOptions{})
 
-  var log BuildLog
-  log.RecordCommand(state_.edges_[0], 21, 22)
+	var log BuildLog
+	log.RecordCommand(b.state_.edges_[0], 21, 22, 0)
 
-  if 2u != log.entries().size() { t.Fatal("expected equal") }
-  BuildLog::LogEntry* e1 = log.LookupByOutput("out")
-  if !e1 { t.Fatal("expected true") }
-  BuildLog::LogEntry* e2 = log.LookupByOutput("out.d")
-  if !e2 { t.Fatal("expected true") }
-  if "out" != e1.output { t.Fatal("expected equal") }
-  if "out.d" != e2.output { t.Fatal("expected equal") }
-  if 21 != e1.start_time { t.Fatal("expected equal") }
-  if 21 != e2.start_time { t.Fatal("expected equal") }
-  if 22 != e2.end_time { t.Fatal("expected equal") }
-  if 22 != e2.end_time { t.Fatal("expected equal") }
+	if 2 != len(log.entries()) {
+		t.Fatal("expected equal")
+	}
+	e1 := log.LookupByOutput("out")
+	if e1 == nil {
+		t.Fatal("expected true")
+	}
+	e2 := log.LookupByOutput("out.d")
+	if e2 == nil {
+		t.Fatal("expected true")
+	}
+	if "out" != e1.output {
+		t.Fatal("expected equal")
+	}
+	if "out.d" != e2.output {
+		t.Fatal("expected equal")
+	}
+	if 21 != e1.start_time {
+		t.Fatal("expected equal")
+	}
+	if 21 != e2.start_time {
+		t.Fatal("expected equal")
+	}
+	if 22 != e2.end_time {
+		t.Fatal("expected equal")
+	}
+	if 22 != e2.end_time {
+		t.Fatal("expected equal")
+	}
 }
 
 type BuildLogRecompactTest struct {
 }
+
 func (b *BuildLogRecompactTest) IsPathDead(s string) bool {
 	return s == "out2"
 }
 
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
-  AssertParse(&state_, "build out: cat in\nbuild out2: cat in\n")
+	t.Skip("TODO")
+	b := NewBuildLogTest(t)
+	b.AssertParse(&b.state_, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
 
-  var log1 BuildLog
-  err := ""
-  if !log1.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  // Record the same edge several times, to trigger recompaction
-  // the next time the log is opened.
-  for i := 0; i < 200; i++ {
-    log1.RecordCommand(state_.edges_[0], 15, 18 + i)
-  }
-  log1.RecordCommand(state_.edges_[1], 21, 22)
-  log1.Close()
+	var log1 BuildLog
+	err := ""
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	if !log1.OpenForWrite(kTestFilename, b, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	// Record the same edge several times, to trigger recompaction
+	// the next time the log is opened.
+	for i := 0; i < 200; i++ {
+		log1.RecordCommand(b.state_.edges_[0], 15, 18+i, 0)
+	}
+	log1.RecordCommand(b.state_.edges_[1], 21, 22, 0)
+	log1.Close()
 
-  // Load...
-  var log2 BuildLog
-  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 2u != log2.entries().size() { t.Fatal("expected equal") }
-  if !log2.LookupByOutput("out") { t.Fatal("expected true") }
-  if !log2.LookupByOutput("out2") { t.Fatal("expected true") }
-  // ...and force a recompaction.
-  if !log2.OpenForWrite(kTestFilename, *this, &err) { t.Fatal("expected true") }
-  log2.Close()
+	// Load...
+	var log2 BuildLog
+	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 2 != len(log2.entries()) {
+		t.Fatal("expected equal")
+	}
+	if log2.LookupByOutput("out") == nil {
+		t.Fatal("expected true")
+	}
+	if log2.LookupByOutput("out2") == nil {
+		t.Fatal("expected true")
+	}
+	// ...and force a recompaction.
+	if !log2.OpenForWrite(kTestFilename, b, &err) {
+		t.Fatal("expected true")
+	}
+	log2.Close()
 
-  // "out2" is dead, it should've been removed.
-  var log3 BuildLog
-  if !log2.Load(kTestFilename, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  if 1u != log2.entries().size() { t.Fatal("expected equal") }
-  if !log2.LookupByOutput("out") { t.Fatal("expected true") }
-  if log2.LookupByOutput("out2") { t.Fatal("expected false") }
+	// "out2" is dead, it should've been removed.
+	var log3 BuildLog
+	if log3.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(log3.entries()) {
+		t.Fatal("expected equal")
+	}
+	if log3.LookupByOutput("out") == nil {
+		t.Fatal("expected true")
+	}
+	if log3.LookupByOutput("out2") != nil {
+		t.Fatal("expected false")
+	}
 }
-

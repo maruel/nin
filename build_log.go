@@ -123,10 +123,8 @@ func HashCommand(command string) uint64 {
 	//return MurmurHash64A(command, len(command))
 }
 
-func NewLogEntry(output string) LogEntry {
-	return LogEntry{
-		output: output,
-	}
+func NewLogEntry(output string) *LogEntry {
+	return &LogEntry{output: output}
 }
 
 /*
@@ -143,54 +141,53 @@ BuildLog::~BuildLog() {
 // Prepares writing to the log file without actually opening it - that will
 // happen when/if it's needed
 func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) bool {
-	panic("TODO")
-	/*
-	  if b.needs_recompaction_ {
-	    if !Recompact(path, user, err) {
-	      return false
-	    }
-	  }
+	if b.needs_recompaction_ {
+		if !b.Recompact(path, user, err) {
+			return false
+		}
+	}
 
-	  if !!b.log_file_ { panic("oops") }
-	  b.log_file_path_ = path  // we don't actually open the file right now, but will
-	                          // do so on the first write attempt
-	*/
+	if b.log_file_ != nil {
+		panic("oops")
+	}
+	b.log_file_path_ = path
+	// we don't actually open the file right now, but will
+	// do so on the first write attempt
 	return true
 }
 
 func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime TimeStamp) bool {
-	panic("TODO")
-	/*
-	  command := edge.EvaluateCommand(true)
-	  command_hash := LogEntry::HashCommand(command)
-	  for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-	    path := (*out).path()
-	    i := b.entries_.find(path)
-	    var log_entry *LogEntry
-	    if i != b.entries_.end() {
-	      log_entry = i.second
-	    } else {
-	      log_entry = new LogEntry(path)
-	      b.entries_[log_entry.output] = log_entry
-	    }
-	    log_entry.command_hash = command_hash
-	    log_entry.start_time = start_time
-	    log_entry.end_time = end_time
-	    log_entry.mtime = mtime
+	command := edge.EvaluateCommand(true)
+	command_hash := HashCommand(command)
+	for _, out := range edge.outputs_ {
+		path := out.path()
+		i, ok := b.entries_[path]
+		var log_entry *LogEntry
+		if ok {
+			log_entry = i
+		} else {
+			log_entry = NewLogEntry(path)
+			b.entries_[log_entry.output] = log_entry
+		}
+		log_entry.command_hash = command_hash
+		log_entry.start_time = start_time
+		log_entry.end_time = end_time
+		log_entry.mtime = mtime
 
-	    if !OpenForWriteIfNeeded() {
-	      return false
-	    }
-	    if b.log_file_ {
-	      if !WriteEntry(b.log_file_, *log_entry) {
-	        return false
-	      }
-	      if fflush(b.log_file_) != 0 {
-	          return false
-	      }
-	    }
-	  }
-	*/
+		if !b.OpenForWriteIfNeeded() {
+			return false
+		}
+		if b.log_file_ != nil {
+			if !b.WriteEntry(b.log_file_, log_entry) {
+				return false
+			}
+			/*
+			   if fflush(b.log_file_) != 0 {
+			       return false
+			   }
+			*/
+		}
+	}
 	return true
 }
 
