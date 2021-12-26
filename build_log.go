@@ -40,8 +40,8 @@ type BuildLog struct {
 type LogEntry struct {
 	output       string
 	command_hash uint64
-	start_time   int
-	end_time     int
+	start_time   int32
+	end_time     int32
 	mtime        TimeStamp
 	/*
 	   // Used by tests.
@@ -128,7 +128,7 @@ func NewLogEntry(output string) *LogEntry {
 }
 
 /*
-NewLogEntry(string output, uint64_t command_hash, int start_time, int end_time, TimeStamp restat_mtime)
+NewLogEntry(output string, command_hash uint64, start_time, end_time int32, restat_mtime TimeStamp)
   : output(output), command_hash(command_hash),
     start_time(start_time), end_time(end_time), mtime(restat_mtime)
 {}
@@ -156,7 +156,7 @@ func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) boo
 	return true
 }
 
-func (b *BuildLog) RecordCommand(edge *Edge, start_time int, end_time int, mtime TimeStamp) bool {
+func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime TimeStamp) bool {
 	command := edge.EvaluateCommand(true)
 	command_hash := HashCommand(command)
 	for _, out := range edge.outputs_ {

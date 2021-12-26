@@ -14,7 +14,10 @@
 
 package ginja
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
@@ -38,10 +41,7 @@ type Plan struct {
 
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
-	if p.wanted_edges_ > 0 && p.command_edges_ > 0 {
-		return true
-	}
-	return false
+	return p.wanted_edges_ > 0 && p.command_edges_ > 0
 }
 
 // Number of edges with commands to run.
@@ -161,7 +161,7 @@ func (b *Builder) SetBuildLog(log *BuildLog) {
 	b.scan_.set_build_log(log)
 }
 
-type RunningEdgeMap map[*Edge]int64
+type RunningEdgeMap map[*Edge]int32
 
 // A CommandRunner that doesn't actually run the commands.
 type DryRunCommandRunner struct {
@@ -292,7 +292,6 @@ func (p *Plan) FindWork() *Edge {
 // The edge may be delayed from running, for example if it's a member of a
 // currently-full pool.
 func (p *Plan) ScheduleWork(edge *Edge, want Want) {
-	//log.Printf("ScheduleWork()")
 	if want == kWantToFinish {
 		// This edge has already been scheduled.  We can get here again if an edge
 		// and one of its dependencies share an order-only input, or if a node
@@ -423,8 +422,8 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 		     // Recompute most_recent_input.
 		     most_recent_input := nil
 		     for i := begin; i != end; i++ {
-		       if !most_recent_input || (*i).mtime() > most_recent_input.mtime() {
-		         most_recent_input = *i
+		       if !most_recent_input || i.mtime() > most_recent_input.mtime() {
+		         most_recent_input = i
 		       }
 		     }
 
@@ -497,7 +496,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	  for oei := dyndep_roots.begin(); oei != dyndep_roots.end(); oei++ {
 	    oe := *oei
 	    for i := oe.second.implicit_inputs_.begin(); i != oe.second.implicit_inputs_.end(); i++ {
-	      if !AddSubTarget(*i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
+	      if !AddSubTarget(i, oe.first.outputs_[0], err, &dyndep_walk) && !err.empty() {
 	        return false
 	      }
 	    }
@@ -677,6 +676,7 @@ func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log
 		state_:             state,
 		config_:            config,
 		status_:            status,
+		running_edges_:     RunningEdgeMap{},
 		start_time_millis_: start_time_millis,
 		disk_interface_:    disk_interface,
 	}
@@ -872,37 +872,34 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	if edge.is_phony() {
 		return true
 	}
-	panic("TODO")
-	/*
-		start_time_millis := GetTimeMillis() - b.start_time_millis_
-		b.running_edges_[edge] = start_time_millis
+	start_time_millis := int32(time.Now().UnixMilli() - b.start_time_millis_)
+	b.running_edges_[edge] = start_time_millis
 
-		b.status_.BuildEdgeStarted(edge, start_time_millis)
+	b.status_.BuildEdgeStarted(edge, start_time_millis)
 
-		// Create directories necessary for outputs.
-		// XXX: this will block; do we care?
-		for _, o := range edge.outputs_ {
-			if !b.disk_interface_.MakeDirs(o.path()) {
-				return false
-			}
-		}
-
-		// Create response file, if needed
-		// XXX: this may also block; do we care?
-		rspfile := edge.GetUnescapedRspfile()
-		if len(rspfile) != 0 {
-			content := edge.GetBinding("rspfile_content")
-			if !b.disk_interface_.WriteFile(rspfile, content) {
-				return false
-			}
-		}
-
-		// start command computing and run it
-		if !b.command_runner_.StartCommand(edge) {
-			err.assign("command '" + edge.EvaluateCommand() + "' failed.")
+	// Create directories necessary for outputs.
+	// XXX: this will block; do we care?
+	for _, o := range edge.outputs_ {
+		if !MakeDirs(b.disk_interface_, o.path()) {
 			return false
 		}
-	*/
+	}
+
+	// Create response file, if needed
+	// XXX: this may also block; do we care?
+	rspfile := edge.GetUnescapedRspfile()
+	if len(rspfile) != 0 {
+		content := edge.GetBinding("rspfile_content")
+		if !b.disk_interface_.WriteFile(rspfile, content) {
+			return false
+		}
+	}
+
+	// start command computing and run it
+	if !b.command_runner_.StartCommand(edge) {
+		*err = "command '" + edge.EvaluateCommand(len(rspfile) != 0) + "' failed."
+		return false
+	}
 	return true
 }
 
@@ -910,137 +907,133 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 // @return false if the build can not proceed further due to a fatal error.
 func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	METRIC_RECORD("FinishCommand")
-	panic("TODO")
-	/*
-		edge := result.edge
+	edge := result.edge
 
-		// First try to extract dependencies from the result, if any.
-		// This must happen first as it filters the command output (we want
-		// to filter /showIncludes output, even on compile failure) and
-		// extraction itself can fail, which makes the command fail from a
-		// build perspective.
-		var deps_nodes []*Node
-		deps_type := edge.GetBinding("deps")
-		const string deps_prefix = edge.GetBinding("msvc_deps_prefix")
-		if !deps_type.empty() {
-			extract_err := ""
-			if !ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.success() {
-				if !result.output.empty() {
-					result.output.append("\n")
-				}
-				result.output.append(extract_err)
-				result.status = ExitFailure
+	// First try to extract dependencies from the result, if any.
+	// This must happen first as it filters the command output (we want
+	// to filter /showIncludes output, even on compile failure) and
+	// extraction itself can fail, which makes the command fail from a
+	// build perspective.
+	var deps_nodes []*Node
+	deps_type := edge.GetBinding("deps")
+	deps_prefix := edge.GetBinding("msvc_deps_prefix")
+	if deps_type != "" {
+		extract_err := ""
+		if !b.ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.success() {
+			if result.output != "" {
+				result.output += "\n"
 			}
+			result.output += extract_err
+			result.status = ExitFailure
 		}
+	}
 
-		var start_time_millis, end_time_millis int64
-		it := b.running_edges_.find(edge)
-		start_time_millis = it.second
-		end_time_millis = GetTimeMillis() - b.start_time_millis_
-		b.running_edges_.erase(it)
+	var start_time_millis, end_time_millis int32
+	start_time_millis = b.running_edges_[edge]
+	end_time_millis = int32(time.Now().UnixMilli() - b.start_time_millis_)
+	delete(b.running_edges_, edge)
 
-		b.status_.BuildEdgeFinished(edge, end_time_millis, result.success(), result.output)
+	b.status_.BuildEdgeFinished(edge, end_time_millis, result.success(), result.output)
 
-		// The rest of this function only applies to successful commands.
-		if !result.success() {
-			return b.plan_.EdgeFinished(edge, kEdgeFailed, err)
-		}
+	// The rest of this function only applies to successful commands.
+	if !result.success() {
+		return b.plan_.EdgeFinished(edge, kEdgeFailed, err)
+	}
+	// Restat the edge outputs
+	output_mtime := TimeStamp(0)
+	restat := edge.GetBindingBool("restat")
+	if !b.config_.dry_run {
+		node_cleaned := false
 
-		// Restat the edge outputs
-		output_mtime := 0
-		restat := edge.GetBindingBool("restat")
-		if !b.config_.dry_run {
-			node_cleaned := false
-
-			for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-				new_mtime := b.disk_interface_.Stat((*o).path(), err)
-				if new_mtime == -1 {
+		for _, o := range edge.outputs_ {
+			new_mtime := b.disk_interface_.Stat(o.path(), err)
+			if new_mtime == -1 {
+				return false
+			}
+			if new_mtime > output_mtime {
+				output_mtime = new_mtime
+			}
+			if o.mtime() == new_mtime && restat {
+				// The rule command did not change the output.  Propagate the clean
+				// state through the build graph.
+				// Note that this also applies to nonexistent outputs (mtime == 0).
+				if !b.plan_.CleanNode(&b.scan_, o, err) {
 					return false
 				}
-				if new_mtime > output_mtime {
-					output_mtime = new_mtime
-				}
-				if (*o).mtime() == new_mtime && restat {
-					// The rule command did not change the output.  Propagate the clean
-					// state through the build graph.
-					// Note that this also applies to nonexistent outputs (mtime == 0).
-					if !b.plan_.CleanNode(&b.scan_, *o, err) {
-						return false
-					}
-					node_cleaned = true
-				}
-			}
-
-			if node_cleaned {
-				restat_mtime := 0
-				// If any output was cleaned, find the most recent mtime of any
-				// (existing) non-order-only input or the depfile.
-				for i := edge.inputs_.begin(); i != edge.inputs_.end()-edge.order_only_deps_; i++ {
-					input_mtime := b.disk_interface_.Stat((*i).path(), err)
-					if input_mtime == -1 {
-						return false
-					}
-					if input_mtime > restat_mtime {
-						restat_mtime = input_mtime
-					}
-				}
-
-				depfile := edge.GetUnescapedDepfile()
-				if restat_mtime != 0 && deps_type.empty() && !depfile.empty() {
-					depfile_mtime := b.disk_interface_.Stat(depfile, err)
-					if depfile_mtime == -1 {
-						return false
-					}
-					if depfile_mtime > restat_mtime {
-						restat_mtime = depfile_mtime
-					}
-				}
-
-				// The total number of edges in the plan may have changed as a result
-				// of a restat.
-				b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
-
-				output_mtime = restat_mtime
+				node_cleaned = true
 			}
 		}
 
-		if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
+		if node_cleaned {
+			restat_mtime := TimeStamp(0)
+			// If any output was cleaned, find the most recent mtime of any
+			// (existing) non-order-only input or the depfile.
+			for _, i := range edge.inputs_[:len(edge.inputs_)-edge.order_only_deps_] {
+				input_mtime := b.disk_interface_.Stat(i.path(), err)
+				if input_mtime == -1 {
+					return false
+				}
+				if input_mtime > restat_mtime {
+					restat_mtime = input_mtime
+				}
+			}
+
+			depfile := edge.GetUnescapedDepfile()
+			if restat_mtime != 0 && deps_type == "" && depfile != "" {
+				depfile_mtime := b.disk_interface_.Stat(depfile, err)
+				if depfile_mtime == -1 {
+					return false
+				}
+				if depfile_mtime > restat_mtime {
+					restat_mtime = depfile_mtime
+				}
+			}
+
+			// The total number of edges in the plan may have changed as a result
+			// of a restat.
+			b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
+
+			output_mtime = restat_mtime
+		}
+	}
+
+	if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
+		return false
+	}
+
+	// Delete any left over response file.
+	rspfile := edge.GetUnescapedRspfile()
+	if rspfile != "" && !g_keep_rsp {
+		b.disk_interface_.RemoveFile(rspfile)
+	}
+
+	if b.scan_.build_log() != nil {
+		if !b.scan_.build_log().RecordCommand(edge, start_time_millis, end_time_millis, output_mtime) {
+			*err = "Error writing to build log: " // + err
 			return false
 		}
+	}
 
-		// Delete any left over response file.
-		rspfile := edge.GetUnescapedRspfile()
-		if !rspfile.empty() && !g_keep_rsp {
-			b.disk_interface_.RemoveFile(rspfile)
+	if deps_type != "" && !b.config_.dry_run {
+		if len(edge.outputs_) == 0 {
+			panic("should have been rejected by parser")
 		}
-
-		if b.scan_.build_log() {
-			if !b.scan_.build_log().RecordCommand(edge, start_time_millis, end_time_millis, output_mtime) {
-				*err = string("Error writing to build log: ") + strerror(errno)
+		for _, o := range edge.outputs_ {
+			deps_mtime := b.disk_interface_.Stat(o.path(), err)
+			if deps_mtime == -1 {
+				return false
+			}
+			if !b.scan_.deps_log().RecordDeps(o, deps_mtime, deps_nodes) {
+				*err = "Error writing to deps log: " // + err
 				return false
 			}
 		}
+	}
 
-		if !deps_type.empty() && !b.config_.dry_run {
-			if edge.outputs_.empty() && "should have been rejected by parser" {
-				panic("M-A")
-			}
-			for o := edge.outputs_.begin(); o != edge.outputs_.end(); o++ {
-				deps_mtime := b.disk_interface_.Stat((*o).path(), err)
-				if deps_mtime == -1 {
-					return false
-				}
-				if !b.scan_.deps_log().RecordDeps(*o, deps_mtime, deps_nodes) {
-					*err = string("Error writing to deps log: ") + strerror(errno)
-					return false
-				}
-			}
-		}
-	*/
 	return true
 }
 
-func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix string, deps_nodes []*Node, err *string) bool {
+func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix string, deps_nodes *[]*Node, err *string) bool {
 	panic("TODO")
 	/*
 	   if deps_type == "msvc" {
@@ -1055,7 +1048,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 	       // all backslashes (as some of the slashes will certainly be backslashes
 	       // anyway). This could be fixed if necessary with some additional
 	       // complexity in IncludesNormalize::Relativize.
-	       *deps_nodes = append(*deps_nodes, b.state_.GetNode(*i, 0xFFFFFFFF))
+	       *deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
 	     }
 	   } else if deps_type == "gcc" {
 	     depfile := result.edge.GetUnescapedDepfile()
@@ -1089,7 +1082,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 	     for i := deps.ins_.begin(); i != deps.ins_.end(); i++ {
 	       var slash_bits uint64
 	       CanonicalizePath(const_cast<char*>(i.str_), &i.len_, &slash_bits)
-	       deps_nodes.push_back(b.state_.GetNode(*i, slash_bits))
+	       deps_nodes.push_back(b.state_.GetNode(i, slash_bits))
 	     }
 
 	     if !g_keep_depfile {

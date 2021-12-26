@@ -15,6 +15,7 @@
 package ginja
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 )
@@ -679,6 +680,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 
 // Fake implementation of CommandRunner, useful for tests.
 type FakeCommandRunner struct {
+	t                 *testing.T
 	commands_ran_     []string
 	active_edges_     []*Edge
 	max_active_edges_ uint
@@ -687,6 +689,7 @@ type FakeCommandRunner struct {
 
 func NewFakeCommandRunner(t *testing.T, fs *VirtualFileSystem) FakeCommandRunner {
 	return FakeCommandRunner{
+		t:                 t,
 		max_active_edges_: 1,
 		fs_:               fs,
 	}
@@ -704,9 +707,10 @@ type BuildTest struct {
 func NewBuildTest(t *testing.T) *BuildTest {
 	b := &BuildTest{
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
-		config_:                   BuildConfig{verbosity: QUIET},
+		config_:                   NewBuildConfig(),
 		fs_:                       NewVirtualFileSystem(),
 	}
+	b.config_.verbosity = QUIET
 	b.command_runner_ = NewFakeCommandRunner(t, &b.fs_)
 	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, &b.status_, 0)
 	b.status_ = NewStatusPrinter(&b.config_)
@@ -772,120 +776,135 @@ func (f *FakeCommandRunner) CanRunMore() bool {
 }
 
 func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
-	panic("TODO")
-	/*
-	  if 0==len(f.active_edges_) < f.max_active_edges_ { panic("oops") }
-	  if !find(f.active_edges_.begin(), f.active_edges_.end(), edge) == f.active_edges_.end() { panic("oops") }
-	  f.commands_ran_.push_back(edge.EvaluateCommand())
-	  if edge.rule().name() == "cat"  || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
-	    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-	      f.fs_.Create((*out).path(), "")
-	    }
-	  } else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
-	    // Don't do anything.
-	  } else if edge.rule().name() == "cp" {
-	    if !!edge.inputs_.empty() { panic("oops") }
-	    if 0==len(edge.outputs_) == 1 { panic("oops") }
-	    content := ""
-	    err := ""
-	    if f.fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == DiskInterface::Okay {
-	      f.fs_.WriteFile(edge.outputs_[0].path(), content)
-	    }
-	  } else if edge.rule().name() == "touch-implicit-dep-out" {
-	    string dep = edge.GetBinding("test_dependency")
-	    f.fs_.Create(dep, "")
-	    f.fs_.Tick()
-	    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-	      f.fs_.Create((*out).path(), "")
-	    }
-	  } else if edge.rule().name() == "touch-out-implicit-dep" {
-	    string dep = edge.GetBinding("test_dependency")
-	    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-	      f.fs_.Create((*out).path(), "")
-	    }
-	    f.fs_.Tick()
-	    f.fs_.Create(dep, "")
-	  } else if edge.rule().name() == "generate-depfile" {
-	    string dep = edge.GetBinding("test_dependency")
-	    depfile := edge.GetUnescapedDepfile()
-	    contents := ""
-	    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-	      contents += (*out).path() + ": " + dep + "\n"
-	      f.fs_.Create((*out).path(), "")
-	    }
-	    f.fs_.Create(depfile, contents)
-	  } else {
-	    printf("unknown command\n")
-	    return false
-	  }
+	if len(f.active_edges_) > int(f.max_active_edges_) {
+		f.t.Fatal("oops")
+	}
+	found := false
+	for _, a := range f.active_edges_ {
+		if a == edge {
+			found = true
+			break
+		}
+	}
+	if found {
+		f.t.Fatalf("running same edge twice")
+	}
+	f.commands_ran_ = append(f.commands_ran_, edge.EvaluateCommand(false))
+	if edge.rule().name() == "cat" || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
+		for _, out := range edge.outputs_ {
+			f.fs_.Create(out.path(), "")
+		}
+	} else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
+		// Don't do anything.
+	} else if edge.rule().name() == "cp" {
+		if len(edge.inputs_) == 0 {
+			f.t.Fatal("oops")
+		}
+		if len(edge.outputs_) == 1 {
+			f.t.Fatal("oops")
+		}
+		content := ""
+		err := ""
+		if f.fs_.ReadFile(edge.inputs_[0].path(), &content, &err) == Okay {
+			f.fs_.WriteFile(edge.outputs_[0].path(), content)
+		}
+	} else if edge.rule().name() == "touch-implicit-dep-out" {
+		dep := edge.GetBinding("test_dependency")
+		f.fs_.Create(dep, "")
+		f.fs_.Tick()
+		for _, out := range edge.outputs_ {
+			f.fs_.Create(out.path(), "")
+		}
+	} else if edge.rule().name() == "touch-out-implicit-dep" {
+		dep := edge.GetBinding("test_dependency")
+		for _, out := range edge.outputs_ {
+			f.fs_.Create(out.path(), "")
+		}
+		f.fs_.Tick()
+		f.fs_.Create(dep, "")
+	} else if edge.rule().name() == "generate-depfile" {
+		dep := edge.GetBinding("test_dependency")
+		depfile := edge.GetUnescapedDepfile()
+		contents := ""
+		for _, out := range edge.outputs_ {
+			contents += out.path() + ": " + dep + "\n"
+			f.fs_.Create(out.path(), "")
+		}
+		f.fs_.Create(depfile, contents)
+	} else {
+		fmt.Printf("unknown command\n")
+		return false
+	}
 
-	  f.active_edges_.push_back(edge)
+	f.active_edges_ = append(f.active_edges_, edge)
 
-	  // Allow tests to control the order by the name of the first output.
-	  sort(f.active_edges_.begin(), f.active_edges_.end(), CompareEdgesByOutput::cmp)
-	*/
+	// Allow tests to control the order by the name of the first output.
+	sort.Slice(f.active_edges_, func(i, j int) bool {
+		return f.active_edges_[i].outputs_[0].path() < f.active_edges_[j].outputs_[0].path()
+	})
 	return true
 }
 
 func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
-	panic("TODO")
-	/*
-	  if f.active_edges_.empty() {
-	    return false
-	  }
+	if len(f.active_edges_) == 0 {
+		return false
+	}
 
-	  // All active edges were already completed immediately when started,
-	  // so we can pick any edge here.  Pick the last edge.  Tests can
-	  // control the order of edges by the name of the first output.
-	  vector<Edge*>::iterator edge_iter = f.active_edges_.end() - 1
+	// All active edges were already completed immediately when started,
+	// so we can pick any edge here.  Pick the last edge.  Tests can
+	// control the order of edges by the name of the first output.
+	edge_iter := len(f.active_edges_) - 1
 
-	  edge := *edge_iter
-	  result.edge = edge
+	edge := f.active_edges_[edge_iter]
+	result.edge = edge
 
-	  if edge.rule().name() == "interrupt" || edge.rule().name() == "touch-interrupt" {
-	    result.status = ExitInterrupted
-	    return true
-	  }
+	if edge.rule().name() == "interrupt" || edge.rule().name() == "touch-interrupt" {
+		result.status = ExitInterrupted
+		return true
+	}
 
-	  if edge.rule().name() == "console" {
-	    if edge.use_console() {
-	      result.status = ExitSuccess
-	    } else {
-	      result.status = ExitFailure
-	    }
-	    f.active_edges_.erase(edge_iter)
-	    return true
-	  }
+	if edge.rule().name() == "console" {
+		if edge.use_console() {
+			result.status = ExitSuccess
+		} else {
+			result.status = ExitFailure
+		}
+		copy(f.active_edges_[edge_iter:], f.active_edges_[edge_iter+1:])
+		f.active_edges_ = f.active_edges_[:len(f.active_edges_)-1]
+		return true
+	}
 
-	  if edge.rule().name() == "cp_multi_msvc" {
-	    const string prefix = edge.GetBinding("msvc_deps_prefix")
-	    for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
-	      result.output += prefix + (*in).path() + '\n'
-	    }
-	  }
+	if edge.rule().name() == "cp_multi_msvc" {
+		prefix := edge.GetBinding("msvc_deps_prefix")
+		for _, in := range edge.inputs_ {
+			result.output += prefix + in.path() + "\n"
+		}
+	}
 
-	  if edge.rule().name() == "fail" || (edge.rule().name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
-	    result.status = ExitFailure
-	  } else {
-	    result.status = ExitSuccess
-	  }
+	if edge.rule().name() == "fail" || (edge.rule().name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
+		result.status = ExitFailure
+	} else {
+		result.status = ExitSuccess
+	}
 
-	  // Provide a way for test cases to verify when an edge finishes that
-	  // some other edge is still active.  This is useful for test cases
-	  // covering behavior involving multiple active edges.
-	  string verify_active_edge = edge.GetBinding("verify_active_edge")
-	  if !verify_active_edge.empty() {
-	    verify_active_edge_found := false
-	    for i := f.active_edges_.begin(); i != f.active_edges_.end(); i++ {
-	      if !(*i).outputs_.empty() && (*i).outputs_[0].path() == verify_active_edge {
-	        verify_active_edge_found = true
-	      }
-	    }
-	    if !verify_active_edge_found { t.Fatal("expected true") }
-	  }
+	// Provide a way for test cases to verify when an edge finishes that
+	// some other edge is still active.  This is useful for test cases
+	// covering behavior involving multiple active edges.
+	verify_active_edge := edge.GetBinding("verify_active_edge")
+	if verify_active_edge != "" {
+		verify_active_edge_found := false
+		for _, i := range f.active_edges_ {
+			if len(i.outputs_) != 0 && i.outputs_[0].path() == verify_active_edge {
+				verify_active_edge_found = true
+			}
+		}
+		if !verify_active_edge_found {
+			f.t.Fatal("expected true")
+		}
+	}
 
-	  f.active_edges_.erase(edge_iter)
-	*/
+	copy(f.active_edges_[edge_iter:], f.active_edges_[edge_iter+1:])
+	f.active_edges_ = f.active_edges_[:len(f.active_edges_)-1]
 	return true
 }
 
@@ -917,7 +936,6 @@ func TestBuildTest_NoWork(t *testing.T) {
 }
 
 func TestBuildTest_OneStep(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Given a dirty target with one ready input,
 	// we should rebuild the target.

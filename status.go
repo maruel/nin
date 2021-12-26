@@ -24,8 +24,8 @@ import (
 // completion fraction, printing updates.
 type Status interface {
 	PlanHasTotalEdges(total int)
-	BuildEdgeStarted(edge *Edge, start_time_millis int64)
-	BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string)
+	BuildEdgeStarted(edge *Edge, start_time_millis int32)
+	BuildEdgeFinished(edge *Edge, end_time_millis int32, success bool, output string)
 	BuildLoadDyndeps()
 	BuildStarted()
 	BuildFinished()
@@ -41,7 +41,7 @@ type StatusPrinter struct {
 	config_ *BuildConfig
 
 	started_edges_, finished_edges_, total_edges_, running_edges_ int
-	time_millis_                                                  int64
+	time_millis_                                                  int32
 
 	// Prints progress output.
 	printer_ LinePrinter
@@ -58,7 +58,7 @@ type slidingRateInfo struct {
 	last_update_ int
 }
 
-func (s *slidingRateInfo) updateRate(update_hint int, time_millis int64) {
+func (s *slidingRateInfo) updateRate(update_hint int, time_millis int32) {
 	if update_hint == s.last_update_ {
 		return
 	}
@@ -100,7 +100,7 @@ func (s *StatusPrinter) PlanHasTotalEdges(total int) {
 	s.total_edges_ = total
 }
 
-func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int64) {
+func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int32) {
 	s.started_edges_++
 	s.running_edges_++
 	s.time_millis_ = start_time_millis
@@ -113,69 +113,67 @@ func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int64) {
 	}
 }
 
-func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int64, success bool, output string) {
-	panic("TODO")
-	/*
-		s.time_millis_ = end_time_millis
-		s.finished_edges_++
+func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, success bool, output string) {
+	s.time_millis_ = end_time_millis
+	s.finished_edges_++
 
-		if edge.use_console() {
-			s.printer_.SetConsoleLocked(false)
+	if edge.use_console() {
+		s.printer_.SetConsoleLocked(false)
+	}
+
+	if s.config_.verbosity == QUIET {
+		return
+	}
+
+	if !edge.use_console() {
+		s.PrintStatus(edge, end_time_millis)
+	}
+
+	s.running_edges_--
+
+	// Print the command that is spewing before printing its output.
+	if !success {
+		outputs := ""
+		for _, o := range edge.outputs_ {
+			outputs += o.path() + " "
+		}
+		if s.printer_.supports_color() {
+			s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
+		} else {
+			s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
+		}
+		s.printer_.PrintOnNewLine(edge.EvaluateCommand(false) + "\n")
+	}
+
+	if len(output) != 0 {
+		// ninja sets stdout and stderr of subprocesses to a pipe, to be able to
+		// check if the output is empty. Some compilers, e.g. clang, check
+		// isatty(stderr) to decide if they should print colored output.
+		// To make it possible to use colored output with ninja, subprocesses should
+		// be run with a flag that forces them to always print color escape codes.
+		// To make sure these escape codes don't show up in a file if ninja's output
+		// is piped to a file, ninja strips ansi escape codes again if it's not
+		// writing to a |smart_terminal_|.
+		// (Launching subprocesses in pseudo ttys doesn't work because there are
+		// only a few hundred available on some systems, and ninja can launch
+		// thousands of parallel compile commands.)
+		final_output := ""
+		if !s.printer_.supports_color() {
+			// TODO(maruel): final_output = StripAnsiEscapeCodes(output)
+			final_output = output
+		} else {
+			final_output = output
 		}
 
-		if s.config_.verbosity == QUIET {
-			return
-		}
+		// TODO(maruel): Use an existing Go package.
+		// Fix extra CR being added on Windows, writing out CR CR LF (#773)
+		//_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
 
-		if !edge.use_console() {
-			s.PrintStatus(edge, end_time_millis)
-		}
+		s.printer_.PrintOnNewLine(final_output)
 
-		s.running_edges_--
+		//_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
 
-		// Print the command that is spewing before printing its output.
-		if !success {
-			outputs := ""
-			for _, o := range edge {
-				outputs += o.path() + " "
-			}
-			if s.printer_.supports_color() {
-				s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
-			} else {
-				s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
-			}
-			s.printer_.PrintOnNewLine(edge.EvaluateCommand() + "\n")
-		}
-
-		if len(output) != 0 {
-			// ninja sets stdout and stderr of subprocesses to a pipe, to be able to
-			// check if the output is empty. Some compilers, e.g. clang, check
-			// isatty(stderr) to decide if they should print colored output.
-			// To make it possible to use colored output with ninja, subprocesses should
-			// be run with a flag that forces them to always print color escape codes.
-			// To make sure these escape codes don't show up in a file if ninja's output
-			// is piped to a file, ninja strips ansi escape codes again if it's not
-			// writing to a |smart_terminal_|.
-			// (Launching subprocesses in pseudo ttys doesn't work because there are
-			// only a few hundred available on some systems, and ninja can launch
-			// thousands of parallel compile commands.)
-			final_output := ""
-			if !s.printer_.supports_color() {
-				final_output = StripAnsiEscapeCodes(output)
-			} else {
-				final_output = output
-			}
-
-			// TODO(maruel): Use an existing Go package.
-				// Fix extra CR being added on Windows, writing out CR CR LF (#773)
-				//_setmode(_fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
-
-				s.printer_.PrintOnNewLine(final_output)
-
-				//_setmode(_fileno(stdout), _O_TEXT) // End Windows extra CR fix
-
-		}
-	*/
+	}
 }
 
 func (s *StatusPrinter) BuildLoadDyndeps() {
@@ -209,7 +207,7 @@ func (s *StatusPrinter) BuildFinished() {
 // placeholders.
 // @param progress_status_format The format of the progress status.
 // @param status The status of the edge.
-func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time_millis int64) string {
+func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time_millis int32) string {
 	out := ""
 	// TODO(maruel): Benchmark to optimize memory usage and performance
 	// especially when GC is disabled.
@@ -292,7 +290,7 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 	return out
 }
 
-func (s *StatusPrinter) PrintStatus(edge *Edge, time_millis int64) {
+func (s *StatusPrinter) PrintStatus(edge *Edge, time_millis int32) {
 	if s.config_.verbosity == QUIET || s.config_.verbosity == NO_STATUS_UPDATE {
 		return
 	}

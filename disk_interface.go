@@ -214,7 +214,7 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 // `basename path`.
 func MakeDirs(d DiskInterface, path string) bool {
 	dir := DirName(path)
-	if len(dir) == 0 {
+	if dir == path {
 		return true // Reached root; assume it's there.
 	}
 	err := ""
@@ -228,8 +228,7 @@ func MakeDirs(d DiskInterface, path string) bool {
 	}
 
 	// Directory doesn't exist.  Try creating its parent first.
-	success := MakeDirs(d, dir)
-	if !success {
+	if !MakeDirs(d, dir) {
 		return false
 	}
 	return d.MakeDir(dir)

@@ -505,7 +505,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	// Record the same edge several times, to trigger recompaction
 	// the next time the log is opened.
 	for i := 0; i < 200; i++ {
-		log1.RecordCommand(b.state_.edges_[0], 15, 18+i, 0)
+		log1.RecordCommand(b.state_.edges_[0], 15, int32(18+i), 0)
 	}
 	log1.RecordCommand(b.state_.edges_[1], 21, 22, 0)
 	log1.Close()
