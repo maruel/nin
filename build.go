@@ -49,11 +49,11 @@ func (p *Plan) command_edge_count() int {
 	return p.command_edges_
 }
 
-type EdgeResult int
+type EdgeResult bool
 
 const (
-	kEdgeFailed EdgeResult = iota
-	kEdgeSucceeded
+	kEdgeFailed    EdgeResult = false
+	kEdgeSucceeded EdgeResult = true
 )
 
 // Enumerate possible steps we want for an edge.
@@ -165,7 +165,6 @@ type RunningEdgeMap map[*Edge]int64
 
 // A CommandRunner that doesn't actually run the commands.
 type DryRunCommandRunner struct {
-	//finished_ [...]*Edge
 	finished_ []*Edge
 }
 
@@ -175,7 +174,10 @@ func (d *DryRunCommandRunner) CanRunMore() bool {
 }
 
 func (d *DryRunCommandRunner) StartCommand(edge *Edge) bool {
-	d.finished_ = append(d.finished_, edge)
+	// In C++ it's a queue. In Go it's a bit less efficient but it shouldn't be
+	// performance critical.
+	// TODO(maruel): Move items when cap() is significantly larger than len().
+	d.finished_ = append([]*Edge{edge}, d.finished_...)
 	return true
 }
 
@@ -253,7 +255,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		p.want_[edge] = want
 		p.EdgeWanted(edge)
 		if len(dyndep_walk) == 0 && edge.AllInputsReady() {
-			p.want_[edge] = p.ScheduleWork(edge, want)
+			p.ScheduleWork(edge, want)
 		}
 	}
 
@@ -289,19 +291,19 @@ func (p *Plan) FindWork() *Edge {
 // Submits a ready edge as a candidate for execution.
 // The edge may be delayed from running, for example if it's a member of a
 // currently-full pool.
-func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
+func (p *Plan) ScheduleWork(edge *Edge, want Want) {
 	//log.Printf("ScheduleWork()")
 	if want == kWantToFinish {
 		// This edge has already been scheduled.  We can get here again if an edge
 		// and one of its dependencies share an order-only input, or if a node
 		// duplicates an out edge (see https://github.com/ninja-build/ninja/pull/519).
 		// Avoid scheduling the work again.
-		return want
+		return
 	}
 	if want != kWantToStart {
 		panic("M-A")
 	}
-	want = kWantToFinish
+	p.want_[edge] = kWantToFinish
 
 	pool := edge.pool()
 	if pool.ShouldDelayEdge() {
@@ -311,7 +313,6 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) Want {
 		pool.EdgeScheduled(edge)
 		p.ready_.Add(edge)
 	}
-	return want
 }
 
 // Mark an edge as done building (whether it succeeded or failed).
@@ -384,7 +385,6 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 	if edge.AllInputsReady() {
 		if want != kWantNothing {
-			// TODO: want =
 			p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of

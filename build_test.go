@@ -476,7 +476,6 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 }
 
 func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
-	t.Skip("TODO")
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n", ManifestParserOptions{})
 	p.GetNode("foo.cpp").MarkDirty()
@@ -536,9 +535,6 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-
-	// Ugh, the order is all different from the C++ version.
-	p.plan_.Dump()
 
 	edge = p.plan_.FindWork()
 	if edge == nil {
