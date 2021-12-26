@@ -803,6 +803,8 @@ func (f *FakeCommandRunner) CanRunMore() bool {
 }
 
 func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
+	cmd := edge.EvaluateCommand(false)
+	f.t.Logf("StartCommand(%s)", cmd)
 	if len(f.active_edges_) > int(f.max_active_edges_) {
 		f.t.Fatal("oops")
 	}
@@ -816,7 +818,7 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 	if found {
 		f.t.Fatalf("running same edge twice")
 	}
-	f.commands_ran_ = append(f.commands_ran_, edge.EvaluateCommand(false))
+	f.commands_ran_ = append(f.commands_ran_, cmd)
 	if edge.rule().name() == "cat" || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
 		for _, out := range edge.outputs_ {
 			f.fs_.Create(out.path(), "")
@@ -4491,14 +4493,24 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
+	fmt.Printf("State:\n")
+	b.state_.Dump()
+	fmt.Printf("Plan:\n")
+	b.builder_.plan_.Dump()
+
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
+	fmt.Printf("After:\n")
+	fmt.Printf("State:\n")
+	b.state_.Dump()
+	fmt.Printf("Plan:\n")
+	b.builder_.plan_.Dump()
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+		t.Fatalf("%#v", b.command_runner_.commands_ran_)
 	}
 	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
 		t.Fatal("expected equal")

@@ -359,7 +359,7 @@ func (d *DependencyScan) deps_log() *DepsLog {
 
 // Return false on error.
 func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
-	METRIC_RECORD("node stat")
+	defer METRIC_RECORD("node stat")()
 	n.mtime_ = disk_interface.Stat(n.path_, err)
 	if n.mtime_ == -1 {
 		return false
@@ -935,7 +935,7 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	METRIC_RECORD("depfile load")
+	defer METRIC_RECORD("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
 	switch i.disk_interface_.ReadFile(path, &content, err) {

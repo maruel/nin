@@ -235,7 +235,7 @@ func MakeDirs(d DiskInterface, path string) bool {
 }
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
-	METRIC_RECORD("node stat")
+	defer METRIC_RECORD("node stat")()
 	// MSDN: "Naming Files, Paths, and Namespaces"
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 	const MAX_PATH = 260

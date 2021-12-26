@@ -216,7 +216,7 @@ func (d *DepsLog) Close() {
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
-	METRIC_RECORD(".ninja_deps load")
+	defer METRIC_RECORD(".ninja_deps load")()
 	buf := [kMaxRecordSize + 1]byte{}
 	f, err2 := os.Open(path)
 	if f == nil {
@@ -415,7 +415,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 
 // Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
-	METRIC_RECORD(".ninja_deps recompact")
+	defer METRIC_RECORD(".ninja_deps recompact")()
 
 	d.Close()
 	temp_path := path + ".recompact"

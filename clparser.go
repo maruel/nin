@@ -70,7 +70,7 @@ func FilterInputFilename(line string) bool {
 // should be printed (if any). Returns true on success, or false with err
 // filled. output must not be the same object as filtered_object.
 func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *string, err *string) bool {
-	METRIC_RECORD("CLParser::Parse")
+	defer METRIC_RECORD("CLParser::Parse")()
 	panic("TODO")
 	/*
 	  // Loop over all lines in the output to process them.

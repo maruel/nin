@@ -14,20 +14,30 @@
 
 package ginja
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // The Metrics module is used for the debug mode that dumps timing stats of
 // various actions.  To use, see METRIC_RECORD below.
 
+func emptyFunc() {
+}
+
 /// The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 /// of a function to get timing stats recorded for each call of the function.
-func METRIC_RECORD(name string) {
-	/*
-		if g_metrics != nil {
-			metrics_h_metric := g_metrics.NewMetric(name)
-		}
-		metrics_h_scoped := ScopedMetric(metrics_h_metric)
-	*/
+func METRIC_RECORD(name string) func() {
+	// TODO(maruel): Use runtime/trace.StartRegion() instead.
+	if g_metrics == nil {
+		return emptyFunc
+	}
+	m := g_metrics.GetMetric(name)
+	start := time.Now()
+	return func() {
+		m.count++
+		m.sum += time.Since(start)
+	}
 }
 
 // A single metrics we're tracking, like "depfile load time".
@@ -35,113 +45,53 @@ type Metric struct {
 	name string
 	// Number of times we've hit the code path.
 	count int
-	// Total time (in micros) we've spent on the code path.
-	sum int64
-}
-
-// A scoped object for recording a metric across the body of a function.
-// Used by the METRIC_RECORD macro.
-type ScopedMetric struct {
-	metric_ *Metric
-	// Timestamp when the measurement started.
-	// Value is platform-dependent.
-	start_ int64
+	// Total time we've spent on the code path.
+	sum time.Duration
 }
 
 // The singleton that stores metrics and prints the report.
 type Metrics struct {
-	metrics_ []*Metric
-}
-
-// A simple stopwatch which returns the time
-// in seconds since Restart() was called.
-type Stopwatch struct {
-	started_ int64
-}
-
-func NewStopwatch() Stopwatch {
-	return Stopwatch{}
-}
-
-// Seconds since Restart() call.
-func (s *Stopwatch) Elapsed() float64 {
-	return 1e-6 * float64(s.Now()-s.started_)
-}
-func (s *Stopwatch) Restart() {
-	s.started_ = s.Now()
+	metrics_ map[string]*Metric
 }
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.
-
-//extern Metrics* g_metrics
-
 var g_metrics *Metrics
 
-// Compute a platform-specific high-res timer value that fits into an int64.
-func HighResTimer() int64 {
-	/*
-	  var tv timeval
-	  if gettimeofday(&tv, nil) < 0 {
-	    Fatal("gettimeofday: %s", strerror(errno))
-	  }
-	  return tv.tv_sec * 1000*1000 + tv.tv_usec
-	*/
-	// TODO:
-	return time.Now().UnixNano()
-}
-
-// Convert a delta of HighResTimer() values to microseconds.
-func TimerToMicros(dt int64) int64 {
-	// No conversion necessary.
-	return dt
-}
-
-func NewScopedMetric(metric *Metric) *ScopedMetric {
-	return &ScopedMetric{
-		metric_: metric,
-		start_:  HighResTimer(),
+func (m *Metrics) GetMetric(name string) *Metric {
+	if m.metrics_ == nil {
+		m.metrics_ = map[string]*Metric{}
 	}
-}
-
-/*
-ScopedMetric::~ScopedMetric() {
-  if (!metric_)
-    return
-  metric_.count++
-  int64_t dt = TimerToMicros(HighResTimer() - start_)
-  metric_.sum += dt
-}
-*/
-func (m *Metrics) NewMetric(name string) *Metric {
-	metric := &Metric{name: name}
-	m.metrics_ = append(m.metrics_, metric)
+	metric, ok := m.metrics_[name]
+	if !ok {
+		metric = &Metric{name: name}
+		m.metrics_[name] = metric
+	}
 	return metric
 }
 
 // Print a summary report to stdout.
 func (m *Metrics) Report() {
 	width := 0
-	for _, i := range m.metrics_ {
-		if j := len(i.name); j > width {
+	names := make([]string, 0, len(m.metrics_))
+	for name := range m.metrics_ {
+		if j := len(name); j > width {
 			width = j
 		}
+		names = append(names, name)
 	}
+	sort.Strings(names)
 
-	printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg (us)", "total (ms)")
-	for _, metric := range m.metrics_ {
-		total := float64(metric.sum) / 1000.
-		avg := float64(metric.sum) / float64(metric.count)
-		printf("%-*s\t%-6d\t%-8.1f\t%.1f\n", width, metric.name, metric.count, avg, total)
+	printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg", "total")
+	for _, name := range names {
+		metric := m.metrics_[name]
+		avg := metric.sum / time.Duration(metric.count)
+		printf("%-*s\t%-6d\t%-10s\t%-10s\n", width, name, metric.count, avg.Round(time.Microsecond), metric.sum.Round(time.Microsecond))
 	}
-}
-
-func (s *Stopwatch) Now() int64 {
-	return TimerToMicros(HighResTimer())
 }
 
 // Get the current time as relative to some epoch.
 // Epoch varies between platforms; only useful for measuring elapsed time.
 func GetTimeMillis() int64 {
-	return TimerToMicros(HighResTimer()) / 1000
+	return time.Now().UnixMilli()
 }

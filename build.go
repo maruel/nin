@@ -861,7 +861,7 @@ func (b *Builder) Build(err *string) bool {
 }
 
 func (b *Builder) StartEdge(edge *Edge, err *string) bool {
-	METRIC_RECORD("StartEdge")
+	defer METRIC_RECORD("StartEdge")()
 	if edge.is_phony() {
 		return true
 	}
@@ -899,7 +899,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 // Update status ninja logs following a command termination.
 // @return false if the build can not proceed further due to a fatal error.
 func (b *Builder) FinishCommand(result *Result, err *string) bool {
-	METRIC_RECORD("FinishCommand")
+	defer METRIC_RECORD("FinishCommand")()
 	edge := result.edge
 
 	// First try to extract dependencies from the result, if any.
