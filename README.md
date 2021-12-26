@@ -1,5 +1,8 @@
 # Ginja
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/maruel/ginja.svg)](https://pkg.go.dev/github.com/maruel/ginja)
+[![codecov](https://codecov.io/gh/maruel/ginja/branch/main/graph/badge.svg?token=KAO6K039PJ)](https://codecov.io/gh/maruel/ginja)
+
 An experimental fork of ninja translated in Go. Currently a toy.
 
 ## Are you serious?
