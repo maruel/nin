@@ -455,72 +455,82 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 }
 
 type BuildLogRecompactTest struct {
+	*BuildLogTest
 }
 
 func (b *BuildLogRecompactTest) IsPathDead(s string) bool {
 	return s == "out2"
 }
 
-func TestBuildLogRecompactTest_Recompact(t *testing.T) {
-	t.Skip("TODO")
-	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state_, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
+func NewBuildLogRecompactTest(t *testing.T) *BuildLogRecompactTest {
+	return &BuildLogRecompactTest{NewBuildLogTest(t)}
+}
 
-	log1 := NewBuildLog()
-	err := ""
+func TestBuildLogRecompactTest_Recompact(t *testing.T) {
+	b := NewBuildLogRecompactTest(t)
+	b.AssertParse(&b.state_, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
 	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	if !log1.OpenForWrite(kTestFilename, b, &err) {
-		t.Fatal("expected true")
+	err := ""
+
+	{
+		log1 := NewBuildLog()
+		if !log1.OpenForWrite(kTestFilename, b, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		// Record the same edge several times, to trigger recompaction
+		// the next time the log is opened.
+		for i := 0; i < 200; i++ {
+			log1.RecordCommand(b.state_.edges_[0], 15, int32(18+i), 0)
+		}
+		log1.RecordCommand(b.state_.edges_[1], 21, 22, 0)
+		log1.Close()
 	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	// Record the same edge several times, to trigger recompaction
-	// the next time the log is opened.
-	for i := 0; i < 200; i++ {
-		log1.RecordCommand(b.state_.edges_[0], 15, int32(18+i), 0)
-	}
-	log1.RecordCommand(b.state_.edges_[1], 21, 22, 0)
-	log1.Close()
 
 	// Load...
-	log2 := NewBuildLog()
-	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
-		t.Fatal("expected true")
+	{
+		log2 := NewBuildLog()
+		if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		if 2 != len(log2.entries()) {
+			t.Fatal("expected equal")
+		}
+		if log2.LookupByOutput("out") == nil {
+			t.Fatal("expected true")
+		}
+		if log2.LookupByOutput("out2") == nil {
+			t.Fatal("expected true")
+		}
+		// ...and force a recompaction.
+		if !log2.OpenForWrite(kTestFilename, b, &err) {
+			t.Fatal("expected true")
+		}
+		log2.Close()
 	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if 2 != len(log2.entries()) {
-		t.Fatal("expected equal")
-	}
-	if log2.LookupByOutput("out") == nil {
-		t.Fatal("expected true")
-	}
-	if log2.LookupByOutput("out2") == nil {
-		t.Fatal("expected true")
-	}
-	// ...and force a recompaction.
-	if !log2.OpenForWrite(kTestFilename, b, &err) {
-		t.Fatal("expected true")
-	}
-	log2.Close()
 
 	// "out2" is dead, it should've been removed.
-	log3 := NewBuildLog()
-	if log3.Load(kTestFilename, &err) != LOAD_SUCCESS {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if 1 != len(log3.entries()) {
-		t.Fatalf("%#v", log3.entries())
-	}
-	if log3.LookupByOutput("out") == nil {
-		t.Fatal("expected true")
-	}
-	if log3.LookupByOutput("out2") != nil {
-		t.Fatal("expected false")
+	{
+		log3 := NewBuildLog()
+		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS {
+			t.Fatal("expected true")
+		}
+		if "" != err {
+			t.Fatal("expected equal")
+		}
+		if 1 != len(log3.entries()) {
+			t.Fatalf("%#v", log3.entries())
+		}
+		if log3.LookupByOutput("out") == nil {
+			t.Fatal("expected true")
+		}
+		if log3.LookupByOutput("out2") != nil {
+			t.Fatal("expected false")
+		}
 	}
 }

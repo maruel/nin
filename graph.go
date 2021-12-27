@@ -680,20 +680,10 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	return false
 }
 
-/*
 // Load a dyndep file from the given node's path and update the
-// build graph with the new information.  One overload accepts
-// a caller-owned 'DyndepFile' object in which to store the
-// information loaded from the dyndep file.
-func (d *DependencyScan) LoadDyndeps(node *Node, err *string) bool {
-	return d.dyndep_loader_.LoadDyndeps(node, err)
-}
-*/
-
-// Load a dyndep file from the given node's path and update the
-// build graph with the new information.  One overload accepts
-// a caller-owned 'DyndepFile' object in which to store the
-// information loaded from the dyndep file.
+// build graph with the new information.
+//
+// The 'DyndepFile' object stores the information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
 	return d.dyndep_loader_.LoadDyndeps(node, ddf, err)
 }
