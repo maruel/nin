@@ -541,7 +541,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 1 != len(log3.entries()) {
-		t.Fatal("expected equal")
+		t.Fatalf("%#v", log3.entries())
 	}
 	if log3.LookupByOutput("out") == nil {
 		t.Fatal("expected true")

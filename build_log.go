@@ -415,52 +415,49 @@ func WriteEntry(f io.Writer, entry *LogEntry) error {
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	defer METRIC_RECORD(".ninja_log recompact")()
+	b.Close()
+	temp_path := path + ".recompact"
+	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
+	if f == nil {
+		*err = err2.Error()
+		return false
+	}
 
-	panic("TODO")
-	/*
-		  Close()
-		  string temp_path = path + ".recompact"
-		  FILE* f = fopen(temp_path, "wb")
-		  if f == nil {
-		    *err = strerror(errno)
-		    return false
-		  }
+	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
+		*err = err2.Error()
+		f.Close()
+		return false
+	}
 
-		  if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
-		    *err = strerror(errno)
-				f.Close()
-		    return false
-		  }
+	var dead_outputs []string
+	// TODO(maruel): Save in order?
+	for name, entry := range b.entries_ {
+		if user.IsPathDead(name) {
+			dead_outputs = append(dead_outputs, name)
+			continue
+		}
 
-		  var dead_outputs []string
-		  for i := b.entries_.begin(); i != b.entries_.end(); i++ {
-		    if user.IsPathDead(i.first) {
-		      dead_outputs.push_back(i.first)
-		      continue
-		    }
+		if err2 := WriteEntry(f, entry); err2 != nil {
+			*err = err2.Error()
+			f.Close()
+			return false
+		}
+	}
 
-				if err2 := b.WriteEntry(f, *i.second); err2 != nil {
-		      *err = err2.Error()
-					f.Close()
-		      return false
-		    }
-		  }
+	for _, name := range dead_outputs {
+		delete(b.entries_, name)
+	}
 
-		  for i := 0; i < dead_outputs.size(); i++ {
-		    b.entries_.erase(dead_outputs[i])
-		  }
+	f.Close()
+	if err2 := os.Remove(path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 
-		  f.Close()
-			if err2 := os.Remove(path); err2 != nil {
-		    *err = err2.Error()
-		    return false
-		  }
-
-			if err2 := os.Rename(temp_path, path); err2 != nil {
-		    *err = err2.Error()
-		    return false
-		  }
-	*/
+	if err2 := os.Rename(temp_path, path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 	return true
 }
 
