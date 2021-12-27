@@ -20,6 +20,9 @@ import (
 	"strconv"
 )
 
+// TODO(maruel): Create a Status (or LinePrinter?) for test cases that
+// redirect to testing.T.Log().
+
 // Abstract interface to object that tracks the status of a build:
 // completion fraction, printing updates.
 type Status interface {
@@ -159,7 +162,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 		// thousands of parallel compile commands.)
 		final_output := ""
 		if !s.printer_.supports_color() {
-			// TODO(maruel): final_output = StripAnsiEscapeCodes(output)
+			final_output = StripAnsiEscapeCodes(output)
 			final_output = output
 		} else {
 			final_output = output

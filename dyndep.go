@@ -26,6 +26,24 @@ func NewDyndeps() *Dyndeps {
 	return &Dyndeps{}
 }
 
+func (d *Dyndeps) String() string {
+	out := "Dyndeps{in:"
+	for i, n := range d.implicit_inputs_ {
+		if i != 0 {
+			out += ","
+		}
+		out += n.path_
+	}
+	out += "; out:"
+	for i, n := range d.implicit_outputs_ {
+		if i != 0 {
+			out += ","
+		}
+		out += n.path_
+	}
+	return out + "}"
+}
+
 // Store data loaded from one dyndep file.  Map from an edge
 // to its dynamically-discovered dependency information.
 // This is a struct rather than a typedef so that we can

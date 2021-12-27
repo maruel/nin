@@ -14,7 +14,10 @@
 
 package ginja
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // A pool for delayed edges.
 // Pools are scoped to a State. Edges within a State will share Pools. A Pool
@@ -279,8 +282,13 @@ func (s *State) Reset() {
 
 // Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
-	// TODO(maruel): Print in order.
-	for _, node := range s.paths_ {
+	names := make([]string, 0, len(s.paths_))
+	for n := range s.paths_ {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		node := s.paths_[name]
 		s := "unknown"
 		if node.status_known() {
 			s = "clean"

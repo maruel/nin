@@ -32,7 +32,6 @@ func (b *BuildLogTest) IsPathDead(s string) bool {
 }
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildLogTest(t)
 	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 

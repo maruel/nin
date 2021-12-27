@@ -804,7 +804,7 @@ func (f *FakeCommandRunner) CanRunMore() bool {
 
 func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 	cmd := edge.EvaluateCommand(false)
-	f.t.Logf("StartCommand(%s)", cmd)
+	//f.t.Logf("StartCommand(%s)", cmd)
 	if len(f.active_edges_) > int(f.max_active_edges_) {
 		f.t.Fatal("oops")
 	}
@@ -4493,19 +4493,25 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
+
+	/* Ugh
 	fmt.Printf("State:\n")
 	b.state_.Dump()
 	fmt.Printf("Plan:\n")
 	b.builder_.plan_.Dump()
+	*/
 
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
+
+	/* Ugh
 	fmt.Printf("After:\n")
 	fmt.Printf("State:\n")
 	b.state_.Dump()
 	fmt.Printf("Plan:\n")
 	b.builder_.plan_.Dump()
+	*/
 	if "" != err {
 		t.Fatal("expected equal")
 	}

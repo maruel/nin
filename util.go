@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 )
 
 // Have a generic fall-through for different versions of C/C++.
@@ -390,66 +391,77 @@ func islatinalpha(c int) bool {
   // isalpha() is locale-dependent.
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
+*/
 
 // Removes all Ansi escape codes (http://www.termsys.demon.co.uk/vtansi.htm).
 func StripAnsiEscapeCodes(in string) string {
-  stripped := ""
-  stripped.reserve(in.size())
+	if strings.IndexByte(in, '\x33') != -1 {
+		return in
+	}
+	panic("TODO")
+	/*
+		  stripped := ""
+		  stripped.reserve(in.size())
 
-  for i := 0; i < in.size(); i++ {
-    if in[i] != '\33' {
-      // Not an escape code.
-      stripped.push_back(in[i])
-      continue
-    }
+		  for i := 0; i < in.size(); i++ {
+		    if in[i] != '\33' {
+		      // Not an escape code.
+		      stripped.push_back(in[i])
+		      continue
+		    }
 
-    // Only strip CSIs for now.
-    if i + 1 >= in.size() {
-    	break
-    }
-    if in[i + 1] != '[' {  // Not a CSI.
-    	continue
-    }
-    i += 2
+		    // Only strip CSIs for now.
+		    if i + 1 >= in.size() {
+		    	break
+		    }
+		    if in[i + 1] != '[' {  // Not a CSI.
+		    	continue
+		    }
+		    i += 2
 
-    // Skip everything up to and including the next [a-zA-Z].
-    while i < in.size() && !islatinalpha(in[i]) {
-      i++
-    }
-  }
-  return stripped
+		    // Skip everything up to and including the next [a-zA-Z].
+		    while i < in.size() && !islatinalpha(in[i]) {
+		      i++
+		    }
+		  }
+			return stripped
+	*/
+	return in
 }
 
 // @return the number of processors on the machine.  Useful for an initial
 // guess for how many jobs to run in parallel.  @return 0 on error.
 func GetProcessorCount() int {
-  // Need to use GetLogicalProcessorInformationEx to get real core count on
-  // machines with >64 cores. See https://stackoverflow.com/a/31209344/21475
-  len2 := 0
-  if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len2) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
-    vector<char> buf(len2)
-    cores := 0
-    if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len2) {
-      for i := 0; i < len2;  {
-        auto info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
-        if info.Relationship == RelationProcessorCore && info.Processor.GroupCount == 1 {
-          for core_mask := info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1 {
-            cores += (core_mask & 1)
-          }
-        }
-        i += info.Size
-      }
-      if cores != 0 {
-        return cores
-      }
-    }
-  }
-  return GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)
-  return sysconf(_SC_NPROCESSORS_ONLN)
+	return runtime.NumCPU()
+	/*
+	   // Need to use GetLogicalProcessorInformationEx to get real core count on
+	   // machines with >64 cores. See https://stackoverflow.com/a/31209344/21475
+	   len2 := 0
+	   if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len2) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
+	     vector<char> buf(len2)
+	     cores := 0
+	     if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len2) {
+	       for i := 0; i < len2;  {
+	         auto info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
+	         if info.Relationship == RelationProcessorCore && info.Processor.GroupCount == 1 {
+	           for core_mask := info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1 {
+	             cores += (core_mask & 1)
+	           }
+	         }
+	         i += info.Size
+	       }
+	       if cores != 0 {
+	         return cores
+	       }
+	     }
+	   }
+	   return GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)
+	   return sysconf(_SC_NPROCESSORS_ONLN)
+	*/
 }
 
-static double CalculateProcessorLoad(uint64_t idle_ticks, uint64_t total_ticks)
-{
+/*
+func CalculateProcessorLoad(idle_ticks, total_ticks uint64) float64 {
   static uint64_t previous_idle_ticks = 0
   static uint64_t previous_total_ticks = 0
   static double previous_load = -0.0
@@ -515,11 +527,13 @@ func GetLoadAverage() float64 {
 
   return posix_compatible_load
 }
+
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {
   return -0.0f
 }
+
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {
@@ -531,6 +545,7 @@ func GetLoadAverage() float64 {
   // Calculation taken from comment in libperfstats.h
   return double(cpu_stats.loadavg[0]) / double(1 << SBITS)
 }
+
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {
@@ -540,6 +555,7 @@ func GetLoadAverage() float64 {
   }
   return 1.0 / (1 << SI_LOAD_SHIFT) * si.loads[0]
 }
+
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {
