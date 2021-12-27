@@ -12,87 +12,91 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+)
 
 // Runs the process of creating GraphViz .dot file output.
 type GraphViz struct {
-
-  dyndep_loader_ DyndepLoader
-  visited_nodes_ map[*Node]struct{}
-  visited_edges_ EdgeSet
+	out            io.Writer
+	dyndep_loader_ DyndepLoader
+	visited_nodes_ map[*Node]struct{}
+	visited_edges_ map[*Edge]struct{}
 }
-func NewGraphViz(state *State, disk_interface *DiskInterface) GraphViz {
+
+func NewGraphViz(state *State, disk_interface DiskInterface) GraphViz {
 	return GraphViz{
-		dyndep_loader_: state, disk_interface,
+		out:            os.Stdout,
+		dyndep_loader_: NewDyndepLoader(state, disk_interface),
+		visited_nodes_: map[*Node]struct{}{},
+		visited_edges_: map[*Edge]struct{}{},
 	}
 }
 
-
 func (g *GraphViz) AddTarget(node *Node) {
-  if g.visited_nodes_.find(node) != g.visited_nodes_.end() {
-    return
-  }
+	if _, ok := g.visited_nodes_[node]; ok {
+		return
+	}
 
-  pathstr := node.path()
-  replace(pathstr.begin(), pathstr.end(), '\\', '/')
-  printf("\"%p\" [label=\"%s\"]\n", node, pathstr)
-  g.visited_nodes_.insert(node)
+	fmt.Fprintf(g.out, "\"%p\" [label=\"%s\"]\n", node, strings.ReplaceAll(node.path(), "\\", "/"))
+	g.visited_nodes_[node] = struct{}{}
 
-  edge := node.in_edge()
+	edge := node.in_edge()
 
-  if edge == nil {
-    // Leaf node.
-    // Draw as a rect?
-    return
-  }
+	if edge == nil {
+		// Leaf node.
+		// Draw as a rect?
+		return
+	}
 
-  if g.visited_edges_.find(edge) != g.visited_edges_.end() {
-    return
-  }
-  g.visited_edges_.insert(edge)
+	if _, ok := g.visited_edges_[edge]; ok {
+		return
+	}
+	g.visited_edges_[edge] = struct{}{}
 
-  if edge.dyndep_ && edge.dyndep_.dyndep_pending() {
-    err := ""
-    if !g.dyndep_loader_.LoadDyndeps(edge.dyndep_, &err) {
-      Warning("%s\n", err)
-    }
-  }
+	if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
+		err := ""
+		if !g.dyndep_loader_.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
+			Warning("%s\n", err)
+		}
+	}
 
-  if edge.inputs_.size() == 1 && edge.outputs_.size() == 1 {
-    // Can draw simply.
-    // Note extra space before label text -- this is cosmetic and feels
-    // like a graphviz bug.
-    printf("\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
-  } else {
-    printf("\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.rule_.name())
-    for out := edge.outputs_.begin(); out != edge.outputs_.end(); out++ {
-      printf("\"%p\" -> \"%p\"\n", edge, *out)
-    }
-    for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
-      string order_only = ""
-      if edge.is_order_only(in - edge.inputs_.begin()) {
-        order_only = " style=dotted"
-      }
-      printf("\"%p\" -> \"%p\" [arrowhead=none%s]\n", (*in), edge, order_only)
-    }
-  }
+	if len(edge.inputs_) == 1 && len(edge.outputs_) == 1 {
+		// Can draw simply.
+		// Note extra space before label text -- this is cosmetic and feels
+		// like a graphviz bug.
+		fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
+	} else {
+		fmt.Fprintf(g.out, "\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.rule_.name())
+		for _, out := range edge.outputs_ {
+			fmt.Fprintf(g.out, "\"%p\" -> \"%p\"\n", edge, out)
+		}
+		for i, in := range edge.inputs_ {
+			order_only := ""
+			if edge.is_order_only(i) {
+				order_only = " style=dotted"
+			}
+			fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [arrowhead=none%s]\n", in, edge, order_only)
+		}
+	}
 
-  for in := edge.inputs_.begin(); in != edge.inputs_.end(); in++ {
-    AddTarget(*in)
-  }
+	for _, in := range edge.inputs_ {
+		g.AddTarget(in)
+	}
 }
 
 func (g *GraphViz) Start() {
-  printf("digraph ninja {\n")
-  printf("rankdir=\"LR\"\n")
-  printf("node [fontsize=10, shape=box, height=0.25]\n")
-  printf("edge [fontsize=10]\n")
+	fmt.Fprintf(g.out, "digraph ninja {\n")
+	fmt.Fprintf(g.out, "rankdir=\"LR\"\n")
+	fmt.Fprintf(g.out, "node [fontsize=10, shape=box, height=0.25]\n")
+	fmt.Fprintf(g.out, "edge [fontsize=10]\n")
 }
 
 func (g *GraphViz) Finish() {
-  printf("}\n")
+	fmt.Fprintf(g.out, "}\n")
 }
-

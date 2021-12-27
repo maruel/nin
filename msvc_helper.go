@@ -12,24 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
-
 
 // Wraps a synchronous execution of a CL subprocess.
 type CLWrapper struct {
+	env_block_ string
+}
 
-  env_block_ *void
-}
 func NewCLWrapper() CLWrapper {
-	return CLWrapper{
-		env_block_: nil,
-	}
+	return CLWrapper{}
 }
+
 // Set the environment block (as suitable for CreateProcess) to be used
 // by Run().
-func (c *CLWrapper) SetEnvBlock(env_block *void) {
+func (c *CLWrapper) SetEnvBlock(env_block string) {
 	c.env_block_ = env_block
 }
-

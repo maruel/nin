@@ -12,28 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "testing"
 
 func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
-  if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") { t.Fatal("expected equal") }
+	if "sub\\some\\ sdk\\foo.h" != EscapeForDepfile("sub\\some sdk\\foo.h") {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestMSVCHelperTest_EnvBlock(t *testing.T) {
-  char env_block[] = "foo=bar\0"
-  var cl CLWrapper
-  cl.SetEnvBlock(env_block)
-  output := ""
-  cl.Run("cmd /c \"echo foo is %foo%", &output)
-  if "foo is bar\r\n" != output { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	env_block := "foo=bar\x00"
+	var cl CLWrapper
+	cl.SetEnvBlock(env_block)
+	output := ""
+	cl.Run("cmd /c \"echo foo is %foo%", &output)
+	if "foo is bar\r\n" != output {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestMSVCHelperTest_NoReadOfStderr(t *testing.T) {
-  var cl CLWrapper
-  output := ""
-  cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
-  if "to stdout\r\n" != output { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	var cl CLWrapper
+	output := ""
+	cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
+	if "to stdout\r\n" != output {
+		t.Fatal("expected equal")
+	}
 }
-

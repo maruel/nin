@@ -17,20 +17,24 @@ package ginja
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
 type IncludesNormalize struct {
-	/*
-	  // Internal utilities made available for testing, maybe useful otherwise.
-	  static std::string AbsPath(StringPiece s, std::string* err);
-	  static std::string Relativize(StringPiece path,
-	                                const std::vector<StringPiece>& start_list,
-	                                std::string* err);
-
-	  /// Normalize by fixing slashes style, fixing redundant .. and . and makes the
-	  /// path |input| relative to |this->relative_to_| and store to |result|.
-	  bool Normalize(const std::string& input, std::string* result,
-	                 std::string* err) const;
-	*/
 	relative_to_       string
 	split_relative_to_ []string
 }
 
-// TODO(maruel): Implement the functions.
+/// Normalize by fixing slashes style, fixing redundant .. and . and makes the
+/// path |input| relative to |this->relative_to_| and store to |result|.
+func (i *IncludesNormalize) Normalize(input string, result, err *string) bool {
+	panic("TODO")
+	return false
+}
+
+// Internal utilities made available for testing, maybe useful otherwise.
+func AbsPath(s string, err *string) string {
+	panic("TODO")
+	return ""
+}
+
+func Relativize(path string, start_list []string, err *string) string {
+	panic("TODO")
+	return ""
+}

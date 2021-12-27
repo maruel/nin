@@ -12,132 +12,202 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
+import "testing"
 
-func GetCurDir() string {
-  char buf[_MAX_PATH]
-  _getcwd(buf, sizeof(buf))
-  vector<string> parts = SplitStringPiece(buf, '\\')
-  return parts[parts.size() - 1].AsString()
+func GetCurDir(t *testing.T) string {
+	t.Skip("TODO")
+	/*
+	  char buf[_MAX_PATH]
+	  _getcwd(buf, sizeof(buf))
+	  vector<string> parts = SplitStringPiece(buf, '\\')
+	  return parts[parts.size() - 1]
+	*/
+	return ""
 }
 
-func NormalizeAndCheckNoError(input string) string {
-  string result, err
-  IncludesNormalize normalizer(".")
-  if !normalizer.Normalize(input, &result, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  return result
+func NormalizeAndCheckNoError(t *testing.T, input string) string {
+	return NormalizeRelativeAndCheckNoError(t, input, ".")
 }
 
-func NormalizeRelativeAndCheckNoError(input string, relative_to string) string {
-  string result, err
-  IncludesNormalize normalizer(relative_to)
-  if !normalizer.Normalize(input, &result, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
-  return result
+func NormalizeRelativeAndCheckNoError(t *testing.T, input, relative_to string) string {
+	result := ""
+	err := ""
+	normalizer := IncludesNormalize{relative_to_: relative_to}
+	if !normalizer.Normalize(input, &result, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	return result
 }
 
 func TestIncludesNormalize_Simple(t *testing.T) {
-  if "b" != NormalizeAndCheckNoError("a\\..\\b") { t.Fatal("expected equal") }
-  if "b" != NormalizeAndCheckNoError("a\\../b") { t.Fatal("expected equal") }
-  if "a/b" != NormalizeAndCheckNoError("a\\.\\b") { t.Fatal("expected equal") }
-  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	if "b" != NormalizeAndCheckNoError(t, "a\\..\\b") {
+		t.Fatal("expected equal")
+	}
+	if "b" != NormalizeAndCheckNoError(t, "a\\../b") {
+		t.Fatal("expected equal")
+	}
+	if "a/b" != NormalizeAndCheckNoError(t, "a\\.\\b") {
+		t.Fatal("expected equal")
+	}
+	if "a/b" != NormalizeAndCheckNoError(t, "a\\./b") {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestIncludesNormalize_WithRelative(t *testing.T) {
-  err := ""
-  currentdir := GetCurDir()
-  if "c" != NormalizeRelativeAndCheckNoError("a/b/c", "a/b") { t.Fatal("expected equal") }
-  if "a" != NormalizeAndCheckNoError(IncludesNormalize::AbsPath("a", &err)) { t.Fatal("expected equal") }
-  if "" != err { t.Fatal("expected equal") }
-  if string("../") + currentdir + string("/a") != NormalizeRelativeAndCheckNoError("a", "../b") { t.Fatal("expected equal") }
-  if string("../") + currentdir + string("/a/b") != NormalizeRelativeAndCheckNoError("a/b", "../c") { t.Fatal("expected equal") }
-  if "../../a" != NormalizeRelativeAndCheckNoError("a", "b/c") { t.Fatal("expected equal") }
-  if "." != NormalizeRelativeAndCheckNoError("a", "a") { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	err := ""
+	currentdir := GetCurDir(t)
+	if "c" != NormalizeRelativeAndCheckNoError(t, "a/b/c", "a/b") {
+		t.Fatal("expected equal")
+	}
+	if "a" != NormalizeAndCheckNoError(t, AbsPath("a", &err)) {
+		t.Fatal("expected equal")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if string("../")+currentdir+string("/a") != NormalizeRelativeAndCheckNoError(t, "a", "../b") {
+		t.Fatal("expected equal")
+	}
+	if string("../")+currentdir+string("/a/b") != NormalizeRelativeAndCheckNoError(t, "a/b", "../c") {
+		t.Fatal("expected equal")
+	}
+	if "../../a" != NormalizeRelativeAndCheckNoError(t, "a", "b/c") {
+		t.Fatal("expected equal")
+	}
+	if "." != NormalizeRelativeAndCheckNoError(t, "a", "a") {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestIncludesNormalize_Case(t *testing.T) {
-  if "b" != NormalizeAndCheckNoError("Abc\\..\\b") { t.Fatal("expected equal") }
-  if "BdEf" != NormalizeAndCheckNoError("Abc\\..\\BdEf") { t.Fatal("expected equal") }
-  if "A/b" != NormalizeAndCheckNoError("A\\.\\b") { t.Fatal("expected equal") }
-  if "a/b" != NormalizeAndCheckNoError("a\\./b") { t.Fatal("expected equal") }
-  if "A/B" != NormalizeAndCheckNoError("A\\.\\B") { t.Fatal("expected equal") }
-  if "A/B" != NormalizeAndCheckNoError("A\\./B") { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	if "b" != NormalizeAndCheckNoError(t, "Abc\\..\\b") {
+		t.Fatal("expected equal")
+	}
+	if "BdEf" != NormalizeAndCheckNoError(t, "Abc\\..\\BdEf") {
+		t.Fatal("expected equal")
+	}
+	if "A/b" != NormalizeAndCheckNoError(t, "A\\.\\b") {
+		t.Fatal("expected equal")
+	}
+	if "a/b" != NormalizeAndCheckNoError(t, "a\\./b") {
+		t.Fatal("expected equal")
+	}
+	if "A/B" != NormalizeAndCheckNoError(t, "A\\.\\B") {
+		t.Fatal("expected equal")
+	}
+	if "A/B" != NormalizeAndCheckNoError(t, "A\\./B") {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestIncludesNormalize_DifferentDrive(t *testing.T) {
-  if "stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "p:\\vs08") { t.Fatal("expected equal") }
-  if "stuff.h" != NormalizeRelativeAndCheckNoError("P:\\Vs08\\stuff.h", "p:\\vs08") { t.Fatal("expected equal") }
-  if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError("p:\\vs08\\stuff.h", "c:\\vs08") { t.Fatal("expected equal") }
-  if "P:/vs08/stufF.h" != NormalizeRelativeAndCheckNoError( "P:\\vs08\\stufF.h", "D:\\stuff/things") { t.Fatal("expected equal") }
-  if "P:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError( "P:/vs08\\stuff.h", "D:\\stuff/things") { t.Fatal("expected equal") }
-  if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError("P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	if "stuff.h" != NormalizeRelativeAndCheckNoError(t, "p:\\vs08\\stuff.h", "p:\\vs08") {
+		t.Fatal("expected equal")
+	}
+	if "stuff.h" != NormalizeRelativeAndCheckNoError(t, "P:\\Vs08\\stuff.h", "p:\\vs08") {
+		t.Fatal("expected equal")
+	}
+	if "p:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError(t, "p:\\vs08\\stuff.h", "c:\\vs08") {
+		t.Fatal("expected equal")
+	}
+	if "P:/vs08/stufF.h" != NormalizeRelativeAndCheckNoError(t, "P:\\vs08\\stufF.h", "D:\\stuff/things") {
+		t.Fatal("expected equal")
+	}
+	if "P:/vs08/stuff.h" != NormalizeRelativeAndCheckNoError(t, "P:/vs08\\stuff.h", "D:\\stuff/things") {
+		t.Fatal("expected equal")
+	}
+	if "P:/wee/stuff.h" != NormalizeRelativeAndCheckNoError(t, "P:/vs08\\../wee\\stuff.h", "D:\\stuff/things") {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
-  const char kLongInputString[] =
-      "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the pdb (for example, mspdb110.dll) could not be found on your path. This is usually a configuration error. Compilation will continue using /Z7 instead of /Zi, but expect a similar error when you link your program."
-  // Too long, won't be canonicalized. Ensure doesn't crash.
-  string result, err
-  IncludesNormalize normalizer(".")
-  if  normalizer.Normalize(kLongInputString, &result, &err) { t.Fatal("expected false") }
-  if "path too long" != err { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	kLongInputString := "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the pdb (for example, mspdb110.dll) could not be found on your path. This is usually a configuration error. Compilation will continue using /Z7 instead of /Zi, but expect a similar error when you link your program."
+	// Too long, won't be canonicalized. Ensure doesn't crash.
+	result := ""
+	err := ""
+	normalizer := IncludesNormalize{relative_to_: "."}
+	if normalizer.Normalize(kLongInputString, &result, &err) {
+		t.Fatal("expected false")
+	}
+	if "path too long" != err {
+		t.Fatal("expected equal")
+	}
 
-  // Construct max size path having cwd prefix.
-  // kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
-  char kExactlyMaxPath[_MAX_PATH + 1]
-  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
+	// Construct max size path having cwd prefix.
+	// kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
+	t.Skip("TODO")
+	/*
+	  char kExactlyMaxPath[_MAX_PATH + 1]
+	  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
 
-  cwd_len := strlen(kExactlyMaxPath)
-  ASSERT_LE(cwd_len + 3 + 1, _MAX_PATH)
-  kExactlyMaxPath[cwd_len] = '\\'
-  kExactlyMaxPath[cwd_len + 1] = 'a'
-  kExactlyMaxPath[cwd_len + 2] = '\\'
+	  cwd_len := len(kExactlyMaxPath)
+	  ASSERT_LE(cwd_len + 3 + 1, _MAX_PATH)
+	  kExactlyMaxPath[cwd_len] = '\\'
+	  kExactlyMaxPath[cwd_len + 1] = 'a'
+	  kExactlyMaxPath[cwd_len + 2] = '\\'
 
-  kExactlyMaxPath[cwd_len + 3] = 'a'
+	  kExactlyMaxPath[cwd_len + 3] = 'a'
 
-  for int i = cwd_len + 4; i < _MAX_PATH; i++ {
-    if i > cwd_len + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
-      kExactlyMaxPath[i] = '\\'
-    } else {
-      kExactlyMaxPath[i] = 'a'
-    }
-  }
+	  for int i = cwd_len + 4; i < _MAX_PATH; i++ {
+	    if i > cwd_len + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
+	      kExactlyMaxPath[i] = '\\'
+	    } else {
+	      kExactlyMaxPath[i] = 'a'
+	    }
+	  }
 
-  kExactlyMaxPath[_MAX_PATH] = '\0'
-  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
+	  kExactlyMaxPath[_MAX_PATH] = '\0'
+	  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
 
-  string forward_slashes(kExactlyMaxPath)
-  replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
-  // Make sure a path that's exactly _MAX_PATH long is canonicalized.
-  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(kExactlyMaxPath) { t.Fatal("expected equal") }
+	  string forward_slashes(kExactlyMaxPath)
+	  replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
+	  // Make sure a path that's exactly _MAX_PATH long is canonicalized.
+	  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(t,kExactlyMaxPath) { t.Fatal("expected equal") }
+	*/
 }
 
 func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
-  string result, err
-  IncludesNormalize normalizer(".")
-  // A short path should work
-  if !normalizer.Normalize("a", &result, &err) { t.Fatal("expected true") }
-  if "" != err { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	result := ""
+	err := ""
+	normalizer := IncludesNormalize{relative_to_: "."}
+	// A short path should work
+	if !normalizer.Normalize("a", &result, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-  // Construct max size path having cwd prefix.
-  // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
-  char kExactlyMaxPath[_MAX_PATH + 1]
-  for i := 0; i < _MAX_PATH; i++ {
-    if i < _MAX_PATH - 1 && i % 10 == 4 {
-      kExactlyMaxPath[i] = '\\'
-    } else {
-      kExactlyMaxPath[i] = 'a'
-    }
-  }
-  kExactlyMaxPath[_MAX_PATH] = '\0'
-  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
+	t.Skip("TODO")
+	/*
+	  // Construct max size path having cwd prefix.
+	  // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
+	  char kExactlyMaxPath[_MAX_PATH + 1]
+	  for i := 0; i < _MAX_PATH; i++ {
+	    if i < _MAX_PATH - 1 && i % 10 == 4 {
+	      kExactlyMaxPath[i] = '\\'
+	    } else {
+	      kExactlyMaxPath[i] = 'a'
+	    }
+	  }
+	  kExactlyMaxPath[_MAX_PATH] = '\0'
+	  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
 
-  // Make sure a path that's exactly _MAX_PATH long fails with a proper error.
-  if normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.Fatal("expected false") }
-  if !err.find("GetFullPathName") != string::npos { t.Fatal("expected true") }
+	  // Make sure a path that's exactly _MAX_PATH long fails with a proper error.
+	  if normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.Fatal("expected false") }
+	  if !err.find("GetFullPathName") != string::npos { t.Fatal("expected true") }
+	*/
 }
-
