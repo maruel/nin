@@ -4112,7 +4112,6 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuild(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover nothing.
 	b.AssertParse(&b.state_, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
@@ -4126,7 +4125,11 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	files_created := len(b.fs_.files_created_)
+	want_created := map[string]struct{}{"dd-in": {}, "in1": {}, "in2": {}}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
+
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
@@ -4134,36 +4137,19 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 2 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+	want_command := []string{"cp dd-in dd", "touch out"}
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_files_read := []string{"dd-in", "dd"}
+	if diff := cmp.Diff(want_files_read, b.fs_.files_read_); diff != "" {
+		t.Fatal(diff)
 	}
-	if "touch out" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
+	want_created["dd"] = struct{}{}
+	want_created["out"] = struct{}{}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
 	}
-	if 2 != len(b.fs_.files_read_) {
-		t.Fatal("expected equal")
-	}
-	if "dd-in" != b.fs_.files_read_[0] {
-		t.Fatal("expected equal")
-	}
-	if "dd" != b.fs_.files_read_[1] {
-		t.Fatal("expected equal")
-	}
-	if 2+files_created != len(b.fs_.files_created_) {
-		t.Fatal("expected equal")
-	}
-	t.Skip("TODO")
-	/*
-		if 1 != b.fs_.files_created_.count("dd") {
-			t.Fatal("expected equal")
-		}
-		if 1 != b.fs_.files_created_.count("out") {
-			t.Fatal("expected equal")
-		}
-	*/
 }
 
 func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
