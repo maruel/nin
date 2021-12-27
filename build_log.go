@@ -464,56 +464,53 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 // Restat all outputs in the log
 func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_count int, outputs []string, err *string) bool {
 	defer METRIC_RECORD(".ninja_log restat")()
-	panic("TODO")
-	/*
-		   Close()
-		   string temp_path = path.AsString() + ".restat"
-		   FILE* f = fopen(temp_path, "wb")
-		   if f == nil {
-		     *err = strerror(errno)
-		     return false
-		   }
+	b.Close()
+	temp_path := path + ".restat"
+	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY, 0o666)
+	if f == nil {
+		*err = err2.Error()
+		return false
+	}
 
-		   if fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion) < 0 {
-		     *err = strerror(errno)
-		     f.Close()
-		     return false
-		   }
-		   for i := b.entries_.begin(); i != b.entries_.end(); i++ {
-		     skip := output_count > 0
-		     for j := 0; j < output_count; j++ {
-		       if i.second.output == outputs[j] {
-		         skip = false
-		         break
-		       }
-		     }
-		     if skip == nil {
-		       mtime := disk_interface.Stat(i.second.output, err)
-		       if mtime == -1 {
-						f.Close()
-		         return false
-		       }
-		       i.second.mtime = mtime
-		     }
-
-				 if err2 := WriteEntry(f, *i.second); err2 != nil {
-		       *err = err2.Error()
-		       f.Close()
-		       return false
-		     }
-		   }
-
+	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
+		*err = err2.Error()
+		f.Close()
+		return false
+	}
+	for _, i := range b.entries_ {
+		skip := output_count > 0
+		for j := 0; j < output_count; j++ {
+			if i.output == outputs[j] {
+				skip = false
+				break
+			}
+		}
+		if !skip {
+			mtime := disk_interface.Stat(i.output, err)
+			if mtime == -1 {
 				f.Close()
-		   if unlink(path.str_) < 0 {
-		     *err = strerror(errno)
-		     return false
-		   }
+				return false
+			}
+			i.mtime = mtime
+		}
 
-		   if rename(temp_path, path.str_) < 0 {
-		     *err = strerror(errno)
-		     return false
-		   }
-	*/
+		if err2 := WriteEntry(f, i); err2 != nil {
+			*err = err2.Error()
+			f.Close()
+			return false
+		}
+	}
+
+	f.Close()
+	if err2 := os.Remove(path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
+
+	if err2 := os.Rename(temp_path, path); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 
 	return true
 }

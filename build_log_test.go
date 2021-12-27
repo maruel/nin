@@ -15,7 +15,12 @@
 package ginja
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -82,13 +87,11 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 }
 
 func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildLogTest(t)
-	//kExpectedVersion := "# ninja log vX\n"
-	//kVersionPos := len(kExpectedVersion) - 2 // Points at 'X'.
+	// Bump when the version is changed.
+	kExpectedVersion := []byte("# ninja log v5\n")
 
 	log := NewBuildLog()
-	//contents := ""
 	err := ""
 	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	if !log.OpenForWrite(kTestFilename, b, &err) {
@@ -99,70 +102,57 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	}
 	log.Close()
 
-	t.Skip("TODO")
-	/*
-		if 0 != b.ReadFile(kTestFilename, &contents, &err) {
-			t.Fatal("expected equal")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if len(contents) >= kVersionPos {
-			contents[kVersionPos] = 'X'
-		}
-		if kExpectedVersion != contents {
-			t.Fatal("expected equal")
-		}
+	contents, err2 := ioutil.ReadFile(kTestFilename)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	if !bytes.Equal(kExpectedVersion, contents) {
+		t.Fatal(string(contents))
+	}
 
-		// Opening the file anew shouldn't add a second version string.
-		if !log.OpenForWrite(kTestFilename, b, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		log.Close()
+	// Opening the file anew shouldn't add a second version string.
+	if !log.OpenForWrite(kTestFilename, b, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	log.Close()
 
-		contents = ""
-		if 0 != b.ReadFile(kTestFilename, &contents, &err) {
-			t.Fatal("expected equal")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if len(contents) >= kVersionPos {
-			contents[kVersionPos] = 'X'
-		}
-		if kExpectedVersion != contents {
-			t.Fatal("expected equal")
-		}
-	*/
+	contents, err2 = ioutil.ReadFile(kTestFilename)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	if !bytes.Equal(kExpectedVersion, contents) {
+		t.Fatal(string(contents))
+	}
 }
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
-	t.Skip("TODO")
-	/*
-			b := NewBuildLogTest(t)
-			kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-		  FILE* f = fopen(kTestFilename, "wb")
-		  fprintf(f, "# ninja log v4\n")
-		  fprintf(f, "0\t1\t2\tout\tcommand abc\n")
-		  fprintf(f, "3\t4\t5\tout\tcommand def\n")
-		  fclose(f)
+	b := NewBuildLogTest(t)
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	content := "# ninja log v4\n0\t1\t2\tout\tcommand abc\n3\t4\t5\tout\tcommand def\n"
+	if err := ioutil.WriteFile(kTestFilename, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
-		  err := ""
-		log := NewBuildLog()
-		  if !log.Load(kTestFilename, &err) { t.Fatal("expected true") }
-		  if "" != err { t.Fatal("expected equal") }
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal(err)
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-			e := log.LookupByOutput("out")
-		  if !e { t.Fatal("expected true") }
-		  AssertHash("command def", e.command_hash)
-	*/
+	e := log.LookupByOutput("out")
+	if e == nil {
+		t.Fatal("expected true")
+	}
+	b.AssertHash("command def", e.command_hash)
 }
 
 func TestBuildLogTest_Truncate(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildLogTest(t)
 	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
@@ -181,151 +171,132 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		log1.Close()
 	}
 
-	t.Skip("TODO")
-	/*
-		var statbuf stat
-		if 0 != stat(kTestFilename, &statbuf) {
+	// For all possible truncations of the input file, assert that we don't
+	// crash when parsing.
+	for size := getFileSize(t, kTestFilename); size > 0; size-- {
+		log2 := NewBuildLog()
+		err := ""
+		if !log2.OpenForWrite(kTestFilename, b, &err) {
+			t.Fatal("expected true")
+		}
+		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if statbuf.st_size <= 0 {
-			t.Fatal("expected greater")
+		log2.RecordCommand(b.state_.edges_[0], 15, 18, 0)
+		log2.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+		log2.Close()
+
+		if err := os.Truncate(kTestFilename, int64(size)); err != nil {
+			t.Fatal(err)
 		}
-
-		// For all possible truncations of the input file, assert that we don't
-		// crash when parsing.
-		for size := statbuf.st_size; size > 0; size-- {
-		log2 := NewBuildLog()
-			err := ""
-			if !log2.OpenForWrite(kTestFilename, b, &err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			log2.RecordCommand(b.state_.edges_[0], 15, 18, 0)
-			log2.RecordCommand(b.state_.edges_[1], 20, 25, 0)
-			log2.Close()
-
-			if !Truncate(kTestFilename, size, &err) {
-				t.Fatal("expected true")
-			}
 
 		log3 := NewBuildLog()
-			err = nil
-			if !log3.Load(kTestFilename, &err) == LOAD_SUCCESS || !err.empty() {
-				t.Fatal("expected true")
-			}
+		err = ""
+		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS || err != "" {
+			t.Fatal(err)
 		}
-	*/
+	}
 }
 
 func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildLogTest(t)
-		kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-		FILE * f = fopen(kTestFilename, "wb")
-		fprintf(f, "# ninja log v3\n")
-		fprintf(f, "123 456 0 out command\n")
-		fclose(f)
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	content := []byte("# ninja log v3\n123 456 0 out command\n")
+	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
 
-		err := ""
-		log := NewBuildLog()
-		if !log.Load(kTestFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if err.find("version") == string::npos { t.Fatal("expected different") }
-	*/
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal(err)
+	}
+	if !strings.Contains(err, "version") {
+		t.Fatal("expected different")
+	}
 }
 
 func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildLogTest(t)
-		FILE * f = fopen(kTestFilename, "wb")
-		fprintf(f, "# ninja log v4\n")
-		fprintf(f, "123\t456\t456\tout with space\tcommand\n")
-		fclose(f)
+	b := NewBuildLogTest(t)
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	content := []byte("# ninja log v4\n123\t456\t456\tout with space\tcommand\n")
+	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
 
-		err := ""
-		log := NewBuildLog()
-		if !log.Load(kTestFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
 
-		e := log.LookupByOutput("out with space")
-		if !e {
-			t.Fatal("expected true")
-		}
-		if 123 != e.start_time {
-			t.Fatal("expected equal")
-		}
-		if 456 != e.end_time {
-			t.Fatal("expected equal")
-		}
-		if 456 != e.mtime {
-			t.Fatal("expected equal")
-		}
-		AssertHash("command", e.command_hash)
-	*/
+	e := log.LookupByOutput("out with space")
+	if e == nil {
+		t.Fatal("expected true")
+	}
+	if 123 != e.start_time {
+		t.Fatal("expected equal")
+	}
+	if 456 != e.end_time {
+		t.Fatal("expected equal")
+	}
+	if 456 != e.mtime {
+		t.Fatal("expected equal")
+	}
+	b.AssertHash("command", e.command_hash)
 }
 
 func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildLogTest(t)
-		// Old versions of ninja accidentally wrote multiple version headers to the
-		// build log on Windows. This shouldn't crash, and the second version header
-		// should be ignored.
-		FILE * f = fopen(kTestFilename, "wb")
-		fprintf(f, "# ninja log v4\n")
-		fprintf(f, "123\t456\t456\tout\tcommand\n")
-		fprintf(f, "# ninja log v4\n")
-		fprintf(f, "456\t789\t789\tout2\tcommand2\n")
-		fclose(f)
+	b := NewBuildLogTest(t)
+	// Old versions of ninja accidentally wrote multiple version headers to the
+	// build log on Windows. This shouldn't crash, and the second version header
+	// should be ignored.
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	content := []byte("# ninja log v4\n123\t456\t456\tout\tcommand\n# ninja log v4\n456\t789\t789\tout2\tcommand2\n")
+	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
 
-		err := ""
-		log := NewBuildLog()
-		if !log.Load(kTestFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-		e := log.LookupByOutput("out")
-		if !e {
-			t.Fatal("expected true")
-		}
-		if 123 != e.start_time {
-			t.Fatal("expected equal")
-		}
-		if 456 != e.end_time {
-			t.Fatal("expected equal")
-		}
-		if 456 != e.mtime {
-			t.Fatal("expected equal")
-		}
-		AssertHash("command", e.command_hash)
+	e := log.LookupByOutput("out")
+	if e == nil {
+		t.Fatal("expected true")
+	}
+	if 123 != e.start_time {
+		t.Fatal("expected equal")
+	}
+	if 456 != e.end_time {
+		t.Fatal("expected equal")
+	}
+	if 456 != e.mtime {
+		t.Fatal("expected equal")
+	}
+	b.AssertHash("command", e.command_hash)
 
-		e = log.LookupByOutput("out2")
-		if !e {
-			t.Fatal("expected true")
-		}
-		if 456 != e.start_time {
-			t.Fatal("expected equal")
-		}
-		if 789 != e.end_time {
-			t.Fatal("expected equal")
-		}
-		if 789 != e.mtime {
-			t.Fatal("expected equal")
-		}
-		AssertHash("command2", e.command_hash)
-	*/
+	e = log.LookupByOutput("out2")
+	if e == nil {
+		t.Fatal("expected true")
+	}
+	if 456 != e.start_time {
+		t.Fatal("expected equal")
+	}
+	if 789 != e.end_time {
+		t.Fatal("expected equal")
+	}
+	if 789 != e.mtime {
+		t.Fatal("expected equal")
+	}
+	b.AssertHash("command2", e.command_hash)
 }
 
 type TestDiskInterface struct {
@@ -335,114 +306,117 @@ func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
 	return 4
 }
 func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
-	if !false {
-		panic("oops")
-	}
+	panic("oops")
 	return true
 }
 func (t *TestDiskInterface) MakeDir(path string) bool {
-	if !false {
-		panic("oops")
-	}
+	panic("oops")
 	return false
 }
 func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
-	if !false {
-		panic("oops")
-	}
+	panic("oops")
 	return NotFound
 }
 func (t *TestDiskInterface) RemoveFile(path string) int {
-	if !false {
-		panic("oops")
-	}
+	panic("oops")
 	return 0
 }
 
 func TestBuildLogTest_Restat(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildLogTest(t)
-		FILE * f = fopen(kTestFilename, "wb")
-		fprintf(f, "# ninja log v4\n1\t2\t3\tout\tcommand\n")
-		fclose(f)
-		err := ""
-		log := NewBuildLog()
-		if !log.Load(kTestFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		e := log.LookupByOutput("out")
-		if 3 != e.mtime {
-			t.Fatal("expected equal")
-		}
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	content := []byte("# ninja log v4\n1\t2\t3\tout\tcommand\n")
+	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	e := log.LookupByOutput("out")
+	if 3 != e.mtime {
+		t.Fatal("expected equal")
+	}
 
-		var testDiskInterface TestDiskInterface
-		out2 := []byte{'o', 'u', 't', '2', 0}
-		filter2 := out2
-		if !log.Restat(kTestFilename, testDiskInterface, 1, filter2, &err) { t.Fatal("expected true") }
-		if "" != err { t.Fatal("expected equal") }
-		e = log.LookupByOutput("out")
-		if 3 != e.mtime { t.Fatal("expected equal") } // unchanged, since the filter doesn't match
+	// TODO(maruel): The original test case is broken.
+	var testDiskInterface TestDiskInterface
+	if !log.Restat(kTestFilename, &testDiskInterface, 1, []string{"out2"}, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	e = log.LookupByOutput("out")
+	if 3 != e.mtime {
+		t.Fatal(e.mtime)
+	} // unchanged, since the filter doesn't match
 
-		if !log.Restat(kTestFilename, testDiskInterface, 0, nil, &err) { t.Fatal("expected true") }
-		if "" != err { t.Fatal("expected equal") }
-		e = log.LookupByOutput("out")
-		if 4 != e.mtime { t.Fatal("expected equal") }
-	*/
+	if !log.Restat(kTestFilename, &testDiskInterface, 0, nil, &err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	e = log.LookupByOutput("out")
+	if 4 != e.mtime {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildLogTest(t)
-		// Ninja's build log buffer is currently 256kB. Lines longer than that are
-		// silently ignored, but don't affect parsing of other lines.
-		FILE * f = fopen(kTestFilename, "wb")
-		fprintf(f, "# ninja log v4\n")
-		fprintf(f, "123\t456\t456\tout\tcommand start")
-		for i := 0; i < (512<<10)/strlen(" more_command"); i++ {
-			fputs(" more_command", f)
-		}
-		fprintf(f, "\n")
-		fprintf(f, "456\t789\t789\tout2\tcommand2\n")
-		fclose(f)
+	b := NewBuildLogTest(t)
+	// Ninja's build log buffer in C++ is currently 256kB. Lines longer than that
+	// are silently ignored, but don't affect parsing of other lines.
+	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	f, err2 := os.OpenFile(kTestFilename, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	fmt.Fprintf(f, "# ninja log v4\n")
+	fmt.Fprintf(f, "123\t456\t456\tout\tcommand start")
+	for i := 0; i < (512<<10)/len(" more_command"); i++ {
+		f.WriteString(" more_command")
+	}
+	fmt.Fprintf(f, "\n")
+	fmt.Fprintf(f, "456\t789\t789\tout2\tcommand2\n")
+	f.Close()
 
-		err := ""
-		log := NewBuildLog()
-		if !log.Load(kTestFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+	err := ""
+	log := NewBuildLog()
+	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-		e := log.LookupByOutput("out")
-		if nil != e {
-			t.Fatal("expected equal")
-		}
+	// Difference from C++ version!
+	// In the Go version, lines are not ignored.
+	e := log.LookupByOutput("out")
+	if nil == e {
+		t.Fatal("expected equal")
+	}
 
-		e = log.LookupByOutput("out2")
-		if !e {
-			t.Fatal("expected true")
-		}
-		if 456 != e.start_time {
-			t.Fatal("expected equal")
-		}
-		if 789 != e.end_time {
-			t.Fatal("expected equal")
-		}
-		if 789 != e.mtime {
-			t.Fatal("expected equal")
-		}
-		AssertHash("command2", e.command_hash)
-	*/
+	e = log.LookupByOutput("out2")
+	if e == nil {
+		t.Fatal("expected true")
+	}
+	if 456 != e.start_time {
+		t.Fatal("expected equal")
+	}
+	if 789 != e.end_time {
+		t.Fatal("expected equal")
+	}
+	if 789 != e.mtime {
+		t.Fatal("expected equal")
+	}
+	b.AssertHash("command2", e.command_hash)
 }
 
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildLogTest(t)
 	b.AssertParse(&b.state_, "build out out.d: cat\n", ManifestParserOptions{})
 
