@@ -217,9 +217,8 @@ func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
 	// there will be an error loading the graph before we get to the tool.
 	// This test is to illustrate that.
 	err := ""
-	//nodes := m.state_.RootNodes(&err)
 	m.state_.RootNodes(&err)
 	if "" == err {
-		t.Fatal("expected different")
+		t.Fatal("expected error")
 	}
 }

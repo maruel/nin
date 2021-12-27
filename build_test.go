@@ -19,7 +19,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // Fixture for tests involving Plan.
@@ -1680,7 +1684,6 @@ func TestBuildTest_PhonySelfReference(t *testing.T) {
 	}
 }
 
-/*
 // There are 6 different cases for phony rules:
 //
 // 1. output edge does not exist, inputs are not real
@@ -1701,46 +1704,47 @@ func TestBuildTest_PhonySelfReference(t *testing.T) {
 // 5. Edge is marked as dirty, causing dependent edges to always rebuild
 // 6. Edge is marked as clean, mtime is newest mtime of dependents.
 //     Touching inputs will cause dependents to rebuild.
-func TestPhonyUseCase(b *BuildTest, i int) {
+func PhonyUseCase(t *testing.T, i int) {
+	b := NewBuildTest(t)
 	err := ""
 	b.AssertParse(&b.state_, "rule touch\n command = touch $out\nbuild notreal: phony blank\nbuild phony1: phony notreal\nbuild phony2: phony\nbuild phony3: phony blank\nbuild phony4: phony notreal\nbuild phony5: phony\nbuild phony6: phony blank\n\nbuild test1: touch phony1\nbuild test2: touch phony2\nbuild test3: touch phony3\nbuild test4: touch phony4\nbuild test5: touch phony5\nbuild test6: touch phony6\n", ManifestParserOptions{})
 
 	// Set up test.
-	b.builder_.command_runner_=nil // BuildTest owns the CommandRunner
-	b.builder_.command_runner_=&b.command_runner_
+	b.builder_.command_runner_ = nil // BuildTest owns the CommandRunner
+	b.builder_.command_runner_ = &b.command_runner_
 
 	b.fs_.Create("blank", "") // a "real" file
-	if b.builder_.AddTargetName("test1", &err) ==nil{
+	if b.builder_.AddTargetName("test1", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder_.AddTargetName("test2", &err) ==nil{
+	if b.builder_.AddTargetName("test2", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder_.AddTargetName("test3", &err) ==nil{
+	if b.builder_.AddTargetName("test3", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder_.AddTargetName("test4", &err) ==nil{
+	if b.builder_.AddTargetName("test4", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder_.AddTargetName("test5", &err) ==nil{
+	if b.builder_.AddTargetName("test5", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder_.AddTargetName("test6", &err) ==nil{
+	if b.builder_.AddTargetName("test6", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1753,8 +1757,7 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 		b.t.Fatal("expected equal")
 	}
 
-	ci := ""
-	ci += string('0' + i)
+	ci := strconv.Itoa(i)
 
 	// Tests 1, 3, 4, and 6 should rebuild when the input is updated.
 	if i != 2 && i != 5 {
@@ -1766,7 +1769,7 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 		startTime := b.fs_.now_
 
 		// Build number 1
-		if b.builder_.AddTargetName("test"+ci, &err) ==nil{
+		if b.builder_.AddTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1786,7 +1789,7 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 		b.command_runner_.commands_ran_ = nil
 		b.fs_.Tick()
 		b.fs_.Create("blank", "") // a "real" file
-		if b.builder_.AddTargetName("test"+ci, &err) ==nil{
+		if b.builder_.AddTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1845,7 +1848,7 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 		b.command_runner_.commands_ran_ = nil
 		b.fs_.Tick()
 		b.command_runner_.commands_ran_ = nil
-		if b.builder_.AddTargetName("test"+ci, &err) ==nil{
+		if b.builder_.AddTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1869,7 +1872,7 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 
 		b.state_.Reset()
 		b.command_runner_.commands_ran_ = nil
-		if b.builder_.AddTargetName("test"+ci, &err) ==nil{
+		if b.builder_.AddTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1892,15 +1895,12 @@ func TestPhonyUseCase(b *BuildTest, i int) {
 		}
 	}
 }
-*/
-/* TODO(maruel): Redo.
-TEST_F(BuildTest, PhonyUseCase1) { TestPhonyUseCase(this, 1); }
-TEST_F(BuildTest, PhonyUseCase2) { TestPhonyUseCase(this, 2); }
-TEST_F(BuildTest, PhonyUseCase3) { TestPhonyUseCase(this, 3); }
-TEST_F(BuildTest, PhonyUseCase4) { TestPhonyUseCase(this, 4); }
-TEST_F(BuildTest, PhonyUseCase5) { TestPhonyUseCase(this, 5); }
-TEST_F(BuildTest, PhonyUseCase6) { TestPhonyUseCase(this, 6); }
-*/
+
+func TestBuildTest_PhonyUseCase(t *testing.T) {
+	for i := 1; i < 7; i++ {
+		t.Run(strconv.Itoa(i), func(t *testing.T) { PhonyUseCase(t, i) })
+	}
+}
 
 func TestBuildTest_Fail(t *testing.T) {
 	b := NewBuildTest(t)
@@ -2443,75 +2443,72 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 // Test scenario, in which an input file is removed, but output isn't changed
 // https://github.com/ninja-build/ninja/issues/295
 func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithLogTest(t)
-		b.AssertParse(&b.state_, "rule true\n  command = true\n  depfile = $out.d\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ManifestParserOptions{})
+	b := NewBuildWithLogTest(t)
+	b.AssertParse(&b.state_, "rule true\n  command = true\n  depfile = $out.d\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ManifestParserOptions{})
 
-		// Create all necessary files
-		b.fs_.Create("in", "")
+	// Create all necessary files
+	b.fs_.Create("in", "")
 
-		// The implicit dependencies and the depfile itself
-		// are newer than the output
-		restat_mtime := b.fs_.Tick()
-		b.fs_.Create("out1.d", "out1: will.be.deleted restat.file\n")
-		b.fs_.Create("will.be.deleted", "")
-		b.fs_.Create("restat.file", "")
+	// The implicit dependencies and the depfile itself
+	// are newer than the output
+	restat_mtime := b.fs_.Tick()
+	b.fs_.Create("out1.d", "out1: will.be.deleted restat.file\n")
+	b.fs_.Create("will.be.deleted", "")
+	b.fs_.Create("restat.file", "")
 
-		// Run the build, out1 and out2 get built
-		err := ""
-		if b.builder_.AddTargetName("out2", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if 2 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+	// Run the build, out1 and out2 get built
+	err := ""
+	if b.builder_.AddTargetName("out2", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if 2 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-		// See that an entry in the logfile is created, capturing
-		// the right mtime
-		log_entry := b.build_log_.LookupByOutput("out1")
-		if !nil != log_entry {
-			t.Fatal("expected true")
-		}
-		if restat_mtime != log_entry.mtime {
-			t.Fatal("expected equal")
-		}
+	// See that an entry in the logfile is created, capturing
+	// the right mtime
+	log_entry := b.build_log_.LookupByOutput("out1")
+	if nil == log_entry {
+		t.Fatal("expected true")
+	}
+	if restat_mtime != log_entry.mtime {
+		t.Fatal("expected equal")
+	}
 
-		// Now remove a file, referenced from depfile, so that target becomes
-		// dirty, but the output does not change
-		b.fs_.RemoveFile("will.be.deleted")
+	// Now remove a file, referenced from depfile, so that target becomes
+	// dirty, but the output does not change
+	b.fs_.RemoveFile("will.be.deleted")
 
-		// Trigger the build again - only out1 gets built
-		b.command_runner_.commands_ran_ = nil
-		b.state_.Reset()
-		if b.builder_.AddTargetName("out2", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
-		if !b.builder_.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+	// Trigger the build again - only out1 gets built
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out2", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-		// Check that the logfile entry remains correctly set
-		log_entry = build_log_.LookupByOutput("out1")
-		if !nil != log_entry {
-			t.Fatal("expected true")
-		}
-		if restat_mtime != log_entry.mtime {
-			t.Fatal("expected equal")
-		}
-	*/
+	// Check that the logfile entry remains correctly set
+	log_entry = b.build_log_.LookupByOutput("out1")
+	if nil == log_entry {
+		t.Fatal("expected true")
+	}
+	if restat_mtime != log_entry.mtime {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
@@ -2598,154 +2595,180 @@ func TestBuildTest_RspFileSuccess(t *testing.T) {
 
 	b.fs_.Create("in", "")
 
-	t.Skip("TODO")
-	/*
-	  string err
-	  EXPECT_TRUE(b.builder_.AddTargetName("out1", &err))
-	  ASSERT_EQ("", err)
-	  EXPECT_TRUE(b.builder_.AddTargetName("out2", &err))
-	  ASSERT_EQ("", err)
-	  EXPECT_TRUE(b.builder_.AddTargetName("out 3", &err))
-	  ASSERT_EQ("", err)
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if b.builder_.AddTargetName("out2", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if b.builder_.AddTargetName("out 3", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
 
-	  size_t files_created = len(b.fs_.files_created_)
-	  size_t files_removed = len(b.fs_.files_removed_)
+	want_created := map[string]struct{}{
+		"in":    {},
+		"in1":   {},
+		"in2":   {},
+		"out 3": {},
+		"out1":  {},
+		"out2":  {},
+	}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
+	want_removed := map[string]struct{}{}
+	if diff := cmp.Diff(want_removed, b.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
+	}
 
-	  EXPECT_TRUE(b.builder_.Build(&err))
-	  ASSERT_EQ(3, len(b.command_runner_.commands_ran_))
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if 3 != len(b.command_runner_.commands_ran_) {
+		t.Fatal(b.command_runner_.commands_ran_)
+	}
 
-	  // The RSP files were created
-	  ASSERT_EQ(files_created + 2, len(b.fs_.files_created_))
-	  ASSERT_EQ(1, b.fs_.files_created_.count("out 2.rsp"))
-	  ASSERT_EQ(1, b.fs_.files_created_.count("out 3.rsp"))
+	// The RSP files were created
+	want_created["out 2.rsp"] = struct{}{}
+	want_created["out 3.rsp"] = struct{}{}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
 
-	  // The RSP files were removed
-	  ASSERT_EQ(files_removed + 2, len(b.fs_.files_removed_))
-	  ASSERT_EQ(1, b.fs_.files_removed_.count("out 2.rsp"))
-	  ASSERT_EQ(1, b.fs_.files_removed_.count("out 3.rsp"))
-	*/
+	// The RSP files were removed
+	want_removed["out 2.rsp"] = struct{}{}
+	want_removed["out 3.rsp"] = struct{}{}
+	if diff := cmp.Diff(want_removed, b.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
+	}
 }
 
 // Test that RSP file is created but not removed for commands, which fail
 func TestBuildTest_RspFileFailure(t *testing.T) {
 	t.Skip("TODO")
-	/*
-		b := NewBuildTest(t)
-		b.AssertParse(&b.state_, "rule fail\n  command = fail\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: fail in\n  rspfile = out.rsp\n  long_command = Another very long command\n", ManifestParserOptions{})
+	b := NewBuildTest(t)
+	b.AssertParse(&b.state_, "rule fail\n  command = fail\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: fail in\n  rspfile = out.rsp\n  long_command = Another very long command\n", ManifestParserOptions{})
 
-		b.fs_.Create("out", "")
-		b.fs_.Tick()
-		b.fs_.Create("in", "")
+	b.fs_.Create("out", "")
+	b.fs_.Tick()
+	b.fs_.Create("in", "")
 
-		err := ""
-		if b.builder_.AddTargetName("out", &err) == nil {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
-		}
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-		files_created := len(b.fs_.files_created_)
-		files_removed := len(b.fs_.files_removed_)
+	want_created := map[string]struct{}{}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
+	want_removed := map[string]struct{}{}
+	if diff := cmp.Diff(want_removed, b.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
+	}
 
-		if b.builder_.Build(&err) {
-			t.Fatal("expected false")
-		}
-		if "subcommand failed" != err {
-			t.Fatal("expected equal")
-		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
+	if b.builder_.Build(&err) {
+		t.Fatal("expected false")
+	}
+	if "subcommand failed" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-		// The RSP file was created
-		if files_created+1 != len(b.fs_.files_created_) {
-			t.Fatal("expected equal")
-		}
-		if 1 != b.fs_.files_created_.count("out.rsp") {
-			t.Fatal("expected equal")
-		}
+	// The RSP file was created
+	want_created["out.rsp"] = struct{}{}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
 
-		// The RSP file was NOT removed
-		if files_removed != len(b.fs_.files_removed_) {
-			t.Fatal("expected equal")
-		}
-		if 0 != b.fs_.files_removed_.count("out.rsp") {
-			t.Fatal("expected equal")
-		}
+	// The RSP file was NOT removed
+	if diff := cmp.Diff(want_removed, b.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
+	}
 
-		// The RSP file contains what it should
-		if "Another very long command" != b.fs_.files_["out.rsp"].contents {
-			t.Fatal("expected equal")
-		}
-	*/
+	// The RSP file contains what it should
+	if "Another very long command" != b.fs_.files_["out.rsp"].contents {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test that contents of the RSP file behaves like a regular part of
 // command line, i.e. triggers a rebuild if changed
 func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithLogTest(t)
-			b.AssertParse(&b.state_, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ManifestParserOptions{})
+	b := NewBuildWithLogTest(t)
+	b.AssertParse(&b.state_, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ManifestParserOptions{})
 
-			b.fs_.Create("out", "")
-			b.fs_.Tick()
-			b.fs_.Create("in", "")
+	b.fs_.Create("out", "")
+	b.fs_.Tick()
+	b.fs_.Create("in", "")
 
-			err := ""
-			if b.builder_.AddTargetName("out", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
 
-			// 1. Build for the 1st time (-> populate log)
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
+	// 1. Build for the 1st time (-> populate log)
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 
-			// 2. Build again (no change)
-			b.command_runner_.commands_ran_ = nil
-			b.state_.Reset()
-			if b.builder_.AddTargetName("out", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if !b.builder_.AlreadyUpToDate() {
-				t.Fatal("expected true")
-			}
+	// 2. Build again (no change)
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.AlreadyUpToDate() {
+		t.Fatal("expected true")
+	}
 
-			// 3. Alter the entry in the logfile
-			// (to simulate a change in the command line between 2 builds)
-			log_entry := build_log_.LookupByOutput("out")
-			if !nil != log_entry {
-				t.Fatal("expected true")
-			}
-			AssertHash("cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash)
-			log_entry.command_hash++ // Change the command hash to something else.
-			// Now expect the target to be rebuilt
-			b.command_runner_.commands_ran_ = nil
-			b.state_.Reset()
-			if b.builder_.AddTargetName("out", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-	*/
+	// 3. Alter the entry in the logfile
+	// (to simulate a change in the command line between 2 builds)
+	log_entry := b.build_log_.LookupByOutput("out")
+	if nil == log_entry {
+		t.Fatal("expected true")
+	}
+	b.AssertHash("cat out.rsp > out;rspfile=Original very long command", log_entry.command_hash)
+	log_entry.command_hash++ // Change the command hash to something else.
+	// Now expect the target to be rebuilt
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_InterruptCleanup(t *testing.T) {
@@ -2798,21 +2821,24 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 }
 
 func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
-	t.Skip("TODO")
-	/* TODO
-		b := NewBuildTest(t)
-	  //const string kTooLongToStat(400, 'i')
-	  b.AssertParse(&b.state_, ("build " + kTooLongToStat + ": cat in\n"), ManifestParserOptions{})
-	  b.fs_.Create("in", "")
+	b := NewBuildTest(t)
+	kTooLongToStat := strings.Repeat("i", 400)
+	b.AssertParse(&b.state_, ("build " + kTooLongToStat + ": cat in\n"), ManifestParserOptions{})
+	b.fs_.Create("in", "")
 
-	  // This simulates a stat failure:
-	  b.fs_.files_[kTooLongToStat].mtime = -1
-	  b.fs_.files_[kTooLongToStat].stat_error = "stat failed"
+	// This simulates a stat failure:
+	b.fs_.files_[kTooLongToStat] = Entry{
+		mtime:      -1,
+		stat_error: "stat failed",
+	}
 
-	  err := ""
-	  if b.builder_.AddTargetName(kTooLongToStat, &err) !=nil{ t.Fatal("expected false") }
-	  if "stat failed" != err { t.Fatal("expected equal") }
-	*/
+	err := ""
+	if b.builder_.AddTargetName(kTooLongToStat, &err) != nil {
+		t.Fatal("expected false")
+	}
+	if "stat failed" != err {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
@@ -2924,7 +2950,8 @@ func TestBuildTest_FailedDepsParse(t *testing.T) {
 
 type BuildWithQueryDepsLogTest struct {
 	*BuildTestBase
-	log_ DepsLog
+	log_     DepsLog
+	builder_ *Builder
 }
 
 func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
@@ -2943,326 +2970,311 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
+	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, &b.log_, &b.fs_, &b.status_, 0)
+	b.builder_.command_runner_ = &b.command_runner_
 	return b
 }
 
 // Test a MSVC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			b.AssertParse(&b.state_, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	b.AssertParse(&b.state_, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 1 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 1 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 1 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 1 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test a GCC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			b.fs_.Create("in.d", "out1 out2: in1 in2")
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	b.fs_.Create("in.d", "out1 out2: in1 in2")
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 2 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out1_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 2 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out1_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 2 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out2_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 2 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out2_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test a GCC-style deps log with multiple outputs using a line per input.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			b.fs_.Create("in.d", "out1 out2: in1\nout1 out2: in2")
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	b.fs_.Create("in.d", "out1 out2: in1\nout1 out2: in2")
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 2 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out1_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 2 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out1_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 2 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out2_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 2 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out2_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test a GCC-style deps log with multiple outputs using a line per output.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			b.fs_.Create("in.d", "out1: in1 in2\nout2: in1 in2")
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	b.fs_.Create("in.d", "out1: in1 in2\nout2: in1 in2")
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 2 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out1_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 2 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out1_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 2 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out2_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 2 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out2_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test a GCC-style deps log with multiple outputs mentioning only the main output.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			b.fs_.Create("in.d", "out1: in1 in2")
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	b.fs_.Create("in.d", "out1: in1 in2")
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 2 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out1_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 2 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out1_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 2 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out2_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 2 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out2_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Test a GCC-style deps log with multiple outputs mentioning only the secondary output.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		b := NewBuildWithQueryDepsLogTest(t)
-			// Note: This ends up short-circuiting the node creation due to the primary
-			// output not being present, but it should still work.
-			b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b := NewBuildWithQueryDepsLogTest(t)
+	// Note: This ends up short-circuiting the node creation due to the primary
+	// output not being present, but it should still work.
+	b.AssertParse(&b.state_, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
-			err := ""
-			if b.builder_.AddTargetName("out1", &err) == nil {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			b.fs_.Create("in.d", "out2: in1 in2")
-			if !b.builder_.Build(&err) {
-				t.Fatal("expected true")
-			}
-			if "" != err {
-				t.Fatal("expected equal")
-			}
-			if 1 != len(b.command_runner_.commands_ran_) {
-				t.Fatal("expected equal")
-			}
-			if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-				t.Fatal("expected equal")
-			}
+	err := ""
+	if b.builder_.AddTargetName("out1", &err) == nil {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	b.fs_.Create("in.d", "out2: in1 in2")
+	if !b.builder_.Build(&err) {
+		t.Fatal("expected true")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if 1 != len(b.command_runner_.commands_ran_) {
+		t.Fatal("expected equal")
+	}
+	if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
+		t.Fatal("expected equal")
+	}
 
-			out1_node := b.state_.LookupNode("out1")
-			out1_deps := log_.GetDeps(out1_node)
-			if 2 != out1_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out1_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out1_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
+	out1_node := b.state_.LookupNode("out1")
+	out1_deps := b.log_.GetDeps(out1_node)
+	if 2 != out1_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out1_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out1_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 
-			out2_node := b.state_.LookupNode("out2")
-			out2_deps := log_.GetDeps(out2_node)
-			if 2 != out2_deps.node_count {
-				t.Fatal("expected equal")
-			}
-			if "in1" != out2_deps.nodes[0].path() {
-				t.Fatal("expected equal")
-			}
-			if "in2" != out2_deps.nodes[1].path() {
-				t.Fatal("expected equal")
-			}
-	*/
+	out2_node := b.state_.LookupNode("out2")
+	out2_deps := b.log_.GetDeps(out2_node)
+	if 2 != out2_deps.node_count {
+		t.Fatal("expected equal")
+	}
+	if "in1" != out2_deps.nodes[0].path() {
+		t.Fatal("expected equal")
+	}
+	if "in2" != out2_deps.nodes[1].path() {
+		t.Fatal("expected equal")
+	}
 }
 
 // Tests of builds involving deps logs necessarily must span
