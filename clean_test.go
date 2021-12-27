@@ -17,6 +17,8 @@ package ginja
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type CleanTest struct {
@@ -702,7 +704,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner1.cleaned_files_count() {
-		t.Fatal("expected equal")
+		t.Fatal(cleaner1.cleaned_files_count())
 	}
 	if 0 != len(c.fs_.files_removed_) {
 		t.Fatal("expected equal")
@@ -725,15 +727,9 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 1 != cleaner2.cleaned_files_count() {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(c.fs_.files_removed_) {
-		t.Fatal("expected equal")
+	if diff := cmp.Diff(map[string]struct{}{"out1": struct{}{}}, c.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
 	}
-	t.Skip("TODO")
-	/*
-		if "out1" != *(c.fs_.files_removed_.begin()) {
-			t.Fatal("expected equal")
-		}
-	*/
 	if 0 == c.fs_.Stat("in", &err) {
 		t.Fatal("expected different")
 	}
@@ -754,12 +750,9 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 1 != len(c.fs_.files_removed_) {
 		t.Fatal("expected equal")
 	}
-	t.Skip("TODO")
-	/*
-		if "out1" != *(c.fs_.files_removed_.begin()) {
-			t.Fatal("expected equal")
-		}
-	*/
+	if diff := cmp.Diff(map[string]struct{}{"out1": struct{}{}}, c.fs_.files_removed_); diff != "" {
+		t.Fatal(diff)
+	}
 	if 0 == c.fs_.Stat("in", &err) {
 		t.Fatal("expected different")
 	}
@@ -773,7 +766,6 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 }
 
 func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
-	t.Skip("TODO")
 	kTestFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
 	c := NewCleanDeadTest(t)
 	state := NewState()
