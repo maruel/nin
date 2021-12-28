@@ -44,7 +44,7 @@ func FilterShowIncludes(line string, deps_prefix string) string {
 
 // Return true if a mentioned include file is a system path.
 // Filtering these out reduces dependency information considerably.
-func (c *CLParser) IsSystemInclude(path string) bool {
+func IsSystemInclude(path string) bool {
 	// TODO(maruel): The C++ code does it only for ASCII.
 	path = strings.ToLower(path)
 	// TODO: this is a heuristic, perhaps there's a better way?
@@ -65,54 +65,50 @@ func FilterInputFilename(line string) bool {
 		strings.HasSuffix(line, ".cpp")
 }
 
-// static
 // Parse the full output of cl, filling filtered_output with the text that
 // should be printed (if any). Returns true on success, or false with err
 // filled. output must not be the same object as filtered_object.
-func (c *CLParser) Parse(output string, deps_prefix string, filtered_output *string, err *string) bool {
+func (c *CLParser) Parse(output, deps_prefix string, filtered_output *string, err *string) bool {
 	defer METRIC_RECORD("CLParser::Parse")()
-	panic("TODO")
-	/*
-	  // Loop over all lines in the output to process them.
-	  if !&output != filtered_output { panic("oops") }
-	  start := 0
-	  seen_show_includes := false
-	  IncludesNormalize normalizer(".")
+	// Loop over all lines in the output to process them.
+	start := 0
+	seen_show_includes := false
+	normalizer := IncludesNormalize{relative_to_: "."}
+	for start < len(output) {
+		end := strings.IndexAny(output[start:], "\r\n")
+		if end == -1 {
+			end = len(output)
+		} else {
+			end += start
+		}
+		line := output[start:end]
 
-	  for start < output.size() {
-	    size_t end = output.find_first_of("\r\n", start)
-	    if end == string::npos {
-	      end = output.size()
-	    }
-	    string line = output.substr(start, end - start)
+		include := FilterShowIncludes(line, deps_prefix)
+		if len(include) != 0 {
+			seen_show_includes = true
+			normalized := ""
+			if !normalizer.Normalize(include, &normalized, err) {
+				return false
+			}
+			if !IsSystemInclude(normalized) {
+				c.includes_[normalized] = struct{}{}
+			}
+		} else if !seen_show_includes && FilterInputFilename(line) {
+			// Drop it.
+			// TODO: if we support compiling multiple output files in a single
+			// cl.exe invocation, we should stash the filename.
+		} else {
+			*filtered_output += line
+			*filtered_output += "\n"
+		}
 
-	    include := FilterShowIncludes(line, deps_prefix)
-	    if len(include) != 0 {
-	      seen_show_includes = true
-	      normalized := ""
-	      if !normalizer.Normalize(include, &normalized, err) {
-	        return false
-	      }
-	      if !IsSystemInclude(normalized) {
-	        c.includes_.insert(normalized)
-	      }
-	    } else if !seen_show_includes && FilterInputFilename(line) {
-	      // Drop it.
-	      // TODO: if we support compiling multiple output files in a single
-	      // cl.exe invocation, we should stash the filename.
-	    } else {
-	      filtered_output.append(line)
-	      filtered_output.append("\n")
-	    }
-
-	    if end < output.size() && output[end] == '\r' {
-	      end++
-	    }
-	    if end < output.size() && output[end] == '\n' {
-	      end++
-	    }
-	    start = end
-	  }
-	*/
+		if end < len(output) && output[end] == '\r' {
+			end++
+		}
+		if end < len(output) && output[end] == '\n' {
+			end++
+		}
+		start = end
+	}
 	return true
 }

@@ -16,119 +16,121 @@
 
 package ginja
 
+import (
+	"fmt"
+	"os"
+)
 
 func Usage() {
-  printf( "usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n" )
+	printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
 }
 
 func PushPathIntoEnvironment(env_block string) {
-  as_str := env_block
-  for as_str[0] {
-    if _strnicmp(as_str, "path=", 5) == 0 {
-      _putenv(as_str)
-      return
-    } else {
-      as_str = &as_str[strlen(as_str) + 1]
-    }
-  }
+	as_str := env_block
+	for as_str[0] {
+		if _strnicmp(as_str, "path=", 5) == 0 {
+			_putenv(as_str)
+			return
+		} else {
+			as_str = &as_str[strlen(as_str)+1]
+		}
+	}
 }
 
 func WriteDepFileOrDie(object_path string, parse *CLParser) {
-  string depfile_path = string(object_path) + ".d"
-  FILE* depfile = fopen(depfile_path, "w")
-  if depfile == nil {
-    unlink(object_path)
-    Fatal("opening %s: %s", depfile_path, GetLastErrorString())
-  }
-  if fprintf(depfile, "%s: ", object_path) < 0 {
-    unlink(object_path)
-    fclose(depfile)
-    unlink(depfile_path)
-    Fatal("writing %s", depfile_path)
-  }
-  headers := parse.includes_
-  for i := headers.begin(); i != headers.end(); i++ {
-    if fprintf(depfile, "%s\n", EscapeForDepfile(*i)) < 0 {
-      unlink(object_path)
-      fclose(depfile)
-      unlink(depfile_path)
-      Fatal("writing %s", depfile_path)
-    }
-  }
-  fclose(depfile)
+	depfile_path := object_path + ".d"
+	depfile, err := os.OpenFile(depfile_path, os.O_WRONLY, 0o666)
+	if depfile == nil {
+		os.Remove(object_path)
+		Fatal("opening %s: %s", depfile_path, err)
+	}
+	if fmt.Fprintf(depfile, "%s: ", object_path) < 0 {
+		os.Remove(object_path)
+		depfile.Close()
+		os.Remove(depfile_path)
+		Fatal("writing %s", depfile_path)
+	}
+	headers := parse.includes_
+	for i := headers.begin(); i != headers.end(); i++ {
+		if fmt.Fprintf(depfile, "%s\n", EscapeForDepfile(*i)) < 0 {
+			os.Remove(object_path)
+			depfile.Close()
+			os.Remove(depfile_path)
+			Fatal("writing %s", depfile_path)
+		}
+	}
+	depfile.Close()
 }
 
-func MSVCHelperMain(argc int, argv *char*) int {
-  output_filename := nil
-  envfile := nil
+func MSVCHelperMain(arg []string) int {
+	output_filename := nil
+	envfile := nil
 
-  const option kLongOptions[] = {
-    { "help", no_argument, nil, 'h' },
-    { nil, 0, nil, 0 }
-  }
-  opt := 0
-  deps_prefix := ""
-  for (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
-    switch (opt) {
-      case 'e':
-        envfile = optarg
-        break
-      case 'o':
-        output_filename = optarg
-        break
-      case 'p':
-        deps_prefix = optarg
-        break
-      case 'h':
-      default:
-        Usage()
-        return 0
-    }
-  }
+	/*
+			kLongOptions := {{ "help", no_argument, nil, 'h' }, { nil, 0, nil, 0 }}
+		  opt := 0
+		  deps_prefix := ""
+		  for (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
+		    switch (opt) {
+		      case 'e':
+		        envfile = optarg
+		        break
+		      case 'o':
+		        output_filename = optarg
+		        break
+		      case 'p':
+		        deps_prefix = optarg
+		        break
+		      case 'h':
+		      default:
+		        Usage()
+		        return 0
+		    }
+		  }
+	*/
 
-  env := ""
-  if envfile != nil {
-    err := ""
-    if ReadFile(envfile, &env, &err) != 0 {
-      Fatal("couldn't open %s: %s", envfile, err)
-    }
-    PushPathIntoEnvironment(env)
-  }
+	var env []byte
+	if envfile != nil {
+		env, err2 := ReadFile(envfile)
+		if err2 != nil {
+			Fatal("couldn't open %s: %s", envfile, err2)
+		}
+		PushPathIntoEnvironment(env)
+	}
 
-  command := GetCommandLineA()
-  command = strstr(command, " -- ")
-  if command == nil {
-    Fatal("expected command line to end with \" -- command args\"")
-  }
-  command += 4
+	command := GetCommandLineA()
+	command = strstr(command, " -- ")
+	if command == nil {
+		Fatal("expected command line to end with \" -- command args\"")
+	}
+	command += 4
 
-  var cl CLWrapper
-  if len(env) != 0 {
-    cl.SetEnvBlock((void*)env.data())
-  }
-  output := ""
-  exit_code := cl.Run(command, &output)
+	cl := NewCLWrapper()
+	if len(env) != 0 {
+		cl.SetEnvBlock(env)
+	}
+	output := ""
+	exit_code := cl.Run(command, &output)
 
-  if output_filename {
-    var parser CLParser
-    err := ""
-    if !parser.Parse(output, deps_prefix, &output, &err) {
-      Fatal("%s\n", err)
-    }
-    WriteDepFileOrDie(output_filename, parser)
-  }
+	if output_filename {
+		parser := NewCLParser()
+		err := ""
+		if !parser.Parse(output, deps_prefix, &output, &err) {
+			Fatal("%s\n", err)
+		}
+		WriteDepFileOrDie(output_filename, parser)
+	}
 
-  if len(output) == 0 {
-    return exit_code
-  }
+	if len(output) == 0 {
+		return exit_code
+	}
 
-  // CLWrapper's output already as \r\n line endings, make sure the C runtime
-  // doesn't expand this to \r\r\n.
-  _setmode(_fileno(stdout), _O_BINARY)
-  // Avoid printf and C strings, since the actual output might contain null
-  // bytes like UTF-16 does (yuck).
-  fwrite(&output[0], 1, output.size(), stdout)
+	// CLWrapper's output already as \r\n line endings, make sure the C runtime
+	// doesn't expand this to \r\r\n.
+	_setmode(_fileno(stdout), _O_BINARY)
+	// Avoid printf and C strings, since the actual output might contain null
+	// bytes like UTF-16 does (yuck).
+	os.Stdout.Write(output)
 
-  return exit_code
+	return exit_code
 }
-

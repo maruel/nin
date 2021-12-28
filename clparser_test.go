@@ -60,7 +60,7 @@ func TestCLParserTest_FilterInputFilename(t *testing.T) {
 
 func TestCLParserTest_ParseSimple(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 	if !parser.Parse("foo\r\nNote: inc file prefix:  foo.h\r\nbar\r\n", "Note: inc file prefix:", &output, &err) {
@@ -77,7 +77,7 @@ func TestCLParserTest_ParseSimple(t *testing.T) {
 
 func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 	if !parser.Parse("foo.cc\r\ncl: warning\r\n", "", &output, &err) {
@@ -90,7 +90,7 @@ func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
 
 func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 	if !parser.Parse("foo.cc\r\nNote: including file: foo.h\r\nsomething something foo.cc\r\n", "", &output, &err) {
@@ -103,7 +103,7 @@ func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
 
 func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 	if !parser.Parse("Note: including file: c:\\Program Files\\foo.h\r\nNote: including file: d:\\Microsoft Visual Studio\\bar.h\r\nNote: including file: path.h\r\n", "", &output, &err) {
@@ -121,7 +121,7 @@ func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 
 func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 	if !parser.Parse("Note: including file: foo.h\r\nNote: including file: bar.h\r\nNote: including file: foo.h\r\n", "", &output, &err) {
@@ -138,7 +138,7 @@ func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 
 func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
 	t.Skip("TODO")
-	var parser CLParser
+	parser := NewCLParser()
 	output := ""
 	err := ""
 
