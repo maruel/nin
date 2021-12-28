@@ -59,7 +59,7 @@ jobs:
       if: always()
       run: rm coverage.txt
 
-			# TODO(maruel): Skip -race for now because it's using too much memory.
+      # TODO(maruel): Skip -race for now because it's using too much memory.
       # Don't run go test -race if anything failed, to speed up the results.
 #    - name: 'Check: go test -race'
 #      run: go test -timeout=120s -race ./...
