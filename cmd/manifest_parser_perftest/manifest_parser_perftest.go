@@ -29,13 +29,10 @@ import (
 )
 
 func WriteFakeManifests(dir string) error {
-	/*
-		err := ""
-		mtime := disk_interface.Stat(dir+"/build.ninja", err)
-		if mtime != 0 { // 0 means that the file doesn't exist yet.
-			return mtime != -1
-		}
-	*/
+	if _, err := os.Stat(filepath.Join(dir, "build.ninja")); err == nil {
+		fmt.Printf("Creating manifest data... [SKIP]\n")
+		return nil
+	}
 	fmt.Printf("Creating manifest data...")
 	cmd := exec.Command("python3", filepath.Join("misc", "write_fake_manifests.py"), dir)
 	if err := cmd.Run(); err != nil {
@@ -59,12 +56,10 @@ func LoadManifests(measure_command_evaluation bool) int {
 	// evaluation in the perftest by default.
 	optimization_guard := 0
 	if measure_command_evaluation {
-		panic("TODO export")
-		//for i := 0; i < len(state.edges_); i++ {
-		//}
+		for _, e := range state.Edges() {
+			optimization_guard += len(e.EvaluateCommand(false))
+		}
 	}
-	panic("TODO export")
-	//optimization_guard += len(state.edges_[i].EvaluateCommand())
 	return optimization_guard
 }
 
@@ -85,13 +80,14 @@ func mainImpl() error {
 		return err
 	}
 
+	rnd := time.Microsecond
 	kNumRepetitions := 5
 	var times []time.Duration
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
 		optimization_guard := LoadManifests(!*f)
 		delta := time.Since(start)
-		fmt.Printf("%s (hash: %x)\n", delta, optimization_guard)
+		fmt.Printf("%s (hash: %x)\n", delta.Round(rnd), optimization_guard)
 		times = append(times, delta)
 	}
 
@@ -107,7 +103,8 @@ func mainImpl() error {
 		}
 		total += times[i]
 	}
-	fmt.Printf("min %s  max %s  avg %s\n", min, max, total/time.Duration(len(times)))
+	avg := total / time.Duration(len(times))
+	fmt.Printf("min %s  max %s  avg %s\n", min.Round(rnd), max.Round(rnd), avg.Round(rnd))
 	return nil
 }
 
