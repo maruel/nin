@@ -12,65 +12,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
+package main
 
-package ginja
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"time"
 
+	"github.com/maruel/ginja"
+)
 
-func main(argc int, argv []*char) int {
-  if argc < 2 {
-    printf("usage: %s <file1> <file2...>\n", argv[0])
-    return 1
-  }
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Printf("usage: %s <file1> <file2...>\n", os.Args[0])
+		os.Exit(1)
+	}
 
-  var times []float32
-  for i := 1; i < argc; i++ {
-    filename := argv[i]
+	rnd := time.Microsecond
+	var times []time.Duration
+	for _, filename := range os.Args[1:] {
+		for limit := 1 << 10; limit < (1 << 20); limit *= 2 {
+			start := time.Now()
+			for rep := 0; rep < limit; rep++ {
+				buf, err := ioutil.ReadFile(filename)
+				if err != nil {
+					fmt.Printf("%s: %s\n", filename, err)
+					os.Exit(1)
+				}
 
-    for limit := 1 << 10; limit < (1<<20); limit *= 2 {
-      start := GetTimeMillis()
-      for rep := 0; rep < limit; rep++ {
-        buf := ""
-        err := ""
-        if ReadFile(filename, &buf, &err) < 0 {
-          printf("%s: %s\n", filename, err)
-          return 1
-        }
+				err2 := ""
+				parser := ginja.NewDepfileParser(ginja.DepfileParserOptions{})
+				if !parser.Parse(buf, &err2) {
+					fmt.Printf("%s: %s\n", filename, err2)
+					os.Exit(1)
+				}
+			}
+			delta := time.Since(start)
 
-        var parser DepfileParser
-        if !parser.Parse(&buf, &err) {
-          printf("%s: %s\n", filename, err)
-          return 1
-        }
-      }
-      end := GetTimeMillis()
+			if delta > 100*time.Millisecond {
+				time := delta / time.Duration(limit)
+				fmt.Printf("%s: %s\n", filename, time.Round(rnd))
+				times = append(times, time)
+				break
+			}
+		}
+	}
 
-      if end - start > 100 {
-        int delta = (int)(end - start)
-        float time = delta*1000 / (float)limit
-        printf("%s: %.1fus\n", filename, time)
-        times.push_back(time)
-        break
-      }
-    }
-  }
+	if len(times) != 0 {
+		min := times[0]
+		max := times[0]
+		total := time.Duration(0)
+		for i := 0; i < len(times); i++ {
+			total += times[i]
+			if times[i] < min {
+				min = times[i]
+			} else if times[i] > max {
+				max = times[i]
+			}
+		}
 
-  if len(times) != 0 {
-    min := times[0]
-    max := times[0]
-    total := 0
-    for i := 0; i < times.size(); i++ {
-      total += times[i]
-      if times[i] < min {
-        min = times[i]
-      } else if times[i] > max {
-        max = times[i]
-      }
-    }
-
-    printf("min %.1fus  max %.1fus  avg %.1fus\n", min, max, total / times.size())
-  }
-
-  return 0
+		avg := total / time.Duration(len(times))
+		fmt.Printf("min %s  max %s  avg %s\n", min.Round(rnd), max.Round(rnd), avg.Round(rnd))
+	}
 }
-
