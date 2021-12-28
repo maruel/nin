@@ -32,7 +32,7 @@ type Subprocess struct {
 
 	// POSIX
 	fd_  int
-	pid_ uint
+	pid_ int
 
 	use_console_ bool
 }

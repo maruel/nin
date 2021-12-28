@@ -728,7 +728,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 1 != cleaner2.cleaned_files_count() {
 		t.Fatal("expected equal")
 	}
-	if diff := cmp.Diff(map[string]struct{}{"out1": struct{}{}}, c.fs_.files_removed_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.files_removed_); diff != "" {
 		t.Fatal(diff)
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -751,7 +751,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 1 != len(c.fs_.files_removed_) {
 		t.Fatal("expected equal")
 	}
-	if diff := cmp.Diff(map[string]struct{}{"out1": struct{}{}}, c.fs_.files_removed_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.files_removed_); diff != "" {
 		t.Fatal(diff)
 	}
 	if 0 == c.fs_.Stat("in", &err) {
