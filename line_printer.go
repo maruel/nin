@@ -82,7 +82,8 @@ func NewLinePrinter() LinePrinter {
 	*/
 	l.supports_color_ = l.smart_terminal_
 	if !l.supports_color_ {
-		l.supports_color_ = os.Getenv("CLICOLOR_FORCE") != "0"
+		f := os.Getenv("CLICOLOR_FORCE")
+		l.supports_color_ = f != "" && f != "0"
 	}
 	// Try enabling ANSI escape sequence support on Windows 10 terminals.
 	if runtime.GOOS == "windows" {
