@@ -136,7 +136,9 @@ jobs:
         fi
     - name: 'Check: addlicense; all sources have a license header (ubuntu)'
       if: always() && matrix.os == 'ubuntu-latest'
-      run: addlicense -check .
+      # Since the original C++ code doesn't have consistent copyright headers,
+      # only check the Go code.
+      run: addlicense -check $(git ls-files -- "*.go")
     - name: "Check: misspelling; code doesn't contain misspelling (ubuntu)"
       if: always() && matrix.os == 'ubuntu-latest'
       run: |
