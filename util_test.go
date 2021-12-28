@@ -305,7 +305,7 @@ func TestElideMiddle_ElideInTheMiddle(t *testing.T) {
 	}
 }
 
-var dummyBenchmarkCanonicalizePath = ""
+var dummyBenchmarkValue = ""
 
 // The C++ version is canon_perftest. It runs 2000000 iterations.
 //
@@ -317,6 +317,7 @@ var dummyBenchmarkCanonicalizePath = ""
 // has a minimum of 157ns, which multiplied by 2000000 gives 306ms. So the code
 // is nearly 4x slower. I'll have to optimize later.
 func BenchmarkCanonicalizePath(b *testing.B) {
+	b.ReportAllocs()
 	kPath := "../../third_party/WebKit/Source/WebCore/platform/leveldb/LevelDBWriteBatch.cpp"
 	var slash_bits uint64
 	s := ""
@@ -324,5 +325,5 @@ func BenchmarkCanonicalizePath(b *testing.B) {
 		s = CanonicalizePath(kPath, &slash_bits)
 	}
 	// Use s so it's not optimized out.
-	dummyBenchmarkCanonicalizePath = s
+	dummyBenchmarkValue = s
 }
