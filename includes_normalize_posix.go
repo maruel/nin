@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
+
 package ginja
 
+import "path/filepath"
+
 func InternalGetFullPathName(file_name string, buffer *string, err *string) bool {
-	panic("TODO")
+	b, err2 := filepath.Abs(file_name)
+	if err2 != nil {
+		*err = err2.Error()
+		return false
+	}
 	*buffer = b
-	/*
-		result_size := syscall.GetFullPathNameA(file_name, buffer_length, buffer, nil)
-		if result_size == 0 {
-			*err = "GetFullPathNameA(" + file_name + "): " + GetLastErrorString()
-			return false
-		} else if result_size > buffer_length {
-			*err = "path too long"
-			return false
-		}
-	*/
 	return true
 }

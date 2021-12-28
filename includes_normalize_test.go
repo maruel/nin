@@ -37,20 +37,19 @@ func NormalizeAndCheckNoError(t *testing.T, input string) string {
 func NormalizeRelativeAndCheckNoError(t *testing.T, input, relative_to string) string {
 	result := ""
 	err := ""
-	normalizer := IncludesNormalize{relative_to_: relative_to}
+	normalizer := NewIncludesNormalize(relative_to)
 	if !normalizer.Normalize(input, &result, &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	return result
 }
 
 func TestIncludesNormalize_Simple(t *testing.T) {
-	t.Skip("TODO")
-	if "b" != NormalizeAndCheckNoError(t, "a\\..\\b") {
-		t.Fatal("expected equal")
+	if got := NormalizeAndCheckNoError(t, "a\\..\\b"); got != "b" {
+		t.Fatalf("%q", got)
 	}
 	if "b" != NormalizeAndCheckNoError(t, "a\\../b") {
 		t.Fatal("expected equal")
@@ -91,7 +90,6 @@ func TestIncludesNormalize_WithRelative(t *testing.T) {
 }
 
 func TestIncludesNormalize_Case(t *testing.T) {
-	t.Skip("TODO")
 	if "b" != NormalizeAndCheckNoError(t, "Abc\\..\\b") {
 		t.Fatal("expected equal")
 	}
@@ -135,12 +133,11 @@ func TestIncludesNormalize_DifferentDrive(t *testing.T) {
 }
 
 func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
-	t.Skip("TODO")
 	kLongInputString := "C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\INCLUDEwarning #31001: The dll for reading and writing the pdb (for example, mspdb110.dll) could not be found on your path. This is usually a configuration error. Compilation will continue using /Z7 instead of /Zi, but expect a similar error when you link your program."
 	// Too long, won't be canonicalized. Ensure doesn't crash.
 	result := ""
 	err := ""
-	normalizer := IncludesNormalize{relative_to_: "."}
+	normalizer := NewIncludesNormalize(".")
 	if normalizer.Normalize(kLongInputString, &result, &err) {
 		t.Fatal("expected false")
 	}
@@ -182,10 +179,9 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 }
 
 func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
-	t.Skip("TODO")
 	result := ""
 	err := ""
-	normalizer := IncludesNormalize{relative_to_: "."}
+	normalizer := NewIncludesNormalize(".")
 	// A short path should work
 	if !normalizer.Normalize("a", &result, &err) {
 		t.Fatal("expected true")
