@@ -17,6 +17,7 @@ package ginja
 import (
 	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -46,8 +47,11 @@ func TestCanonicalizePath_PathSamples(t *testing.T) {
 		{".", "."},
 		{"./.", "."},
 		{"foo/..", "."},
+		// CanonicalizePath.UpDir:
 		{"../../foo/bar.h", "../../foo/bar.h"},
 		{"test/../../foo/bar.h", "../foo/bar.h"},
+		// CanonicalizePath.AbsolutePath
+		{"/usr/include/stdio.h", "/usr/include/stdio.h"},
 	}
 	if runtime.GOOS == "windows" {
 		data = append(data, row{"//foo", "//foo"})
@@ -69,369 +73,151 @@ func TestCanonicalizePath_PathSamplesWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("windows only")
 	}
-	t.Skip("TODO")
-	/*
-		path := ""
-
-		CanonicalizePath(&path, &unused)
-		if "" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo.h"
-		CanonicalizePath(&path, &unused)
-		if "foo.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = ".\\foo.h"
-		CanonicalizePath(&path, &unused)
-		if "foo.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = ".\\foo\\.\\bar.h"
-		CanonicalizePath(&path, &unused)
-		if "foo/bar.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = ".\\x\\foo\\..\\bar.h"
-		CanonicalizePath(&path, &unused)
-		if "x/bar.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = ".\\x\\foo\\..\\..\\bar.h"
-		CanonicalizePath(&path, &unused)
-		if "bar.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo\\\\bar"
-		CanonicalizePath(&path, &unused)
-		if "foo/bar" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo\\\\.\\\\..\\\\\\bar"
-		CanonicalizePath(&path, &unused)
-		if "bar" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = ".\\x\\..\\foo\\..\\..\\bar.h"
-		CanonicalizePath(&path, &unused)
-		if "../bar.h" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo\\.\\."
-		CanonicalizePath(&path, &unused)
-		if "foo" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo\\bar\\.."
-		CanonicalizePath(&path, &unused)
-		if "foo" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo\\.hidden_bar"
-		CanonicalizePath(&path, &unused)
-		if "foo/.hidden_bar" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "\\foo"
-		CanonicalizePath(&path, &unused)
-		if "/foo" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "\\\\foo"
-		CanonicalizePath(&path, &unused)
-		if "//foo" != path {
-			t.Fatal("expected equal")
-		}
-
-		path = "\\"
-		CanonicalizePath(&path, &unused)
-		if "" != path {
-			t.Fatal("expected equal")
-		}
-	*/
+	type row struct {
+		in   string
+		want string
+	}
+	data := []row{
+		{"", ""},
+		{"foo.", "foo."},
+		{".\\foo.h", "foo.h"},
+		{".\\foo\\.\\bar.h", "foo/bar.h"},
+		{".\\x\\foo\\..\\bar.h", "x/bar.h"},
+		{".\\x\\foo\\..\\..\\bar.h", "bar.h"},
+		{"foo\\\\bar", "foo/bar"},
+		{"foo\\\\.\\\\..\\\\\\bar", "bar"},
+		{".\\x\\..\\foo\\..\\..\\bar.h", "../bar.h"},
+		{"foo\\.\\.", "foo"},
+		{"foo\\bar\\..", "foo"},
+		{"foo\\.hidden_bar", "foo/.hidden_bar"},
+		{"\\foo", "/foo"},
+		{"\\\\foo", "//foo"},
+		{"\\", ""},
+	}
+	for i, l := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var unused uint64
+			got := CanonicalizePath(l.in, &unused)
+			if l.want != got {
+				t.Fatalf("want: %q, got: %q", l.want, got)
+			}
+		})
+	}
 }
 
 func TestCanonicalizePath_SlashTracking(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		path := ""
-		var slash_bits uint64
-
-		path = "foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 0 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a/bcd/efh\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/bcd/efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 4 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\bcd/efh\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/bcd/efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 5 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\bcd\\efh\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/bcd/efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 7 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a/bcd/efh/foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/bcd/efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 0 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\./efh\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 3 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\../efh\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "efh/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\b\\c\\d\\e\\f\\g\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/b/c/d/e/f/g/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 127 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\b\\c\\..\\..\\..\\g\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "g/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\b/c\\../../..\\g\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "g/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\b/c\\./../..\\g\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/g/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 3 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\b/c\\./../..\\g/foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/g/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\\\\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a/\\\\foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 0 != slash_bits {
-			t.Fatal("expected equal")
-		}
-
-		path = "a\\//foo.h"
-		CanonicalizePath(&path, &slash_bits)
-		if "a/foo.h" != path {
-			t.Fatal("expected equal")
-		}
-		if 1 != slash_bits {
-			t.Fatal("expected equal")
-		}
-	*/
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+	type row struct {
+		in        string
+		want      string
+		want_bits uint64
+	}
+	data := []row{
+		{"", "", 0},
+		{"foo.h", "foo.h", 0},
+		{"foo.h", "foo.h", 0},
+		{"a\\foo.h", "a/foo.h", 1},
+		{"a/bcd/efh\\foo.h", "a/bcd/efh/foo.h", 4},
+		{"a\\bcd/efh\\foo.h", "a/bcd/efh/foo.h", 5},
+		{"a\\bcd\\efh\\foo.h", "a/bcd/efh/foo.h", 7},
+		{"a/bcd/efh/foo.h", "a/bcd/efh/foo.h", 0},
+		{"a\\./efh\\foo.h", "a/efh/foo.h", 3},
+		{"a\\../efh\\foo.h", "efh/foo.h", 1},
+		{"a\\b\\c\\d\\e\\f\\g\\foo.h", "a/b/c/d/e/f/g/foo.h", 127},
+		{"a\\b\\c\\..\\..\\..\\g\\foo.h", "g/foo.h", 1},
+		{"a\\b/c\\../../..\\g\\foo.h", "g/foo.h", 1},
+		{"a\\b/c\\./../..\\g\\foo.h", "a/g/foo.h", 3},
+		{"a\\b/c\\./../..\\g/foo.h", "a/g/foo.h", 1},
+		{"a\\\\\\foo.h", "a/foo.h", 1},
+		{"a/\\\\foo.h", "a/foo.h", 0},
+		{"a\\//foo.h", "a/foo.h", 1},
+	}
+	for i, l := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var slash_bits uint64
+			got := CanonicalizePath(l.in, &slash_bits)
+			if l.want != got {
+				t.Fatalf("want: %q, got: %q", l.want, got)
+			}
+			if slash_bits != l.want_bits {
+				t.Fatalf("want: %d, got: %d", l.want_bits, slash_bits)
+			}
+		})
+	}
 }
 
 func TestCanonicalizePath_CanonicalizeNotExceedingLen(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		// Make sure searching \/ doesn't go past supplied len.
-		buf := "foo/bar\\baz.h\\" // Last \ past end.
-		var slash_bits uint64
-		size := 13
-		CanonicalizePath(buf[:13], &slash_bits)
-		if 0 != strncmp("foo/bar/baz.h", buf, size) {
-			t.Fatal("expected equal")
-		}
-		if 2 != slash_bits {
-			t.Fatal("expected equal")
-		} // Not including the trailing one.
-	*/
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+	t.Skip("This test is irrelevant in Go. Remove once conversion is done")
 }
 
 func TestCanonicalizePath_TooManyComponents(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
 	t.Skip("TODO")
-	/*
-		path := ""
-		var slash_bits uint64
-
+	type row struct {
+		in string
+		//want      string
+		want_bits uint64
+	}
+	data := []row{
 		// 64 is OK.
-		path = "a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./x.h"
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0x0 {
-			t.Fatal("expected equal")
-		}
-
+		{
+			"a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./x.h",
+			0,
+		},
 		// Backslashes version.
-		path =
-			"a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\x.h"
-
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0xffffffff {
-			t.Fatal("expected equal")
-		}
-
+		{
+			"a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\x.h",
+			0xffffffff,
+		},
 		// 65 is OK if #component is less than 60 after path canonicalization.
-		path = "a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./x/y.h"
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0x0 {
-			t.Fatal("expected equal")
-		}
-
+		{
+			"a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./a/./x/y.h",
+			0,
+		},
 		// Backslashes version.
-		path =
-			"a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\x\\y.h"
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0x1ffffffff {
-			t.Fatal("expected equal")
-		}
-
+		{
+			"a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\a\\.\\x\\y.h",
+			0x1ffffffff,
+		},
 		// 59 after canonicalization is OK.
-		path = "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/x/y.h"
-		if 58 != count(path.begin(), path.end(), '/') {
-			t.Fatal("expected equal")
-		}
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0x0 {
-			t.Fatal("expected equal")
-		}
-
+		{
+			"a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/x/y.h",
+			0,
+		},
 		// Backslashes version.
-		path =
-			"a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\x\\y.h"
-		if 58 != count(path.begin(), path.end(), '\\') {
-			t.Fatal("expected equal")
-		}
-		CanonicalizePath(&path, &slash_bits)
-		if slash_bits != 0x3ffffffffffffff {
-			t.Fatal("expected equal")
-		}
-	*/
-}
+		{
+			"a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\x\\y.h",
+			0x3ffffffffffffff,
+		},
+	}
+	// Manual check that the last 2 ones have 58 items.
+	if 58 != strings.Count(data[4].in, "/") {
+		t.Fatal("expected equal")
+	}
+	if 58 != strings.Count(data[5].in, "\\") {
+		t.Fatal("expected equal")
+	}
 
-func TestCanonicalizePath_AbsolutePath(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		path := "/usr/include/stdio.h"
-		err := ""
-		CanonicalizePath(&path)
-		if "/usr/include/stdio.h" != path {
-			t.Fatal("expected equal")
-		}
-	*/
+	for i, l := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var slash_bits uint64
+			_ = CanonicalizePath(l.in, &slash_bits)
+			if slash_bits != l.want_bits {
+				t.Fatalf("want: %d, got: %d", l.want_bits, slash_bits)
+			}
+		})
+	}
 }
 
 func TestCanonicalizePath_NotNullTerminated(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		path := ""
-		var len2 uint
-		var unused uint64
-
-		path = "foo/. bar/."
-		len2 = strlen("foo/.") // Canonicalize only the part before the space.
-		CanonicalizePath(&path[0], &len2, &unused)
-		if strlen("foo") != len2 {
-			t.Fatal("expected equal")
-		}
-		if "foo/. bar/." != string(path) {
-			t.Fatal("expected equal")
-		}
-
-		path = "foo/../file bar/."
-		len2 = strlen("foo/../file")
-		CanonicalizePath(&path[0], &len2, &unused)
-		if strlen("file") != len2 {
-			t.Fatal("expected equal")
-		}
-		if "file ./file bar/." != string(path) {
-			t.Fatal("expected equal")
-		}
-	*/
+	t.Skip("This test is irrelevant in Go. Remove once conversion is done")
 }
 
 func TestPathEscaping_TortureTest(t *testing.T) {
@@ -466,30 +252,24 @@ func TestPathEscaping_SensibleWin32PathsAreNotNeedlesslyEscaped(t *testing.T) {
 }
 
 func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		stripped := StripAnsiEscapeCodes("foo\x33")
-		if "foo" != stripped {
-			t.Fatal("expected equal")
-		}
+	stripped := StripAnsiEscapeCodes("foo\x1B")
+	if "foo" != stripped {
+		t.Fatalf("%+q", stripped)
+	}
 
-		stripped = StripAnsiEscapeCodes("foo\x33[")
-		if "foo" != stripped {
-			t.Fatal("expected equal")
-		}
-	*/
+	stripped = StripAnsiEscapeCodes("foo\x1B[")
+	if "foo" != stripped {
+		t.Fatalf("%+q", stripped)
+	}
 }
 
 func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		// An actual clang warning.
-		input := "\x33[1maffixmgr.cxx:286:15: \x33[0m\x33[0;1;35mwarning: \x33[0m\x33[1musing the result... [-Wparentheses]\x33[0m"
-		stripped := StripAnsiEscapeCodes(input)
-		if "affixmgr.cxx:286:15: warning: using the result... [-Wparentheses]" != stripped {
-			t.Fatal("expected equal")
-		}
-	*/
+	// An actual clang warning.
+	input := "\x1B[1maffixmgr.cxx:286:15: \x1B[0m\x1B[0;1;35mwarning: \x1B[0m\x1B[1musing the result... [-Wparentheses]\x1B[0m"
+	stripped := StripAnsiEscapeCodes(input)
+	if "affixmgr.cxx:286:15: warning: using the result... [-Wparentheses]" != stripped {
+		t.Fatalf("%+q", stripped)
+	}
 }
 
 func TestElideMiddle_NothingToElide(t *testing.T) {

@@ -14,17 +14,20 @@
 
 package ginja
 
-import "testing"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
 func GetCurDir(t *testing.T) string {
-	t.Skip("TODO")
-	/*
-	  char buf[_MAX_PATH]
-	  _getcwd(buf, sizeof(buf))
-	  vector<string> parts = SplitStringPiece(buf, '\\')
-	  return parts[parts.size() - 1]
-	*/
-	return ""
+	d, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// TODO(maruel): Weird
+	p := strings.Split(d, "\\")
+	return p[len(p)-1]
 }
 
 func NormalizeAndCheckNoError(t *testing.T, input string) string {

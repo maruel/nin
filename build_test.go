@@ -987,11 +987,9 @@ func TestBuildTest_OneStep(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cat in1 > cat1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cat in1 > cat1"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -1014,11 +1012,9 @@ func TestBuildTest_OneStep2(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cat in1 > cat1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cat in1 > cat1"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -1098,11 +1094,9 @@ func TestBuildTest_TwoOutputs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "touch out1 out2" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"touch out1 out2"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4384,7 +4378,6 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 }
 
 func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that one edge has an implicit output that is also reported by
@@ -4418,20 +4411,14 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch tmp tmp.imp", "cp tmp out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp tmp.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "cp tmp out" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
-	}
-	if _, ok := b.fs_.files_created_["tmp.imp"]; ok {
-		t.Fatal("expected equal")
+	t.Skip("TODO")
+	want_created := map[string]struct{}{"tmp.imp": {}}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
 	}
 	if !b.builder_.AlreadyUpToDate() {
 		t.Fatal("expected true")

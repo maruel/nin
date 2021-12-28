@@ -135,16 +135,7 @@ func HashCommand(command string) uint64 {
 	return MurmurHash64A([]byte(command))
 }
 
-func NewLogEntry(output string) *LogEntry {
-	return &LogEntry{output: output}
-}
-
 /*
-NewLogEntry(output string, command_hash uint64, start_time, end_time int32, restat_mtime TimeStamp)
-  : output(output), command_hash(command_hash),
-    start_time(start_time), end_time(end_time), mtime(restat_mtime)
-{}
-
 BuildLog::~BuildLog() {
   Close()
 }
@@ -178,7 +169,7 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime T
 		if ok {
 			log_entry = i
 		} else {
-			log_entry = NewLogEntry(path)
+			log_entry = &LogEntry{output: path}
 			b.entries_[log_entry.output] = log_entry
 		}
 		log_entry.command_hash = command_hash
@@ -370,7 +361,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		if ok {
 			entry = i
 		} else {
-			entry = NewLogEntry(output)
+			entry = &LogEntry{output: output}
 			b.entries_[entry.output] = entry
 			unique_entry_count++
 		}

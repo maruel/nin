@@ -235,22 +235,21 @@ func (c *Cleaner) CleanTarget(target string) int {
 	return c.status_
 }
 
-/*
 // Clean the given target @a targets.
 // @return non-zero if an error occurs.
-func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
+func (c *Cleaner) CleanTargets(targets []string) int {
+	// TODO(maruel): Not unit tested.
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for i := 0; i < target_count; i++ {
-		target_name := targets[i]
-		if target_name.empty() {
+	for _, target_name := range targets {
+		if target_name == "" {
 			Error("failed to canonicalize '': empty path")
 			c.status_ = 1
 			continue
 		}
 		var slash_bits uint64
-		CanonicalizePath(&target_name, &slash_bits)
+		target_name = CanonicalizePath(target_name, &slash_bits)
 		target := c.state_.LookupNode(target_name)
 		if target != nil {
 			if c.IsVerbose() {
@@ -265,7 +264,6 @@ func (c *Cleaner) CleanTargets(target_count int, targets []*char) int {
 	c.PrintFooter()
 	return c.status_
 }
-*/
 
 func (c *Cleaner) DoCleanRule(rule *Rule) {
 	if rule == nil {
@@ -315,19 +313,18 @@ func (c *Cleaner) CleanRuleName(rule string) int {
 	return c.status_
 }
 
-/*
 // Clean the file produced by the given @a rules.
 // @return non-zero if an error occurs.
-func (c *Cleaner) CleanRules(rule_count int, rules []*char) int {
-	if !rules {
+func (c *Cleaner) CleanRules(rules []string) int {
+	// TODO(maruel): Not unit tested.
+	if len(rules) == 0 {
 		panic("oops")
 	}
 
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for i := 0; i < rule_count; i++ {
-		rule_name := rules[i]
+	for _, rule_name := range rules {
 		rule := c.state_.bindings_.LookupRule(rule_name)
 		if rule != nil {
 			if c.IsVerbose() {
@@ -342,7 +339,6 @@ func (c *Cleaner) CleanRules(rule_count int, rules []*char) int {
 	c.PrintFooter()
 	return c.status_
 }
-*/
 
 func (c *Cleaner) Reset() {
 	c.status_ = 0

@@ -386,47 +386,43 @@ func Win32Fatal(function string, hint string) {
     Fatal("%s: %s", function, GetLastErrorString())
   }
 }
-
-func islatinalpha(c int) bool {
-  // isalpha() is locale-dependent.
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
 */
+
+func islatinalpha(c byte) bool {
+	// isalpha() is locale-dependent.
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
 
 // Removes all Ansi escape codes (http://www.termsys.demon.co.uk/vtansi.htm).
 func StripAnsiEscapeCodes(in string) string {
-	if strings.IndexByte(in, '\x33') != -1 {
+	if strings.IndexByte(in, '\x1B') == -1 {
 		return in
 	}
-	panic("TODO")
-	/*
-		  stripped := ""
-		  stripped.reserve(in.size())
+	stripped := ""
+	//stripped.reserve(in.size())
 
-		  for i := 0; i < in.size(); i++ {
-		    if in[i] != '\33' {
-		      // Not an escape code.
-		      stripped.push_back(in[i])
-		      continue
-		    }
+	for i := 0; i < len(in); i++ {
+		if in[i] != '\x1B' {
+			// Not an escape code.
+			stripped += string(in[i])
+			continue
+		}
 
-		    // Only strip CSIs for now.
-		    if i + 1 >= in.size() {
-		    	break
-		    }
-		    if in[i + 1] != '[' {  // Not a CSI.
-		    	continue
-		    }
-		    i += 2
+		// Only strip CSIs for now.
+		if i+1 >= len(in) {
+			break
+		}
+		if in[i+1] != '[' { // Not a CSI.
+			continue
+		}
+		i += 2
 
-		    // Skip everything up to and including the next [a-zA-Z].
-		    while i < in.size() && !islatinalpha(in[i]) {
-		      i++
-		    }
-		  }
-			return stripped
-	*/
-	return in
+		// Skip everything up to and including the next [a-zA-Z].
+		for i < len(in) && !islatinalpha(in[i]) {
+			i++
+		}
+	}
+	return stripped
 }
 
 // @return the number of processors on the machine.  Useful for an initial
@@ -496,7 +492,7 @@ func CalculateProcessorLoad(idle_ticks, total_ticks uint64) float64 {
   return load
 }
 
-static uint64_t FileTimeToTickCount(const FILETIME & ft)
+uint64_t FileTimeToTickCount(const FILETIME & ft)
 {
   uint64_t high = (((uint64_t)(ft.dwHighDateTime)) << 32)
   uint64_t low  = ft.dwLowDateTime

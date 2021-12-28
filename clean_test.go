@@ -357,7 +357,8 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
 
 	c.fs_.Create("out1", "")
 
-	if 0 != cleaner.CleanAll( /*generator=*/ true) {
+	// generator=true
+	if 0 != cleaner.CleanAll(true) {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleaned_files_count() {
