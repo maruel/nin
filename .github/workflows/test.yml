@@ -59,6 +59,48 @@ jobs:
       if: always()
       run: rm coverage.txt
 
+      # Don't run go test -race if anything failed, to speed up the results.
+    - name: 'Check: go test -race'
+      run: go test -timeout=120s -race ./...
+    - name: 'Check: go test -bench .'
+      run: go test -timeout=120s -bench . -benchtime=100ms -cpu=1 ./...
+
+    - name: "Check: tree is clean"
+      if: always()
+      run: |
+        # Nothing should have changed in the tree up to that point and no
+        # unsuspected file was created.
+        TOUCHED=$(git status --porcelain --ignored)
+        if ! test -z "$TOUCHED"; then
+          echo "Oops, something touched these files, please cleanup:"
+          echo "$TOUCHED"
+          git diff
+          false
+        fi
+
+    - name: "Check: go generate doesn't modify files"
+      if: always()
+      run: |
+        go generate ./...
+        # Also test for untracked files.
+        TOUCHED=$(git status --porcelain --ignored)
+        if ! test -z "$TOUCHED"; then
+          echo "go generate created these files, please fix:"
+          echo "$TOUCHED"
+          false
+        fi
+
+    - name: "Check: go mod tidy doesn't modify files"
+      if: always()
+      run: |
+        go mod tidy
+        TOUCHED=$(git status --porcelain --ignored)
+        if ! test -z "$TOUCHED"; then
+          echo "go mod tidy was not clean, please update:"
+          git diff
+          false
+        fi
+
       # Fetch the tools.
     - name: 'go get necessary tools'
       if: always()
@@ -149,48 +191,6 @@ jobs:
           echo "" >> _comments.txt
           echo "$ERR" >> _comments.txt
           echo "" >> _comments.txt
-          false
-        fi
-
-      # Don't run go test -race if anything failed, to speed up the results.
-    - name: 'Check: go test -race'
-      run: go test -timeout=120s -race ./...
-    - name: 'Check: go test -bench .'
-      run: go test -timeout=120s -bench . -benchtime=100ms -cpu=1 ./...
-
-    - name: "Check: tree is clean"
-      if: always()
-      run: |
-        # Nothing should have changed in the tree up to that point and no
-        # unsuspected file was created.
-        TOUCHED=$(git status --porcelain --ignored)
-        if ! test -z "$TOUCHED"; then
-          echo "Oops, something touched these files, please cleanup:"
-          echo "$TOUCHED"
-          git diff
-          false
-        fi
-
-    - name: "Check: go generate doesn't modify files"
-      if: always()
-      run: |
-        go generate ./...
-        # Also test for untracked files.
-        TOUCHED=$(git status --porcelain --ignored)
-        if ! test -z "$TOUCHED"; then
-          echo "go generate created these files, please fix:"
-          echo "$TOUCHED"
-          false
-        fi
-
-    - name: "Check: go mod tidy doesn't modify files"
-      if: always()
-      run: |
-        go mod tidy
-        TOUCHED=$(git status --porcelain --ignored)
-        if ! test -z "$TOUCHED"; then
-          echo "go mod tidy was not clean, please update:"
-          git diff
           false
         fi
 
