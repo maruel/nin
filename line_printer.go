@@ -72,7 +72,7 @@ func NewLinePrinter() LinePrinter {
 			// Don't panic for now.
 			//l.smart_terminal_ = isatty(1)
 		} else {
-			panic("TODO")
+			// Don't panic for now.
 			/*
 			   console_ = GetStdHandle(STD_OUTPUT_HANDLE)
 			   var csbi CONSOLE_SCREEN_BUFFER_INFO

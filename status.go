@@ -218,7 +218,7 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 		c := progress_status_format[i]
 		if c == '%' {
 			i++
-			c := progress_status_format[i]
+			c = progress_status_format[i]
 			switch c {
 			case '%':
 				out += "%"

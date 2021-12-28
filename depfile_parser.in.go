@@ -14,8 +14,6 @@
 
 //go:build neverbuild
 
-//go:generate ./regen.sh
-
 package ginja
 
 type DepfileParserOptions struct {
