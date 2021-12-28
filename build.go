@@ -787,7 +787,7 @@ func (b *Builder) Build(err *string) bool {
 		if failures_allowed != 0 && b.command_runner_.CanRunMore() {
 			if edge := b.plan_.FindWork(); edge != nil {
 				if edge.GetBindingBool("generator") {
-					b.scan_.build_log().Close()
+					_ = b.scan_.build_log().Close()
 				}
 
 				if !b.StartEdge(edge, err) {

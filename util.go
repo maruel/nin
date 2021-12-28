@@ -30,8 +30,8 @@ func Fatal(msg string, s ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\n")
 	// On Windows, some tools may inject extra threads.
 	// exit() may block on locks held by those threads, so forcibly exit.
-	os.Stderr.Sync()
-	os.Stdout.Sync()
+	_ = os.Stderr.Sync()
+	_ = os.Stdout.Sync()
 	os.Exit(1)
 }
 

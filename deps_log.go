@@ -207,12 +207,13 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	return true
 }
 
-func (d *DepsLog) Close() {
+func (d *DepsLog) Close() error {
 	d.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
 	if d.file_ != nil {
-		d.file_.Close()
+		_ = d.file_.Close()
 	}
 	d.file_ = nil
+	return nil
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
@@ -245,8 +246,8 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		} else {
 			*err = "bad deps log signature or version; starting over"
 		}
-		f.Close()
-		os.Remove(path)
+		_ = f.Close()
+		_ = os.Remove(path)
 		// Don't report this as a failure.  An empty deps log will cause
 		// us to rebuild the outputs anyway.
 		return LOAD_SUCCESS
@@ -368,17 +369,17 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		}
 
 		if err := f.Truncate(0); err != nil {
-			f.Close()
+			_ = f.Close()
 			return LOAD_ERROR
 		}
-		f.Close()
+		_ = f.Close()
 
 		// The truncate succeeded; we'll just report the load error as a
 		// warning because the build can proceed.
 		*err += "; recovering"
 		return LOAD_SUCCESS
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Rebuild the log if there are too many dead records.
 	kMinCompactionEntryCount := 1000
@@ -417,7 +418,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 func (d *DepsLog) Recompact(path string, err *string) bool {
 	defer METRIC_RECORD(".ninja_deps recompact")()
 
-	d.Close()
+	_ = d.Close()
 	temp_path := path + ".recompact"
 
 	// OpenForWrite() opens for append.  Make sure it's not appending to a
@@ -450,12 +451,12 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 		}
 
 		if !new_log.RecordDeps(d.nodes_[old_id], deps.mtime, deps.nodes) {
-			new_log.Close()
+			_ = new_log.Close()
 			return false
 		}
 	}
 
-	new_log.Close()
+	_ = new_log.Close()
 
 	// All nodes now have ids that refer to new_log, so steal its data.
 	d.deps_ = new_log.deps_
@@ -556,7 +557,7 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	if d.file_path_ == "" {
 		return true
 	}
-	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
 	if d.file_ == nil {
 		// TODO(maruel): Make it a real error.
 		return false

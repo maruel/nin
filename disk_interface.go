@@ -101,7 +101,7 @@ func DirName(path string) string {
 
 func MakeDir(path string) int {
 	//return _mkdir(path)
-	if err := os.Mkdir(path, 0o755); err != nil {
+	if err := os.Mkdir(path, 0o777); err != nil {
 		return 1
 	}
 	return 0
@@ -196,10 +196,10 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 		*err = err2.Error()
 		return false
 	}
-	defer f.Close()
 	d, err2 := f.Readdir(0)
 	if err2 != nil {
 		*err = err2.Error()
+		_ = f.Close()
 		return false
 	}
 	for _, i := range d {
@@ -207,6 +207,7 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 			stamps[i.Name()] = TimeStamp(i.ModTime().UnixMicro())
 		}
 	}
+	_ = f.Close()
 	return true
 }
 
@@ -279,7 +280,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
-	return ioutil.WriteFile(path, []byte(contents), 0o755) == nil
+	return ioutil.WriteFile(path, []byte(contents), 0o777) == nil
 }
 
 func (r *RealDiskInterface) MakeDir(path string) bool {
@@ -293,7 +294,7 @@ func (r *RealDiskInterface) MakeDir(path string) bool {
 		}
 		return true
 	*/
-	err := os.Mkdir(path, 0o755)
+	err := os.Mkdir(path, 0o777)
 	return err == nil || os.IsExist(err)
 }
 

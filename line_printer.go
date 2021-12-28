@@ -176,7 +176,7 @@ func (l *LinePrinter) PrintOrBuffer(data string) {
 	} else {
 		// Avoid printf and C strings, since the actual output might contain null
 		// bytes like UTF-16 does (yuck).
-		os.Stdout.WriteString(data)
+		_, _ = os.Stdout.WriteString(data)
 	}
 }
 

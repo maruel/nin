@@ -194,12 +194,13 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime T
 	return true
 }
 
-func (b *BuildLog) Close() {
+func (b *BuildLog) Close() error {
 	b.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
 	if b.log_file_ != nil {
-		b.log_file_.Close()
+		_ = b.log_file_.Close()
 	}
 	b.log_file_ = nil
+	return nil
 }
 
 // Should be called before using log_file_. When false is returned, errno
@@ -332,23 +333,32 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		if end == -1 {
 			continue
 		}
-		start_time := 0
-		end_time := 0
-		restat_mtime := 0
 
-		start_time, _ = strconv.Atoi(line[:end])
+		start_time, err2 := strconv.ParseInt(line[:end], 10, 32)
+		if err2 != nil {
+			// TODO(maruel): Error handling.
+			panic(err2)
+		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, kFieldSeparator)
 		if end == -1 {
 			continue
 		}
-		end_time, _ = strconv.Atoi(line[:end])
+		end_time, err2 := strconv.ParseInt(line[:end], 10, 32)
+		if err2 != nil {
+			// TODO(maruel): Error handling.
+			panic(err2)
+		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, kFieldSeparator)
 		if end == -1 {
 			continue
 		}
-		restat_mtime, _ = strconv.Atoi(line[:end])
+		restat_mtime, err2 := strconv.ParseInt(line[:end], 10, 64)
+		if err2 != nil {
+			// TODO(maruel): Error handling.
+			panic(err2)
+		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, kFieldSeparator)
 		if end == -1 {
@@ -406,7 +416,7 @@ func WriteEntry(f io.Writer, entry *LogEntry) error {
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	defer METRIC_RECORD(".ninja_log recompact")()
-	b.Close()
+	_ = b.Close()
 	temp_path := path + ".recompact"
 	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
 	if f == nil {
@@ -416,7 +426,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 
 	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
 		*err = err2.Error()
-		f.Close()
+		_ = f.Close()
 		return false
 	}
 
@@ -430,7 +440,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 
 		if err2 := WriteEntry(f, entry); err2 != nil {
 			*err = err2.Error()
-			f.Close()
+			_ = f.Close()
 			return false
 		}
 	}
@@ -439,7 +449,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 		delete(b.entries_, name)
 	}
 
-	f.Close()
+	_ = f.Close()
 	if err2 := os.Remove(path); err2 != nil {
 		*err = err2.Error()
 		return false
@@ -455,7 +465,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 // Restat all outputs in the log
 func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_count int, outputs []string, err *string) bool {
 	defer METRIC_RECORD(".ninja_log restat")()
-	b.Close()
+	_ = b.Close()
 	temp_path := path + ".restat"
 	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY, 0o666)
 	if f == nil {
@@ -465,7 +475,7 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_coun
 
 	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
 		*err = err2.Error()
-		f.Close()
+		_ = f.Close()
 		return false
 	}
 	for _, i := range b.entries_ {
@@ -479,7 +489,7 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_coun
 		if !skip {
 			mtime := disk_interface.Stat(i.output, err)
 			if mtime == -1 {
-				f.Close()
+				_ = f.Close()
 				return false
 			}
 			i.mtime = mtime
@@ -487,12 +497,12 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_coun
 
 		if err2 := WriteEntry(f, i); err2 != nil {
 			*err = err2.Error()
-			f.Close()
+			_ = f.Close()
 			return false
 		}
 	}
 
-	f.Close()
+	_ = f.Close()
 	if err2 := os.Remove(path); err2 != nil {
 		*err = err2.Error()
 		return false

@@ -131,8 +131,8 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 		    Fatal("posix_spawn_file_actions_destroy: %s", strerror(err))
 		  }
 	*/
-	r.Close()
-	w.Close()
+	_ = r.Close()
+	_ = w.Close()
 	panic("TODO")
 	//return true
 }
@@ -259,7 +259,7 @@ func (s *SubprocessSet) Close() {
 func (s *SubprocessSet) Add(command string, use_console bool) *Subprocess {
 	subprocess := NewSubprocess(use_console)
 	if !subprocess.Start(s, command) {
-		subprocess.Close()
+		_ = subprocess.Close()
 		return nil
 	}
 	s.running_ = append(s.running_, subprocess)
