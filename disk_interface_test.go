@@ -394,19 +394,19 @@ type StatTest struct {
 }
 
 func (s *StatTest) WriteFile(path string, contents string) bool {
-	panic("M-A")
+	s.t.Fatal("Unexpected function call")
 	return false
 }
 func (s *StatTest) MakeDir(path string) bool {
-	panic("M-A")
+	s.t.Fatal("Unexpected function call")
 	return false
 }
 func (s *StatTest) ReadFile(path string, contents *string, err *string) DiskStatus {
-	panic("M-A")
+	s.t.Fatal("Unexpected function call")
 	return NotFound
 }
 func (s *StatTest) RemoveFile(path string) int {
-	panic("M-A")
+	s.t.Fatal("Unexpected function call")
 	return 0
 }
 

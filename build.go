@@ -627,7 +627,6 @@ func (r *RealCommandRunner) CanRunMore() bool {
 		subproc_number := len(r.subprocs_.running_) + len(r.subprocs_.finished_)
 		return subproc_number < r.config_.parallelism && ((r.subprocs_.running_.empty() || r.config_.max_load_average <= 0.) || r.GetLoadAverage() < r.config_.max_load_average)
 	*/
-	return false
 }
 
 func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
@@ -636,11 +635,11 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 		command := edge.EvaluateCommand()
 		subproc := r.subprocs_.Add(command, edge.use_console())
 		if subproc == nil {
-			return false
+		return false
 		}
 		r.subproc_to_edge_.insert(make_pair(subproc, edge))
+		return true
 	*/
-	return true
 }
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
@@ -657,13 +656,11 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
 		result.status = subproc.Finish()
 		result.output = subproc.GetOutput()
 
-		e := r.subproc_to_edge_.find(subproc)
-		result.edge = e.second
-		r.subproc_to_edge_.erase(e)
-
-		delete(subproc)
+		e := r.subproc_to_edge_[subproc]
+		result.edge = e
+		delete(r.subproc_to_edge_, e)
+		return true
 	*/
-	return true
 }
 
 func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, status Status, start_time_millis int64) *Builder {

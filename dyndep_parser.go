@@ -80,7 +80,6 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 			return d.lexer_.Error(string("unexpected ")+TokenName(token), err)
 		}
 	}
-	return false // not reached
 }
 
 func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
@@ -95,8 +94,7 @@ func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
 	version := let_value.Evaluate(d.env_)
 	major, minor := ParseVersion(version)
 	if major != 1 || minor != 0 {
-		return d.lexer_.Error(string("unsupported 'ninja_dyndep_version = ")+version+"'", err)
-		return false
+		return d.lexer_.Error("unsupported 'ninja_dyndep_version = "+version+"'", err)
 	}
 	return true
 }

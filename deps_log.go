@@ -268,7 +268,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		//log.Printf("is_deps=%t; size=%d", is_deps, size)
 		if size > kMaxRecordSize {
 			read_failed = true
-			panic("size")
+			// TODO(maruel): Make it a real error.
 			break
 		}
 		if _, err2 := f.Read(buf[:size]); err2 != nil {
@@ -348,7 +348,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			id := len(d.nodes_)
 			if id != int(expected_id) {
 				read_failed = true
-				panic(expected_id)
+				// TODO(maruel): Make it a real error.
 				break
 			}
 
@@ -507,36 +507,36 @@ func (d *DepsLog) RecordId(node *Node) bool {
 
 	size := uint32(path_size + padding + 4)
 	if size > kMaxRecordSize {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		//errno = ERANGE
 		return false
 	}
 
 	if !d.OpenForWriteIfNeeded() {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 	if err := binary.Write(d.file_, binary.LittleEndian, size); err != nil {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 	if _, err := d.file_.Write([]byte(node.path())); err != nil {
 		if node.path() == "" {
 			panic("M-A")
 		}
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 	if padding != 0 {
 		if _, err := d.file_.Write(make([]byte, padding)); err != nil {
-			panic(1)
+			// TODO(maruel): Make it a real error.
 			return false
 		}
 	}
 	id := len(d.nodes_)
 	checksum := ^uint32(id)
 	if err := binary.Write(d.file_, binary.LittleEndian, checksum); err != nil {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 	/* TODO: Evaluate the performance impact.
@@ -558,7 +558,7 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	}
 	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if d.file_ == nil {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 	/* TODO
@@ -574,17 +574,17 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	// end on Windows. Do that explicitly.
 	offset, err := d.file_.Seek(0, os.SEEK_END)
 	if err != nil {
-		panic(1)
+		// TODO(maruel): Make it a real error.
 		return false
 	}
 
 	if offset == 0 {
 		if _, err := d.file_.Write(DepsLogFileSignature); err != nil {
-			panic(err)
+			// TODO(maruel): Return the real error.
 			return false
 		}
 		if err := binary.Write(d.file_, binary.LittleEndian, DepsLogCurrentVersion); err != nil {
-			panic(err)
+			// TODO(maruel): Return the real error.
 			return false
 		}
 	}

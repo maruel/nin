@@ -65,5 +65,4 @@ func EditDistance(s1 string, s2 string, allow_replacements bool, max_edit_distan
 
 	   return row[n]
 	*/
-	return 0
 }

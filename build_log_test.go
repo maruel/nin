@@ -300,25 +300,26 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 }
 
 type TestDiskInterface struct {
+	t *testing.T
 }
 
 func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
 	return 4
 }
 func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
-	panic("oops")
+	t.t.Fatal("Should not be reached")
 	return true
 }
 func (t *TestDiskInterface) MakeDir(path string) bool {
-	panic("oops")
+	t.t.Fatal("Should not be reached")
 	return false
 }
 func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
-	panic("oops")
+	t.t.Fatal("Should not be reached")
 	return NotFound
 }
 func (t *TestDiskInterface) RemoveFile(path string) int {
-	panic("oops")
+	t.t.Fatal("Should not be reached")
 	return 0
 }
 
@@ -342,7 +343,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	}
 
 	// TODO(maruel): The original test case is broken.
-	var testDiskInterface TestDiskInterface
+	testDiskInterface := TestDiskInterface{t}
 	if !log.Restat(kTestFilename, &testDiskInterface, 1, []string{"out2"}, &err) {
 		t.Fatal("expected true")
 	}

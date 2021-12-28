@@ -124,7 +124,6 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 			return m.lexer_.Error(string("unexpected ")+TokenName(token), err)
 		}
 	}
-	return false // not reached
 }
 
 // Parse various statement types.

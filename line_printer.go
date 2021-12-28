@@ -117,6 +117,7 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 	}
 
 	if l.smart_terminal_ && t == ELIDE {
+		l.have_blank_line_ = false
 		if runtime.GOOS == "windows" {
 			panic("TODO")
 			/*
@@ -163,7 +164,6 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 				fflush(stdout)
 			*/
 		}
-		l.have_blank_line_ = false
 	} else {
 		printf("%s\n", to_print)
 	}

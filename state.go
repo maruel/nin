@@ -200,23 +200,19 @@ func (s *State) LookupNode(path string) *Node {
 }
 
 func (s *State) SpellcheckNode(path string) *Node {
-	panic("TODO")
-	/*
-		kAllowReplacements := true
-		kMaxValidEditDistance := 3
+	kAllowReplacements := true
+	kMaxValidEditDistance := 3
 
-		min_distance := kMaxValidEditDistance + 1
-		result := nil
-		for i := s.paths_.begin(); i != s.paths_.end(); i++ {
-			distance := EditDistance(i.first, path, kAllowReplacements, kMaxValidEditDistance)
-			if distance < min_distance && i.second {
-				min_distance = distance
-				result = i.second
-			}
+	min_distance := kMaxValidEditDistance + 1
+	var result *Node
+	for p, node := range s.paths_ {
+		distance := EditDistance(p, path, kAllowReplacements, kMaxValidEditDistance)
+		if distance < min_distance && node != nil {
+			min_distance = distance
+			result = node
 		}
-		return result
-	*/
-	return nil
+	}
+	return result
 }
 
 func (s *State) AddIn(edge *Edge, path string, slash_bits uint64) {

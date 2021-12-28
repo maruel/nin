@@ -87,5 +87,4 @@ func (c *CLWrapper) Run(command string, output *string) int {
 
 		  return exit_code
 	*/
-	return 1
 }
