@@ -164,7 +164,6 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 		final_output := ""
 		if !s.printer_.supports_color() {
 			final_output = StripAnsiEscapeCodes(output)
-			final_output = output
 		} else {
 			final_output = output
 		}
