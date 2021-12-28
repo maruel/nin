@@ -179,6 +179,11 @@ func (s *State) AddEdge(rule *Rule) *Edge {
 	return edge
 }
 
+func (s *State) Edges() []*Edge {
+	// Eventually the member will be renamed Edges.
+	return s.edges_
+}
+
 func (s *State) GetNode(path string, slash_bits uint64) *Node {
 	node := s.LookupNode(path)
 	if node != nil {
