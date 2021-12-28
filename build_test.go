@@ -1118,11 +1118,9 @@ func TestBuildTest_ImplicitOutput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -1538,11 +1536,9 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cc oo.h.in" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cc oo.h.in"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	b.fs_.Tick()
@@ -1560,11 +1556,9 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cc oo.h.in" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands = []string{"cc oo.h.in"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -1801,11 +1795,9 @@ func PhonyUseCase(t *testing.T, i int) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
-		if string("touch test")+ci != b.command_runner_.commands_ran_[0] {
-			t.Fatal("expected equal")
+		want_commands := []string{"touch test" + ci}
+		if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+			t.Fatal(diff)
 		}
 		if !b.builder_.AlreadyUpToDate() {
 			t.Fatal("expected true")
@@ -1857,11 +1849,9 @@ func PhonyUseCase(t *testing.T, i int) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
-		if "touch test"+ci != b.command_runner_.commands_ran_[0] {
-			t.Fatal("expected equal")
+		want_commands := []string{"touch test" + ci}
+		if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+			t.Fatal(diff)
 		}
 
 		b.state_.Reset()
@@ -1881,11 +1871,9 @@ func PhonyUseCase(t *testing.T, i int) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 1 != len(b.command_runner_.commands_ran_) {
-			t.Fatal("expected equal")
-		}
-		if "touch test"+ci != b.command_runner_.commands_ran_[0] {
-			t.Fatal("expected equal")
+		want_commands = []string{"touch test" + ci}
+		if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+			t.Fatal(diff)
 		}
 	}
 }
@@ -2649,7 +2637,6 @@ func TestBuildTest_RspFileSuccess(t *testing.T) {
 
 // Test that RSP file is created but not removed for commands, which fail
 func TestBuildTest_RspFileFailure(t *testing.T) {
-	t.Skip("TODO")
 	b := NewBuildTest(t)
 	b.AssertParse(&b.state_, "rule fail\n  command = fail\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: fail in\n  rspfile = out.rsp\n  long_command = Another very long command\n", ManifestParserOptions{})
 
@@ -2665,7 +2652,12 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	want_created := map[string]struct{}{}
+	want_created := map[string]struct{}{
+		"in":  {},
+		"in1": {},
+		"in2": {},
+		"out": {},
+	}
 	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
 		t.Fatal(diff)
 	}
@@ -2680,8 +2672,9 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 	if "subcommand failed" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+	want_command := []string{"fail"}
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	// The RSP file was created
@@ -2723,8 +2716,9 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+	want_command := []string{"cat out.rsp > out"}
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	// 2. Build again (no change)
@@ -2760,8 +2754,8 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -2988,11 +2982,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'using in1' && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"echo 'using in1' && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -3033,11 +3025,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -3084,11 +3074,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -3135,11 +3123,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands := []string{"echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -3186,11 +3172,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_command := []string{"echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -3239,11 +3223,9 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_command := []string{"echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
+	if diff := cmp.Diff(want_command, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	out1_node := b.state_.LookupNode("out1")
@@ -4061,14 +4043,9 @@ func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp tmp.imp" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
+	want_commands := []string{"touch tmp tmp.imp", "touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4192,17 +4169,9 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch unrelated" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch unrelated", "touch out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4230,14 +4199,9 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4328,17 +4292,9 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch in" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch in", "touch out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4363,21 +4319,14 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp tmp.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch tmp tmp.imp", "touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
 func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
+	// WARNING: I (maruel) am not 100% sure about this test case.
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that one edge has an implicit output that is also reported by
@@ -4399,6 +4348,16 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
+	want_created := map[string]struct{}{
+		"dd-in": {},
+		"in1":   {},
+		"in2":   {},
+		"out.d": {},
+	}
+	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
+		t.Fatal(diff)
+	}
+
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
@@ -4415,8 +4374,10 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
 		t.Fatal(diff)
 	}
-	t.Skip("TODO")
-	want_created := map[string]struct{}{"tmp.imp": {}}
+	want_created["dd"] = struct{}{}
+	want_created["out"] = struct{}{}
+	want_created["tmp"] = struct{}{}
+	want_created["tmp.imp"] = struct{}{}
 	if diff := cmp.Diff(want_created, b.fs_.files_created_); diff != "" {
 		t.Fatal(diff)
 	}
@@ -4447,17 +4408,9 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp tmp.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch tmp tmp.imp", "touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4500,17 +4453,9 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatalf("%#v", b.command_runner_.commands_ran_)
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp tmp.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out out.imp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "touch tmp tmp.imp", "touch out out.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4569,17 +4514,9 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd-in dd" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "true" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "cat out1 > out2" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd-in dd", "true", "cat out1 > out2"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	b.command_runner_.commands_ran_ = nil
@@ -4598,11 +4535,9 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	if !b.builder_.Build(&err) {
 		t.Fatal("expected true")
 	}
-	if 1 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "true" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
+	want_commands = []string{"true"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4688,17 +4623,9 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd1-in dd1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch out1 out1.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out2 out2.imp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd1-in dd1", "touch out1 out1.imp", "touch out2 out2.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4733,17 +4660,9 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd1-in dd1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch out1 out1.imp" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch out2 out2.imp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd1-in dd1", "touch out1 out1.imp", "touch out2 out2.imp"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4772,20 +4691,9 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 4 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd1-in dd1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "touch in" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
-	}
-	if "touch out" != b.command_runner_.commands_ran_[3] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd1-in dd1", "touch in", "touch tmp", "touch out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -4813,22 +4721,8 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 5 != len(b.command_runner_.commands_ran_) {
-		t.Fatal("expected equal")
-	}
-	if "cp dd1-in dd1" != b.command_runner_.commands_ran_[0] {
-		t.Fatal("expected equal")
-	}
-	if "cp dd0-in dd0" != b.command_runner_.commands_ran_[1] {
-		t.Fatal("expected equal")
-	}
-	if "touch in" != b.command_runner_.commands_ran_[2] {
-		t.Fatal("expected equal")
-	}
-	if "touch tmp" != b.command_runner_.commands_ran_[3] {
-		t.Fatal("expected equal")
-	}
-	if "touch out" != b.command_runner_.commands_ran_[4] {
-		t.Fatal("expected equal")
+	want_commands := []string{"cp dd1-in dd1", "cp dd0-in dd0", "touch in", "touch tmp", "touch out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
 	}
 }
