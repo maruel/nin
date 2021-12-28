@@ -1252,14 +1252,12 @@ func TestBuildTest_MakeDirs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(b.fs_.directories_made_) {
-		t.Fatalf("%#v", b.fs_.directories_made_)
+	want_made := map[string]struct{}{
+		"subdir":                        {},
+		filepath.Join("subdir", "dir2"): {},
 	}
-	if _, ok := b.fs_.directories_made_["subdir"]; !ok {
-		t.Fatal("expected equal")
-	}
-	if _, ok := b.fs_.directories_made_["subdir/dir2"]; !ok {
-		t.Fatal("expected equal")
+	if diff := cmp.Diff(want_made, b.fs_.directories_made_); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -1580,14 +1578,12 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if 1 != len(b.fs_.files_read_) {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 	// The depfile path does not get Canonicalize as it seems unnecessary.
-	if "gen/stuff\\things/foo.o.d" != b.fs_.files_read_[0] {
-		t.Fatal("expected equal")
+	want_reads := []string{"gen/stuff\\things/foo.o.d"}
+	if diff := cmp.Diff(want_reads, b.fs_.files_read_); diff != "" {
+		t.Fatal(diff)
 	}
 
 	// Expect three new edges: one generating foo.o, and two more from

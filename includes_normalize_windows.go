@@ -14,18 +14,13 @@
 
 package ginja
 
+import "syscall"
+
 func InternalGetFullPathName(file_name string, buffer *string, err *string) bool {
-	*buffer = file_name
-	panic("TODO")
-	/*
-		result_size := syscall.GetFullPathNameA(file_name, buffer_length, buffer, nil)
-		if result_size == 0 {
-			*err = "GetFullPathNameA(" + file_name + "): " + GetLastErrorString()
-			return false
-		} else if result_size > buffer_length {
-			*err = "path too long"
-			return false
-		}
-		return true
-	*/
+	s, err2 := syscall.FullPath(file_name)
+	if err2 != nil {
+		*err = err2.Error()
+		return false
+	}
+	*buffer = s
 }
