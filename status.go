@@ -80,7 +80,8 @@ func (s *slidingRateInfo) updateRate(update_hint int, time_millis int32) {
 
 func NewStatusPrinter(config *BuildConfig) StatusPrinter {
 	s := StatusPrinter{
-		config_: config,
+		config_:  config,
+		printer_: NewLinePrinter(),
 		current_rate_: slidingRateInfo{
 			rate_:        -1,
 			N:            config.parallelism,

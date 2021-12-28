@@ -273,40 +273,34 @@ func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
 }
 
 func TestElideMiddle_NothingToElide(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		input := "Nothing to elide in this short string."
-		if input != ElideMiddle(input, 80) {
-			t.Fatal("expected equal")
-		}
-		if input != ElideMiddle(input, 38) {
-			t.Fatal("expected equal")
-		}
-		if "" != ElideMiddle(input, 0) {
-			t.Fatal("expected equal")
-		}
-		if "." != ElideMiddle(input, 1) {
-			t.Fatal("expected equal")
-		}
-		if ".." != ElideMiddle(input, 2) {
-			t.Fatal("expected equal")
-		}
-		if "..." != ElideMiddle(input, 3) {
-			t.Fatal("expected equal")
-		}
-	*/
+	input := "Nothing to elide in this short string."
+	if input != ElideMiddle(input, 80) {
+		t.Fatal("expected equal")
+	}
+	if input != ElideMiddle(input, 38) {
+		t.Fatal("expected equal")
+	}
+	if "" != ElideMiddle(input, 0) {
+		t.Fatal("expected equal")
+	}
+	if "." != ElideMiddle(input, 1) {
+		t.Fatal("expected equal")
+	}
+	if ".." != ElideMiddle(input, 2) {
+		t.Fatal("expected equal")
+	}
+	if "..." != ElideMiddle(input, 3) {
+		t.Fatal("expected equal")
+	}
 }
 
 func TestElideMiddle_ElideInTheMiddle(t *testing.T) {
-	t.Skip("TODO")
-	/*
-		input := "01234567890123456789"
-		elided := ElideMiddle(input, 10)
-		if "012...789" != elided {
-			t.Fatal("expected equal")
-		}
-		if "01234567...23456789" != ElideMiddle(input, 19) {
-			t.Fatal("expected equal")
-		}
-	*/
+	input := "01234567890123456789"
+	elided := ElideMiddle(input, 10)
+	if "012...789" != elided {
+		t.Fatal("expected equal")
+	}
+	if "01234567...23456789" != ElideMiddle(input, 19) {
+		t.Fatal("expected equal")
+	}
 }

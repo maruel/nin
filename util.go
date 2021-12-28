@@ -557,27 +557,31 @@ func GetLoadAverage() float64 {
 func GetLoadAverage() float64 {
     return -0.0f
 }
+*/
 
 // Elide the given string @a str with '...' in the middle if the length
 // exceeds @a width.
-func ElideMiddle(str string, width uint) string {
-  switch (width) {
-      case 0: return ""
-      case 1: return "."
-      case 2: return ".."
-      case 3: return "..."
-  }
-  kMargin := 3  // Space for "...".
-  result := str
-  if result.size() > width {
-    size_t elide_size = (width - kMargin) / 2
-    result = result.substr(0, elide_size)
-      + "..."
-      + result.substr(result.size() - elide_size, elide_size)
-  }
-  return result
+func ElideMiddle(str string, width int) string {
+	switch width {
+	case 0:
+		return ""
+	case 1:
+		return "."
+	case 2:
+		return ".."
+	case 3:
+		return "..."
+	}
+	kMargin := 3 // Space for "...".
+	result := str
+	if len(result) > width {
+		elide_size := (width - kMargin) / 2
+		result = result[0:elide_size] + "..." + result[len(result)-elide_size:]
+	}
+	return result
 }
 
+/*
 // Truncates a file to the given size.
 func Truncate(path string, size uint, err *string) bool {
   int fh = _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)

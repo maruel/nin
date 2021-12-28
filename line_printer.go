@@ -14,10 +14,14 @@
 
 package ginja
 
+import (
+	"os"
+	"runtime"
+)
+
 // Prints lines of text, possibly overprinting previously printed lines
 // if the terminal supports it.
 type LinePrinter struct {
-
 	// Whether we can do fancy terminal control codes.
 	smart_terminal_ bool
 
@@ -63,24 +67,37 @@ func NewLinePrinter() LinePrinter {
 	l := LinePrinter{
 		have_blank_line_: true,
 	}
-	/*
-	   term := getenv("TERM")
-	     l.smart_terminal_ = isatty(1) && term && string(term) != "dumb"
-	     l.supports_color_ = l.smart_terminal_
-	     if (!l.supports_color_) {
-	   		clicolor_force := getenv("CLICOLOR_FORCE")
-	       l.supports_color_ = clicolor_force && string(clicolor_force) != "0"
-	     }
-	     // Try enabling ANSI escape sequence support on Windows 10 terminals.
-	     if (supports_color_) {
-	       DWORD mode
-	       if (GetConsoleMode(console_, &mode)) {
-	         if (!SetConsoleMode(console_, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-	           supports_color_ = false
-	         }
-	       }
-	     }
-	*/
+	if os.Getenv("TERM") != "dumb" {
+		if runtime.GOOS != "windows" {
+			// Don't panic for now.
+			//l.smart_terminal_ = isatty(1)
+		} else {
+			panic("TODO")
+			/*
+			   console_ = GetStdHandle(STD_OUTPUT_HANDLE)
+			   var csbi CONSOLE_SCREEN_BUFFER_INFO
+			   smart_terminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
+			*/
+		}
+	}
+	l.supports_color_ = l.smart_terminal_
+	if !l.supports_color_ {
+		l.supports_color_ = os.Getenv("CLICOLOR_FORCE") != "0"
+	}
+	// Try enabling ANSI escape sequence support on Windows 10 terminals.
+	if runtime.GOOS == "windows" {
+		if l.supports_color_ {
+			panic("TODO")
+			/*
+				var mode DWORD
+				if GetConsoleMode(console_, &mode) {
+					if !SetConsoleMode(console_, mode|ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+						supports_color_ = false
+					}
+				}
+			*/
+		}
+	}
 	return l
 }
 
@@ -98,38 +115,58 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 		// On Windows, calling a C library function writing to stdout also handles
 		// pausing the executable when the "Pause" key or Ctrl-S is pressed.
 	}
-	/*
-	   if l.smart_terminal_ && t == ELIDE {
-	     var csbi CONSOLE_SCREEN_BUFFER_INFO
-	     GetConsoleScreenBufferInfo(l.console_, &csbi)
 
-	     to_print = ElideMiddle(to_print, static_cast<size_t>(csbi.dwSize.X))
-	     if l.supports_color_ {  // this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
-	                             // succeeded
-	       printf("%s\x1B[K", to_print)  // Clear to end of line.
-	       fflush(stdout)
-	     } else {
-	       // We don't want to have the cursor spamming back and forth, so instead of
-	       // printf use WriteConsoleOutput which updates the contents of the buffer,
-	       // but doesn't move the cursor position.
-	       COORD buf_size = { csbi.dwSize.X, 1 }
-	       COORD zero_zero = { 0, 0 }
-	       SMALL_RECT target = { csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y,
-	                             static_cast<SHORT>(csbi.dwCursorPosition.X + csbi.dwSize.X - 1),
-	                             csbi.dwCursorPosition.Y }
-	       vector<CHAR_INFO> char_data(csbi.dwSize.X)
-	       for i := 0; i < static_cast<size_t>(csbi.dwSize.X); i++ {
-	         char_data[i].Char.AsciiChar = i < to_print.size() ? to_print[i] : ' '
-	         char_data[i].Attributes = csbi.wAttributes
-	       }
-	       WriteConsoleOutput(l.console_, &char_data[0], buf_size, zero_zero, &target)
-	     }
-
-	     l.have_blank_line_ = false
-	   } else {
-	*/
-	printf("%s\n", to_print)
-	//}
+	if l.smart_terminal_ && t == ELIDE {
+		if runtime.GOOS == "windows" {
+			panic("TODO")
+			/*
+				var csbi CONSOLE_SCREEN_BUFFER_INFO
+				GetConsoleScreenBufferInfo(l.console_, &csbi)
+				to_print = ElideMiddle(to_print, csbi.dwSize.X)
+				if l.supports_color_ {
+					// this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
+					// succeeded
+					printf("%s\x1B[K", to_print) // Clear to end of line.
+					fflush(stdout)
+				} else {
+					// We don't want to have the cursor spamming back and forth, so instead of
+					// printf use WriteConsoleOutput which updates the contents of the buffer,
+					// but doesn't move the cursor position.
+					buf_size := COORD{csbi.dwSize.X, 1}
+					zero_zero := COORD{0, 0}
+					target := SMALL_RECT{csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y,
+						csbi.dwCursorPosition.X + csbi.dwSize.X - 1,
+						csbi.dwCursorPosition.Y}
+					char_data := make([]CHAR_INFO, csbi.dwSize.X)
+					for i := 0; i < csbi.dwSize.X; i++ {
+						if i < len(to_print) {
+							char_data[i].Char.AsciiChar = to_print[i]
+						} else {
+							char_data[i].Char.AsciiChar = ' '
+						}
+						char_data[i].Attributes = csbi.wAttributes
+					}
+					WriteConsoleOutput(l.console_, &char_data[0], buf_size, zero_zero, &target)
+				}
+			*/
+		} else {
+			panic("TODO")
+			/*
+				// Limit output to width of the terminal if provided so we don't cause
+				// line-wrapping.
+				var size winsize
+				if ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0 && size.ws_col {
+					to_print = ElideMiddle(to_print, size.ws_col)
+				}
+				printf("%s", to_print)
+				printf("\x1B[K") // Clear to end of line.
+				fflush(stdout)
+			*/
+		}
+		l.have_blank_line_ = false
+	} else {
+		printf("%s\n", to_print)
+	}
 }
 
 // Print the given data to the console, or buffer it if it is locked.
@@ -139,7 +176,7 @@ func (l *LinePrinter) PrintOrBuffer(data string) {
 	} else {
 		// Avoid printf and C strings, since the actual output might contain null
 		// bytes like UTF-16 does (yuck).
-		//fwrite(data, 1, size, stdout)
+		os.Stdout.WriteString(data)
 	}
 }
 
