@@ -492,8 +492,8 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
-	if out_id >= len(d.deps_) {
-		d.deps_ = append(d.deps_, make([]*Deps, out_id+1)...)
+	if n := out_id + 1 - len(d.deps_); n > 0 {
+		d.deps_ = append(d.deps_, make([]*Deps, n)...)
 	}
 	existed := d.deps_[out_id] != nil
 	d.deps_[out_id] = deps

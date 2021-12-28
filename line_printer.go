@@ -67,19 +67,19 @@ func NewLinePrinter() LinePrinter {
 	l := LinePrinter{
 		have_blank_line_: true,
 	}
-	if os.Getenv("TERM") != "dumb" {
-		if runtime.GOOS != "windows" {
-			// Don't panic for now.
-			//l.smart_terminal_ = isatty(1)
-		} else {
-			// Don't panic for now.
-			/*
-			   console_ = GetStdHandle(STD_OUTPUT_HANDLE)
-			   var csbi CONSOLE_SCREEN_BUFFER_INFO
-			   smart_terminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
-			*/
+	/*
+		if os.Getenv("TERM") != "dumb" {
+			if runtime.GOOS != "windows" {
+				// Don't panic for now.
+				//l.smart_terminal_ = isatty(1)
+			} else {
+				// Don't panic for now.
+				//console_ = GetStdHandle(STD_OUTPUT_HANDLE)
+				//var csbi CONSOLE_SCREEN_BUFFER_INFO
+				//smart_terminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
+			}
 		}
-	}
+	*/
 	l.supports_color_ = l.smart_terminal_
 	if !l.supports_color_ {
 		l.supports_color_ = os.Getenv("CLICOLOR_FORCE") != "0"
