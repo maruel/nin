@@ -195,8 +195,7 @@ func (s *State) GetNode(path string, slash_bits uint64) *Node {
 }
 
 func (s *State) LookupNode(path string) *Node {
-	p, _ := s.paths_[path]
-	return p
+	return s.paths_[path]
 }
 
 func (s *State) SpellcheckNode(path string) *Node {

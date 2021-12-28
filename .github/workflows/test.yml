@@ -97,7 +97,14 @@ jobs:
       run: ineffassign .
     - name: 'Check: staticcheck'
       if: always()
-      run: staticcheck ./...
+      # Disable a few checks for now:
+      # - ST1017: Yoda check since the unit tests use this form by default. May
+      #   fix later.
+      # - U1000: field or variable is unused, some is because the code is
+      #   currently commented out. Will clean up later.
+      # - SA4006: value of variable is never used. May clean up later but
+      #   there's one false positive so it may be tricky.
+      run: staticcheck -checks "inherit,-ST1017,-U1000,-SA4006" ./...
     - name: 'Check: gosec (only G104)'
       run: gosec -include=G104 -fmt=golint -quiet ./...
 

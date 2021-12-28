@@ -269,7 +269,6 @@ func GetWin32EscapedString(input string) string {
 		switch c {
 		case kBackslash:
 			consecutive_backslash_count++
-			break
 		case kQuote:
 			result += input[span_begin:it]
 			for j := 0; j < consecutive_backslash_count+1; j++ {
@@ -277,10 +276,8 @@ func GetWin32EscapedString(input string) string {
 			}
 			span_begin = it
 			consecutive_backslash_count = 0
-			break
 		default:
 			consecutive_backslash_count = 0
-			break
 		}
 	}
 	result += input[span_begin:]

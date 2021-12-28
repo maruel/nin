@@ -69,22 +69,18 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 			if !m.ParsePool(err) {
 				return false
 			}
-			break
 		case BUILD:
 			if !m.ParseEdge(err) {
 				return false
 			}
-			break
 		case RULE:
 			if !m.ParseRule(err) {
 				return false
 			}
-			break
 		case DEFAULT:
 			if !m.ParseDefault(err) {
 				return false
 			}
-			break
 		case IDENT:
 			{
 				m.lexer_.UnreadToken()
@@ -100,26 +96,20 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 					CheckNinjaVersion(value)
 				}
 				m.env_.AddBinding(name, value)
-				break
 			}
 		case INCLUDE:
 			if !m.ParseFileInclude(false, err) {
 				return false
 			}
-			break
 		case SUBNINJA:
 			if !m.ParseFileInclude(true, err) {
 				return false
 			}
-			break
 		case ERROR:
-			{
-				return m.lexer_.Error(m.lexer_.DescribeLastError(), err)
-			}
+			return m.lexer_.Error(m.lexer_.DescribeLastError(), err)
 		case TEOF:
 			return true
 		case NEWLINE:
-			break
 		default:
 			return m.lexer_.Error(string("unexpected ")+TokenName(token), err)
 		}

@@ -182,8 +182,5 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
 		return true
 	}
 	*result = Relativize(abs_input, i.split_relative_to_, err)
-	if len(*err) != 0 {
-		return false
-	}
-	return true
+	return len(*err) == 0
 }

@@ -1049,10 +1049,8 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 		content := ""
 		switch b.disk_interface_.ReadFile(depfile, &content, err) {
 		case Okay:
-			break
 		case NotFound:
 			err = nil
-			break
 		case OtherError:
 			return false
 		}

@@ -930,10 +930,8 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	content := ""
 	switch i.disk_interface_.ReadFile(path, &content, err) {
 	case Okay:
-		break
 	case NotFound:
 		*err = ""
-		break
 	case OtherError:
 		*err = "loading '" + path + "': " + *err
 		return false

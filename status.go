@@ -222,34 +222,26 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 			switch c {
 			case '%':
 				out += "%"
-				break
 
 				// Started edges.
 			case 's':
 				out += strconv.Itoa(s.started_edges_)
-				break
 
 				// Total edges.
 			case 't':
 				out += strconv.Itoa(s.total_edges_)
-				break
 
 				// Running edges.
 			case 'r':
-				{
-					out += strconv.Itoa(s.running_edges_)
-					break
-				}
+				out += strconv.Itoa(s.running_edges_)
 
 				// Unstarted edges.
 			case 'u':
 				out += strconv.Itoa(s.total_edges_ - s.started_edges_)
-				break
 
 				// Finished edges.
 			case 'f':
 				out += strconv.Itoa(s.finished_edges_)
-				break
 
 				// Overall finished edges per second.
 			case 'o':
@@ -259,7 +251,6 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 				} else {
 					out += fmt.Sprintf("%.1f", rate)
 				}
-				break
 
 				// Current rate, average over the last '-j' jobs.
 			case 'c':
@@ -270,17 +261,14 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 				} else {
 					out += fmt.Sprintf("%.1f", rate)
 				}
-				break
 
 				// Percentage
 			case 'p':
 				percent := (100 * s.finished_edges_) / s.total_edges_
 				out += fmt.Sprintf("%3d%%", percent)
-				break
 
 			case 'e':
 				out += fmt.Sprintf("%.3f", float64(s.time_millis_)*0.001)
-				break
 
 			default:
 				Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", c)

@@ -1143,7 +1143,7 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	if !g.scan_.RecomputeDirty(out1, nil, &err) {
 		t.Fatal("expected true")
 	}
-	if !!out1.dirty() {
+	if out1.dirty() {
 		t.Fatal("expected true")
 	}
 

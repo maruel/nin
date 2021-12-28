@@ -46,27 +46,21 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 		token := d.lexer_.ReadToken()
 		switch token {
 		case BUILD:
-			{
-				if !haveDyndepVersion {
-					return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
-				}
-				if !d.ParseEdge(err) {
-					return false
-				}
-				break
+			if !haveDyndepVersion {
+				return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
+			}
+			if !d.ParseEdge(err) {
+				return false
 			}
 		case IDENT:
-			{
-				d.lexer_.UnreadToken()
-				if haveDyndepVersion {
-					return d.lexer_.Error(string("unexpected ")+TokenName(token), err)
-				}
-				if !d.ParseDyndepVersion(err) {
-					return false
-				}
-				haveDyndepVersion = true
-				break
+			d.lexer_.UnreadToken()
+			if haveDyndepVersion {
+				return d.lexer_.Error(string("unexpected ")+TokenName(token), err)
 			}
+			if !d.ParseDyndepVersion(err) {
+				return false
+			}
+			haveDyndepVersion = true
 		case ERROR:
 			return d.lexer_.Error(d.lexer_.DescribeLastError(), err)
 		case TEOF:
@@ -75,7 +69,6 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 			}
 			return true
 		case NEWLINE:
-			break
 		default:
 			return d.lexer_.Error(string("unexpected ")+TokenName(token), err)
 		}
