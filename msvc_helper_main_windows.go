@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build nobuild
-
 package ginja
 
 import (
@@ -63,74 +61,74 @@ func WriteDepFileOrDie(object_path string, parse *CLParser) {
 }
 
 func MSVCHelperMain(arg []string) int {
-	output_filename := nil
-	envfile := nil
-
+	panic("TODO")
 	/*
-			kLongOptions := {{ "help", no_argument, nil, 'h' }, { nil, 0, nil, 0 }}
-		  opt := 0
-		  deps_prefix := ""
-		  for (opt = getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil)) != -1 {
-		    switch (opt) {
-		      case 'e':
-		        envfile = optarg
-		        break
-		      case 'o':
-		        output_filename = optarg
-		        break
-		      case 'p':
-		        deps_prefix = optarg
-		        break
-		      case 'h':
-		      default:
-		        Usage()
-		        return 0
-		    }
-		  }
-	*/
+		output_filename := nil
+		envfile := nil
 
-	var env []byte
-	if envfile != nil {
-		env, err2 := ReadFile(envfile)
-		if err2 != nil {
-			Fatal("couldn't open %s: %s", envfile, err2)
+		//kLongOptions := {{ "help", no_argument, nil, 'h' }, { nil, 0, nil, 0 }}
+		deps_prefix := ""
+		for opt := getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil); opt != -1; {
+			switch opt {
+			case 'e':
+				envfile = optarg
+				break
+			case 'o':
+				output_filename = optarg
+				break
+			case 'p':
+				deps_prefix = optarg
+				break
+			case 'h':
+			default:
+				Usage()
+				return 0
+			}
 		}
-		PushPathIntoEnvironment(env)
-	}
 
-	command := GetCommandLineA()
-	command = strstr(command, " -- ")
-	if command == nil {
-		Fatal("expected command line to end with \" -- command args\"")
-	}
-	command += 4
-
-	cl := NewCLWrapper()
-	if len(env) != 0 {
-		cl.SetEnvBlock(env)
-	}
-	output := ""
-	exit_code := cl.Run(command, &output)
-
-	if output_filename {
-		parser := NewCLParser()
-		err := ""
-		if !parser.Parse(output, deps_prefix, &output, &err) {
-			Fatal("%s\n", err)
+		var env []byte
+		if envfile != nil {
+			env, err2 := ReadFile(envfile)
+			if err2 != nil {
+				Fatal("couldn't open %s: %s", envfile, err2)
+			}
+			PushPathIntoEnvironment(env)
 		}
-		WriteDepFileOrDie(output_filename, parser)
-	}
 
-	if len(output) == 0 {
+		command := GetCommandLineA()
+		command = strstr(command, " -- ")
+		if command == nil {
+			Fatal("expected command line to end with \" -- command args\"")
+		}
+		command += 4
+
+		cl := NewCLWrapper()
+		if len(env) != 0 {
+			cl.SetEnvBlock(env)
+		}
+		output := ""
+		exit_code := cl.Run(command, &output)
+
+		if output_filename {
+			parser := NewCLParser()
+			err := ""
+			if !parser.Parse(output, deps_prefix, &output, &err) {
+				Fatal("%s\n", err)
+			}
+			WriteDepFileOrDie(output_filename, parser)
+		}
+
+		if len(output) == 0 {
+			return exit_code
+		}
+
+		// CLWrapper's output already as \r\n line endings, make sure the C runtime
+		// doesn't expand this to \r\r\n.
+		_setmode(_fileno(stdout), _O_BINARY)
+		// Avoid printf and C strings, since the actual output might contain null
+		// bytes like UTF-16 does (yuck).
+		os.Stdout.Write(output)
+
 		return exit_code
-	}
-
-	// CLWrapper's output already as \r\n line endings, make sure the C runtime
-	// doesn't expand this to \r\r\n.
-	_setmode(_fileno(stdout), _O_BINARY)
-	// Avoid printf and C strings, since the actual output might contain null
-	// bytes like UTF-16 does (yuck).
-	os.Stdout.Write(output)
-
-	return exit_code
+	*/
 }
