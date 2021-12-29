@@ -687,7 +687,7 @@ type BuildTestBase struct {
 	config_         BuildConfig
 	command_runner_ FakeCommandRunner
 	fs_             VirtualFileSystem
-	status_         StatusPrinter
+	status_         *StatusPrinter
 }
 
 func NewBuildTestBase(t *testing.T) *BuildTestBase {
@@ -698,7 +698,7 @@ func NewBuildTestBase(t *testing.T) *BuildTestBase {
 	}
 	b.config_.verbosity = QUIET
 	b.command_runner_ = NewFakeCommandRunner(t, &b.fs_)
-	//b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, &b.status_, 0)
+	//b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, b.status_, 0)
 	b.status_ = NewStatusPrinter(&b.config_)
 	//b.builder_.command_runner_ = &b.command_runner_
 	b.AssertParse(&b.state_, "build cat1: cat in1\nbuild cat2: cat in1 in2\nbuild cat12: cat cat1 cat2\n", ManifestParserOptions{})
@@ -754,7 +754,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, log_path, deps_path stri
 		pdeps_log = &deps_log
 	}
 
-	builder := NewBuilder(pstate, &b.config_, pbuild_log, pdeps_log, &b.fs_, &b.status_, 0)
+	builder := NewBuilder(pstate, &b.config_, pbuild_log, pdeps_log, &b.fs_, b.status_, 0)
 	if builder.AddTargetName(target, &err) == nil {
 		b.t.Fatal(err)
 	}
@@ -777,7 +777,7 @@ func NewBuildTest(t *testing.T) *BuildTest {
 	b := &BuildTest{
 		BuildTestBase: NewBuildTestBase(t),
 	}
-	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, &b.status_, 0)
+	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, b.status_, 0)
 	b.builder_.command_runner_ = &b.command_runner_
 	// TODO(maruel): Only do it for tests that write to disk.
 	CreateTempDirAndEnter(t)
@@ -2954,7 +2954,7 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, &b.log_, &b.fs_, &b.status_, 0)
+	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, &b.log_, &b.fs_, b.status_, 0)
 	b.builder_.command_runner_ = &b.command_runner_
 	return b
 }
@@ -3278,7 +3278,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out", &err) == nil {
 			t.Fatal(err)
@@ -3322,7 +3322,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 			t.Fatal("expected true")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		b.command_runner_.commands_ran_ = nil
 		if builder.AddTargetName("out", &err) == nil {
@@ -3375,7 +3375,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out", &err) == nil {
 			t.Fatal("expected true")
@@ -3418,7 +3418,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 			t.Fatal("expected true")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		b.command_runner_.commands_ran_ = nil
 		if builder.AddTargetName("out", &err) == nil {
@@ -3462,7 +3462,7 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 
 	// The deps log is NULL in dry runs.
 	b.config_.dry_run = true
-	builder := NewBuilder(&state, &b.config_, nil, nil, &b.fs_, &b.status_, 0)
+	builder := NewBuilder(&state, &b.config_, nil, nil, &b.fs_, b.status_, 0)
 	builder.command_runner_ = &b.command_runner_
 	b.command_runner_.commands_ran_ = nil
 
@@ -3529,7 +3529,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out", &err) == nil {
 			t.Fatal("expected true")
@@ -3567,7 +3567,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 			t.Fatal("expected true")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		b.command_runner_.commands_ran_ = nil
 		if builder.AddTargetName("out", &err) == nil {
@@ -3613,7 +3613,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("fo o.o", &err) == nil {
 			t.Fatal("expected true")
@@ -3648,7 +3648,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 
 		edge := state.edges_[len(state.edges_)-1]
@@ -3703,7 +3703,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
@@ -3741,7 +3741,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
@@ -3778,7 +3778,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, &build_log, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
@@ -3815,7 +3815,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
 			t.Fatal("expected true")
@@ -3851,7 +3851,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, &b.status_, 0)
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
 		builder.command_runner_ = &b.command_runner_
 
 		edge := state.edges_[len(state.edges_)-1]
