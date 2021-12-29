@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -335,7 +336,7 @@ func  ToolMSVC(n *NinjaMain,options *Options, args []string) int {
 	//argc++
 	//argv--
 	//optind = 0
-	return MSVCHelperMain(os.Args)
+	return MSVCHelperMain(args)
 }
 */
 
@@ -506,49 +507,39 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 }
 
 func ToolRules(n *NinjaMain, options *Options, args []string) int {
-	// Parse options.
-	panic("TODO")
-	/*
-	   // The rules tool uses getopt, and expects argv[0] to contain the name of
-	   // the tool, i.e. "rules".
-	   argc++
-	   argv--
+	// HACK: parse one additional flag.
+	//fmt.Printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n")
+	print_description := false
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-d" {
+			if i != len(args)-1 {
+				copy(args[i:], args[i+1:])
+				args = args[:len(args)-1]
+			}
+			print_description = true
+		}
+	}
 
-	   print_description := false
+	rules := n.state_.bindings_.GetRules()
+	names := make([]string, 0, len(rules))
+	for n := range rules {
+		names = append(names, n)
+	}
+	sort.Strings(names)
 
-	   optind = 1
-	   opt := 0
-	   for (opt = getopt(argc, argv, const_cast<char*>("hd"))) != -1 {
-	     switch (opt) {
-	     case 'd':
-	       print_description = true
-	       break
-	     case 'h':
-	     default:
-	       fmt.Printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n" )
-	     return 1
-	     }
-	   }
-	   argv += optind
-	   argc -= optind
-
-	   // Print rules
-
-	   var Rules typedef map<string, const Rule*>
-	   rules := n.state_.bindings_.GetRules()
-	   for i := rules.begin(); i != rules.end(); i++ {
-	     fmt.Printf("%s", i.first)
-	     if print_description {
-	       rule := i.second
-	       const EvalString* description = rule.GetBinding("description")
-	       if description != nil {
-	         fmt.Printf(": %s", description.Unparse())
-	       }
-	     }
-	     fmt.Printf("\n")
-	   }
-	   return 0
-	*/
+	// Print rules
+	for _, name := range names {
+		fmt.Printf("%s", name)
+		if print_description {
+			rule := rules[name]
+			description := rule.GetBinding("description")
+			if description != nil {
+				fmt.Printf(": %s", description.Unparse())
+			}
+		}
+		fmt.Printf("\n")
+	}
+	return 0
 }
 
 func ToolWinCodePage(n *NinjaMain, options *Options, args []string) int {
@@ -590,50 +581,36 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 	}
 
 	if !edge.is_phony() {
-		fmt.Printf("%s", (edge.EvaluateCommand(false)))
+		fmt.Printf("%s\n", (edge.EvaluateCommand(false)))
 	}
 }
 
 func ToolCommands(n *NinjaMain, options *Options, args []string) int {
-	panic("TODO")
-	/*
-	  // The clean tool uses getopt, and expects argv[0] to contain the name of
-	  // the tool, i.e. "commands".
-	  argc++
-	  argv--
+	// HACK: parse one additional flag.
+	//fmt.Printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n")
+	mode := PCM_All
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-s" {
+			if i != len(args)-1 {
+				copy(args[i:], args[i+1:])
+				args = args[:len(args)-1]
+			}
+			mode = PCM_Single
+		}
+	}
 
-	  mode := PCM_All
+	var nodes []*Node
+	err := ""
+	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
+		Error("%s", err)
+		return 1
+	}
 
-	  optind = 1
-	  opt := 0
-	  for (opt = getopt(argc, argv, const_cast<char*>("hs"))) != -1 {
-	    switch (opt) {
-	    case 's':
-	      mode = PCM_Single
-	      break
-	    case 'h':
-	    default:
-	      fmt.Printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n" )
-	    return 1
-	    }
-	  }
-	  argv += optind
-	  argc -= optind
-
-	  var nodes []*Node
-	  err := ""
-	  if !CollectTargetsFromArgs(argc, argv, &nodes, &err) {
-	    Error("%s", err)
-	    return 1
-	  }
-
-	  var seen EdgeSet
-	  for in := nodes.begin(); in != nodes.end(); in++ {
-	    PrintCommands((*in).in_edge(), &seen, mode)
-	  }
-
-	  return 0
-	*/
+	seen := NewEdgeSet()
+	for _, in := range nodes {
+		PrintCommands(in.in_edge(), seen, mode)
+	}
+	return 0
 }
 
 func ToolClean(n *NinjaMain, options *Options, args []string) int {
@@ -738,73 +715,50 @@ func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
 }
 
 func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int {
-	panic("TODO")
-	/*
-	  // The compdb tool uses getopt, and expects argv[0] to contain the name of
-	  // the tool, i.e. "compdb".
-	  argc++
-	  argv--
+	// HACK: parse one additional flag.
+	// fmt.Printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
+	eval_mode := ECM_NORMAL
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-x" {
+			if i != len(args)-1 {
+				copy(args[i:], args[i+1:])
+				args = args[:len(args)-1]
+			}
+			eval_mode = ECM_EXPAND_RSPFILE
+		}
+	}
 
-	  eval_mode := ECM_NORMAL
+	first := true
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("[")
+	for _, e := range n.state_.edges_ {
+		if len(e.inputs_) == 0 {
+			continue
+		}
+		if len(args) == 0 {
+			if !first {
+				fmt.Printf(",")
+			}
+			printCompdb(cwd, e, eval_mode)
+			first = false
+		} else {
+			for i := 0; i != len(args); i++ {
+				if e.rule_.name() == args[i] {
+					if !first {
+						fmt.Printf(",")
+					}
+					printCompdb(cwd, e, eval_mode)
+					first = false
+				}
+			}
+		}
+	}
 
-	  optind = 1
-	  opt := 0
-	  for (opt = getopt(argc, argv, const_cast<char*>("hx"))) != -1 {
-	    switch(opt) {
-	      case 'x':
-	        eval_mode = ECM_EXPAND_RSPFILE
-	        break
-
-	      case 'h':
-	      default:
-	        fmt.Printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
-	        return 1
-	    }
-	  }
-	  argv += optind
-	  argc -= optind
-
-	  first := true
-	  var cwd []char
-	  success := nil
-
-	  do {
-	    cwd.resize(cwd.size() + 1024)
-	    errno = 0
-	    success = getcwd(&cwd[0], cwd.size())
-	  } while (!success && errno == ERANGE)
-	  if success == nil {
-	    Error("cannot determine working directory: %s", strerror(errno))
-	    return 1
-	  }
-
-	  putchar('[')
-	  for e := n.state_.edges_.begin(); e != n.state_.edges_.end(); e++ {
-	    if (*e).inputs_.empty() {
-	      continue
-	    }
-	    if argc == 0 {
-	      if first == nil {
-	        putchar(',')
-	      }
-	      printCompdb(&cwd[0], *e, eval_mode)
-	      first = false
-	    } else {
-	      for i := 0; i != argc; i++ {
-	        if (*e).rule_.name() == argv[i] {
-	          if first == nil {
-	            putchar(',')
-	          }
-	          printCompdb(&cwd[0], *e, eval_mode)
-	          first = false
-	        }
-	      }
-	    }
-	  }
-
-	  puts("\n]")
-	  return 0
-	*/
+	fmt.Printf("\n]")
+	return 0
 }
 
 func ToolRecompact(n *NinjaMain, options *Options, args []string) int {
@@ -821,66 +775,44 @@ func ToolRecompact(n *NinjaMain, options *Options, args []string) int {
 }
 
 func ToolRestat(n *NinjaMain, options *Options, args []string) int {
-	panic("TODO")
-	/*
-	  // The restat tool uses getopt, and expects argv[0] to contain the name of the
-	  // tool, i.e. "restat"
-	  argc++
-	  argv--
+	if !n.EnsureBuildDirExists() {
+		return 1
+	}
 
-	  optind = 1
-	  opt := 0
-	  for (opt = getopt(argc, argv, const_cast<char*>("h"))) != -1 {
-	    switch (opt) {
-	    case 'h':
-	    default:
-	      fmt.Printf("usage: ninja -t restat [outputs]\n")
-	      return 1
-	    }
-	  }
-	  argv += optind
-	  argc -= optind
+	log_path := ".ninja_log"
+	if n.build_dir_ != "" {
+		log_path = filepath.Join(n.build_dir_, log_path)
+	}
 
-	  if !EnsureBuildDirExists() {
-	    return 1
-	  }
+	err := ""
+	status := n.build_log_.Load(log_path, &err)
+	if status == LOAD_ERROR {
+		Error("loading build log %s: %s", log_path, err)
+		return ExitFailure
+	}
+	if status == LOAD_NOT_FOUND {
+		// Nothing to restat, ignore this
+		return ExitSuccess
+	}
+	if len(err) != 0 {
+		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
+		Warning("%s", err)
+		err = ""
+	}
 
-	  string log_path = ".ninja_log"
-	  if !n.build_dir_.empty() {
-	    log_path = n.build_dir_ + "/" + log_path
-	  }
+	if !n.build_log_.Restat(log_path, &n.disk_interface_, args, &err) {
+		Error("failed recompaction: %s", err)
+		return ExitFailure
+	}
 
-	  err := ""
-	  status := n.build_log_.Load(log_path, &err)
-	  if status == LOAD_ERROR {
-	    Error("loading build log %s: %s", log_path, err)
-	    return EXIT_FAILURE
-	  }
-	  if status == LOAD_NOT_FOUND {
-	    // Nothing to restat, ignore this
-	    return EXIT_SUCCESS
-	  }
-	  if len(err) != 0 {
-	    // Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-	    Warning("%s", err)
-	    err = nil
-	  }
+	if !n.config_.dry_run {
+		if !n.build_log_.OpenForWrite(log_path, n, &err) {
+			Error("opening build log: %s", err)
+			return ExitFailure
+		}
+	}
 
-	  success := n.build_log_.Restat(log_path, n.disk_interface_, argc, argv, &err)
-	  if success == nil {
-	    Error("failed recompaction: %s", err)
-	    return EXIT_FAILURE
-	  }
-
-	  if !n.config_.dry_run {
-	    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
-	      Error("opening build log: %s", err)
-	      return EXIT_FAILURE
-	    }
-	  }
-
-	  return EXIT_SUCCESS
-	*/
+	return ExitSuccess
 }
 
 func ToolUrtle(n *NinjaMain, options *Options, args []string) int {
@@ -1120,13 +1052,12 @@ func (n *NinjaMain) DumpMetrics() {
 func (n *NinjaMain) EnsureBuildDirExists() bool {
 	n.build_dir_ = n.state_.bindings_.LookupVariable("builddir")
 	if n.build_dir_ != "" && !n.config_.dry_run {
-		panic("TODO")
-		/*
-			if !MakeDirs(&n.disk_interface_, n.build_dir_+"/.") && errno != EEXIST {
-				Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
-				return false
-			}
-		*/
+		// TODO(maruel): We need real error.
+		if !MakeDirs(&n.disk_interface_, filepath.Join(n.build_dir_, ".")) {
+			//&& errno != EEXIST {
+			//Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
+			//return false
+		}
 	}
 	return true
 }
@@ -1138,7 +1069,7 @@ func (n *NinjaMain) RunBuild(args []string, status Status) int {
 	/*
 		err := ""
 		var targets []*Node
-		if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
+		if !n.CollectTargetsFromArgs(argc, argv, &targets, &err) {
 			status.Error("%s", err)
 			return 1
 		}
@@ -1361,11 +1292,11 @@ func Main() {
 
 	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
 	ninja_command := os.Args[0]
-
 	exit_code := readFlags(&options, &config)
 	if exit_code >= 0 {
 		os.Exit(exit_code)
 	}
+	args := flag.Args()
 
 	status := NewStatusPrinter(&config)
 	if options.working_dir != "" {
@@ -1386,7 +1317,7 @@ func Main() {
 		// None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
 		// by other tools.
 		ninja := NewNinjaMain(ninja_command, &config)
-		os.Exit(options.tool.tool(&ninja, &options, os.Args))
+		os.Exit(options.tool.tool(&ninja, &options, args))
 	}
 
 	// TODO(maruel): Let's wrap stdout/stderr with our own buffer?
@@ -1422,7 +1353,7 @@ func Main() {
 		}
 
 		if options.tool != nil && options.tool.when == RUN_AFTER_LOAD {
-			os.Exit(options.tool.tool(&ninja, &options, os.Args))
+			os.Exit(options.tool.tool(&ninja, &options, args))
 		}
 
 		if !ninja.EnsureBuildDirExists() {
@@ -1434,7 +1365,7 @@ func Main() {
 		}
 
 		if options.tool != nil && options.tool.when == RUN_AFTER_LOGS {
-			os.Exit(options.tool.tool(&ninja, &options, os.Args))
+			os.Exit(options.tool.tool(&ninja, &options, args))
 		}
 
 		// Attempt to rebuild the manifest before building anything else
@@ -1451,7 +1382,7 @@ func Main() {
 			os.Exit(1)
 		}
 
-		result := ninja.RunBuild(os.Args, status)
+		result := ninja.RunBuild(args, status)
 		if g_metrics != nil {
 			ninja.DumpMetrics()
 		}

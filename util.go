@@ -333,42 +333,21 @@ func SetCloseOnExec(fd int) {
 */
 
 // Given a misspelled string and a list of correct spellings, returns
-// the closest match or NULL if there is no close enough match.
-func SpellcheckStringV(text string, words []string) string {
-	panic("TODO")
-	/*
-	  kAllowReplacements := true
-	  kMaxValidEditDistance := 3
-
-	  int min_distance = kMaxValidEditDistance + 1
-	  result := nil
-	  for i := words.begin(); i != words.end(); i++ {
-	    distance := EditDistance(*i, text, kAllowReplacements, kMaxValidEditDistance)
-	    if distance < min_distance {
-	      min_distance = distance
-	      result = *i
-	    }
-	  }
-	  return result
-	*/
-}
-
-// Like SpellcheckStringV, but takes a NULL-terminated list.
+// the closest match or "" if there is no close enough match.
 func SpellcheckString(text string, words ...string) string {
-	panic("TODO")
-	/*
-	   // Note: This takes a const char* instead of a string& because using
-	   // va_start() with a reference parameter is undefined behavior.
-	   var ap va_list
-	   va_start(ap, text)
-	   var words []string
-	   word := ""
-	   while (word = va_arg(ap, string)) {
-	     words.push_back(word)
-	   }
-	   va_end(ap)
-	   return SpellcheckStringV(text, words)
-	*/
+	kAllowReplacements := true
+	kMaxValidEditDistance := 3
+
+	min_distance := kMaxValidEditDistance + 1
+	result := ""
+	for _, i := range words {
+		distance := EditDistance(i, text, kAllowReplacements, kMaxValidEditDistance)
+		if distance < min_distance {
+			min_distance = distance
+			result = i
+		}
+	}
+	return result
 }
 
 /*

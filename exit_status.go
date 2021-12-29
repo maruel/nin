@@ -14,7 +14,7 @@
 
 package ginja
 
-type ExitStatus int32
+type ExitStatus = int
 
 const (
 	ExitSuccess ExitStatus = iota

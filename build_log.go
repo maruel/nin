@@ -463,7 +463,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_count int, outputs []string, err *string) bool {
+func (b *BuildLog) Restat(path string, disk_interface DiskInterface, outputs []string, err *string) bool {
 	defer METRIC_RECORD(".ninja_log restat")()
 	_ = b.Close()
 	temp_path := path + ".restat"
@@ -479,8 +479,8 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, output_coun
 		return false
 	}
 	for _, i := range b.entries_ {
-		skip := output_count > 0
-		for j := 0; j < output_count; j++ {
+		skip := len(outputs) > 0
+		for j := 0; j < len(outputs); j++ {
 			if i.output == outputs[j] {
 				skip = false
 				break
