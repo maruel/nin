@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -484,8 +485,9 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
-		if "bad deps log signature or version; starting over" != err {
-			t.Fatal("expected equal")
+
+		if !strings.HasPrefix(err, "bad deps log signature ") {
+			t.Fatalf("%q", err)
 		}
 	}
 }

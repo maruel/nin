@@ -245,7 +245,12 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		if version == 1 {
 			*err = "deps log version change; rebuilding"
 		} else {
-			*err = fmt.Sprintf("bad deps log signature %q or version %d; starting over", buf[:len(DepsLogFileSignature)], version)
+			l := bytes.IndexByte(buf[:], 0)
+			if l == 0 {
+				*err = "bad deps log signature or version; starting over"
+			} else {
+				*err = fmt.Sprintf("bad deps log signature %q or version %d; starting over", buf[:l], version)
+			}
 		}
 		_ = f.Close()
 		_ = os.Remove(path)

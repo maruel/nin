@@ -614,51 +614,41 @@ func ToolCommands(n *NinjaMain, options *Options, args []string) int {
 }
 
 func ToolClean(n *NinjaMain, options *Options, args []string) int {
-	panic("TODO")
-	/*
-	  // The clean tool uses getopt, and expects argv[0] to contain the name of
-	  // the tool, i.e. "clean".
-	  argc++
-	  argv--
+	// HACK: parse two additional flags.
+	// fmt.Printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
+	generator := false
+	clean_rules := false
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-g" {
+			if i != len(args)-1 {
+				copy(args[i:], args[i+1:])
+				args = args[:len(args)-1]
+			}
+			generator = true
+		} else if args[i] == "-r" {
+			if i != len(args)-1 {
+				copy(args[i:], args[i+1:])
+				args = args[:len(args)-1]
+			}
+			clean_rules = true
+		}
+	}
 
-	  generator := false
-	  clean_rules := false
+	if clean_rules && len(args) == 0 {
+		Error("expected a rule to clean")
+		return 1
+	}
 
-	  optind = 1
-	  opt := 0
-	  for (opt = getopt(argc, argv, const_cast<char*>("hgr"))) != -1 {
-	    switch (opt) {
-	    case 'g':
-	      generator = true
-	      break
-	    case 'r':
-	      clean_rules = true
-	      break
-	    case 'h':
-	    default:
-	      fmt.Printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
-	    return 1
-	    }
-	  }
-	  argv += optind
-	  argc -= optind
-
-	  if clean_rules && argc == 0 {
-	    Error("expected a rule to clean")
-	    return 1
-	  }
-
-	  Cleaner cleaner(&n.state_, n.config_, &n.disk_interface_)
-	  if argc >= 1 {
-	    if clean_rules {
-	      return cleaner.CleanRules(argc, argv)
-	    } else {
-	      return cleaner.CleanTargets(argc, argv)
-	    }
-	  } else {
-	    return cleaner.CleanAll(generator)
-	  }
-	*/
+	cleaner := NewCleaner(&n.state_, n.config_, &n.disk_interface_)
+	if len(args) >= 1 {
+		if clean_rules {
+			return cleaner.CleanRules(args)
+		} else {
+			return cleaner.CleanTargets(args)
+		}
+	} else {
+		return cleaner.CleanAll(generator)
+	}
 }
 
 func ToolCleanDead(n *NinjaMain, options *Options, args []string) int {
@@ -1039,12 +1029,10 @@ func (n *NinjaMain) DumpMetrics() {
 	g_metrics.Report()
 
 	fmt.Printf("\n")
-	panic("TODO")
-	/*
-		count := len(n.state_.paths_)
-		buckets := n.state_.paths_.bucket_count()
-		fmt.Printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
-	*/
+	// There's no such concept in Go's map.
+	//count := len(n.state_.paths_)
+	//buckets := len(n.state_.paths_)
+	//fmt.Printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
 }
 
 // Ensure the build directory exists, creating it if necessary.
@@ -1065,48 +1053,44 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 // Build the targets listed on the command line.
 // @return an exit code.
 func (n *NinjaMain) RunBuild(args []string, status Status) int {
-	panic("TODO")
-	/*
-		err := ""
-		var targets []*Node
-		if !n.CollectTargetsFromArgs(argc, argv, &targets, &err) {
-			status.Error("%s", err)
-			return 1
-		}
+	err := ""
+	var targets []*Node
+	if !n.CollectTargetsFromArgs(args, &targets, &err) {
+		status.Error("%s", err)
+		return 1
+	}
 
-		n.disk_interface_.AllowStatCache(g_experimental_statcache)
+	n.disk_interface_.AllowStatCache(g_experimental_statcache)
 
-		builder := NewBuilder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
-		for i := 0; i < targets.size(); i++ {
-			if !builder.AddTarget(targets[i], &err) {
-				if len(err) != 0 {
-					status.Error("%s", err)
-					return 1
-				} else {
-					// Added a target that is already up-to-date; not really
-					// an error.
-				}
+	builder := NewBuilder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
+	for i := 0; i < len(targets); i++ {
+		if !builder.AddTarget(targets[i], &err) {
+			if len(err) != 0 {
+				status.Error("%s", err)
+				return 1
+			} else {
+				// Added a target that is already up-to-date; not really
+				// an error.
 			}
 		}
+	}
 
-		// Make sure restat rules do not see stale timestamps.
-		n.disk_interface_.AllowStatCache(false)
+	// Make sure restat rules do not see stale timestamps.
+	n.disk_interface_.AllowStatCache(false)
 
-		if builder.AlreadyUpToDate() {
-			status.Info("no work to do.")
-			return 0
-		}
-
-		if !builder.Build(&err) {
-			status.Info("build stopped: %s.", err)
-			if strings.Contain(err, "interrupted by user") {
-				return 2
-			}
-			return 1
-		}
-
+	if builder.AlreadyUpToDate() {
+		status.Info("no work to do.")
 		return 0
-	*/
+	}
+
+	if !builder.Build(&err) {
+		status.Info("build stopped: %s.", err)
+		if strings.Contains(err, "interrupted by user") {
+			return 2
+		}
+		return 1
+	}
+	return 0
 }
 
 /*

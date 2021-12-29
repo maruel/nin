@@ -344,7 +344,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 
 	// TODO(maruel): The original test case is broken.
 	testDiskInterface := TestDiskInterface{t}
-	if !log.Restat(kTestFilename, &testDiskInterface, 1, []string{"out2"}, &err) {
+	if !log.Restat(kTestFilename, &testDiskInterface, []string{"out2"}, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -355,7 +355,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 		t.Fatal(e.mtime)
 	} // unchanged, since the filter doesn't match
 
-	if !log.Restat(kTestFilename, &testDiskInterface, 0, nil, &err) {
+	if !log.Restat(kTestFilename, &testDiskInterface, nil, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
