@@ -108,6 +108,8 @@ type Tool struct {
 
 	// Implementation of the tool.
 	tool ToolFunc
+
+	when When
 }
 
 // When to run the tool.
@@ -144,6 +146,7 @@ func GuessParallelism() int {
     return processors + 2
   }
 }
+*/
 
 // Rebuild the build manifest, if necessary.
 // Returns true if the manifest was rebuilt.
@@ -151,98 +154,105 @@ func GuessParallelism() int {
 // Fills in \a err on error.
 // @return true if the manifest was rebuilt.
 func (n *NinjaMain) RebuildManifest(input_file string, err *string, status *Status) bool {
-  path := input_file
-  if len(path) == 0 {
-    *err = "empty path"
-    return false
-  }
-  var slash_bits uint64  // Unused because this path is only used for lookup.
-  CanonicalizePath(&path, &slash_bits)
-  node := n.state_.LookupNode(path)
-  if node == nil {
-    return false
-  }
+	panic("TODO")
+	/*
+		path := input_file
+		if len(path) == 0 {
+			*err = "empty path"
+			return false
+		}
+		var slash_bits uint64 // Unused because this path is only used for lookup.
+		path = CanonicalizePath(path, &slash_bits)
+		node := n.state_.LookupNode(path)
+		if node == nil {
+			return false
+		}
 
-  Builder builder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
-  if !builder.AddTarget(node, err) {
-    return false
-  }
+		builder := NewBuilder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
+		if !builder.AddTarget(node, err) {
+			return false
+		}
 
-  if builder.AlreadyUpToDate() {
-    return false  // Not an error, but we didn't rebuild.
-  }
+		if builder.AlreadyUpToDate() {
+			return false // Not an error, but we didn't rebuild.
+		}
 
-  if !builder.Build(err) {
-    return false
-  }
+		if !builder.Build(err) {
+			return false
+		}
 
-  // The manifest was only rebuilt if it is now dirty (it may have been cleaned
-  // by a restat).
-  if !node.dirty() {
-    // Reset the state to prevent problems like
-    // https://github.com/ninja-build/ninja/issues/874
-    n.state_.Reset()
-    return false
-  }
+		// The manifest was only rebuilt if it is now dirty (it may have been cleaned
+		// by a restat).
+		if !node.dirty() {
+			// Reset the state to prevent problems like
+			// https://github.com/ninja-build/ninja/issues/874
+			n.state_.Reset()
+			return false
+		}
 
-  return true
+		return true
+	*/
 }
 
 // Get the Node for a given command-line path, handling features like
 // spell correction.
 func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
-  path := cpath
-  if len(path) == 0 {
-    *err = "empty path"
-    return nil
-  }
-  var slash_bits uint64
-  CanonicalizePath(&path, &slash_bits)
+	panic("TODO")
+	/*
+	  path := cpath
+	  if len(path) == 0 {
+	    *err = "empty path"
+	    return nil
+	  }
+	  var slash_bits uint64
+	  path = CanonicalizePath(path, &slash_bits)
 
-  // Special syntax: "foo.cc^" means "the first output of foo.cc".
-  first_dependent := false
-  if !path.empty() && path[path.size() - 1] == '^' {
-    path.resize(path.size() - 1)
-    first_dependent = true
-  }
+	  // Special syntax: "foo.cc^" means "the first output of foo.cc".
+	  first_dependent := false
+	  if path != "" && path[len(path) - 1] == '^' {
+	    path.resize(path.size() - 1)
+	    first_dependent = true
+	  }
 
-  node := n.state_.LookupNode(path)
-  if node != nil {
-    if first_dependent {
-      if node.out_edges().empty() {
-        rev_deps := n.deps_log_.GetFirstReverseDepsNode(node)
-        if !rev_deps {
-          *err = "'" + path + "' has no out edge"
-          return nil
-        }
-        node = rev_deps
-      } else {
-        edge := node.out_edges()[0]
-        if edge.outputs_.empty() {
-          edge.Dump()
-          Fatal("edge has no outputs")
-        }
-        node = edge.outputs_[0]
-      }
-    }
-    return node
-  } else {
-    *err =
-        "unknown target '" + Node::PathDecanonicalized(path, slash_bits) + "'"
-    if path == "clean" {
-      *err += ", did you mean 'ninja -t clean'?"
-    } else if path == "help" {
-      *err += ", did you mean 'ninja -h'?"
-    } else {
-      suggestion := n.state_.SpellcheckNode(path)
-      if suggestion != nil {
-        *err += ", did you mean '" + suggestion.path() + "'?"
-      }
-    }
-    return nil
-  }
+	  node := n.state_.LookupNode(path)
+	  if node != nil {
+	    if first_dependent {
+	      if node.out_edges().empty() {
+	        rev_deps := n.deps_log_.GetFirstReverseDepsNode(node)
+	        if !rev_deps {
+	          *err = "'" + path + "' has no out edge"
+	          return nil
+	        }
+	        node = rev_deps
+	      } else {
+	        edge := node.out_edges()[0]
+	        if edge.outputs_.empty() {
+	          edge.Dump()
+	          Fatal("edge has no outputs")
+	        }
+	        node = edge.outputs_[0]
+	      }
+	    }
+	    return node
+	  } else {
+	    *err =
+	        "unknown target '" + Node::PathDecanonicalized(path, slash_bits) + "'"
+	    if path == "clean" {
+	      *err += ", did you mean 'ninja -t clean'?"
+	    } else if path == "help" {
+	      *err += ", did you mean 'ninja -h'?"
+	    } else {
+	      suggestion := n.state_.SpellcheckNode(path)
+	      if suggestion != nil {
+	        *err += ", did you mean '" + suggestion.path() + "'?"
+	      }
+	    }
+	    return nil
+	  }
+	*/
 }
 
+/*
 // CollectTarget for all command-line arguments, filling in \a targets.
 func (n *NinjaMain) CollectTargetsFromArgs(argc int, argv []*char, targets *[]*Node, err *string) bool {
   if argc == 0 {
@@ -776,271 +786,278 @@ func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*
   puts("\n]")
   return 0
 }
+*/
 
-func (n *NinjaMain) ToolRecompact(options *Options, argc int, argv []*char) int {
-  if !EnsureBuildDirExists() {
-    return 1
-  }
+func (n *NinjaMain) ToolRecompact(options *Options, args []string) int {
+	if !n.EnsureBuildDirExists() {
+		return 1
+	}
 
 	// recompact_only
-  if !OpenBuildLog(true) || !OpenDepsLog(true) {
-    return 1
-  }
+	if !n.OpenBuildLog(true) || !n.OpenDepsLog(true) {
+		return 1
+	}
 
-  return 0
+	return 0
 }
 
-func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
-  // The restat tool uses getopt, and expects argv[0] to contain the name of the
-  // tool, i.e. "restat"
-  argc++
-  argv--
+func (n *NinjaMain) ToolRestat(options *Options, args []string) int {
+	panic("TODO")
+	/*
+	  // The restat tool uses getopt, and expects argv[0] to contain the name of the
+	  // tool, i.e. "restat"
+	  argc++
+	  argv--
 
-  optind = 1
-  opt := 0
-  for (opt = getopt(argc, argv, const_cast<char*>("h"))) != -1 {
-    switch (opt) {
-    case 'h':
-    default:
-      fmt.Printf("usage: ninja -t restat [outputs]\n")
-      return 1
-    }
-  }
-  argv += optind
-  argc -= optind
+	  optind = 1
+	  opt := 0
+	  for (opt = getopt(argc, argv, const_cast<char*>("h"))) != -1 {
+	    switch (opt) {
+	    case 'h':
+	    default:
+	      fmt.Printf("usage: ninja -t restat [outputs]\n")
+	      return 1
+	    }
+	  }
+	  argv += optind
+	  argc -= optind
 
-  if !EnsureBuildDirExists() {
-    return 1
-  }
+	  if !EnsureBuildDirExists() {
+	    return 1
+	  }
 
-  string log_path = ".ninja_log"
-  if !n.build_dir_.empty() {
-    log_path = n.build_dir_ + "/" + log_path
-  }
+	  string log_path = ".ninja_log"
+	  if !n.build_dir_.empty() {
+	    log_path = n.build_dir_ + "/" + log_path
+	  }
 
-  err := ""
-  status := n.build_log_.Load(log_path, &err)
-  if status == LOAD_ERROR {
-    Error("loading build log %s: %s", log_path, err)
-    return EXIT_FAILURE
-  }
-  if status == LOAD_NOT_FOUND {
-    // Nothing to restat, ignore this
-    return EXIT_SUCCESS
-  }
-  if len(err) != 0 {
-    // Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-    Warning("%s", err)
-    err = nil
-  }
+	  err := ""
+	  status := n.build_log_.Load(log_path, &err)
+	  if status == LOAD_ERROR {
+	    Error("loading build log %s: %s", log_path, err)
+	    return EXIT_FAILURE
+	  }
+	  if status == LOAD_NOT_FOUND {
+	    // Nothing to restat, ignore this
+	    return EXIT_SUCCESS
+	  }
+	  if len(err) != 0 {
+	    // Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
+	    Warning("%s", err)
+	    err = nil
+	  }
 
-  success := n.build_log_.Restat(log_path, n.disk_interface_, argc, argv, &err)
-  if success == nil {
-    Error("failed recompaction: %s", err)
-    return EXIT_FAILURE
-  }
+	  success := n.build_log_.Restat(log_path, n.disk_interface_, argc, argv, &err)
+	  if success == nil {
+	    Error("failed recompaction: %s", err)
+	    return EXIT_FAILURE
+	  }
 
-  if !n.config_.dry_run {
-    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
-      Error("opening build log: %s", err)
-      return EXIT_FAILURE
-    }
-  }
+	  if !n.config_.dry_run {
+	    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
+	      Error("opening build log: %s", err)
+	      return EXIT_FAILURE
+	    }
+	  }
 
-  return EXIT_SUCCESS
+	  return EXIT_SUCCESS
+	*/
 }
 
-func (n *NinjaMain) ToolUrtle(options *Options, argc int, argv *char*) int {
-  // RLE encoded.
-  string urtle =
-" 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 ,2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e14$,26$.\n21 z45$c .\n20 J50$c\n20 14$P\"`?34$b\n20 14$ dbc `2\"?22$?7$c\n20 ?18$c.6 4\"8?4\" c8$P\n9 .2,.8 \"20$c.3 ._14 J9$\n .2,2c9$bec,.2 `?21$c.3`4%,3%,3 c8$P\"\n22$c2 2\"?21$bc2,.2` .2,c7$P2\",cb\n23$b bc,.2\"2?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
-  count := 0
-  for p := urtle; *p; p++ {
-    if '0' <= *p && *p <= '9' {
-      count = count*10 + *p - '0'
-    } else {
-      for i := 0; i < max(count, 1); i++ {
-        fmt.Printf("%c", *p)
-      }
-      count = 0
-    }
-  }
-  return 0
+func (n *NinjaMain) ToolUrtle(options *Options, args []string) int {
+	panic("TODO")
+	/*
+		  // RLE encoded.
+			urtle := " 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 ,2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e14$,26$.\n21 z45$c .\n20 J50$c\n20 14$P\"`?34$b\n20 14$ dbc `2\"?22$?7$c\n20 ?18$c.6 4\"8?4\" c8$P\n9 .2,.8 \"20$c.3 ._14 J9$\n .2,2c9$bec,.2 `?21$c.3`4%,3%,3 c8$P\"\n22$c2 2\"?21$bc2,.2` .2,c7$P2\",cb\n23$b bc,.2\"2?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
+		  count := 0
+		  for p := urtle; *p; p++ {
+		    if '0' <= *p && *p <= '9' {
+		      count = count*10 + *p - '0'
+		    } else {
+		      for i := 0; i < max(count, 1); i++ {
+		        fmt.Printf("%c", *p)
+		      }
+		      count = 0
+		    }
+		  }
+		  return 0
+	*/
 }
 
 // Find the function to execute for \a tool_name and return it via \a func.
 // Returns a Tool, or NULL if Ninja should exit.
 func ChooseTool(tool_name string) *Tool {
-  static const Tool kTools[] = {
-    { "browse", "browse dependency graph in a web browser",
-      RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
-    { "msvc", "build helper for MSVC cl.exe (EXPERIMENTAL)",
-      RUN_AFTER_FLAGS, &NinjaMain::ToolMSVC },
-    { "clean", "clean built files",
-      RUN_AFTER_LOAD, &NinjaMain::ToolClean },
-    { "commands", "list all commands required to rebuild given targets",
-      RUN_AFTER_LOAD, &NinjaMain::ToolCommands },
-    { "deps", "show dependencies stored in the deps log",
-      RUN_AFTER_LOGS, &NinjaMain::ToolDeps },
-    { "missingdeps", "check deps log dependencies on generated files",
-      RUN_AFTER_LOGS, &NinjaMain::ToolMissingDeps },
-    { "graph", "output graphviz dot file for targets",
-      RUN_AFTER_LOAD, &NinjaMain::ToolGraph },
-    { "query", "show inputs/outputs for a path",
-      RUN_AFTER_LOGS, &NinjaMain::ToolQuery },
-    { "targets",  "list targets by their rule or depth in the DAG",
-      RUN_AFTER_LOAD, &NinjaMain::ToolTargets },
-    { "compdb",  "dump JSON compilation database to stdout",
-      RUN_AFTER_LOAD, &NinjaMain::ToolCompilationDatabase },
-    { "recompact",  "recompacts ninja-internal data structures",
-      RUN_AFTER_LOAD, &NinjaMain::ToolRecompact },
-    { "restat",  "restats all outputs in the build log",
-      RUN_AFTER_FLAGS, &NinjaMain::ToolRestat },
-    { "rules",  "list all rules",
-      RUN_AFTER_LOAD, &NinjaMain::ToolRules },
-    { "cleandead",  "clean built files that are no longer produced by the manifest",
-      RUN_AFTER_LOGS, &NinjaMain::ToolCleanDead },
-    { "urtle", nil,
-      RUN_AFTER_FLAGS, &NinjaMain::ToolUrtle },
-    { "wincodepage", "print the Windows code page used by ninja",
-      RUN_AFTER_FLAGS, &NinjaMain::ToolWinCodePage },
-    { nil, nil, RUN_AFTER_FLAGS, nil }
-  }
+	panic("TODO")
+	/*
+		kTools := []Tool{
+			/* TODO(maruel): Pointer to method.
+			   { "browse", "browse dependency graph in a web browser",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolBrowse },
+			   { "msvc", "build helper for MSVC cl.exe (EXPERIMENTAL)",
+			     RUN_AFTER_FLAGS, &NinjaMain::ToolMSVC },
+			   { "clean", "clean built files",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolClean },
+			   { "commands", "list all commands required to rebuild given targets",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolCommands },
+			   { "deps", "show dependencies stored in the deps log",
+			     RUN_AFTER_LOGS, &NinjaMain::ToolDeps },
+			   { "missingdeps", "check deps log dependencies on generated files",
+			     RUN_AFTER_LOGS, &NinjaMain::ToolMissingDeps },
+			   { "graph", "output graphviz dot file for targets",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolGraph },
+			   { "query", "show inputs/outputs for a path",
+			     RUN_AFTER_LOGS, &NinjaMain::ToolQuery },
+			   { "targets",  "list targets by their rule or depth in the DAG",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolTargets },
+			   { "compdb",  "dump JSON compilation database to stdout",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolCompilationDatabase },
+			   { "recompact",  "recompacts ninja-internal data structures",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolRecompact },
+			   { "restat",  "restats all outputs in the build log",
+			     RUN_AFTER_FLAGS, &NinjaMain::ToolRestat },
+			   { "rules",  "list all rules",
+			     RUN_AFTER_LOAD, &NinjaMain::ToolRules },
+			   { "cleandead",  "clean built files that are no longer produced by the manifest",
+			     RUN_AFTER_LOGS, &NinjaMain::ToolCleanDead },
+			   { "urtle", nil,
+			     RUN_AFTER_FLAGS, &NinjaMain::ToolUrtle },
+			   { "wincodepage", "print the Windows code page used by ninja",
+			     RUN_AFTER_FLAGS, &NinjaMain::ToolWinCodePage },
+			{"", "", RUN_AFTER_FLAGS, nil},
+		  if tool_name == "list" {
+		    fmt.Printf("ninja subtools:\n")
+		    for tool := &kTools[0]; tool.name; tool++ {
+		      if tool.desc {
+		        fmt.Printf("%11s  %s\n", tool.name, tool.desc)
+		      }
+		    }
+		    return nil
+		  }
 
-  if tool_name == "list" {
-    fmt.Printf("ninja subtools:\n")
-    for tool := &kTools[0]; tool.name; tool++ {
-      if tool.desc {
-        fmt.Printf("%11s  %s\n", tool.name, tool.desc)
-      }
-    }
-    return nil
-  }
+		  for tool := &kTools[0]; tool.name; tool++ {
+		    if tool.name == tool_name {
+		      return tool
+		    }
+		  }
 
-  for tool := &kTools[0]; tool.name; tool++ {
-    if tool.name == tool_name {
-      return tool
-    }
-  }
-
-  var words []string
-  for tool := &kTools[0]; tool.name; tool++ {
-    words.push_back(tool.name)
-  }
-  suggestion := SpellcheckStringV(tool_name, words)
-  if suggestion != nil {
-    Fatal("unknown tool '%s', did you mean '%s'?", tool_name, suggestion)
-  } else {
-    Fatal("unknown tool '%s'", tool_name)
-  }
-  return nil  // Not reached.
+		  var words []string
+		  for tool := &kTools[0]; tool.name; tool++ {
+		    words.push_back(tool.name)
+		  }
+		  suggestion := SpellcheckStringV(tool_name, words)
+		  if suggestion != nil {
+		    Fatal("unknown tool '%s', did you mean '%s'?", tool_name, suggestion)
+		  } else {
+		    Fatal("unknown tool '%s'", tool_name)
+		  }
+		  return nil  // Not reached.
+	*/
 }
 
 // Enable a debugging mode.  Returns false if Ninja should exit instead
 // of continuing.
 func DebugEnable(name string) bool {
-  if name == "list" {
-    fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
-    return false
-  } else if name == "stats" {
-    g_metrics = new Metrics
-    return true
-  } else if name == "explain" {
-    g_explaining = true
-    return true
-  } else if name == "keepdepfile" {
-    g_keep_depfile = true
-    return true
-  } else if name == "keeprsp" {
-    g_keep_rsp = true
-    return true
-  } else if name == "nostatcache" {
-    g_experimental_statcache = false
-    return true
-  } else {
-    string suggestion =
-        SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache", nil)
-    if suggestion != nil {
-      Error("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
-    } else {
-      Error("unknown debug setting '%s'", name)
-    }
-    return false
-  }
+	if name == "list" {
+		fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n  nostatcache  don't batch stat() calls per directory and cache them\nmultiple modes can be enabled via -d FOO -d BAR\n")
+		//#ifdef _WIN32//#endif
+		return false
+	} else if name == "stats" {
+		g_metrics = NewMetrics()
+		return true
+	} else if name == "explain" {
+		g_explaining = true
+		return true
+	} else if name == "keepdepfile" {
+		g_keep_depfile = true
+		return true
+	} else if name == "keeprsp" {
+		g_keep_rsp = true
+		return true
+	} else if name == "nostatcache" {
+		g_experimental_statcache = false
+		return true
+	} else {
+		suggestion := SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
+		if suggestion != "" {
+			Error("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
+		} else {
+			Error("unknown debug setting '%s'", name)
+		}
+		return false
+	}
 }
 
 // Set a warning flag.  Returns false if Ninja should exit instead of
 // continuing.
 func WarningEnable(name string, options *Options) bool {
-  if name == "list" {
-    fmt.Printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n" )
-    return false
-  } else if name == "dupbuild=err" {
-    options.dupe_edges_should_err = true
-    return true
-  } else if name == "dupbuild=warn" {
-    options.dupe_edges_should_err = false
-    return true
-  } else if name == "phonycycle=err" {
-    options.phony_cycle_should_err = true
-    return true
-  } else if name == "phonycycle=warn" {
-    options.phony_cycle_should_err = false
-    return true
-  } else if name == "depfilemulti=err" || name == "depfilemulti=warn" {
-    Warning("deprecated warning 'depfilemulti'")
-    return true
-  } else {
-    string suggestion =
-        SpellcheckString(name, "dupbuild=err", "dupbuild=warn", "phonycycle=err", "phonycycle=warn", nil)
-    if suggestion != nil {
-      Error("unknown warning flag '%s', did you mean '%s'?", name, suggestion)
-    } else {
-      Error("unknown warning flag '%s'", name)
-    }
-    return false
-  }
+	if name == "list" {
+		fmt.Printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n")
+		return false
+	} else if name == "dupbuild=err" {
+		options.dupe_edges_should_err = true
+		return true
+	} else if name == "dupbuild=warn" {
+		options.dupe_edges_should_err = false
+		return true
+	} else if name == "phonycycle=err" {
+		options.phony_cycle_should_err = true
+		return true
+	} else if name == "phonycycle=warn" {
+		options.phony_cycle_should_err = false
+		return true
+	} else if name == "depfilemulti=err" || name == "depfilemulti=warn" {
+		Warning("deprecated warning 'depfilemulti'")
+		return true
+	} else {
+		suggestion := SpellcheckString(name, "dupbuild=err", "dupbuild=warn", "phonycycle=err", "phonycycle=warn")
+		if suggestion != "" {
+			Error("unknown warning flag '%s', did you mean '%s'?", name, suggestion)
+		} else {
+			Error("unknown warning flag '%s'", name)
+		}
+		return false
+	}
 }
 
 // Open the build log.
 // @return false on error.
 func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
-  string log_path = ".ninja_log"
-  if !n.build_dir_.empty() {
-    log_path = n.build_dir_ + "/" + log_path
-  }
+	log_path := ".ninja_log"
+	if n.build_dir_ != "" {
+		log_path = n.build_dir_ + "/" + log_path
+	}
 
-  err := ""
-  status := n.build_log_.Load(log_path, &err)
-  if status == LOAD_ERROR {
-    Error("loading build log %s: %s", log_path, err)
-    return false
-  }
-  if len(err) != 0 {
-    // Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-    Warning("%s", err)
-    err = nil
-  }
+	err := ""
+	status := n.build_log_.Load(log_path, &err)
+	if status == LOAD_ERROR {
+		Error("loading build log %s: %s", log_path, err)
+		return false
+	}
+	if len(err) != 0 {
+		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
+		Warning("%s", err)
+		err = ""
+	}
 
-  if recompact_only {
-    if status == LOAD_NOT_FOUND {
-      return true
-    }
-    success := n.build_log_.Recompact(log_path, *this, &err)
-    if success == nil {
-      Error("failed recompaction: %s", err)
-    }
-    return success
-  }
+	if recompact_only {
+		if status == LOAD_NOT_FOUND {
+			return true
+		}
+		success := n.build_log_.Recompact(log_path, n, &err)
+		if !success {
+			Error("failed recompaction: %s", err)
+		}
+		return success
+	}
 
-  if !n.config_.dry_run {
-    if !n.build_log_.OpenForWrite(log_path, *this, &err) {
-      Error("opening build log: %s", err)
-      return false
-    }
-  }
+	if !n.config_.dry_run {
+		if !n.build_log_.OpenForWrite(log_path, n, &err) {
+			Error("opening build log: %s", err)
+			return false
+		}
+	}
 
-  return true
+	return true
 }
 
 // Open the deps log: load it, then open for writing.
@@ -1048,42 +1065,42 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 // Open the deps log: load it, then open for writing.
 // @return false on error.
 func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
-  string path = ".ninja_deps"
-  if !n.build_dir_.empty() {
-    path = n.build_dir_ + "/" + path
-  }
+	path := ".ninja_deps"
+	if n.build_dir_ != "" {
+		path = n.build_dir_ + "/" + path
+	}
 
-  err := ""
-  status := n.deps_log_.Load(path, &n.state_, &err)
-  if status == LOAD_ERROR {
-    Error("loading deps log %s: %s", path, err)
-    return false
-  }
-  if len(err) != 0 {
-    // Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-    Warning("%s", err)
-    err = nil
-  }
+	err := ""
+	status := n.deps_log_.Load(path, &n.state_, &err)
+	if status == LOAD_ERROR {
+		Error("loading deps log %s: %s", path, err)
+		return false
+	}
+	if len(err) != 0 {
+		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
+		Warning("%s", err)
+		err = ""
+	}
 
-  if recompact_only {
-    if status == LOAD_NOT_FOUND {
-      return true
-    }
-    success := n.deps_log_.Recompact(path, &err)
-    if success == nil {
-      Error("failed recompaction: %s", err)
-    }
-    return success
-  }
+	if recompact_only {
+		if status == LOAD_NOT_FOUND {
+			return true
+		}
+		success := n.deps_log_.Recompact(path, &err)
+		if !success {
+			Error("failed recompaction: %s", err)
+		}
+		return success
+	}
 
-  if !n.config_.dry_run {
-    if !n.deps_log_.OpenForWrite(path, &err) {
-      Error("opening deps log: %s", err)
-      return false
-    }
-  }
+	if !n.config_.dry_run {
+		if !n.deps_log_.OpenForWrite(path, &err) {
+			Error("opening deps log: %s", err)
+			return false
+		}
+	}
 
-  return true
+	return true
 }
 
 // Dump the output requested by '-d stats'.
@@ -1091,68 +1108,78 @@ func (n *NinjaMain) DumpMetrics() {
 	g_metrics.Report()
 
 	fmt.Printf("\n")
-	count := len(n.state_.paths_)
-	buckets := n.state_.paths_.bucket_count()
-	fmt.Printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
+	panic("TODO")
+	/*
+		count := len(n.state_.paths_)
+		buckets := n.state_.paths_.bucket_count()
+		fmt.Printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
+	*/
 }
 
 // Ensure the build directory exists, creating it if necessary.
 // @return false on error.
 func (n *NinjaMain) EnsureBuildDirExists() bool {
-  n.build_dir_ = n.state_.bindings_.LookupVariable("builddir")
-  if !n.build_dir_.empty() && !n.config_.dry_run {
-    if !n.disk_interface_.MakeDirs(n.build_dir_ + "/.") && errno != EEXIST {
-      Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
-      return false
-    }
-  }
-  return true
+	n.build_dir_ = n.state_.bindings_.LookupVariable("builddir")
+	if n.build_dir_ != "" && !n.config_.dry_run {
+		panic("TODO")
+		/*
+			if !MakeDirs(&n.disk_interface_, n.build_dir_+"/.") && errno != EEXIST {
+				Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
+				return false
+			}
+		*/
+	}
+	return true
 }
 
 // Build the targets listed on the command line.
 // @return an exit code.
-func (n *NinjaMain) RunBuild(argc int, argv *char*, status *Status) int {
-  err := ""
-  var targets []*Node
-  if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
-    status.Error("%s", err)
-    return 1
-  }
+func (n *NinjaMain) RunBuild(args []string, status *Status) int {
+	panic("TODO")
+	/*
+		err := ""
+		var targets []*Node
+		if !CollectTargetsFromArgs(argc, argv, &targets, &err) {
+			status.Error("%s", err)
+			return 1
+		}
 
-  n.disk_interface_.AllowStatCache(g_experimental_statcache)
+		n.disk_interface_.AllowStatCache(g_experimental_statcache)
 
-  Builder builder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
-  for i := 0; i < targets.size(); i++ {
-    if !builder.AddTarget(targets[i], &err) {
-      if len(err) != 0 {
-        status.Error("%s", err)
-        return 1
-      } else {
-        // Added a target that is already up-to-date; not really
-        // an error.
-      }
-    }
-  }
+		builder := NewBuilder(&n.state_, n.config_, &n.build_log_, &n.deps_log_, &n.disk_interface_, status, n.start_time_millis_)
+		for i := 0; i < targets.size(); i++ {
+			if !builder.AddTarget(targets[i], &err) {
+				if len(err) != 0 {
+					status.Error("%s", err)
+					return 1
+				} else {
+					// Added a target that is already up-to-date; not really
+					// an error.
+				}
+			}
+		}
 
-  // Make sure restat rules do not see stale timestamps.
-  n.disk_interface_.AllowStatCache(false)
+		// Make sure restat rules do not see stale timestamps.
+		n.disk_interface_.AllowStatCache(false)
 
-  if builder.AlreadyUpToDate() {
-    status.Info("no work to do.")
-    return 0
-  }
+		if builder.AlreadyUpToDate() {
+			status.Info("no work to do.")
+			return 0
+		}
 
-  if !builder.Build(&err) {
-    status.Info("build stopped: %s.", err)
-    if err.find("interrupted by user") != string::npos {
-      return 2
-    }
-    return 1
-  }
+		if !builder.Build(&err) {
+			status.Info("build stopped: %s.", err)
+			if strings.Contain(err, "interrupted by user") {
+				return 2
+			}
+			return 1
+		}
 
-  return 0
+		return 0
+	*/
 }
 
+/*
 // This handler processes fatal crashes that you can't catch
 // Test example: C++ exception in a stack-unwind-block
 // Real-world example: ninja launched a compiler to process a tricky
@@ -1171,7 +1198,9 @@ func ExceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
   CreateWin32MiniDump(ep)
   return EXCEPTION_EXECUTE_HANDLER
 }
+*/
 
+/*
 // Parse argv for command-line options.
 // Returns an exit code, or -1 if Ninja should continue.
 func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) int {
@@ -1279,7 +1308,7 @@ func Main() {
 	options.dupe_edges_should_err = true
 
 	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
-	//ninja_command := os.Args[0]
+	ninja_command := os.Args[0]
 
 	/*
 	  exit_code := ReadFlags(&argc, &argv, &options, &config)
@@ -1301,28 +1330,28 @@ func Main() {
 			Fatal("chdir to '%s' - %s", options.working_dir, err)
 		}
 	}
-	/*
-		  if options.tool && options.tool.when == RUN_AFTER_FLAGS {
-		    // None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
-		    // by other tools.
-				ninja := NewNinjaMain (ninja_command, config)
-		    os.Exit((ninja.*options.tool.func)(&options, argc, argv))
-		  }
 
-		  // It'd be nice to use line buffering but MSDN says: "For some systems,
-		  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
-		  //  same as _IOFBF - Full Buffering."
-		  // Buffering used to be disabled in the LinePrinter constructor but that
-		  // now disables it too early and breaks -t deps performance (see issue #2018)
-		  // so we disable it here instead, but only when not running a tool.
-		  if !options.tool {
-		    setvbuf(stdout, nil, _IONBF, 0)
-		  }
+	if options.tool != nil && options.tool.when == RUN_AFTER_FLAGS {
+		// None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
+		// by other tools.
+		// TODO(maruel): ninja := NewNinjaMain(ninja_command, &config)
+		os.Exit(options.tool.tool(&options, os.Args))
+	}
+	/*
+	  // It'd be nice to use line buffering but MSDN says: "For some systems,
+	  // [_IOLBF] provides line buffering. However, for Win32, the behavior is the
+	  //  same as _IOFBF - Full Buffering."
+	  // Buffering used to be disabled in the LinePrinter constructor but that
+	  // now disables it too early and breaks -t deps performance (see issue #2018)
+	  // so we disable it here instead, but only when not running a tool.
+	  if !options.tool {
+	    setvbuf(stdout, nil, _IONBF, 0)
+	  }
 	*/
 	// Limit number of rebuilds, to prevent infinite loops.
 	kCycleLimit := 100
 	for cycle := 1; cycle <= kCycleLimit; cycle++ {
-		//ninja := NewNinjaMain(ninja_command, &config)
+		ninja := NewNinjaMain(ninja_command, &config)
 
 		var parser_opts ManifestParserOptions
 		if options.dupe_edges_should_err {
@@ -1331,49 +1360,50 @@ func Main() {
 		if options.phony_cycle_should_err {
 			parser_opts.phony_cycle_action_ = kPhonyCycleActionError
 		}
-		/* TODO
 		parser := NewManifestParser(&ninja.state_, &ninja.disk_interface_, parser_opts)
 		err := ""
-		if !parser.Load(options.input_file, &err) {
+		if !parser.Load(options.input_file, &err, nil) {
 			status.Error("%s", err)
 			os.Exit(1)
 		}
 
-		if options.tool && options.tool.when == RUN_AFTER_LOAD {
-			os.Exit(ninja.options.tool(&options, args))
+		if options.tool != nil && options.tool.when == RUN_AFTER_LOAD {
+			os.Exit(options.tool.tool(&options, os.Args))
 		}
 
 		if !ninja.EnsureBuildDirExists() {
 			os.Exit(1)
 		}
 
-		if !ninja.OpenBuildLog() || !ninja.OpenDepsLog() {
+		if !ninja.OpenBuildLog(false) || !ninja.OpenDepsLog(false) {
 			os.Exit(1)
 		}
 
-		if options.tool && options.tool.when == RUN_AFTER_LOGS {
-			os.Exit(ninja.options.tool(&options, args))
+		if options.tool != nil && options.tool.when == RUN_AFTER_LOGS {
+			os.Exit(options.tool.tool(&options, os.Args))
 		}
 
-		// Attempt to rebuild the manifest before building anything else
-		if ninja.RebuildManifest(options.input_file, &err, status) {
-			// In dry_run mode the regeneration will succeed without changing the
-			// manifest forever. Better to return immediately.
-			if config.dry_run {
-				os.Exit(0)
+		/*
+			// Attempt to rebuild the manifest before building anything else
+			if ninja.RebuildManifest(options.input_file, &err, status) {
+				// In dry_run mode the regeneration will succeed without changing the
+				// manifest forever. Better to return immediately.
+				if config.dry_run {
+					os.Exit(0)
+				}
+				// Start the build over with the new manifest.
+				continue
+			} else if len(err) != 0 {
+				status.Error("rebuilding '%s': %s", options.input_file, err)
+				os.Exit(1)
 			}
-			// Start the build over with the new manifest.
-			continue
-		} else if len(err) != 0 {
-			status.Error("rebuilding '%s': %s", options.input_file, err)
-			os.Exit(1)
-		}
 
-		result := ninja.RunBuild(argc, argv, status)
-		if g_metrics {
-			ninja.DumpMetrics()
-		}
-		os.Exit(result)
+			/* TODO
+			result := ninja.RunBuild(argc, argv, status)
+			if g_metrics {
+				ninja.DumpMetrics()
+			}
+			os.Exit(result)
 		*/
 	}
 

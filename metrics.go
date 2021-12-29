@@ -55,6 +55,12 @@ type Metrics struct {
 	metrics_ map[string]*Metric
 }
 
+func NewMetrics() *Metrics {
+	return &Metrics{
+		metrics_: map[string]*Metric{},
+	}
+}
+
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.
 var g_metrics *Metrics
