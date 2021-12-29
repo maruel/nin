@@ -71,6 +71,7 @@ func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	return NinjaMain{
 		ninja_command_:     ninja_command,
 		config_:            config,
+		state_:             NewState(),
 		build_log_:         NewBuildLog(),
 		deps_log_:          NewDepsLog(),
 		start_time_millis_: GetTimeMillis(),

@@ -37,6 +37,8 @@ func ParseVersion(version string) (int, int) {
 		end = strings.Index(version[start:], ".")
 		if end == -1 {
 			end = len(version)
+		} else {
+			end += start
 		}
 		minor, _ = strconv.Atoi(keepNumbers(version[start:end]))
 	}
