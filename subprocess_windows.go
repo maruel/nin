@@ -208,7 +208,8 @@ func (s *Subprocess) Finish() ExitStatus {
 }
 
 func (s *Subprocess) Done() bool {
-	return s.pipe_ == nil
+	panic("TODO")
+	//return s.pipe_ == nil
 }
 
 func (s *Subprocess) GetOutput() string {
@@ -256,12 +257,15 @@ func (s *SubprocessSet) Add(command string, use_console bool) *Subprocess {
 		subprocess.Close()
 		return nil
 	}
-	if subprocess.child_ != nil {
-		s.running_ = append(s.running_, subprocess)
-	} else {
-		s.finished_ = append(s.finished_, subprocess)
-	}
-	return subprocess
+	panic("TODO")
+	/*
+		if subprocess.child_ != nil {
+			s.running_ = append(s.running_, subprocess)
+		} else {
+			s.finished_ = append(s.finished_, subprocess)
+		}
+		return subprocess
+	*/
 }
 
 func (s *SubprocessSet) DoWork() bool {
@@ -307,20 +311,20 @@ func (s *SubprocessSet) NextFinished() *Subprocess {
 }
 
 func (s *SubprocessSet) Clear() {
-	for _, i := range s.running_ {
-		// Since the foreground process is in our process group, it will receive a
-		// CTRL_C_EVENT or CTRL_BREAK_EVENT at the same time as us.
-		if i.child_ != nil && !i.use_console_ {
-			panic("TODO")
-			/*
-			   if !GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, GetProcessId((*i).child_)) {
-			     Win32Fatal("GenerateConsoleCtrlEvent")
-			   }
-			*/
+	panic("TODO")
+	/*
+		for _, i := range s.running_ {
+			// Since the foreground process is in our process group, it will receive a
+			// CTRL_C_EVENT or CTRL_BREAK_EVENT at the same time as us.
+			if i.child_ != nil && !i.use_console_ {
+				if !GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, GetProcessId((*i).child_)) {
+					Win32Fatal("GenerateConsoleCtrlEvent")
+				}
+			}
 		}
-	}
-	for _, i := range s.running_ {
-		i.Close()
-	}
-	s.running_ = nil
+		for _, i := range s.running_ {
+			i.Close()
+		}
+		s.running_ = nil
+	*/
 }
