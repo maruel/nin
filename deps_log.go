@@ -289,6 +289,13 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			if err2 := binary.Read(r, binary.LittleEndian, &out_id); err2 != nil {
 				panic(err2)
 			}
+			// TODO(maruel): It seems like it's registering invalid IDs.
+			if out_id >= 0x1000000 {
+				// That's a lot of nodes.
+				read_failed = true
+				// TODO(maruel): Make it a real error.
+				break
+			}
 			var mtime TimeStamp
 			if err2 := binary.Read(r, binary.LittleEndian, &mtime); err2 != nil {
 				panic(err2)
