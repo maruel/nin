@@ -43,15 +43,12 @@ type SubprocessSet interface {
 type SubprocessGeneric struct {
 	buf          bytes.Buffer
 	cmd          *exec.Cmd
+	done         bool
 	use_console_ bool
 }
 
 func (s *SubprocessGeneric) Done() bool {
-	if s.cmd.ProcessState == nil {
-		// Process failed?
-		return true
-	}
-	return s.cmd.ProcessState.Exited()
+	return s.done
 }
 
 func (s *SubprocessGeneric) Close() error {
@@ -124,6 +121,14 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 		// TODO(maruel): Error handing
 		panic(err)
 	}
+	if subproc.cmd.ProcessState == nil {
+		// This generally means that something bad happened. Calling Wait() seems
+		// to initialize ProcessState.
+		subproc.cmd.Wait()
+		if subproc.cmd.ProcessState == nil {
+			panic("expected ProcessState to be set")
+		}
+	}
 	s.running_ = append(s.running_, subproc)
 	return subproc
 }
@@ -132,24 +137,38 @@ func (s *SubprocessSetGeneric) NextFinished() Subprocess {
 	if len(s.finished_) == 0 {
 		return nil
 	}
+	// TODO(maruel): The original code use a dequeue. Once in a while, the
+	// pointer should be reset back to the top of the slice instead of being a
+	// memory leak.
+	//
+	// On the other hand, the current worse case scenarios is 200k processes, so
+	// that's 800KiB of RAM wasted at worst.
 	subproc := s.finished_[0]
 	s.finished_ = s.finished_[1:]
 	return subproc
 }
 
+// DoWork should return on one of 3 events:
+//
+//  - Was interrupted, return true
+//  - A process completed, return true
+//  - A pipe got data, returns false
+//
+// In Go, the later can't happen. So hard block in an inefficient way (for
+// now).
 func (s *SubprocessSetGeneric) DoWork() bool {
 	o := false
 	for i := 0; i < len(s.running_); i++ {
 		p := s.running_[i]
-		if p.Done() {
+		if p.cmd.ProcessState.Exited() {
 			o = true
+			p.done = true
 			s.finished_ = append(s.finished_, p)
-			i--
 			if i < len(s.running_)-1 {
 				copy(s.running_[i:], s.running_[i+1:])
 			}
+			i--
 			s.running_ = s.running_[:len(s.running_)-1]
-			continue
 		}
 	}
 	return o
