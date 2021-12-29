@@ -56,7 +56,7 @@ func (s *SubprocessGeneric) Close() error {
 }
 
 func (s *SubprocessGeneric) Finish() ExitStatus {
-	s.cmd.Wait()
+	_ = s.cmd.Wait()
 	return s.cmd.ProcessState.ExitCode()
 }
 
@@ -80,11 +80,11 @@ func (s *SubprocessSetGeneric) Clear() {
 		// TODO(maruel): This is incorrect, we want to use -pid for process group
 		// on posix.
 		if !p.use_console_ {
-			p.cmd.Process.Kill()
+			_ = p.cmd.Process.Kill()
 		}
 	}
 	for _, p := range s.running_ {
-		p.Close()
+		_ = p.Close()
 	}
 	s.running_ = nil
 }
@@ -122,7 +122,7 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 	if subproc.cmd.ProcessState == nil {
 		// This generally means that something bad happened. Calling Wait() seems
 		// to initialize ProcessState.
-		subproc.cmd.Wait()
+		_ = subproc.cmd.Wait()
 		if subproc.cmd.ProcessState == nil {
 			panic("expected ProcessState to be set")
 		}

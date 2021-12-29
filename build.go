@@ -650,7 +650,7 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
 	e := r.subproc_to_edge_[subproc]
 	result.edge = e
 	delete(r.subproc_to_edge_, subproc)
-	subproc.Close()
+	_ = subproc.Close()
 	return true
 }
 
