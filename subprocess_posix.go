@@ -381,3 +381,6 @@ func (s *SubprocessSetImpl) Clear() {
 		s.running_ = nil
 	*/
 }
+
+func (s *SubprocessGeneric) osSpecific(c string) {
+}

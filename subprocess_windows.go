@@ -366,3 +366,10 @@ func (s *SubprocessSet) Clear() {
 		s.running_ = nil
 	*/
 }
+
+func (s *SubprocessGeneric) osSpecific(c string) {
+	// Ignore the parsed arguments on Windows and feed back the original string.
+	// See https://pkg.go.dev/os/exec#Command for an explanation.
+	s.cmd.SysProcAttr.CmdLine = c
+	s.cmd.Args = nil
+}

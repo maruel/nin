@@ -114,7 +114,7 @@ type BuildConfig struct {
 	dry_run          bool
 	parallelism      int
 	failures_allowed int
-	// The maximum load average we must not exceed. A negative value
+	// The maximum load average we must not exceed. A negative or zero value
 	// means that we do not have any limit.
 	max_load_average       float64
 	depfile_parser_options DepfileParserOptions
@@ -125,7 +125,6 @@ func NewBuildConfig() BuildConfig {
 		verbosity:        NORMAL,
 		parallelism:      1,
 		failures_allowed: 1,
-		max_load_average: -0.,
 	}
 }
 

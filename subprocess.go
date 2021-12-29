@@ -112,11 +112,9 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 		cmd:          exec.Command(shell, flag, c),
 	}
 	// Ignore the parsed arguments on Windows and feedback the original string.
-	if runtime.GOOS == "windows" {
-		//subproc.cmd.SysProcAttr.CmdLine = c
-	}
 	subproc.cmd.Stdout = &subproc.buf
 	subproc.cmd.Stderr = &subproc.buf
+	subproc.osSpecific(c)
 	if err := subproc.cmd.Start(); err != nil {
 		// TODO(maruel): Error handing
 		panic(err)

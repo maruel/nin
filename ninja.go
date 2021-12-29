@@ -370,7 +370,7 @@ func ToolTargetsSourceList(state *State) int {
 }
 
 func ToolTargetsListRule(state *State, rule_name string) int {
-	var rules map[string]struct{}
+	rules := map[string]struct{}{}
 
 	// Gather the outputs.
 	for _, e := range state.edges_ {
@@ -1042,8 +1042,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 	if n.build_dir_ != "" && !n.config_.dry_run {
 		// TODO(maruel): We need real error.
 		if !MakeDirs(&n.disk_interface_, filepath.Join(n.build_dir_, ".")) {
-			//&& errno != EEXIST {
-			//Error("creating build directory %s: %s", n.build_dir_, strerror(errno))
+			Error("creating build directory %s", n.build_dir_)
 			//return false
 		}
 	}
@@ -1068,10 +1067,9 @@ func (n *NinjaMain) RunBuild(args []string, status Status) int {
 			if len(err) != 0 {
 				status.Error("%s", err)
 				return 1
-			} else {
-				// Added a target that is already up-to-date; not really
-				// an error.
 			}
+			// Added a target that is already up-to-date; not really
+			// an error.
 		}
 	}
 
@@ -1126,7 +1124,7 @@ func readFlags(options *Options, config *BuildConfig) int {
 
 	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "")
 	flag.IntVar(&config.failures_allowed, "k", 1, "")
-	flag.Float64Var(&config.max_load_average, "l", -0.0, "")
+	flag.Float64Var(&config.max_load_average, "l", 0, "")
 	flag.BoolVar(&config.dry_run, "n", false, "")
 
 	tool := flag.String("t", "", "")
