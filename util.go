@@ -482,32 +482,37 @@ uint64_t FileTimeToTickCount(const FILETIME & ft)
   uint64_t low  = ft.dwLowDateTime
   return (high | low)
 }
+*/
 
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {
-  FILETIME idle_time, kernel_time, user_time
-  BOOL get_system_time_succeeded =
-      GetSystemTimes(&idle_time, &kernel_time, &user_time)
+	/*
+	  FILETIME idle_time, kernel_time, user_time
+	  BOOL get_system_time_succeeded =
+	      GetSystemTimes(&idle_time, &kernel_time, &user_time)
 
-  posix_compatible_load := 0.
-  if get_system_time_succeeded {
-    idle_ticks := FileTimeToTickCount(idle_time)
+	  posix_compatible_load := 0.
+	  if get_system_time_succeeded {
+	    idle_ticks := FileTimeToTickCount(idle_time)
 
-    // kernel_time from GetSystemTimes already includes idle_time.
-    uint64_t total_ticks =
-        FileTimeToTickCount(kernel_time) + FileTimeToTickCount(user_time)
+	    // kernel_time from GetSystemTimes already includes idle_time.
+	    uint64_t total_ticks =
+	        FileTimeToTickCount(kernel_time) + FileTimeToTickCount(user_time)
 
-    processor_load := CalculateProcessorLoad(idle_ticks, total_ticks)
-    posix_compatible_load = processor_load * GetProcessorCount()
+	    processor_load := CalculateProcessorLoad(idle_ticks, total_ticks)
+	    posix_compatible_load = processor_load * GetProcessorCount()
 
-  } else {
-    posix_compatible_load = -0.0
-  }
+	  } else {
+	    posix_compatible_load = -0.0
+	  }
 
-  return posix_compatible_load
+	  return posix_compatible_load
+	*/
+	return 0
 }
 
+/*
 // @return the load average of the machine. A negative value is returned
 // on error.
 func GetLoadAverage() float64 {

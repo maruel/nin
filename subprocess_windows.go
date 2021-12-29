@@ -14,7 +14,45 @@
 
 package ginja
 
-func NewSubprocess(use_console bool) *Subprocess {
+// Subprocess wraps a single async subprocess.  It is entirely
+// passive: it expects the caller to notify it when its fds are ready
+// for reading, as well as call Finish() to reap the child once done()
+// is true.
+type SubprocessImpl struct {
+	buf_            string
+	child_          HANDLE
+	pipe_           HANDLE
+	overlapped_     OVERLAPPED
+	overlapped_buf_ [4 << 10]byte
+	is_reading_     bool
+	use_console_    bool
+}
+
+// SubprocessSet runs a ppoll/pselect() loop around a set of Subprocesses.
+// DoWork() waits for any state change in subprocesses; finished_
+// is a queue of subprocesses as they finish.
+type SubprocessSet struct {
+	running_  []*Subprocess
+	finished_ []*Subprocess // queue<Subprocess*>
+
+	// Windows
+	//static HANDLE ioport_
+
+	// POSIX
+	// Store the signal number that causes the interruption.
+	// 0 if not interruption.
+	//static int interrupted_
+
+	//static bool IsInterrupted() { return interrupted_ != 0; }
+	/*
+	  struct sigaction old_int_act_
+	  struct sigaction old_term_act_
+	  struct sigaction old_hup_act_
+	  sigset_t old_mask_
+	*/
+}
+
+func NewSubprocessOS(use_console bool) *Subprocess {
 	return &Subprocess{
 		use_console_: use_console,
 	}
@@ -218,7 +256,7 @@ func (s *Subprocess) GetOutput() string {
 
 //HANDLE SubprocessSet::ioport_
 
-func NewSubprocessSet() *SubprocessSet {
+func NewSubprocessSetOS() *SubprocessSet {
 	panic("TODO")
 	/*
 		  ioport_ = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, nil, 0, 1)
@@ -252,7 +290,7 @@ func (s *SubprocessSet) NotifyInterrupted(dwCtrlType DWORD) BOOL WINAPI {
 */
 
 func (s *SubprocessSet) Add(command string, use_console bool) *Subprocess {
-	subprocess := NewSubprocess(use_console)
+	subprocess := NewSubprocessOS(use_console)
 	if !subprocess.Start(s, command) {
 		subprocess.Close()
 		return nil

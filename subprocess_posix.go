@@ -21,14 +21,47 @@ import (
 	"os"
 )
 
-func NewSubprocess(use_console bool) *Subprocess {
-	return &Subprocess{
+// Subprocess wraps a single async subprocess.  It is entirely
+// passive: it expects the caller to notify it when its fds are ready
+// for reading, as well as call Finish() to reap the child once done()
+// is true.
+type SubprocessImpl struct {
+	buf_         string
+	fd_          int
+	pid_         int
+	use_console_ bool
+}
+
+// SubprocessSet runs a ppoll/pselect() loop around a set of Subprocesses.
+// DoWork() waits for any state change in subprocesses; finished_
+// is a queue of subprocesses as they finish.
+type SubprocessSetImpl struct {
+	running_  []*SubprocessImpl
+	finished_ []*SubprocessImpl // queue<Subprocess*>
+
+	// Was static.
+	// Store the signal number that causes the interruption.
+	// 0 if not interruption.
+	interrupted_ int
+
+	/*
+	  struct sigaction old_int_act_
+	  struct sigaction old_term_act_
+	  struct sigaction old_hup_act_
+	  sigset_t old_mask_
+	*/
+}
+
+func NewSubprocessOS(use_console bool) *SubprocessImpl {
+	return &SubprocessImpl{
 		//fd_:-1, pid_:-1,
 		use_console_: use_console,
 	}
 }
 
-func (s *Subprocess) Close() error {
+func (s *SubprocessSetImpl) IsInterrupted() bool { return s.interrupted_ != 0 }
+
+func (s *SubprocessImpl) Close() error {
 	/*
 		if s.fd_ >= 0 {
 			close(fd_)
@@ -41,7 +74,7 @@ func (s *Subprocess) Close() error {
 	return errors.New("implement me")
 }
 
-func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
+func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 	r, w, err := os.Pipe()
 	if err != nil {
 		panic(err)
@@ -137,7 +170,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 	//return true
 }
 
-func (s *Subprocess) OnPipeReady() {
+func (s *SubprocessImpl) OnPipeReady() {
 	panic("TODO")
 	/*
 	  char buf[4 << 10]
@@ -154,7 +187,7 @@ func (s *Subprocess) OnPipeReady() {
 	*/
 }
 
-func (s *Subprocess) Finish() ExitStatus {
+func (s *SubprocessImpl) Finish() ExitStatus {
 	panic("TODO")
 	/*
 	  if s.pid_ == -1 { panic("oops") }
@@ -186,11 +219,11 @@ func (s *Subprocess) Finish() ExitStatus {
 	*/
 }
 
-func (s *Subprocess) Done() bool {
+func (s *SubprocessImpl) Done() bool {
 	return s.fd_ == -1
 }
 
-func (s *Subprocess) GetOutput() string {
+func (s *SubprocessImpl) GetOutput() string {
 	return s.buf_
 }
 
@@ -218,7 +251,7 @@ func (s *SubprocessSet) HandlePendingInterruption() {
 }
 */
 
-func NewSubprocessSet() SubprocessSet {
+func NewSubprocessSetOS() SubprocessSet {
 	panic("TODO")
 	/*
 	  sigset_t set
@@ -241,7 +274,7 @@ func NewSubprocessSet() SubprocessSet {
 	*/
 }
 
-func (s *SubprocessSet) Close() {
+func (s *SubprocessSetImpl) Close() error {
 	s.Clear()
 	panic("TODO")
 	/*
@@ -256,8 +289,8 @@ func (s *SubprocessSet) Close() {
 	*/
 }
 
-func (s *SubprocessSet) Add(command string, use_console bool) *Subprocess {
-	subprocess := NewSubprocess(use_console)
+func (s *SubprocessSetImpl) Add(command string, use_console bool) Subprocess {
+	subprocess := NewSubprocessOS(use_console)
 	if !subprocess.Start(s, command) {
 		_ = subprocess.Close()
 		return nil
@@ -266,60 +299,64 @@ func (s *SubprocessSet) Add(command string, use_console bool) *Subprocess {
 	return subprocess
 }
 
-func (s *SubprocessSet) DoWork() bool {
+func (s *SubprocessSetImpl) DoWork() bool {
 	panic("TODO")
 	/*
-	  var fds []pollfd
-	  nfds := 0
+		// TODO(maruel): Do not reallocate at every call.
+		fds := make([]pollfd, 0, len(s.running_))
+		for _, i := range s.running_ {
+			fd := i.fd_
+			if fd < 0 {
+				continue
+			}
+			fds = append(fds, pollfd{fd, POLLIN | POLLPRI, 0})
+		}
 
-	  for _, i := range s.running_ {
-	    fd := i.fd_
-	    if fd < 0 {
-	      continue
-	    }
-	    pollfd pfd = { fd, POLLIN | POLLPRI, 0 }
-	    fds = append(fds, pfd)
-	    nfds++
-	  }
+		s.interrupted_ = 0
+		ret := syscall.Poll(&fds[0], len(fds), nil, &s.old_mask_)
+		if ret == -1 {
+			if errno != EINTR {
+				perror("ninja: ppoll")
+				return false
+			}
+			return s.IsInterrupted()
+		}
+		s.HandlePendingInterruption()
 
-	  s.interrupted_ = 0
-	  ret := ppoll(&fds.front(), nfds, nil, &s.old_mask_)
-	  if ret == -1 {
-	    if errno != EINTR {
-	      perror("ninja: ppoll")
-	      return false
-	    }
-	    return IsInterrupted()
-	  }
+		if s.IsInterrupted() {
+			return true
+		}
 
-	  HandlePendingInterruption()
-	  if IsInterrupted() {
-	    return true
-	  }
-
-	  cur_nfd := 0
-	  for i := s.running_.begin(); i != s.running_.end();  {
-	    fd := (*i).fd_
-	    if fd < 0 {
-	      continue
-	    }
-	    if !fd == fds[cur_nfd].fd { panic("oops") }
-	    if fds[cur_nfd++].revents {
-	      (*i).OnPipeReady()
-	      if (*i).Done() {
-	        s.finished_.push(*i)
-	        i = s.running_.erase(i)
-	        continue
-	      }
-	    }
-	    i++
-	  }
-
-	  return IsInterrupted()
+		cur_nfd := 0
+		for x := 0; x < len(s.running_); x++ {
+			i := s.running_[x]
+			fd := i.fd_
+			if fd < 0 {
+				continue
+			}
+			if fd != fds[cur_nfd].fd {
+				panic("oops")
+			}
+			n := cur_nfd
+			cur_nfd++
+			if fds[n].revents {
+				i.OnPipeReady()
+				if i.Done() {
+					s.finished_ = append(s.finished, i)
+					x--
+					if i < len(s.running_)-1 {
+						copy(s.running_[i:], s.running_[i+1:])
+					}
+					s.running_ = s.running_[:len(s.running_)-1]
+					continue
+				}
+			}
+		}
+		return s.IsInterrupted()
 	*/
 }
 
-func (s *SubprocessSet) NextFinished() *Subprocess {
+func (s *SubprocessSetImpl) NextFinished() Subprocess {
 	if len(s.finished_) == 0 {
 		return nil
 	}
@@ -328,7 +365,7 @@ func (s *SubprocessSet) NextFinished() *Subprocess {
 	return subproc
 }
 
-func (s *SubprocessSet) Clear() {
+func (s *SubprocessSetImpl) Clear() {
 	panic("TODO")
 	/*
 		for _, i := range s.running_ {

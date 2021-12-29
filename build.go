@@ -599,12 +599,14 @@ func (p *Plan) Dump() {
 type RealCommandRunner struct {
 	config_          *BuildConfig
 	subprocs_        SubprocessSet
-	subproc_to_edge_ map[*Subprocess]*Edge
+	subproc_to_edge_ map[Subprocess]*Edge
 }
 
 func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
 	return &RealCommandRunner{
-		config_: config,
+		config_:          config,
+		subprocs_:        NewSubprocessSet(),
+		subproc_to_edge_: map[Subprocess]*Edge{},
 	}
 }
 
@@ -617,51 +619,40 @@ func (r *RealCommandRunner) GetActiveEdges() []*Edge {
 }
 
 func (r *RealCommandRunner) Abort() {
-	panic("TODO")
-	//r.subprocs_.Clear()
+	r.subprocs_.Clear()
 }
 
 func (r *RealCommandRunner) CanRunMore() bool {
-	panic("TODO")
-	/*
-		subproc_number := len(r.subprocs_.running_) + len(r.subprocs_.finished_)
-		return subproc_number < r.config_.parallelism && ((r.subprocs_.running_.empty() || r.config_.max_load_average <= 0.) || r.GetLoadAverage() < r.config_.max_load_average)
-	*/
+	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
+	return subproc_number < r.config_.parallelism && ((r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0.) || GetLoadAverage() < r.config_.max_load_average)
 }
 
 func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
-	panic("TODO")
-	/*
-		command := edge.EvaluateCommand()
-		subproc := r.subprocs_.Add(command, edge.use_console())
-		if subproc == nil {
+	command := edge.EvaluateCommand(false)
+	subproc := r.subprocs_.Add(command, edge.use_console())
+	if subproc == nil {
 		return false
-		}
-		r.subproc_to_edge_.insert(make_pair(subproc, edge))
-		return true
-	*/
+	}
+	r.subproc_to_edge_[subproc] = edge
+	return true
 }
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-	panic("TODO")
-	/*
-		var subproc *Subprocess
-		for subproc = r.subprocs_.NextFinished(); subproc == nil; subproc = r.subprocs_.NextFinished() {
-			interrupted := r.subprocs_.DoWork()
-			if interrupted != nil {
-				return false
-			}
+	var subproc Subprocess
+	for subproc = r.subprocs_.NextFinished(); subproc == nil; subproc = r.subprocs_.NextFinished() {
+		if r.subprocs_.DoWork() {
+			return false
 		}
+	}
 
-		result.status = subproc.Finish()
-		result.output = subproc.GetOutput()
+	result.status = subproc.Finish()
+	result.output = subproc.GetOutput()
 
-		e := r.subproc_to_edge_[subproc]
-		result.edge = e
-		delete(r.subproc_to_edge_, e)
-		subproc.Close()
-		return true
-	*/
+	e := r.subproc_to_edge_[subproc]
+	result.edge = e
+	delete(r.subproc_to_edge_, subproc)
+	subproc.Close()
+	return true
 }
 
 func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, status Status, start_time_millis int64) *Builder {
