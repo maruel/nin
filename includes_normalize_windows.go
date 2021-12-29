@@ -23,4 +23,5 @@ func InternalGetFullPathName(file_name string, buffer *string, err *string) bool
 		return false
 	}
 	*buffer = s
+	return true
 }

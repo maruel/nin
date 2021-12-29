@@ -14,50 +14,53 @@
 
 package ginja
 
-import (
-	"fmt"
-	"os"
-)
+import "fmt"
 
-func Usage() {
-	printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
+func MSVCHelperUsage() {
+	fmt.Printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
 }
 
 func PushPathIntoEnvironment(env_block string) {
-	as_str := env_block
-	for as_str[0] {
-		if _strnicmp(as_str, "path=", 5) == 0 {
-			_putenv(as_str)
-			return
-		} else {
-			as_str = &as_str[strlen(as_str)+1]
+	panic("TODO")
+	/*
+		as_str := env_block
+		for as_str[0] {
+			if _strnicmp(as_str, "path=", 5) == 0 {
+				_putenv(as_str)
+				return
+			} else {
+				as_str = &as_str[strlen(as_str)+1]
+			}
 		}
-	}
+	*/
 }
 
 func WriteDepFileOrDie(object_path string, parse *CLParser) {
-	depfile_path := object_path + ".d"
-	depfile, err := os.OpenFile(depfile_path, os.O_WRONLY, 0o666)
-	if depfile == nil {
-		os.Remove(object_path)
-		Fatal("opening %s: %s", depfile_path, err)
-	}
-	if fmt.Fprintf(depfile, "%s: ", object_path) < 0 {
-		os.Remove(object_path)
-		depfile.Close()
-		os.Remove(depfile_path)
-		Fatal("writing %s", depfile_path)
-	}
-	headers := parse.includes_
-	for i := headers.begin(); i != headers.end(); i++ {
-		if fmt.Fprintf(depfile, "%s\n", EscapeForDepfile(*i)) < 0 {
+	panic("TODO")
+	/*
+		depfile_path := object_path + ".d"
+		depfile, err := os.OpenFile(depfile_path, os.O_WRONLY, 0o666)
+		if depfile == nil {
+			os.Remove(object_path)
+			Fatal("opening %s: %s", depfile_path, err)
+		}
+		if _, err := fmt.Fprintf(depfile, "%s: ", object_path); err != nil {
 			os.Remove(object_path)
 			depfile.Close()
 			os.Remove(depfile_path)
 			Fatal("writing %s", depfile_path)
 		}
-	}
-	depfile.Close()
+		headers := parse.includes_
+		for i := range headers {
+			if _, err := fmt.Fprintf(depfile, "%s\n", EscapeForDepfile(i)); err != nil {
+				os.Remove(object_path)
+				depfile.Close()
+				os.Remove(depfile_path)
+				Fatal("writing %s", depfile_path)
+			}
+		}
+		depfile.Close()
+	*/
 }
 
 func MSVCHelperMain(arg []string) int {
@@ -81,7 +84,7 @@ func MSVCHelperMain(arg []string) int {
 				break
 			case 'h':
 			default:
-				Usage()
+				MSVCHelperUsage()
 				return 0
 			}
 		}
