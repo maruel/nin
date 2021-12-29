@@ -17,7 +17,6 @@ package ginja
 import "testing"
 
 func TestEditDistanceTest_TestEmpty(t *testing.T) {
-	t.Skip("TODO")
 	if 5 != EditDistance("", "ninja", true, 0) {
 		t.Fatal("expected equal")
 	}
@@ -30,7 +29,6 @@ func TestEditDistanceTest_TestEmpty(t *testing.T) {
 }
 
 func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
-	t.Skip("TODO")
 	allow_replacements := true
 	for max_distance := 1; max_distance < 7; max_distance++ {
 		if max_distance+1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) {
@@ -40,7 +38,6 @@ func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
 }
 
 func TestEditDistanceTest_TestAllowReplacements(t *testing.T) {
-	t.Skip("TODO")
 	allow_replacements := true
 	if 1 != EditDistance("ninja", "njnja", allow_replacements, 0) {
 		t.Fatal("expected equal")
@@ -59,7 +56,6 @@ func TestEditDistanceTest_TestAllowReplacements(t *testing.T) {
 }
 
 func TestEditDistanceTest_TestBasics(t *testing.T) {
-	t.Skip("TODO")
 	if 0 != EditDistance("browser_tests", "browser_tests", true, 0) {
 		t.Fatal("expected equal")
 	}
