@@ -161,7 +161,9 @@ func (b *BindingEnv) AddBinding(key string, val string) {
 }
 
 func (b *BindingEnv) AddRule(rule *Rule) {
-	assert(b.LookupRuleCurrentScope(rule.name_) == nil)
+	if b.LookupRuleCurrentScope(rule.name_) != nil {
+		panic("oops")
+	}
 	b.rules_[rule.name_] = rule
 }
 

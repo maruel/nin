@@ -15,6 +15,7 @@
 package ginja
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 )
@@ -112,7 +113,7 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 	}
 
 	if l.smart_terminal_ {
-		printf("\r") // Print over previous line, if any.
+		fmt.Printf("\r") // Print over previous line, if any.
 		// On Windows, calling a C library function writing to stdout also handles
 		// pausing the executable when the "Pause" key or Ctrl-S is pressed.
 	}
@@ -128,7 +129,7 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 				if l.supports_color_ {
 					// this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
 					// succeeded
-					printf("%s\x1B[K", to_print) // Clear to end of line.
+					fmt.Printf("%s\x1B[K", to_print) // Clear to end of line.
 					fflush(stdout)
 				} else {
 					// We don't want to have the cursor spamming back and forth, so instead of
@@ -160,13 +161,13 @@ func (l *LinePrinter) Print(to_print string, t LineType) {
 				if ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == 0 && size.ws_col {
 					to_print = ElideMiddle(to_print, size.ws_col)
 				}
-				printf("%s", to_print)
-				printf("\x1B[K") // Clear to end of line.
+				fmt.Printf("%s", to_print)
+				fmt.Printf("\x1B[K") // Clear to end of line.
 				fflush(stdout)
 			*/
 		}
 	} else {
-		printf("%s\n", to_print)
+		fmt.Printf("%s\n", to_print)
 	}
 }
 

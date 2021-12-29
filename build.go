@@ -583,7 +583,7 @@ func (p *Plan) Dump() {
 	fmt.Printf("pending: %d\n", len(p.want_))
 	for e, w := range p.want_ {
 		if w != kWantNothing {
-			printf("want ")
+			fmt.Printf("want ")
 		}
 		e.Dump("")
 	}

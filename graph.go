@@ -826,24 +826,24 @@ func (e *Edge) GetUnescapedRspfile() string {
 }
 
 func (e *Edge) Dump(prefix string) {
-	printf("%s[ ", prefix)
+	fmt.Printf("%s[ ", prefix)
 	for _, i := range e.inputs_ {
 		if i != nil {
-			printf("%s ", i.path())
+			fmt.Printf("%s ", i.path())
 		}
 	}
-	printf("--%s-> ", e.rule_.name())
+	fmt.Printf("--%s-> ", e.rule_.name())
 	for _, i := range e.outputs_ {
-		printf("%s ", i.path())
+		fmt.Printf("%s ", i.path())
 	}
 	if e.pool_ != nil {
 		if e.pool_.name() != "" {
-			printf("(in pool '%s')", e.pool_.name())
+			fmt.Printf("(in pool '%s')", e.pool_.name())
 		}
 	} else {
-		printf("(null pool?)")
+		fmt.Printf("(null pool?)")
 	}
-	printf("] 0x%p\n", e)
+	fmt.Printf("] 0x%p\n", e)
 }
 
 func (e *Edge) is_phony() bool {

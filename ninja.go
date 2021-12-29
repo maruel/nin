@@ -295,14 +295,14 @@ func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
       return 1
     }
 
-    printf("%s:\n", node.path())
+    fmt.Printf("%s:\n", node.path())
     if Edge* edge = node.in_edge() {
       if edge.dyndep_ && edge.dyndep_.dyndep_pending() {
         if !dyndep_loader.LoadDyndeps(edge.dyndep_, &err) {
           Warning("%s\n", err)
         }
       }
-      printf("  input: %s\n", edge.rule_.name())
+      fmt.Printf("  input: %s\n", edge.rule_.name())
       for in := 0; in < (int)edge.inputs_.size(); in++ {
         string label = ""
         if edge.is_implicit(in) {
@@ -310,13 +310,13 @@ func (n *NinjaMain) ToolQuery(options *Options, argc int, argv []*char) int {
         } else if edge.is_order_only(in) {
           label = "|| "
         }
-        printf("    %s%s\n", label, edge.inputs_[in].path())
+        fmt.Printf("    %s%s\n", label, edge.inputs_[in].path())
       }
     }
-    printf("  outputs:\n")
+    fmt.Printf("  outputs:\n")
     for edge := node.out_edges().begin(); edge != node.out_edges().end(); edge++ {
       for out := (*edge).outputs_.begin(); out != (*edge).outputs_.end(); out++ {
-        printf("    %s\n", (*out).path())
+        fmt.Printf("    %s\n", (*out).path())
       }
     }
   }
@@ -341,16 +341,16 @@ func (n *NinjaMain) ToolMSVC(options *Options, argc int, argv []*char) int {
 func ToolTargetsList(nodes *[]*Node, depth int, indent int) int {
   for n := nodes.begin(); n != nodes.end(); n++ {
     for i := 0; i < indent; i++ {
-      printf("  ")
+      fmt.Printf("  ")
     }
     target := (*n).path()
     if (*n).in_edge() {
-      printf("%s: %s\n", target, (*n).in_edge().rule_.name())
+      fmt.Printf("%s: %s\n", target, (*n).in_edge().rule_.name())
       if depth > 1 || depth <= 0 {
         ToolTargetsList((*n).in_edge().inputs_, depth - 1, indent + 1)
       }
     } else {
-      printf("%s\n", target)
+      fmt.Printf("%s\n", target)
     }
   }
   return 0
@@ -360,7 +360,7 @@ func ToolTargetsSourceList(state *State) int {
   for e := state.edges_.begin(); e != state.edges_.end(); e++ {
     for inps := (*e).inputs_.begin(); inps != (*e).inputs_.end(); inps++ {
       if !(*inps).in_edge() {
-        printf("%s\n", (*inps).path())
+        fmt.Printf("%s\n", (*inps).path())
       }
     }
   }
@@ -381,7 +381,7 @@ func ToolTargetsList(state *State, rule_name string) int {
 
   // Print them.
   for i := rules.begin(); i != rules.end(); i++ {
-    printf("%s\n", (*i))
+    fmt.Printf("%s\n", (*i))
   }
 
   return 0
@@ -390,7 +390,7 @@ func ToolTargetsList(state *State, rule_name string) int {
 func ToolTargetsList(state *State) int {
   for e := state.edges_.begin(); e != state.edges_.end(); e++ {
     for out_node := (*e).outputs_.begin(); out_node != (*e).outputs_.end(); out_node++ {
-      printf("%s: %s\n", (*out_node).path(), (*e).rule_.name())
+      fmt.Printf("%s: %s\n", (*out_node).path(), (*e).rule_.name())
     }
   }
   return 0
@@ -416,7 +416,7 @@ func (n *NinjaMain) ToolDeps(options *Options, argc int, argv *char*) int {
   for vector<Node*>::iterator it = nodes.begin(), end = nodes.end(); it != end; it++ {
     deps := n.deps_log_.GetDeps(*it)
     if deps == nil {
-      printf("%s: deps not found\n", (*it).path())
+      fmt.Printf("%s: deps not found\n", (*it).path())
       continue
     }
 
@@ -425,11 +425,11 @@ func (n *NinjaMain) ToolDeps(options *Options, argc int, argv *char*) int {
     if mtime == -1 {
       Error("%s", err)  // Log and ignore Stat() errors;
     }
-    printf("%s: #deps %d, deps mtime %" PRId64 " (%s)\n", (*it).path(), deps.node_count, deps.mtime, (!mtime || mtime > deps.mtime ? "STALE":"VALID"))
+    fmt.Printf("%s: #deps %d, deps mtime %" PRId64 " (%s)\n", (*it).path(), deps.node_count, deps.mtime, (!mtime || mtime > deps.mtime ? "STALE":"VALID"))
     for i := 0; i < deps.node_count; i++ {
-      printf("    %s\n", deps.nodes[i].path())
+      fmt.Printf("    %s\n", deps.nodes[i].path())
     }
-    printf("\n")
+    fmt.Printf("\n")
   }
 
   return 0
@@ -516,7 +516,7 @@ func (n *NinjaMain) ToolRules(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n" )
+      fmt.Printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n" )
     return 1
     }
   }
@@ -528,25 +528,25 @@ func (n *NinjaMain) ToolRules(options *Options, argc int, argv []*char) int {
   var Rules typedef map<string, const Rule*>
   rules := n.state_.bindings_.GetRules()
   for i := rules.begin(); i != rules.end(); i++ {
-    printf("%s", i.first)
+    fmt.Printf("%s", i.first)
     if print_description {
       rule := i.second
       const EvalString* description = rule.GetBinding("description")
       if description != nil {
-        printf(": %s", description.Unparse())
+        fmt.Printf(": %s", description.Unparse())
       }
     }
-    printf("\n")
+    fmt.Printf("\n")
   }
   return 0
 }
 
 func (n *NinjaMain) ToolWinCodePage(options *Options, argc int, argv []*char) int {
   if argc != 0 {
-    printf("usage: ninja -t wincodepage\n")
+    fmt.Printf("usage: ninja -t wincodepage\n")
     return 1
   }
-  printf("Build file encoding: %s\n", GetACP() == CP_UTF8? "UTF-8" : "ANSI")
+  fmt.Printf("Build file encoding: %s\n", GetACP() == CP_UTF8? "UTF-8" : "ANSI")
   return 0
 }
 
@@ -591,7 +591,7 @@ func (n *NinjaMain) ToolCommands(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n" )
+      fmt.Printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n" )
     return 1
     }
   }
@@ -634,7 +634,7 @@ func (n *NinjaMain) ToolClean(options *Options, argc int, argv []*char) int {
       break
     case 'h':
     default:
-      printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
+      fmt.Printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
     return 1
     }
   }
@@ -699,15 +699,15 @@ func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
 }
 
 func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
-  printf("\n  {\n    \"directory\": \"")
+  fmt.Printf("\n  {\n    \"directory\": \"")
   PrintJSONString(directory)
-  printf("\",\n    \"command\": \"")
+  fmt.Printf("\",\n    \"command\": \"")
   PrintJSONString(EvaluateCommandWithRspfile(edge, eval_mode))
-  printf("\",\n    \"file\": \"")
+  fmt.Printf("\",\n    \"file\": \"")
   PrintJSONString(edge.inputs_[0].path())
-  printf("\",\n    \"output\": \"")
+  fmt.Printf("\",\n    \"output\": \"")
   PrintJSONString(edge.outputs_[0].path())
-  printf("\"\n  }")
+  fmt.Printf("\"\n  }")
 }
 
 func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*char) int {
@@ -728,7 +728,7 @@ func (n *NinjaMain) ToolCompilationDatabase(options *Options, argc int, argv []*
 
       case 'h':
       default:
-        printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
+        fmt.Printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
         return 1
     }
   }
@@ -802,7 +802,7 @@ func (n *NinjaMain) ToolRestat(options *Options, argc int, argv []*char) int {
     switch (opt) {
     case 'h':
     default:
-      printf("usage: ninja -t restat [outputs]\n")
+      fmt.Printf("usage: ninja -t restat [outputs]\n")
       return 1
     }
   }
@@ -860,7 +860,7 @@ func (n *NinjaMain) ToolUrtle(options *Options, argc int, argv *char*) int {
       count = count*10 + *p - '0'
     } else {
       for i := 0; i < max(count, 1); i++ {
-        printf("%c", *p)
+        fmt.Printf("%c", *p)
       }
       count = 0
     }
@@ -908,10 +908,10 @@ func ChooseTool(tool_name string) *Tool {
   }
 
   if tool_name == "list" {
-    printf("ninja subtools:\n")
+    fmt.Printf("ninja subtools:\n")
     for tool := &kTools[0]; tool.name; tool++ {
       if tool.desc {
-        printf("%11s  %s\n", tool.name, tool.desc)
+        fmt.Printf("%11s  %s\n", tool.name, tool.desc)
       }
     }
     return nil
@@ -940,7 +940,7 @@ func ChooseTool(tool_name string) *Tool {
 // of continuing.
 func DebugEnable(name string) bool {
   if name == "list" {
-    printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
+    fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n"  "  nostatcache  don't batch stat() calls per directory and cache them\n"  "multiple modes can be enabled via -d FOO -d BAR\n")//#ifdef _WIN32//#endif
     return false
   } else if name == "stats" {
     g_metrics = new Metrics
@@ -973,7 +973,7 @@ func DebugEnable(name string) bool {
 // continuing.
 func WarningEnable(name string, options *Options) bool {
   if name == "list" {
-    printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n" )
+    fmt.Printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n" )
     return false
   } else if name == "dupbuild=err" {
     options.dupe_edges_should_err = true
@@ -1090,10 +1090,10 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
 func (n *NinjaMain) DumpMetrics() {
 	g_metrics.Report()
 
-	printf("\n")
+	fmt.Printf("\n")
 	count := len(n.state_.paths_)
 	buckets := n.state_.paths_.bucket_count()
-	printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
+	fmt.Printf("path.node hash load %.2f (%d entries / %d buckets)\n", count/float64(buckets), count, buckets)
 }
 
 // Ensure the build directory exists, creating it if necessary.
@@ -1255,7 +1255,7 @@ func ReadFlags(argc *int, argv *char**, options *Options, config *BuildConfig) i
         options.working_dir = optarg
         break
       case OPT_VERSION:
-        printf("%s\n", kNinjaVersion)
+        fmt.Printf("%s\n", kNinjaVersion)
         return 0
       case 'h':
       default:

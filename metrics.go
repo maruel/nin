@@ -15,6 +15,7 @@
 package ginja
 
 import (
+	"fmt"
 	"sort"
 	"time"
 )
@@ -82,11 +83,11 @@ func (m *Metrics) Report() {
 	}
 	sort.Strings(names)
 
-	printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg", "total")
+	fmt.Printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg", "total")
 	for _, name := range names {
 		metric := m.metrics_[name]
 		avg := metric.sum / time.Duration(metric.count)
-		printf("%-*s\t%-6d\t%-10s\t%-10s\n", width, name, metric.count, avg.Round(time.Microsecond), metric.sum.Round(time.Microsecond))
+		fmt.Printf("%-*s\t%-6d\t%-10s\t%-10s\n", width, name, metric.count, avg.Round(time.Microsecond), metric.sum.Round(time.Microsecond))
 	}
 }
 

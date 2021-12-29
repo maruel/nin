@@ -235,7 +235,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 	  var rlim rlimit
 	  if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.Fatal("expected equal") }
 	  if rlim.rlim_cur < kNumProcs {
-	    printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)
+	    fmt.Printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)
 	    return
 	  }
 

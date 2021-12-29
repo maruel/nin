@@ -121,7 +121,7 @@ func (s *Subprocess) Start(set *SubprocessSet, command string) bool {
 		      s.buf_ = "CreateProcess failed: The system cannot find the file specified.\n"
 		      return true
 		    } else {
-		      fprintf(stderr, "\nCreateProcess failed. Command attempted:\n\"%s\"\n", command)
+		      fmt.Fprintf(os.Stderr, "\nCreateProcess failed. Command attempted:\n\"%s\"\n", command)
 		      hint := nil
 		      // ERROR_INVALID_PARAMETER means the command line was formatted
 		      // incorrectly. This can be caused by a command line being too long or

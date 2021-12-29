@@ -14,6 +14,8 @@
 
 package ginja
 
+import "fmt"
+
 type Cleaner struct {
 	state_               *State
 	config_              *BuildConfig
@@ -65,7 +67,7 @@ func (c *Cleaner) FileExists(path string) bool {
 func (c *Cleaner) Report(path string) {
 	c.cleaned_files_count_++
 	if c.IsVerbose() {
-		printf("Remove %s\n", path)
+		fmt.Printf("Remove %s\n", path)
 	}
 }
 
@@ -111,11 +113,11 @@ func (c *Cleaner) PrintHeader() {
 	if c.config_.verbosity == QUIET {
 		return
 	}
-	printf("Cleaning...")
+	fmt.Printf("Cleaning...")
 	if c.IsVerbose() {
-		printf("\n")
+		fmt.Printf("\n")
 	} else {
-		printf(" ")
+		fmt.Printf(" ")
 	}
 	// TODO(maruel): fflush(stdout)
 }
@@ -124,7 +126,7 @@ func (c *Cleaner) PrintFooter() {
 	if c.config_.verbosity == QUIET {
 		return
 	}
-	printf("%d files.\n", c.cleaned_files_count_)
+	fmt.Printf("%d files.\n", c.cleaned_files_count_)
 }
 
 // Clean all built files, except for files created by generator rules.
@@ -253,7 +255,7 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 		target := c.state_.LookupNode(target_name)
 		if target != nil {
 			if c.IsVerbose() {
-				printf("Target %s\n", target_name)
+				fmt.Printf("Target %s\n", target_name)
 			}
 			c.DoCleanTarget(target)
 		} else {
@@ -328,7 +330,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 		rule := c.state_.bindings_.LookupRule(rule_name)
 		if rule != nil {
 			if c.IsVerbose() {
-				printf("Rule %s\n", rule_name)
+				fmt.Printf("Rule %s\n", rule_name)
 			}
 			c.DoCleanRule(rule)
 		} else {
