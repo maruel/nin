@@ -15,4 +15,4 @@
 
 //go:generate ./regen.sh
 
-package ginja
+package nin

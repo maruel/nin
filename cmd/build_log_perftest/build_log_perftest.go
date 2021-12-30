@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/ginja"
+	"github.com/maruel/nin"
 )
 
 const kTestFilename = "BuildLogPerfTest-tempfile"
@@ -33,7 +33,7 @@ func (n *NoDeadPaths) IsPathDead(string) bool {
 }
 
 func WriteTestData() error {
-	log := ginja.NewBuildLog()
+	log := nin.NewBuildLog()
 	no_dead_paths := NoDeadPaths{}
 	err := ""
 	if !log.OpenForWrite(kTestFilename, &no_dead_paths, &err) {
@@ -69,8 +69,8 @@ func WriteTestData() error {
 	}
 	long_rule_command += "$in -o $out\n"
 
-	state := ginja.NewState()
-	parser := ginja.NewManifestParser(&state, nil, ginja.ManifestParserOptions{})
+	state := nin.NewState()
+	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{})
 	if !parser.ParseTest("rule cxx\n  command = "+long_rule_command, &err) {
 		return errors.New(err)
 	}
@@ -102,8 +102,8 @@ func mainImpl() error {
 	err := ""
 	{
 		// Read once to warm up disk cache.
-		log := ginja.NewBuildLog()
-		if log.Load(kTestFilename, &err) == ginja.LOAD_ERROR {
+		log := nin.NewBuildLog()
+		if log.Load(kTestFilename, &err) == nin.LOAD_ERROR {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 	}
@@ -113,8 +113,8 @@ func mainImpl() error {
 	kNumRepetitions := 5
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
-		log := ginja.NewBuildLog()
-		if log.Load(kTestFilename, &err) == ginja.LOAD_ERROR {
+		log := nin.NewBuildLog()
+		if log.Load(kTestFilename, &err) == nin.LOAD_ERROR {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 		delta := time.Since(start)

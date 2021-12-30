@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/maruel/ginja"
+	"github.com/maruel/nin"
 )
 
 func WriteFakeManifests(dir string) error {
@@ -44,9 +44,9 @@ func WriteFakeManifests(dir string) error {
 
 func LoadManifests(measure_command_evaluation bool) int {
 	err := ""
-	disk_interface := ginja.NewRealDiskInterface()
-	state := ginja.NewState()
-	parser := ginja.NewManifestParser(&state, &disk_interface, ginja.ManifestParserOptions{})
+	disk_interface := nin.NewRealDiskInterface()
+	state := nin.NewState()
+	parser := nin.NewManifestParser(&state, &disk_interface, nin.ManifestParserOptions{})
 	if !parser.Load("build.ninja", &err, nil) {
 		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)
 		os.Exit(1)

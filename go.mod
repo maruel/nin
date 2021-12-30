@@ -1,4 +1,4 @@
-module github.com/maruel/ginja
+module github.com/maruel/nin
 
 go 1.17
 

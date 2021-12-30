@@ -14,7 +14,7 @@
 
 //go:build !windows
 
-package ginja
+package nin
 
 import "path/filepath"
 

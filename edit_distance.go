@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ginja
+package nin
 
 func EditDistance(s1, s2 string, allow_replacements bool, max_edit_distance int) int {
 	// The algorithm implemented below is the "classic"

@@ -20,7 +20,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/maruel/ginja"
+	"github.com/maruel/nin"
 )
 
 func random(low, high int) int {
@@ -51,7 +51,7 @@ func main() {
 
 	for i := 0; i < N; i++ {
 		commands[i] = RandomCommand()
-		hashes[i] = item{ginja.HashCommand(commands[i]), i}
+		hashes[i] = item{nin.HashCommand(commands[i]), i}
 	}
 
 	sort.Slice(hashes[:], func(i, j int) bool {

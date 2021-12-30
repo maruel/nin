@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ginja
+package nin
 
 // Store dynamically-discovered dependency information for one edge.
 type Dyndeps struct {

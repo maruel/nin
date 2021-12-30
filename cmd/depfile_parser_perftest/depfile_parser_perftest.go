@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/maruel/ginja"
+	"github.com/maruel/nin"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 				}
 
 				err2 := ""
-				parser := ginja.NewDepfileParser(ginja.DepfileParserOptions{})
+				parser := nin.NewDepfileParser(nin.DepfileParserOptions{})
 				if !parser.Parse(buf, &err2) {
 					fmt.Printf("%s: %s\n", filename, err2)
 					os.Exit(1)

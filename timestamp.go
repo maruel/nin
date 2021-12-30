@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ginja
+package nin
 
 // When considering file modification times we only care to compare
 // them against one another -- we never convert them to an absolute

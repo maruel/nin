@@ -14,8 +14,8 @@
 
 package main
 
-import "github.com/maruel/ginja"
+import "github.com/maruel/nin"
 
 func main() {
-	ginja.Main()
+	nin.Main()
 }

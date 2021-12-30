@@ -1,7 +1,7 @@
-# Ginja
+# nin
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/maruel/ginja.svg)](https://pkg.go.dev/github.com/maruel/ginja)
-[![codecov](https://codecov.io/gh/maruel/ginja/branch/main/graph/badge.svg?token=KAO6K039PJ)](https://codecov.io/gh/maruel/ginja)
+[![Go Reference](https://pkg.go.dev/badge/github.com/maruel/nin.svg)](https://pkg.go.dev/github.com/maruel/nin)
+[![codecov](https://codecov.io/gh/maruel/nin/branch/main/graph/badge.svg?token=KAO6K039PJ)](https://codecov.io/gh/maruel/nin)
 
 An experimental fork of ninja translated in Go. Currently a toy.
 
@@ -14,7 +14,7 @@ Yeah.
 Yeah.
 
 When Google was created, Altavista was king. When Facebook was created, Myspace
-was hot. When ginja was created, there were other options.
+was hot. When nin was created, there were other options.
 
 The reason it's possible at all is because ninja is well written and has
 a reasonable amount of unit tests.
@@ -48,12 +48,8 @@ Some people did advent of code 2021, I did a brain teaser instead.
   than the C++ compiler. I'll reduce the number of function calls.
 - Go's Windows layer is likely slower than raw C++, so I'll probably call raw
   syscall functions on Windows.
-- Staying up to date changes done upstream, especially to the file format and correctness
-  checks
-
-## The name sucks
-
-Yeah. Please send suggestions my way!
+- Staying up to date changes done upstream, especially to the file format and
+  correctness checks.
 
 ## ninja
 
@@ -64,8 +60,8 @@ See [the manual](https://ninja-build.org/manual.html) or
 `doc/manual.asciidoc` included in the distribution for background
 and more details.
 
-## Getting ginja
+## Getting nin
 
 ```
-go install github.com/maruel/ginja/cmd/ginja@latest
+go install github.com/maruel/nin/cmd/nin@latest
 ```

@@ -14,7 +14,7 @@
 
 //go:build neverbuild
 
-package ginja
+package nin
 
 type DepfileParserOptions struct {
 }
