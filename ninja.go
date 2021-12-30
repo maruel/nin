@@ -79,6 +79,16 @@ func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	}
 }
 
+func (n *NinjaMain) Close() error {
+	// TODO(maruel): Ensure the file handle is cleanly closed.
+	err1 := n.deps_log_.Close()
+	err2 := n.build_log_.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
 type ToolFunc func(*NinjaMain, *Options, []string) int
 
 func (n *NinjaMain) IsPathDead(s string) bool {

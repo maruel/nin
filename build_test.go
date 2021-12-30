@@ -2948,9 +2948,6 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 		BuildTestBase: NewBuildTestBase(t),
 		log_:          NewDepsLog(),
 	}
-	t.Cleanup(func() {
-		_ = b.log_.Close()
-	})
 	CreateTempDirAndEnter(t)
 	err := ""
 	if !b.log_.OpenForWrite("ninja_deps", &err) {
@@ -2959,6 +2956,9 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
+	t.Cleanup(func() {
+		_ = b.log_.Close()
+	})
 	b.builder_ = NewBuilder(&b.state_, &b.config_, nil, &b.log_, &b.fs_, b.status_, 0)
 	b.builder_.command_runner_ = &b.command_runner_
 	return b
