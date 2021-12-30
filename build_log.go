@@ -135,12 +135,6 @@ func HashCommand(command string) uint64 {
 	return MurmurHash64A([]byte(command))
 }
 
-/*
-BuildLog::~BuildLog() {
-  Close()
-}
-*/
-
 // Prepares writing to the log file without actually opening it - that will
 // happen when/if it's needed
 func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) bool {

@@ -51,6 +51,9 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 	if err != "" {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		_ = m.deps_log_.Close()
+	})
 	return m
 }
 

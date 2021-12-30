@@ -570,6 +570,9 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	if d.file_path_ == "" {
 		return true
 	}
+	if d.file_ != nil {
+		panic("surprising state")
+	}
 	d.file_, _ = os.OpenFile(d.file_path_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
 	if d.file_ == nil {
 		// TODO(maruel): Make it a real error.
@@ -587,6 +590,7 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
 	offset, err := d.file_.Seek(0, os.SEEK_END)
+
 	if err != nil {
 		// TODO(maruel): Make it a real error.
 		return false

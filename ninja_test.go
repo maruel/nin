@@ -56,7 +56,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 	if !parser.ParseTest(input, &err) {
 		s.t.Fatal(err)
 	}
-	if "" != err {
+	if err != "" {
 		s.t.Fatal(err)
 	}
 	VerifyGraph(s.t, state)

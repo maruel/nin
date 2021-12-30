@@ -727,6 +727,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, log_path, deps_path stri
 	var pbuild_log *BuildLog
 	if log_path != "" {
 		build_log := NewBuildLog()
+		defer build_log.Close()
 		if s := build_log.Load(log_path, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
 			b.t.Fatalf("%s = %d: %s", log_path, s, err)
 		}
@@ -742,6 +743,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, log_path, deps_path stri
 	var pdeps_log *DepsLog
 	if deps_path != "" {
 		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if s := deps_log.Load(deps_path, pstate, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
 			b.t.Fatalf("%s = %d: %s", deps_path, s, err)
 		}
@@ -2944,7 +2946,7 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 		log_:          NewDepsLog(),
 	}
 	t.Cleanup(func() {
-		b.log_.Close()
+		_ = b.log_.Close()
 	})
 	CreateTempDirAndEnter(t)
 	err := ""
@@ -3270,7 +3272,8 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		// Run the build once, everything should be ok.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3314,7 +3317,8 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		b.fs_.Create("in2", "")
 
 		// Run the build again.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3367,7 +3371,8 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		// Run the build once, everything should be ok.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3390,7 +3395,6 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		deps_log.Close()
 		builder.command_runner_ = nil
 	}
 
@@ -3410,7 +3414,8 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		b.AddCatRule(&state)
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3521,7 +3526,8 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		// Run the build once, everything should be ok.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3559,7 +3565,8 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		b.fs_.Create("header.in", "")
 
 		// Run the build again.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3605,7 +3612,8 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		// Run the build once, everything should be ok.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3637,7 +3645,8 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		state := NewState()
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3695,7 +3704,8 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 		state := NewState()
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3730,7 +3740,8 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 		state := NewState()
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3767,7 +3778,8 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 		state := NewState()
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -3807,7 +3819,8 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		// Run the build once, everything should be ok.
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if !deps_log.OpenForWrite("ninja_deps", &err) {
 			t.Fatal("expected true")
 		}
@@ -3840,7 +3853,8 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		state := NewState()
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
-		var deps_log DepsLog
+		deps_log := NewDepsLog()
+		defer deps_log.Close()
 		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}

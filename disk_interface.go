@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -66,7 +67,6 @@ type DiskInterface interface {
 
 // Implementation of DiskInterface that actually hits the disk.
 type RealDiskInterface struct {
-
 	// Whether stat information can be cached.
 	use_cache_ bool
 
@@ -237,46 +237,50 @@ func MakeDirs(d DiskInterface, path string) bool {
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 	defer METRIC_RECORD("node stat")()
-	// MSDN: "Naming Files, Paths, and Namespaces"
-	// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-	const MAX_PATH = 260
-	if path != "" && path[0] != '\\' && len(path) > MAX_PATH {
-		*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, MAX_PATH)
-		return -1
-	}
-	if !r.use_cache_ {
-		return StatSingleFile(path, err)
-	}
-
-	dir := DirName(path)
-	o := 0
-	if dir != "" {
-		o = len(dir) + 1
-	}
-	base := path[o:]
-	if base == ".." {
-		// StatAllFilesInDir does not report any information for base = "..".
-		base = "."
-		dir = path
-	}
-
-	dir = strings.ToLower(dir)
-	base = strings.ToLower(base)
-
-	ci, ok := r.cache_[dir]
-	if !ok {
-		ci = DirCache{}
-		r.cache_[dir] = ci
-		s := "."
-		if dir != "" {
-			s = dir
-		}
-		if !StatAllFilesInDir(s, ci, err) {
-			delete(r.cache_, dir)
+	if runtime.GOOS == "windows" {
+		// MSDN: "Naming Files, Paths, and Namespaces"
+		// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+		const MAX_PATH = 260
+		if path != "" && path[0] != '\\' && len(path) > MAX_PATH {
+			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, MAX_PATH)
 			return -1
 		}
+		if !r.use_cache_ {
+			return StatSingleFile(path, err)
+		}
+
+		dir := DirName(path)
+		o := 0
+		if dir != "" {
+			o = len(dir) + 1
+		}
+		base := path[o:]
+		if base == ".." {
+			// StatAllFilesInDir does not report any information for base = "..".
+			base = "."
+			dir = path
+		}
+
+		dir = strings.ToLower(dir)
+		base = strings.ToLower(base)
+
+		ci, ok := r.cache_[dir]
+		if !ok {
+			ci = DirCache{}
+			r.cache_[dir] = ci
+			s := "."
+			if dir != "" {
+				s = dir
+			}
+			if !StatAllFilesInDir(s, ci, err) {
+				delete(r.cache_, dir)
+				return -1
+			}
+		}
+		return ci[base]
+	} else {
+		return StatSingleFile(path, err)
 	}
-	return ci[base]
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
@@ -363,10 +367,12 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 
 // Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
-	r.use_cache_ = allow
-	if !r.use_cache_ {
-		r.cache_ = nil
-	} else if r.cache_ == nil {
-		r.cache_ = Cache{}
+	if runtime.GOOS == "windows" {
+		r.use_cache_ = allow
+		if !r.use_cache_ {
+			r.cache_ = nil
+		} else if r.cache_ == nil {
+			r.cache_ = Cache{}
+		}
 	}
 }

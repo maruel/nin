@@ -383,4 +383,7 @@ func (s *SubprocessSetImpl) Clear() {
 }
 
 func (s *SubprocessGeneric) osSpecific(c string) {
+	s.cmd.SysProcAttr = &syscall.SysProcAttr{
+		//Setpgid: true,
+	}
 }

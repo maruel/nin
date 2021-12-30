@@ -14,7 +14,10 @@
 
 package ginja
 
-import "bytes"
+import (
+	"bytes"
+	"syscall"
+)
 
 // Subprocess wraps a single async subprocess.  It is entirely
 // passive: it expects the caller to notify it when its fds are ready
@@ -374,6 +377,9 @@ func (s *SubprocessSetImpl) Clear() {
 func (s *SubprocessGeneric) osSpecific(c string) {
 	// Ignore the parsed arguments on Windows and feed back the original string.
 	// See https://pkg.go.dev/os/exec#Command for an explanation.
-	s.cmd.SysProcAttr.CmdLine = c
+	s.cmd.SysProcAttr = &syscall.SysProcAttr{
+		//CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+		CmdLine: c,
+	}
 	s.cmd.Args = nil
 }
