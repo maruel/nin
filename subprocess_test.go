@@ -246,17 +246,17 @@ func TestSubprocessTest_Console(t *testing.T) {
 func TestSubprocessTest_SetWithSingle(t *testing.T) {
 	subprocs_ := NewSubprocessSetTest(t)
 	subproc := subprocs_.Add(testCommand(), false)
-	if nil == subproc {
+	if subproc == nil {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
 		subprocs_.DoWork()
 	}
-	if ExitSuccess != subproc.Finish() {
+	if subproc.Finish() != ExitSuccess {
 		t.Fatal("expected equal")
 	}
-	if "" == subproc.GetOutput() {
+	if subproc.GetOutput() == "" {
 		t.Fatal("expected different")
 	}
 
@@ -277,12 +277,12 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 	subprocs_ := NewSubprocessSetTest(t)
 	for i := 0; i < 3; i++ {
 		processes[i] = subprocs_.Add(commands[i], false)
-		if nil == processes[i] {
+		if processes[i] == nil {
 			t.Fatal("expected different")
 		}
 	}
 
-	if 3 != subprocs_.Running() {
+	if subprocs_.Running() != 3 {
 		t.Fatal("expected equal")
 	}
 	/* The expectations with the C++ code is different.
@@ -303,18 +303,18 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 		subprocs_.DoWork()
 	}
 
-	if 0 != subprocs_.Running() {
+	if subprocs_.Running() != 0 {
 		t.Fatal("expected equal")
 	}
-	if 3 != subprocs_.Finished() {
+	if subprocs_.Finished() != 3 {
 		t.Fatal("expected equal")
 	}
 
 	for i := 0; i < 3; i++ {
-		if ExitSuccess != processes[i].Finish() {
+		if processes[i].Finish() != ExitSuccess {
 			t.Fatal("expected equal")
 		}
-		if "" == processes[i].GetOutput() {
+		if processes[i].GetOutput() == "" {
 			t.Fatal("expected different")
 		}
 		processes[i].Close()
@@ -359,7 +359,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 		if got := procs[i].Finish(); got != ExitSuccess {
 			t.Fatal(got)
 		}
-		if "" == procs[i].GetOutput() {
+		if procs[i].GetOutput() == "" {
 			t.Fatal("expected different")
 		}
 	}
@@ -382,10 +382,10 @@ func TestSubprocessTest_ReadStdin(t *testing.T) {
 	for !subproc.Done() {
 		subprocs_.DoWork()
 	}
-	if ExitSuccess != subproc.Finish() {
+	if subproc.Finish() != ExitSuccess {
 		t.Fatal("expected equal")
 	}
-	if 1 != subprocs_.Finished() {
+	if subprocs_.Finished() != 1 {
 		t.Fatal("expected equal")
 	}
 }

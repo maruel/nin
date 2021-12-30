@@ -58,19 +58,19 @@ func TestLexer_ReadIdent(t *testing.T) {
 	if !lexer.ReadIdent(&ident) {
 		t.Fatal()
 	}
-	if "baR" != ident {
+	if ident != "baR" {
 		t.Fatal()
 	}
 	if !lexer.ReadIdent(&ident) {
 		t.Fatal()
 	}
-	if "baz_123" != ident {
+	if ident != "baz_123" {
 		t.Fatal()
 	}
 	if !lexer.ReadIdent(&ident) {
 		t.Fatal()
 	}
-	if "foo-bar" != ident {
+	if ident != "foo-bar" {
 		t.Fatal()
 	}
 }
