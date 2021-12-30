@@ -35,7 +35,11 @@ func NewSubprocessSetTest(t *testing.T) SubprocessSet {
 // Run a command that fails and emits to stderr.
 func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("cmd /c ninja_no_such_command", false)
+	cmd := "bash -c foo"
+	if runtime.GOOS == "windows" {
+		cmd = "cmd /c ninja_no_such_command"
+	}
+	subproc := subprocs_.Add(cmd, false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
@@ -53,8 +57,8 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 	if got := subproc.Finish(); got != want {
 		t.Fatal(got)
 	}
-	if got := subproc.GetOutput(); got != "" {
-		t.Fatalf("%q", got)
+	if got := subproc.GetOutput(); got == "" {
+		t.Fatal("expected error output")
 	}
 }
 
