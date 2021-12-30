@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -40,7 +41,7 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 	if 0 != disk_.Stat("nosuchfile", &err) {
 		t.Fatal(1)
 	}
-	if "" == err {
+	if "" != err {
 		t.Fatal(err)
 	}
 
@@ -49,23 +50,19 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 	if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) {
 		t.Fatal(1)
 	}
-	if "" == err {
+	if "" != err {
 		t.Fatal(err)
 	}
 
-	// On POSIX systems, the errno is different if a component of the
+	// On POSIX systems, the errno is different (ENOTDIR) if a component of the
 	// path prefix is not a directory.
 	if !Touch("notadir") {
 		t.Fatal(1)
 	}
-	want := TimeStamp(-1)
-	if runtime.GOOS == "windows" {
-		want = 0
-	}
-	if got := disk_.Stat("notadir/nosuchfile", &err); got != want {
+	if got := disk_.Stat("notadir/nosuchfile", &err); got != 0 {
 		t.Fatal(got)
 	}
-	if "" == err {
+	if "" != err {
 		t.Fatal(err)
 	}
 }
@@ -73,12 +70,12 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	err := ""
-	bad_path := "cc:\\foo"
-	want := TimeStamp(0)
+
+	bad_path := strings.Repeat("x", 512)
 	if runtime.GOOS == "windows" {
-		want = -1
+		bad_path = "cc:\\foo"
 	}
-	if got := disk_.Stat(bad_path, &err); got != want {
+	if got := disk_.Stat(bad_path, &err); got != -1 {
 		t.Fatal(got)
 	}
 	if "" == err {

@@ -15,12 +15,14 @@
 package ginja
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 )
 
 // Interface for reading files from disk.  See DiskInterface for details.
@@ -135,10 +137,12 @@ func StatSingleFile(path string, err *string) TimeStamp {
 	// This will obviously have to be optimized.
 	s, err2 := os.Stat(path)
 	if err2 != nil {
-		*err = err2.Error()
-		if os.IsNotExist(err2) {
+		// See TestDiskInterfaceTest_StatMissingFile for rationale for ENOTDIR
+		// check.
+		if os.IsNotExist(err2) || errors.Unwrap(err2) == syscall.ENOTDIR {
 			return 0
 		}
+		*err = err2.Error()
 		return -1
 	}
 	return TimeStamp(s.ModTime().UnixMicro())

@@ -144,7 +144,7 @@ const (
 
 // Print usage information.
 func Usage(config *BuildConfig) {
-	fmt.Fprintf(os.Stderr, "usage: ninja [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print ninja version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
+	fmt.Fprintf(os.Stderr, "usage: ginja [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print ginja version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
 }
 
 // Choose a default value for the -j (parallelism) flag.
@@ -243,9 +243,9 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 	} else {
 		*err = "unknown target '" + PathDecanonicalized(path, slash_bits) + "'"
 		if path == "clean" {
-			*err += ", did you mean 'ninja -t clean'?"
+			*err += ", did you mean 'ginja -t clean'?"
 		} else if path == "help" {
-			*err += ", did you mean 'ninja -h'?"
+			*err += ", did you mean 'ginja -h'?"
 		} else {
 			suggestion := n.state_.SpellcheckNode(path)
 			if suggestion != nil {
@@ -518,7 +518,7 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 
 func ToolRules(n *NinjaMain, options *Options, args []string) int {
 	// HACK: parse one additional flag.
-	//fmt.Printf("usage: ninja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n")
+	//fmt.Printf("usage: ginja -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n")
 	print_description := false
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-d" {
@@ -556,7 +556,7 @@ func ToolWinCodePage(n *NinjaMain, options *Options, args []string) int {
 	panic("TODO") // Windows only
 	/*
 		if len(args) != 0 {
-			fmt.Printf("usage: ninja -t wincodepage\n")
+			fmt.Printf("usage: ginja -t wincodepage\n")
 			return 1
 		}
 		cp := "ANSI"
@@ -597,7 +597,7 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 
 func ToolCommands(n *NinjaMain, options *Options, args []string) int {
 	// HACK: parse one additional flag.
-	//fmt.Printf("usage: ninja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n")
+	//fmt.Printf("usage: ginja -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n")
 	mode := PCM_All
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-s" {
@@ -625,7 +625,7 @@ func ToolCommands(n *NinjaMain, options *Options, args []string) int {
 
 func ToolClean(n *NinjaMain, options *Options, args []string) int {
 	// HACK: parse two additional flags.
-	// fmt.Printf("usage: ninja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
+	// fmt.Printf("usage: ginja -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
 	generator := false
 	clean_rules := false
 	for i := 0; i < len(args); i++ {
@@ -716,7 +716,7 @@ func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
 
 func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int {
 	// HACK: parse one additional flag.
-	// fmt.Printf( "usage: ninja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
+	// fmt.Printf( "usage: ginja -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
 	eval_mode := ECM_NORMAL
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-x" {
@@ -854,10 +854,10 @@ func ChooseTool(tool_name string) *Tool {
 		{"rules", "list all rules", RUN_AFTER_LOAD, ToolRules},
 		{"cleandead", "clean built files that are no longer produced by the manifest", RUN_AFTER_LOGS, ToolCleanDead},
 		{"urtle", "", RUN_AFTER_FLAGS, ToolUrtle},
-		//{"wincodepage", "print the Windows code page used by ninja", RUN_AFTER_FLAGS, ToolWinCodePage},
+		//{"wincodepage", "print the Windows code page used by ginja", RUN_AFTER_FLAGS, ToolWinCodePage},
 	}
 	if tool_name == "list" {
-		fmt.Printf("ninja subtools:\n")
+		fmt.Printf("ginja subtools:\n")
 		for _, tool := range kTools {
 			if tool.desc != "" {
 				fmt.Printf("%11s  %s\n", tool.name, tool.desc)

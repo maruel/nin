@@ -186,7 +186,8 @@ func (s *SubprocessSetGeneric) DoWork() bool {
 		p := s.running_[i]
 		// Can be nil on Windows if process startup failed.
 		if p.cmd.ProcessState == nil || p.cmd.ProcessState.Exited() {
-			o = true
+			// TODO(maruel): Figure out.
+			//o = true
 			p.done = true
 			s.finished_ = append(s.finished_, p)
 			if i < len(s.running_)-1 {
