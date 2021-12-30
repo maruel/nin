@@ -125,13 +125,11 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 		}
 		args = []string{c}
 	} else {
-		// TODO(maruel): This is very annoying to have to unquote the command here.
-		// The following is not good enough.
-		v := strings.Fields(c)
-		ex = v[0]
-		if len(v) > 1 {
-			args = v[1:]
-		}
+		// The commands being run use shell redirection. The C++ version uses
+		// system() which will use the default shell. Try hardcoding /bin/sh here
+		// to see how things go.
+		ex = "/bin/sh"
+		args = []string{"-c", c}
 	}
 
 	subproc := &SubprocessGeneric{
