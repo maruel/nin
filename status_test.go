@@ -17,7 +17,8 @@ package ginja
 import "testing"
 
 func TestStatusTest_StatusFormatElapsed(t *testing.T) {
-	status := NewStatusPrinter(&BuildConfig{})
+	cfg := NewBuildConfig()
+	status := NewStatusPrinter(&cfg)
 
 	status.BuildStarted()
 	// Before any task is done, the elapsed time must be zero.
@@ -27,7 +28,8 @@ func TestStatusTest_StatusFormatElapsed(t *testing.T) {
 }
 
 func TestStatusTest_StatusFormatReplacePlaceholder(t *testing.T) {
-	status := NewStatusPrinter(&BuildConfig{})
+	cfg := NewBuildConfig()
+	status := NewStatusPrinter(&cfg)
 
 	if "[%/s0/t0/r0/u0/f0]" != status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) {
 		t.Fatal("expected equal")

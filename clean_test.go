@@ -28,11 +28,13 @@ type CleanTest struct {
 }
 
 func NewCleanTest(t *testing.T) *CleanTest {
-	return &CleanTest{
+	c := &CleanTest{
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
 		fs_:                       NewVirtualFileSystem(),
-		config_:                   BuildConfig{verbosity: QUIET},
+		config_:                   NewBuildConfig(),
 	}
+	c.config_.verbosity = QUIET
+	return c
 }
 
 func TestCleanTest_CleanAll(t *testing.T) {

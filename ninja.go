@@ -1279,7 +1279,7 @@ func readFlags(options *Options, config *BuildConfig) int {
 func Main() {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing NinjaMain.
-	config := BuildConfig{}
+	config := NewBuildConfig()
 	options := Options{}
 
 	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
