@@ -50,7 +50,7 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 	}
 
 	// ExitFailure
-	want := -1
+	want := 127
 	if runtime.GOOS == "windows" {
 		want = 1
 	}

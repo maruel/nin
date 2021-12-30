@@ -299,7 +299,7 @@ func (s *SubprocessSetImpl) NotifyInterrupted(dwCtrlType DWORD) BOOL WINAPI {
 func (s *SubprocessSetImpl) Add(command string, use_console bool) Subprocess {
 	subprocess := NewSubprocessOS(use_console)
 	if !subprocess.Start(s, command) {
-		subprocess.Close()
+		_ = subprocess.Close()
 		return nil
 	}
 	panic("TODO")
