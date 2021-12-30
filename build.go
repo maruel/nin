@@ -623,7 +623,9 @@ func (r *RealCommandRunner) Abort() {
 
 func (r *RealCommandRunner) CanRunMore() bool {
 	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
-	return subproc_number < r.config_.parallelism && ((r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0.) || GetLoadAverage() < r.config_.max_load_average)
+	more := subproc_number < r.config_.parallelism
+	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || GetLoadAverage() < r.config_.max_load_average
+	return more && load
 }
 
 func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
@@ -638,7 +640,11 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
 	var subproc Subprocess
-	for subproc = r.subprocs_.NextFinished(); subproc == nil; subproc = r.subprocs_.NextFinished() {
+	for {
+		subproc = r.subprocs_.NextFinished()
+		if subproc != nil {
+			break
+		}
 		if r.subprocs_.DoWork() {
 			return false
 		}
