@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 // The Go runtime already handles poll under the hood so this abstraction layer
@@ -52,10 +53,18 @@ func (s *SubprocessGeneric) Done() bool {
 }
 
 func (s *SubprocessGeneric) Close() error {
+	if s.cmd.ProcessState == nil {
+		// Process didn't start on Windows.
+		return nil
+	}
 	return s.cmd.Wait()
 }
 
 func (s *SubprocessGeneric) Finish() ExitStatus {
+	if s.cmd.ProcessState == nil {
+		// Process didn't start on Windows.
+		return -1
+	}
 	_ = s.cmd.Wait()
 	return s.cmd.ProcessState.ExitCode()
 }
@@ -80,7 +89,10 @@ func (s *SubprocessSetGeneric) Clear() {
 		// TODO(maruel): This is incorrect, we want to use -pid for process group
 		// on posix.
 		if !p.use_console_ {
-			_ = p.cmd.Process.Kill()
+			// Can be nil if starting failed and was not reaped yet.
+			if p.cmd.Process != nil {
+				_ = p.cmd.Process.Kill()
+			}
 		}
 	}
 	for _, p := range s.running_ {
@@ -101,25 +113,30 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 	// TODO(maruel): That's very bad. The goal is just to get going. Ninja
 	// handles unparsed command lines but Go expects parsed command lines, so
 	// care will be needed to make it fully work.
-	shell := "bash"
-	flag := "-c"
+	ex := "bash"
+	args := []string{"-c", c}
 	if runtime.GOOS == "windows" {
-		shell = "cmd.exe"
-		flag = "/c"
+		// TODO(maruel): Quoted space.
+		i := strings.IndexByte(c, ' ')
+		if i == -1 {
+			ex = c
+		} else {
+			ex = c[:i]
+		}
+		args = []string{c}
 	}
 	subproc := &SubprocessGeneric{
 		use_console_: use_console,
-		cmd:          exec.Command(shell, flag, c),
+		cmd:          exec.Command(ex, args...),
 	}
 	// Ignore the parsed arguments on Windows and feedback the original string.
 	subproc.cmd.Stdout = &subproc.buf
 	subproc.cmd.Stderr = &subproc.buf
 	subproc.osSpecific(c)
 	if err := subproc.cmd.Start(); err != nil {
-		// TODO(maruel): Error handing
-		panic(err)
-	}
-	if subproc.cmd.ProcessState == nil {
+		// TODO(maruel): Error handing.
+		subproc.done = true
+	} else if subproc.cmd.ProcessState == nil {
 		// This generally means that something bad happened. Calling Wait() seems
 		// to initialize ProcessState.
 		_ = subproc.cmd.Wait()
@@ -158,7 +175,8 @@ func (s *SubprocessSetGeneric) DoWork() bool {
 	o := false
 	for i := 0; i < len(s.running_); i++ {
 		p := s.running_[i]
-		if p.cmd.ProcessState.Exited() {
+		// Can be nil on Windows if process startup failed.
+		if p.cmd.ProcessState == nil || p.cmd.ProcessState.Exited() {
 			o = true
 			p.done = true
 			s.finished_ = append(s.finished_, p)

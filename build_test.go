@@ -2010,6 +2010,9 @@ func NewBuildWithLogTest(t *testing.T) *BuildWithLogTest {
 		BuildTest:  NewBuildTest(t),
 		build_log_: NewBuildLog(),
 	}
+	t.Cleanup(func() {
+		b.build_log_.Close()
+	})
 	b.builder_.SetBuildLog(&b.build_log_)
 	return b
 }
@@ -3699,6 +3702,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 	b.fs_.Tick()
 
 	build_log := NewBuildLog()
+	defer build_log.Close()
 
 	{
 		state := NewState()

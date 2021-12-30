@@ -336,13 +336,13 @@ func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\nbuild .\\out2.o: cat .\\bar/baz\\..\\foo.cc\nbuild .\\out3.o: cat .\\bar\\baz\\..\\foo3.cc\n")
 
-	if p.state.LookupNode("./out.o") == nil {
+	if p.state.LookupNode("./out.o") != nil {
 		t.Fatal("expected false")
 	}
-	if p.state.LookupNode(".\\out2.o") == nil {
+	if p.state.LookupNode(".\\out2.o") != nil {
 		t.Fatal("expected false")
 	}
-	if p.state.LookupNode(".\\out3.o") == nil {
+	if p.state.LookupNode(".\\out3.o") != nil {
 		t.Fatal("expected false")
 	}
 	if p.state.LookupNode("out.o") == nil {
@@ -354,13 +354,13 @@ func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
 	if p.state.LookupNode("out3.o") == nil {
 		t.Fatal("expected true")
 	}
-	if p.state.LookupNode("./bar/baz/../foo.cc") == nil {
+	if p.state.LookupNode("./bar/baz/../foo.cc") != nil {
 		t.Fatal("expected false")
 	}
-	if p.state.LookupNode(".\\bar/baz\\..\\foo.cc") == nil {
+	if p.state.LookupNode(".\\bar/baz\\..\\foo.cc") != nil {
 		t.Fatal("expected false")
 	}
-	if p.state.LookupNode(".\\bar/baz\\..\\foo3.cc") == nil {
+	if p.state.LookupNode(".\\bar/baz\\..\\foo3.cc") != nil {
 		t.Fatal("expected false")
 	}
 	node := p.state.LookupNode("bar/foo.cc")

@@ -19,6 +19,7 @@ package ginja
 import (
 	"errors"
 	"os"
+	"syscall"
 )
 
 // Subprocess wraps a single async subprocess.  It is entirely

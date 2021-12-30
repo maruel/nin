@@ -41,6 +41,7 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
 	log1 := NewBuildLog()
+	defer log1.Close()
 	err := ""
 	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	if !log1.OpenForWrite(kTestFilename, b, &err) {
@@ -54,6 +55,7 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	log1.Close()
 
 	log2 := NewBuildLog()
+	defer log2.Close()
 	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -92,6 +94,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	kExpectedVersion := []byte("# ninja log v5\n")
 
 	log := NewBuildLog()
+	defer log.Close()
 	err := ""
 	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	if !log.OpenForWrite(kTestFilename, b, &err) {
@@ -138,6 +141,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal(err)
 	}
@@ -159,6 +163,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 
 	{
 		log1 := NewBuildLog()
+		defer log1.Close()
 		err := ""
 		if !log1.OpenForWrite(kTestFilename, b, &err) {
 			t.Fatal("expected true")
@@ -175,6 +180,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 	// crash when parsing.
 	for size := getFileSize(t, kTestFilename); size > 0; size-- {
 		log2 := NewBuildLog()
+		defer log2.Close()
 		err := ""
 		if !log2.OpenForWrite(kTestFilename, b, &err) {
 			t.Fatal("expected true")
@@ -191,10 +197,12 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		}
 
 		log3 := NewBuildLog()
+		defer log3.Close()
 		err = ""
 		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS || err != "" {
 			t.Fatal(err)
 		}
+		log3.Close()
 	}
 }
 
@@ -207,6 +215,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal(err)
 	}
@@ -225,6 +234,7 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -261,6 +271,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -331,6 +342,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	}
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -387,6 +399,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
 	err := ""
 	log := NewBuildLog()
+	defer log.Close()
 	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
 		t.Fatal("expected true")
 	}
@@ -422,6 +435,7 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 	b.AssertParse(&b.state_, "build out out.d: cat\n", ManifestParserOptions{})
 
 	log := NewBuildLog()
+	defer log.Close()
 	log.RecordCommand(b.state_.edges_[0], 21, 22, 0)
 
 	if 2 != len(log.entries()) {
@@ -475,6 +489,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 
 	{
 		log1 := NewBuildLog()
+		defer log1.Close()
 		if !log1.OpenForWrite(kTestFilename, b, &err) {
 			t.Fatal("expected true")
 		}
@@ -493,6 +508,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	// Load...
 	{
 		log2 := NewBuildLog()
+		defer log2.Close()
 		if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -518,6 +534,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	// "out2" is dead, it should've been removed.
 	{
 		log3 := NewBuildLog()
+		defer log3.Close()
 		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS {
 			t.Fatal("expected true")
 		}
@@ -533,5 +550,6 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		if log3.LookupByOutput("out2") != nil {
 			t.Fatal("expected false")
 		}
+		log3.Close()
 	}
 }
