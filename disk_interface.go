@@ -28,7 +28,8 @@ import (
 // Interface for reading files from disk.  See DiskInterface for details.
 // This base offers the minimum interface needed just to read files.
 type FileReader interface {
-	// Read and store in given string.  On success, return Okay.
+	// Read and store in given string.  On success, return Okay and injects a
+	// trailing 0 byte.
 	// On error, return another Status and fill |err|.
 	ReadFile(path string, contents *string, err *string) DiskStatus
 }
@@ -309,7 +310,13 @@ func (r *RealDiskInterface) MakeDir(path string) bool {
 func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
 	c, err2 := ioutil.ReadFile(path)
 	if err2 == nil {
-		*contents = string(c)
+		if len(c) == 0 {
+			*contents = ""
+		} else {
+			// ioutil.ReadFile() is guaranteed to have an extra byte in the slice,
+			// (ab)use it.
+			*contents = string(c[:len(c)+1])
+		}
 		return Okay
 	}
 	*err = err2.Error()

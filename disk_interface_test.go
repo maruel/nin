@@ -311,7 +311,7 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 	if Okay != disk_.ReadFile(kTestFile, &content, &err) {
 		t.Fatal("expected equal")
 	}
-	if kTestContent != content {
+	if content != kTestContent+"\x00" {
 		t.Fatal("expected equal")
 	}
 	if "" != err {

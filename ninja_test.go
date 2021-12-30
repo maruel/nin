@@ -53,7 +53,9 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
 	parser := NewManifestParser(state, nil, opts)
 	err := ""
-	if !parser.ParseTest(input, &err) {
+	// In unit tests, inject the terminating 0 byte. In real code, it is injected
+	// by RealDiskInterface.ReadFile.
+	if !parser.ParseTest(input+"\x00", &err) {
 		s.t.Fatal(err)
 	}
 	if err != "" {
@@ -180,7 +182,11 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 	v.files_read_ = append(v.files_read_, path)
 	i, ok := v.files_[path]
 	if ok {
-		*contents = i.contents
+		if len(i.contents) == 0 {
+			*contents = ""
+		} else {
+			*contents = i.contents + "\x00"
+		}
 		return Okay
 	}
 	*err = "No such file or directory"

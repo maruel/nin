@@ -46,7 +46,7 @@ type ManifestParser struct {
 // Parse a text string of input.  Used by tests.
 func (m *ManifestParser) ParseTest(input string, err *string) bool {
 	m.quiet_ = true
-	return m.Parse("input", input, err)
+	return m.Parse("input", input+"\x00", err)
 }
 
 func NewManifestParser(state *State, file_reader FileReader, options ManifestParserOptions) *ManifestParser {

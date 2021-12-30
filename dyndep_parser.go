@@ -23,7 +23,7 @@ type DyndepParser struct {
 
 // Parse a text string of input.  Used by tests.
 func (d *DyndepParser) ParseTest(input string, err *string) bool {
-	return d.Parse("input", input, err)
+	return d.Parse("input", input+"\x00", err)
 }
 
 func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFile) *DyndepParser {

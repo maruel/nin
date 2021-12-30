@@ -104,19 +104,20 @@ func (l *Lexer) Error(message string, err *string) bool {
 	return false
 }
 
+// NewLexer is only used in tests.
 func NewLexer(input string) Lexer {
 	l := Lexer{}
-	l.Start("input", input)
+	l.Start("input", input+"\x00")
 	return l
 }
 
 // Start parsing some input.
 func (l *Lexer) Start(filename, input string) {
 	l.filename_ = filename
-	// TODO(maruel): Figure out a way to not need this, since this is fairly
-	// expensive. This requires a change to the re2c flags documented at
-	// https://re2c.org/manual/manual_go.html
-	l.input_ = input + "\u0000"
+	if !strings.HasSuffix(input, "\x00") {
+		panic("Requires hack with a trailing 0 byte")
+	}
+	l.input_ = input
 	l.ofs_ = 0
 	l.last_token_ = -1
 }
