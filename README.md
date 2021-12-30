@@ -65,3 +65,18 @@ and more details.
 ```
 go install github.com/maruel/nin/cmd/nin@latest
 ```
+
+## Profiling
+
+Run:
+
+```
+nin -cpuprofile cpu.prof -memprofile mem.prof
+go tool pprof -http :8010 cpu.prof
+go tool pprof -http :8010 mem.prof
+```
+
+Visit http://localhost:8010/ui/flamegraph?si=cpu for CPU profile or
+http://localhost:8010/ui/flamegraph?si=alloc_objects for memory.
+
+Use `-http 0.0.0.0:8010` to be remotely accessible.

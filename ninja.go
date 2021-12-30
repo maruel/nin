@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(maruel): Move to cmd/nin/main.go once the package is importable.
+
 package nin
 
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
+	"runtime/pprof"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,6 +46,9 @@ type Options struct {
 
 	// Whether phony cycles should warn or print an error.
 	phony_cycle_should_err bool
+
+	cpuprofile string
+	memprofile string
 }
 
 // The Ninja main() loads up a series of data structures; various tools need
@@ -815,26 +824,6 @@ func ToolRestat(n *NinjaMain, options *Options, args []string) int {
 	return ExitSuccess
 }
 
-func ToolUrtle(n *NinjaMain, options *Options, args []string) int {
-	panic("TODO")
-	/*
-		  // RLE encoded.
-			urtle := " 13 ,3;2!2;\n8 ,;<11!;\n5 `'<10!(2`'2!\n11 ,6;, `\\. `\\9 .,c13$ec,.\n6 ,2;11!>; `. ,;!2> .e8$2\".2 \"?7$e.\n <:<8!'` 2.3,.2` ,3!' ;,(?7\";2!2'<; `?6$PF ,;,\n2 `'4!8;<!3'`2 3! ;,`'2`2'3!;4!`2.`!;2 3,2 .<!2'`).\n5 3`5'2`9 `!2 `4!><3;5! J2$b,`!>;2!:2!`,d?b`!>\n26 `'-;,(<9!> $F3 )3.:!.2 d\"2 ) !>\n30 7`2'<3!- \"=-='5 .2 `2-=\",!>\n25 .ze9$er2 .,cd16$bc.'\n22 .e14$,26$.\n21 z45$c .\n20 J50$c\n20 14$P\"`?34$b\n20 14$ dbc `2\"?22$?7$c\n20 ?18$c.6 4\"8?4\" c8$P\n9 .2,.8 \"20$c.3 ._14 J9$\n .2,2c9$bec,.2 `?21$c.3`4%,3%,3 c8$P\"\n22$c2 2\"?21$bc2,.2` .2,c7$P2\",cb\n23$b bc,.2\"2?14$2F2\"5?2\",J5$P\" ,zd3$\n24$ ?$3?%3 `2\"2?12$bcucd3$P3\"2 2=7$\n23$P\" ,3;<5!>2;,. `4\"6?2\"2 ,9;, `\"?2$\n"
-		  count := 0
-		  for p := urtle; *p; p++ {
-		    if '0' <= *p && *p <= '9' {
-		      count = count*10 + *p - '0'
-		    } else {
-		      for i := 0; i < max(count, 1); i++ {
-		        fmt.Printf("%c", *p)
-		      }
-		      count = 0
-		    }
-		  }
-		  return 0
-	*/
-}
-
 // Find the function to execute for \a tool_name and return it via \a func.
 // Returns a Tool, or NULL if Ninja should exit.
 func ChooseTool(tool_name string) *Tool {
@@ -853,7 +842,6 @@ func ChooseTool(tool_name string) *Tool {
 		{"restat", "restats all outputs in the build log", RUN_AFTER_FLAGS, ToolRestat},
 		{"rules", "list all rules", RUN_AFTER_LOAD, ToolRules},
 		{"cleandead", "clean built files that are no longer produced by the manifest", RUN_AFTER_LOGS, ToolCleanDead},
-		{"urtle", "", RUN_AFTER_FLAGS, ToolUrtle},
 		//{"wincodepage", "print the Windows code page used by nin", RUN_AFTER_FLAGS, ToolWinCodePage},
 	}
 	if tool_name == "list" {
@@ -1131,6 +1119,8 @@ func readFlags(options *Options, config *BuildConfig) int {
 	flag.StringVar(&options.input_file, "f", "build.ninja", "")
 	flag.StringVar(&options.working_dir, "C", "", "")
 	options.dupe_edges_should_err = true
+	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "")
+	flag.StringVar(&options.memprofile, "memprofile", "", "")
 
 	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "")
 	flag.IntVar(&config.failures_allowed, "k", 1, "")
@@ -1276,7 +1266,7 @@ func readFlags(options *Options, config *BuildConfig) int {
 	return -1
 }
 
-func Main() {
+func Main() int {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing NinjaMain.
 	config := NewBuildConfig()
@@ -1286,8 +1276,44 @@ func Main() {
 	ninja_command := os.Args[0]
 	exit_code := readFlags(&options, &config)
 	if exit_code >= 0 {
-		os.Exit(exit_code)
+		return exit_code
 	}
+	// TODO(maruel): Handle os.Interrupt and cancel the context cleanly.
+
+	// Disable GC (TODO: unless running a stateful server).
+	debug.SetGCPercent(-1)
+
+	if options.cpuprofile != "" {
+		f, err := os.Create(options.cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close()
+		// TODO(maruel): It's not providing good trace at the moment.
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	if options.memprofile != "" {
+		// Take all memory allocation. This significantly slows down the process.
+		runtime.MemProfileRate = 1
+		defer func() {
+			f, err := os.Create(options.memprofile)
+			if err != nil {
+				log.Fatal("could not create memory profile: ", err)
+			}
+			defer f.Close()
+			if err := pprof.Lookup("heap").WriteTo(f, 0); err != nil {
+				log.Fatal("could not write memory profile: ", err)
+			}
+		}()
+	} else {
+		// No need.
+		runtime.MemProfileRate = 0
+	}
+
 	args := flag.Args()
 
 	status := NewStatusPrinter(&config)
@@ -1309,7 +1335,7 @@ func Main() {
 		// None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
 		// by other tools.
 		ninja := NewNinjaMain(ninja_command, &config)
-		os.Exit(options.tool.tool(&ninja, &options, args))
+		return options.tool.tool(&ninja, &options, args)
 	}
 
 	// TODO(maruel): Let's wrap stdout/stderr with our own buffer?
@@ -1341,23 +1367,23 @@ func Main() {
 		err := ""
 		if !parser.Load(options.input_file, &err, nil) {
 			status.Error("%s", err)
-			os.Exit(1)
+			return 1
 		}
 
 		if options.tool != nil && options.tool.when == RUN_AFTER_LOAD {
-			os.Exit(options.tool.tool(&ninja, &options, args))
+			return options.tool.tool(&ninja, &options, args)
 		}
 
 		if !ninja.EnsureBuildDirExists() {
-			os.Exit(1)
+			return 1
 		}
 
 		if !ninja.OpenBuildLog(false) || !ninja.OpenDepsLog(false) {
-			os.Exit(1)
+			return 1
 		}
 
 		if options.tool != nil && options.tool.when == RUN_AFTER_LOGS {
-			os.Exit(options.tool.tool(&ninja, &options, args))
+			return options.tool.tool(&ninja, &options, args)
 		}
 
 		// Attempt to rebuild the manifest before building anything else
@@ -1365,22 +1391,22 @@ func Main() {
 			// In dry_run mode the regeneration will succeed without changing the
 			// manifest forever. Better to return immediately.
 			if config.dry_run {
-				os.Exit(0)
+				return 0
 			}
 			// Start the build over with the new manifest.
 			continue
 		} else if len(err) != 0 {
 			status.Error("rebuilding '%s': %s", options.input_file, err)
-			os.Exit(1)
+			return 1
 		}
 
 		result := ninja.RunBuild(args, status)
 		if g_metrics != nil {
 			ninja.DumpMetrics()
 		}
-		os.Exit(result)
+		return result
 	}
 
 	status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
-	os.Exit(1)
+	return 1
 }

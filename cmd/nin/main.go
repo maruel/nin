@@ -14,8 +14,12 @@
 
 package main
 
-import "github.com/maruel/nin"
+import (
+	"os"
+
+	"github.com/maruel/nin"
+)
 
 func main() {
-	nin.Main()
+	os.Exit(nin.Main())
 }
