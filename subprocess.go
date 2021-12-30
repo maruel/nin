@@ -113,10 +113,10 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 	// TODO(maruel): That's very bad. The goal is just to get going. Ninja
 	// handles unparsed command lines but Go expects parsed command lines, so
 	// care will be needed to make it fully work.
-	ex := "bash"
-	args := []string{"-c", c}
+	ex := ""
+	var args []string
 	if runtime.GOOS == "windows" {
-		// TODO(maruel): Quoted space.
+		// TODO(maruel): Handle quoted space.
 		i := strings.IndexByte(c, ' ')
 		if i == -1 {
 			ex = c
@@ -124,7 +124,16 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 			ex = c[:i]
 		}
 		args = []string{c}
+	} else {
+		// TODO(maruel): This is very annoying to have to unquote the command here.
+		// The following is not good enough.
+		v := strings.Fields(c)
+		ex = v[0]
+		if len(v) > 1 {
+			args = v[1:]
+		}
 	}
+
 	subproc := &SubprocessGeneric{
 		use_console_: use_console,
 		cmd:          exec.Command(ex, args...),

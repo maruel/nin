@@ -58,7 +58,11 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 	if !Touch("notadir") {
 		t.Fatal(1)
 	}
-	if got := disk_.Stat("notadir/nosuchfile", &err); got != 0 {
+	want := TimeStamp(-1)
+	if runtime.GOOS == "windows" {
+		want = 0
+	}
+	if got := disk_.Stat("notadir/nosuchfile", &err); got != want {
 		t.Fatal(got)
 	}
 	if "" == err {
@@ -70,7 +74,11 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	err := ""
 	bad_path := "cc:\\foo"
-	if got := disk_.Stat(bad_path, &err); got != -1 {
+	want := TimeStamp(0)
+	if runtime.GOOS == "windows" {
+		want = -1
+	}
+	if got := disk_.Stat(bad_path, &err); got != want {
 		t.Fatal(got)
 	}
 	if "" == err {

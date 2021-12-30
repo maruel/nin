@@ -46,12 +46,15 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 	}
 
 	// ExitFailure
-	// Returns 127 on posix and 1 on Windows.
-	if got := subproc.Finish(); got != 127 && got != 1 {
+	want := -1
+	if runtime.GOOS == "windows" {
+		want = 1
+	}
+	if got := subproc.Finish(); got != want {
 		t.Fatal(got)
 	}
-	if "" == subproc.GetOutput() {
-		t.Fatal("expected different")
+	if got := subproc.GetOutput(); got != "" {
+		t.Fatalf("%q", got)
 	}
 }
 
@@ -70,7 +73,7 @@ func TestSubprocessTest_NoSuchCommand(t *testing.T) {
 
 	// ExitFailure
 	// 127 on posix, -1 on Windows.
-	if got := subproc.Finish(); got != 127 && got != -1 {
+	if got := subproc.Finish(); got != -1 {
 		t.Fatal(got)
 	}
 	if got := subproc.GetOutput(); got != "" {
