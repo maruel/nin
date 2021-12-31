@@ -69,27 +69,22 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	// single pass.
 	// WARNING: this function is performance-critical; please benchmark
 	// any changes you make to it.
-	len2 := len(path)
-	if len2 == 0 {
+	l := len(path)
+	if l == 0 {
 		return path
 	}
-	const kMaxPathComponents = 60
-	var components [kMaxPathComponents]int
-	component_count := 0
 
-	// TODO(maruel): Optimize once the rest kinda works.
-	p := make([]byte, len(path)+1)
+	p := make([]byte, l+1)
 	copy(p, path)
-	//p := []byte(path + "\x00")
-	start := 0
+	// Tell the compiler that l is safe for p.
+	_ = p[l]
 	dst := 0
 	src := 0
-	end := 0 + len2
 
 	if IsPathSeparator(p[src]) {
 		if runtime.GOOS == "windows" {
 			// network path starts with //
-			if len2 > 1 && IsPathSeparator(p[src+1]) {
+			if l > 1 && IsPathSeparator(p[src+1]) {
 				src += 2
 				dst += 2
 			} else {
@@ -102,13 +97,14 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 		}
 	}
 
-	for src < end {
+	var components [60]int
+	for component_count := 0; src < l; {
 		if p[src] == '.' {
-			if src+1 == end || IsPathSeparator(p[src+1]) {
+			if src+1 == l || IsPathSeparator(p[src+1]) {
 				// '.' component; eliminate.
 				src += 2
 				continue
-			} else if p[src+1] == '.' && (src+2 == end || IsPathSeparator(p[src+2])) {
+			} else if p[src+1] == '.' && (src+2 == l || IsPathSeparator(p[src+2])) {
 				// '..' component.  Back up if possible.
 				if component_count > 0 {
 					dst = components[component_count-1]
@@ -130,13 +126,13 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 			continue
 		}
 
-		if component_count == kMaxPathComponents {
+		if component_count == len(components) {
 			Fatal("path has too many components : %s", path)
 		}
 		components[component_count] = dst
 		component_count++
 
-		for src != end && !IsPathSeparator(p[src]) {
+		for src != l && !IsPathSeparator(p[src]) {
 			p[dst] = p[src]
 			dst++
 			src++
@@ -147,32 +143,25 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 		src++
 	}
 
-	if dst == start {
+	if dst == 0 {
 		p[dst] = '.'
-		p[dst+1] = '\x00'
 		dst += 2
 	}
-
-	len2 = dst - start - 1
-	p = p[:len2]
+	p = p[:dst-1]
 	if runtime.GOOS == "windows" {
 		bits := uint64(0)
 		bits_mask := uint64(1)
-
-		for c := start; c < start+len2; c++ {
-			switch p[c] {
+		for i, c := range p {
+			switch c {
 			case '\\':
 				bits |= bits_mask
-				p[c] = '/'
+				p[i] = '/'
 				fallthrough
 			case '/':
 				bits_mask <<= 1
 			}
 		}
-
 		*slash_bits = bits
-	} else {
-		*slash_bits = 0
 	}
 	return unsafeString(p)
 }
