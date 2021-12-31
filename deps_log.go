@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -64,6 +65,7 @@ import (
 type DepsLog struct {
 	needs_recompaction_ bool
 	file_               *os.File
+	buf                 *bufio.Writer
 	file_path_          string
 
 	// Maps id -> Node.
@@ -120,8 +122,9 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 	if d.file_ != nil {
 		panic("M-A")
 	}
-	d.file_path_ = path // we don't actually open the file right now, but will do
+	// we don't actually open the file right now, but will do
 	// so on the first write attempt
+	d.file_path_ = path
 	return true
 }
 
@@ -178,25 +181,23 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	}
 	size |= 0x80000000 // Deps record: set high bit.
 
-	if err := binary.Write(d.file_, binary.LittleEndian, size); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, size); err != nil {
 		return false
 	}
-	if err := binary.Write(d.file_, binary.LittleEndian, uint32(node.id())); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, uint32(node.id())); err != nil {
 		return false
 	}
-	if err := binary.Write(d.file_, binary.LittleEndian, mtime); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, mtime); err != nil {
 		return false
 	}
 	for i := 0; i < node_count; i++ {
-		if err := binary.Write(d.file_, binary.LittleEndian, uint32(nodes[i].id())); err != nil {
+		if err := binary.Write(d.buf, binary.LittleEndian, uint32(nodes[i].id())); err != nil {
 			return false
 		}
 	}
-	/* TODO: Evaluate the performance impact.
-	if err := d.file_.Sync(); err != nil {
+	if err := d.buf.Flush(); err != nil {
 		return false
 	}
-	*/
 
 	// Update in-memory representation.
 	deps := NewDeps(mtime, node_count)
@@ -209,12 +210,21 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 }
 
 func (d *DepsLog) Close() error {
-	d.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
+	// create the file even if nothing has been recorded
+	// TODO(maruel): Error handling.
+	d.OpenForWriteIfNeeded()
+	var err error
 	if d.file_ != nil {
-		_ = d.file_.Close()
+		if err2 := d.buf.Flush(); err2 != nil {
+			err = err2
+		}
+		if err2 := d.file_.Close(); err2 != nil {
+			err = err2
+		}
 	}
+	d.buf = nil
 	d.file_ = nil
-	return nil
+	return err
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
@@ -530,11 +540,11 @@ func (d *DepsLog) RecordId(node *Node) bool {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
-	if err := binary.Write(d.file_, binary.LittleEndian, size); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, size); err != nil {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
-	if _, err := d.file_.Write([]byte(node.path())); err != nil {
+	if _, err := d.buf.WriteString(node.path()); err != nil {
 		if node.path() == "" {
 			panic("M-A")
 		}
@@ -542,22 +552,20 @@ func (d *DepsLog) RecordId(node *Node) bool {
 		return false
 	}
 	if padding != 0 {
-		if _, err := d.file_.Write(make([]byte, padding)); err != nil {
+		if _, err := d.buf.Write(make([]byte, padding)); err != nil {
 			// TODO(maruel): Make it a real error.
 			return false
 		}
 	}
 	id := len(d.nodes_)
 	checksum := ^uint32(id)
-	if err := binary.Write(d.file_, binary.LittleEndian, checksum); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, checksum); err != nil {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
-	/* TODO: Evaluate the performance impact.
-	if err := d.file_.Sync(); err != nil {
+	if err := d.buf.Flush(); err != nil {
 		return false
 	}
-	*/
 	node.set_id(id)
 	d.nodes_ = append(d.nodes_, node)
 
@@ -578,14 +586,10 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
-	/* TODO
 	// Set the buffer size to this and flush the file buffer after every record
 	// to make sure records aren't written partially.
-	if setvbuf(d.file_, nil, _IOFBF, kMaxRecordSize+1) != 0 {
-		return false
-	}
-	SetCloseOnExec(fileno(d.file_))
-	*/
+	d.buf = bufio.NewWriterSize(d.file_, kMaxRecordSize+1)
+	//SetCloseOnExec(fileno(d.file_))
 
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
@@ -597,16 +601,16 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	}
 
 	if offset == 0 {
-		if _, err := d.file_.Write(DepsLogFileSignature); err != nil {
+		if _, err := d.buf.Write(DepsLogFileSignature); err != nil {
 			// TODO(maruel): Return the real error.
 			return false
 		}
-		if err := binary.Write(d.file_, binary.LittleEndian, DepsLogCurrentVersion); err != nil {
+		if err := binary.Write(d.buf, binary.LittleEndian, DepsLogCurrentVersion); err != nil {
 			// TODO(maruel): Return the real error.
 			return false
 		}
 	}
-	if err := d.file_.Sync(); err != nil {
+	if err := d.buf.Flush(); err != nil {
 		return false
 	}
 	d.file_path_ = ""
