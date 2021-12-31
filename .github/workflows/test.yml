@@ -159,15 +159,15 @@ jobs:
 
       # The following checks are not dependent on the OS or go build tags. Only
       # run them on ubuntu-latest since it's the fastest one.
-    - name: 'Check: no executable was committed (ubuntu)'
-      if: always() && matrix.os == 'ubuntu-latest'
-      # Ignore python files since a lot of the support scripts are in python.
-      # May change later if we get rid of them.
-      run: |
-        if find . -path '*.py' -prune -o -path '*.sh' -prune -o -path ./.git -prune -o -type f -executable -print | grep -e . ; then
-          echo 'Do not commit executables beside shell scripts'
-          false
-        fi
+#    - name: 'Check: no executable was committed (ubuntu)'
+#      if: always() && matrix.os == 'ubuntu-latest'
+#      # Ignore python files since a lot of the support scripts are in python.
+#      # May change later if we get rid of them.
+#      run: |
+#        if find . -path '*.py' -prune -o -path '*.sh' -prune -o -path ./.git -prune -o -type f -executable -print | grep -e . ; then
+#          echo 'Do not commit executables beside shell scripts'
+#          false
+#        fi
     - name: 'Check: gofmt; code is well formatted (ubuntu)'
       if: always() && matrix.os == 'ubuntu-latest'
       run: |
