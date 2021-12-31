@@ -1045,6 +1045,19 @@ func TestParserTest_OrderOnly(t *testing.T) {
 	}
 }
 
+func TestParserTest_Validations(t *testing.T) {
+	p := NewParserTest(t)
+	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar |@ baz\n")
+
+	edge := p.state.LookupNode("foo").in_edge()
+	if len(edge.validations_) != 1 {
+		t.Fatal(edge.validations_)
+	}
+	if edge.validations_[0].path() != "baz" {
+		t.Fatal(edge.validations_[0].path())
+	}
+}
+
 func TestParserTest_ImplicitOutput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo | imp: cat bar\n")

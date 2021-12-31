@@ -1130,6 +1130,32 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 	}
 }
 
+func TestGraphTest_Validation(t *testing.T) {
+	g := NewGraphTest(t)
+	g.AssertParse(&g.state_, "build out: cat in |@ validate\nbuild validate: cat in\n", ManifestParserOptions{})
+
+	g.fs_.Create("in", "")
+	err := ""
+	var validation_nodes []*Node
+	if !g.scan_.RecomputeDirty(g.GetNode("out"), &validation_nodes, &err) {
+		t.Fatal("expected success")
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+
+	if len(validation_nodes) != 1 || validation_nodes[0].path() != "validate" {
+		t.Fatal(validation_nodes)
+	}
+
+	if !g.GetNode("out").dirty() {
+		t.Fatal("expected dirty")
+	}
+	if !g.GetNode("validate").dirty() {
+		t.Fatal("expected dirty")
+	}
+}
+
 // Check that phony's dependencies' mtimes are propagated.
 func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	g := NewGraphTest(t)

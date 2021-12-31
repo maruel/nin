@@ -1235,6 +1235,19 @@ func TestBuildTest_MissingTarget(t *testing.T) {
 	}
 }
 
+func TestBuildTest_MissingInputTarget(t *testing.T) {
+	b := NewBuildTest(t)
+	// Target is a missing input file
+	err := ""
+	b.Dirty("in1")
+	if b.builder_.AddTargetName("in1", &err) != nil {
+		t.Fatal("unexpected success")
+	}
+	if err != "'in1' missing and no known rule to make it" {
+		t.Fatal(err)
+	}
+}
+
 func TestBuildTest_MakeDirs(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
@@ -4315,6 +4328,60 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 	}
 }
 
+func TestBuildTest_DyndepBuildDiscoverNewInputWithValidation(t *testing.T) {
+	b := NewBuildTest(t)
+	// Verify that a dyndep file cannot contain the |@ validation
+	// syntax.
+	b.AssertParse(&b.state_, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep |@ validation\n")
+
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal("expected success")
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+
+	if b.builder_.Build(&err) {
+		t.Fatal("expected failure")
+	}
+
+	err_first_line := strings.SplitN(err, "\n", 2)[0]
+	if "dd:2: expected newline, got '|@'" != err_first_line {
+		t.Fatal(err_first_line)
+	}
+}
+
+func TestBuildTest_DyndepBuildDiscoverNewInputWithTransitiveValidation(t *testing.T) {
+	b := NewBuildTest(t)
+	// Verify that a dyndep file can be built and loaded to discover
+	// a new input to an edge that has a validation edge.
+	b.AssertParse(&b.state_, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild in: touch |@ validation\nbuild validation: touch in out\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.fs_.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep | in\n")
+	b.fs_.Tick()
+	b.fs_.Create("out", "")
+
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil {
+		t.Fatal(err)
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) {
+		t.Fatal(err)
+	}
+	if err != "" {
+		t.Fatal(err)
+	}
+	want_commands := []string{"cp dd-in dd", "touch in", "touch out", "touch validation"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
 func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
@@ -4741,5 +4808,287 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 	want_commands := []string{"cp dd1-in dd1", "cp dd0-in dd0", "touch in", "touch tmp", "touch out"}
 	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
 		t.Fatal(diff)
+	}
+}
+
+func TestBuildTest_Validation(t *testing.T) {
+	b := NewBuildTest(t)
+	b.AssertParse(&b.state_, "build out: cat in |@ validate\nbuild validate: cat in2\n", ManifestParserOptions{})
+
+	b.fs_.Create("in", "")
+	b.fs_.Create("in2", "")
+
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	if len(b.command_runner_.commands_ran_) != 2 {
+		t.Fatal("size")
+	}
+
+	// Test touching "in" only rebuilds "out" ("validate" doesn't depend on
+	// "out").
+	b.fs_.Tick()
+	b.fs_.Create("in", "")
+
+	err = ""
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	want_commands := []string{"cat in > out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+
+	// Test touching "in2" only rebuilds "validate" ("out" doesn't depend on
+	// "validate").
+	b.fs_.Tick()
+	b.fs_.Create("in2", "")
+
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	want_commands = []string{"cat in2 > validate"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
+	b := NewBuildTest(t)
+	b.AssertParse(&b.state_, "build out: cat in |@ validate\nbuild validate: cat in2 | out\n", ManifestParserOptions{})
+
+	b.fs_.Create("in", "")
+	b.fs_.Create("in2", "")
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	if len(b.command_runner_.commands_ran_) != 2 {
+		t.Fatal(b.command_runner_.commands_ran_)
+	}
+
+	// Test touching "in" rebuilds "out" and "validate".
+	b.fs_.Tick()
+	b.fs_.Create("in", "")
+
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	if len(b.command_runner_.commands_ran_) != 2 {
+		t.Fatal(b.command_runner_.commands_ran_)
+	}
+
+	// Test touching "in2" only rebuilds "validate" ("out" doesn't depend on
+	// "validate").
+	b.fs_.Tick()
+	b.fs_.Create("in2", "")
+
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	want_commands := []string{"cat in2 > validate"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
+	b := NewBuildTest(t)
+	manifest := "build out: cat in |@ validate\nbuild validate: cat in2 | out\nbuild out2: cat in3\n  deps = gcc\n  depfile = out2.d\n"
+
+	err := ""
+	{
+		b.fs_.Create("in", "")
+		b.fs_.Create("in2", "")
+		b.fs_.Create("in3", "")
+		b.fs_.Create("out2.d", "out: out")
+
+		state := NewState()
+		b.AddCatRule(&state)
+		b.AssertParse(&state, manifest, ManifestParserOptions{})
+
+		deps_log := NewDepsLog()
+		if !deps_log.OpenForWrite("ninja_deps", &err) || err != "" {
+			t.Fatal(err)
+		}
+		defer deps_log.Close()
+
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
+		builder.command_runner_ = &b.command_runner_
+
+		if builder.AddTargetName("out2", &err) == nil || err != "" {
+			t.Fatal(err)
+		}
+
+		if !builder.Build(&err) || err != "" {
+			t.Fatal(err)
+		}
+
+		// On the first build, only the out2 command is run.
+		want_commands := []string{"cat in3 > out2"}
+		if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+			t.Fatal(diff)
+		}
+
+		// The deps file should have been removed.
+		if b.fs_.Stat("out2.d", &err) != 0 || err != "" {
+			t.Fatal(err)
+		}
+
+		deps_log.Close()
+	}
+
+	b.fs_.Tick()
+	b.command_runner_.commands_ran_ = nil
+
+	{
+		b.fs_.Create("in2", "")
+		b.fs_.Create("in3", "")
+
+		state := NewState()
+		b.AddCatRule(&state)
+		b.AssertParse(&state, manifest, ManifestParserOptions{})
+
+		deps_log := NewDepsLog()
+		if deps_log.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+			t.Fatal(err)
+		}
+		if !deps_log.OpenForWrite("ninja_deps", &err) || err != "" {
+			t.Fatal(err)
+		}
+
+		builder := NewBuilder(&state, &b.config_, nil, &deps_log, &b.fs_, b.status_, 0)
+		builder.command_runner_ = &b.command_runner_
+
+		if builder.AddTargetName("out2", &err) == nil || err != "" {
+			t.Fatal(err)
+		}
+
+		if !builder.Build(&err) || err != "" {
+			t.Fatal(err)
+		}
+
+		// The out and validate actions should have been run as well as out2.
+		if len(b.command_runner_.commands_ran_) != 3 {
+			t.Fatal(b.command_runner_.commands_ran_)
+		}
+		// out has to run first, as both out2 and validate depend on it.
+		if b.command_runner_.commands_ran_[0] != "cat in > out" {
+			t.Fatal(b.command_runner_.commands_ran_)
+		}
+
+		deps_log.Close()
+	}
+}
+
+func TestBuildTest_ValidationCircular(t *testing.T) {
+	b := NewBuildTest(t)
+	b.AssertParse(&b.state_, "build out: cat in |@ out2\nbuild out2: cat in2 |@ out\n", ManifestParserOptions{})
+	b.fs_.Create("in", "")
+	b.fs_.Create("in2", "")
+
+	err := ""
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	if len(b.command_runner_.commands_ran_) != 2 {
+		t.Fatal(b.command_runner_.commands_ran_)
+	}
+
+	// Test touching "in" rebuilds "out".
+	b.fs_.Tick()
+	b.fs_.Create("in", "")
+
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	want_commands := []string{"cat in > out"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+
+	// Test touching "in2" rebuilds "out2".
+	b.fs_.Tick()
+	b.fs_.Create("in2", "")
+
+	b.command_runner_.commands_ran_ = nil
+	b.state_.Reset()
+	if b.builder_.AddTargetName("out", &err) == nil || err != "" {
+		t.Fatal(err)
+	}
+
+	if !b.builder_.Build(&err) || err != "" {
+		t.Fatal(err)
+	}
+
+	want_commands = []string{"cat in2 > out2"}
+	if diff := cmp.Diff(want_commands, b.command_runner_.commands_ran_); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestBuildTest_ValidationWithCircularDependency(t *testing.T) {
+	b := NewBuildTest(t)
+	b.AssertParse(&b.state_, "build out: cat in |@ validate\nbuild validate: cat validate_in | out\nbuild validate_in: cat validate\n", ManifestParserOptions{})
+
+	b.fs_.Create("in", "")
+
+	err := ""
+	if b.builder_.AddTargetName("out", &err) != nil {
+		t.Fatal("expected failure")
+	}
+	if err != "dependency cycle: validate -> validate_in -> validate" {
+		t.Fatal(err)
 	}
 }

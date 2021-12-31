@@ -253,7 +253,7 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 }
 
 func (m *ManifestParser) ParseEdge(err *string) bool {
-	var ins, outs []EvalString
+	var ins, outs, validations []EvalString
 
 	{
 		var out EvalString
@@ -348,6 +348,20 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		}
 	}
 
+	// Add all validations, counting how many as we go.
+	if m.lexer_.PeekToken(PIPEAT) {
+		for {
+			var validation EvalString
+			if !m.lexer_.ReadPath(&validation, err) {
+				return false
+			}
+			if validation.empty() {
+				break
+			}
+			validations = append(validations, validation)
+		}
+	}
+
 	if !m.ExpectToken(NEWLINE, err) {
 		return false
 	}
@@ -423,6 +437,17 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 	edge.implicit_deps_ = implicit
 	edge.order_only_deps_ = order_only
+
+	//edge.validations_.reserve(validations.size());
+	for _, v := range validations {
+		path := v.Evaluate(env)
+		if path == "" {
+			return m.lexer_.Error("empty path", err)
+		}
+		var slash_bits uint64
+		path = CanonicalizePath(path, &slash_bits)
+		m.state_.AddValidation(edge, path, slash_bits)
+	}
 
 	if m.options_.phony_cycle_action_ == kPhonyCycleActionWarn && edge.maybe_phonycycle_diagnostic() {
 		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements

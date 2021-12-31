@@ -192,10 +192,8 @@ jobs:
       run: addlicense -check $(git ls-files -- "*.go")
     - name: "Check: misspelling; code doesn't contain misspelling (ubuntu)"
       if: always() && matrix.os == 'ubuntu-latest'
-      # Temporarily only check misspelling on Go code. I sent a PR to fix two
-      # typos upstream https://github.com/ninja-build/ninja/pull/2062
       run: |
-        ERR=$(misspell $(git ls-files -- "*.go"))
+        ERR=$(misspell .)
         if ! test -z "$ERR"; then
           echo "$ERR"
           echo "## ⚠ misspell Failed" >> _comments.txt

@@ -34,6 +34,7 @@ const (
 	NEWLINE
 	PIPE
 	PIPE2
+	PIPEAT
 	POOL
 	RULE
 	SUBNINJA
@@ -147,6 +148,8 @@ func TokenName(t Token) string {
 		return "'||'"
 	case PIPE:
 		return "'|'"
+	case PIPEAT:
+		return "'|@'"
 	case POOL:
 		return "'pool'"
 	case RULE:
@@ -459,8 +462,11 @@ func (l *Lexer) ReadToken() Token {
 		yy26:
 			p++
 			yych = l.input_[p]
-			if yych == '|' {
+			if yych == '@' {
 				goto yy42
+			}
+			if yych == '|' {
+				goto yy44
 			}
 			{
 				token = PIPE
@@ -503,64 +509,56 @@ func (l *Lexer) ReadToken() Token {
 			p++
 			yych = l.input_[p]
 			if yych == 'i' {
-				goto yy44
+				goto yy46
 			}
 			goto yy14
 		yy37:
 			p++
 			yych = l.input_[p]
 			if yych == 'f' {
-				goto yy45
+				goto yy47
 			}
 			goto yy14
 		yy38:
 			p++
 			yych = l.input_[p]
 			if yych == 'c' {
-				goto yy46
+				goto yy48
 			}
 			goto yy14
 		yy39:
 			p++
 			yych = l.input_[p]
 			if yych == 'o' {
-				goto yy47
+				goto yy49
 			}
 			goto yy14
 		yy40:
 			p++
 			yych = l.input_[p]
 			if yych == 'l' {
-				goto yy48
+				goto yy50
 			}
 			goto yy14
 		yy41:
 			p++
 			yych = l.input_[p]
 			if yych == 'b' {
-				goto yy49
+				goto yy51
 			}
 			goto yy14
 		yy42:
 			p++
 			{
-				token = PIPE2
+				token = PIPEAT
 				break
 			}
 		yy44:
 			p++
-			yych = l.input_[p]
-			if yych == 'l' {
-				goto yy50
+			{
+				token = PIPE2
+				break
 			}
-			goto yy14
-		yy45:
-			p++
-			yych = l.input_[p]
-			if yych == 'a' {
-				goto yy51
-			}
-			goto yy14
 		yy46:
 			p++
 			yych = l.input_[p]
@@ -571,83 +569,59 @@ func (l *Lexer) ReadToken() Token {
 		yy47:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			if yych == 'a' {
 				goto yy53
 			}
 			goto yy14
 		yy48:
 			p++
 			yych = l.input_[p]
-			if yych == 'e' {
-				goto yy55
+			if yych == 'l' {
+				goto yy54
 			}
 			goto yy14
 		yy49:
 			p++
 			yych = l.input_[p]
-			if yych == 'n' {
-				goto yy57
+			if yych == 'l' {
+				goto yy55
 			}
 			goto yy14
 		yy50:
 			p++
 			yych = l.input_[p]
-			if yych == 'd' {
-				goto yy58
+			if yych == 'e' {
+				goto yy57
 			}
 			goto yy14
 		yy51:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
-				goto yy60
+			if yych == 'n' {
+				goto yy59
 			}
 			goto yy14
 		yy52:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
-				goto yy61
+			if yych == 'd' {
+				goto yy60
 			}
 			goto yy14
 		yy53:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy54
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy54
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			if yych == 'u' {
+				goto yy62
 			}
+			goto yy14
 		yy54:
-			{
-				token = POOL
-				break
+			p++
+			yych = l.input_[p]
+			if yych == 'u' {
+				goto yy63
 			}
+			goto yy14
 		yy55:
 			p++
 			yych = l.input_[p]
@@ -683,17 +657,10 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy56:
 			{
-				token = RULE
+				token = POOL
 				break
 			}
 		yy57:
-			p++
-			yych = l.input_[p]
-			if yych == 'i' {
-				goto yy62
-			}
-			goto yy14
-		yy58:
 			p++
 			yych = l.input_[p]
 			if yych <= '@' {
@@ -703,7 +670,7 @@ func (l *Lexer) ReadToken() Token {
 					}
 				} else {
 					if yych <= '/' {
-						goto yy59
+						goto yy58
 					}
 					if yych <= '9' {
 						goto yy13
@@ -719,98 +686,105 @@ func (l *Lexer) ReadToken() Token {
 					}
 				} else {
 					if yych <= '`' {
-						goto yy59
+						goto yy58
 					}
 					if yych <= 'z' {
 						goto yy13
 					}
 				}
 			}
+		yy58:
+			{
+				token = RULE
+				break
+			}
 		yy59:
+			p++
+			yych = l.input_[p]
+			if yych == 'i' {
+				goto yy64
+			}
+			goto yy14
+		yy60:
+			p++
+			yych = l.input_[p]
+			if yych <= '@' {
+				if yych <= '.' {
+					if yych >= '-' {
+						goto yy13
+					}
+				} else {
+					if yych <= '/' {
+						goto yy61
+					}
+					if yych <= '9' {
+						goto yy13
+					}
+				}
+			} else {
+				if yych <= '_' {
+					if yych <= 'Z' {
+						goto yy13
+					}
+					if yych >= '_' {
+						goto yy13
+					}
+				} else {
+					if yych <= '`' {
+						goto yy61
+					}
+					if yych <= 'z' {
+						goto yy13
+					}
+				}
+			}
+		yy61:
 			{
 				token = BUILD
 				break
 			}
-		yy60:
-			p++
-			yych = l.input_[p]
-			if yych == 'l' {
-				goto yy63
-			}
-			goto yy14
-		yy61:
-			p++
-			yych = l.input_[p]
-			if yych == 'd' {
-				goto yy64
-			}
-			goto yy14
 		yy62:
 			p++
 			yych = l.input_[p]
-			if yych == 'n' {
+			if yych == 'l' {
 				goto yy65
 			}
 			goto yy14
 		yy63:
 			p++
 			yych = l.input_[p]
-			if yych == 't' {
+			if yych == 'd' {
 				goto yy66
 			}
 			goto yy14
 		yy64:
 			p++
 			yych = l.input_[p]
-			if yych == 'e' {
-				goto yy68
+			if yych == 'n' {
+				goto yy67
 			}
 			goto yy14
 		yy65:
 			p++
 			yych = l.input_[p]
-			if yych == 'j' {
-				goto yy70
+			if yych == 't' {
+				goto yy68
 			}
 			goto yy14
 		yy66:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy67
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy67
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			if yych == 'e' {
+				goto yy70
 			}
+			goto yy14
 		yy67:
-			{
-				token = DEFAULT
-				break
+			p++
+			yych = l.input_[p]
+			if yych == 'j' {
+				goto yy72
 			}
+			goto yy14
 		yy68:
 			p++
 			yych = l.input_[p]
@@ -846,15 +820,10 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy69:
 			{
-				token = INCLUDE
+				token = DEFAULT
 				break
 			}
 		yy70:
-			p++
-			yych = l.input_[p]
-			if yych != 'a' {
-				goto yy14
-			}
 			p++
 			yych = l.input_[p]
 			if yych <= '@' {
@@ -864,7 +833,7 @@ func (l *Lexer) ReadToken() Token {
 					}
 				} else {
 					if yych <= '/' {
-						goto yy72
+						goto yy71
 					}
 					if yych <= '9' {
 						goto yy13
@@ -880,14 +849,57 @@ func (l *Lexer) ReadToken() Token {
 					}
 				} else {
 					if yych <= '`' {
-						goto yy72
+						goto yy71
 					}
 					if yych <= 'z' {
 						goto yy13
 					}
 				}
 			}
+		yy71:
+			{
+				token = INCLUDE
+				break
+			}
 		yy72:
+			p++
+			yych = l.input_[p]
+			if yych != 'a' {
+				goto yy14
+			}
+			p++
+			yych = l.input_[p]
+			if yych <= '@' {
+				if yych <= '.' {
+					if yych >= '-' {
+						goto yy13
+					}
+				} else {
+					if yych <= '/' {
+						goto yy74
+					}
+					if yych <= '9' {
+						goto yy13
+					}
+				}
+			} else {
+				if yych <= '_' {
+					if yych <= 'Z' {
+						goto yy13
+					}
+					if yych >= '_' {
+						goto yy13
+					}
+				} else {
+					if yych <= '`' {
+						goto yy74
+					}
+					if yych <= 'z' {
+						goto yy13
+					}
+				}
+			}
+		yy74:
 			{
 				token = SUBNINJA
 				break
@@ -926,63 +938,63 @@ func (l *Lexer) EatWhitespace() {
 			yych = l.input_[p]
 			if yych <= ' ' {
 				if yych <= 0x00 {
-					goto yy75
-				}
-				if yych <= 0x1F {
 					goto yy77
 				}
-				goto yy79
+				if yych <= 0x1F {
+					goto yy79
+				}
+				goto yy81
 			} else {
 				if yych == '$' {
-					goto yy82
+					goto yy84
 				}
-				goto yy77
-			}
-		yy75:
-			p++
-			{
-				break
+				goto yy79
 			}
 		yy77:
 			p++
-		yy78:
 			{
 				break
 			}
 		yy79:
 			p++
+		yy80:
+			{
+				break
+			}
+		yy81:
+			p++
 			yych = l.input_[p]
 			if yych == ' ' {
-				goto yy79
+				goto yy81
 			}
 			{
 				continue
 			}
-		yy82:
+		yy84:
 			p++
 			q = p
 			yych = l.input_[p]
 			if yych == '\n' {
-				goto yy83
-			}
-			if yych == '\r' {
 				goto yy85
 			}
-			goto yy78
-		yy83:
+			if yych == '\r' {
+				goto yy87
+			}
+			goto yy80
+		yy85:
 			p++
 			{
 				continue
 			}
-		yy85:
+		yy87:
 			p++
 			yych = l.input_[p]
 			if yych == '\n' {
-				goto yy87
+				goto yy89
 			}
 			p = q
-			goto yy78
-		yy87:
+			goto yy80
+		yy89:
 			p++
 			{
 				continue
@@ -1006,73 +1018,73 @@ func (l *Lexer) ReadIdent(out *string) bool {
 			if yych <= '@' {
 				if yych <= '.' {
 					if yych >= '-' {
-						goto yy93
+						goto yy95
 					}
 				} else {
 					if yych <= '/' {
-						goto yy91
+						goto yy93
 					}
 					if yych <= '9' {
-						goto yy93
+						goto yy95
 					}
 				}
 			} else {
 				if yych <= '_' {
 					if yych <= 'Z' {
-						goto yy93
+						goto yy95
 					}
 					if yych >= '_' {
-						goto yy93
+						goto yy95
 					}
 				} else {
 					if yych <= '`' {
-						goto yy91
+						goto yy93
 					}
 					if yych <= 'z' {
-						goto yy93
+						goto yy95
 					}
 				}
 			}
-		yy91:
+		yy93:
 			p++
 			{
 				l.last_token_ = start
 				return false
 			}
-		yy93:
+		yy95:
 			p++
 			yych = l.input_[p]
 			if yych <= '@' {
 				if yych <= '.' {
 					if yych >= '-' {
-						goto yy93
+						goto yy95
 					}
 				} else {
 					if yych <= '/' {
-						goto yy95
+						goto yy97
 					}
 					if yych <= '9' {
-						goto yy93
+						goto yy95
 					}
 				}
 			} else {
 				if yych <= '_' {
 					if yych <= 'Z' {
-						goto yy93
+						goto yy95
 					}
 					if yych >= '_' {
-						goto yy93
+						goto yy95
 					}
 				} else {
 					if yych <= '`' {
-						goto yy95
+						goto yy97
 					}
 					if yych <= 'z' {
-						goto yy93
+						goto yy95
 					}
 				}
 			}
-		yy95:
+		yy97:
 			{
 				*out = l.input_[start:p]
 				break
@@ -1100,82 +1112,82 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 			if yych <= ' ' {
 				if yych <= '\n' {
 					if yych <= 0x00 {
-						goto yy98
+						goto yy100
 					}
 					if yych <= '\t' {
-						goto yy100
+						goto yy102
 					}
-					goto yy103
+					goto yy105
 				} else {
 					if yych == '\r' {
-						goto yy105
+						goto yy107
 					}
 					if yych <= 0x1F {
-						goto yy100
+						goto yy102
 					}
-					goto yy103
+					goto yy105
 				}
 			} else {
 				if yych <= '9' {
 					if yych == '$' {
-						goto yy107
+						goto yy109
 					}
-					goto yy100
+					goto yy102
 				} else {
 					if yych <= ':' {
-						goto yy103
+						goto yy105
 					}
 					if yych == '|' {
-						goto yy103
+						goto yy105
 					}
-					goto yy100
+					goto yy102
 				}
 			}
-		yy98:
+		yy100:
 			p++
 			{
 				l.last_token_ = start
 				return l.Error("unexpected EOF", err)
 			}
-		yy100:
+		yy102:
 			p++
 			yych = l.input_[p]
 			if yych <= ' ' {
 				if yych <= '\n' {
 					if yych <= 0x00 {
-						goto yy102
+						goto yy104
 					}
 					if yych <= '\t' {
-						goto yy100
+						goto yy102
 					}
 				} else {
 					if yych == '\r' {
-						goto yy102
+						goto yy104
 					}
 					if yych <= 0x1F {
-						goto yy100
+						goto yy102
 					}
 				}
 			} else {
 				if yych <= '9' {
 					if yych != '$' {
-						goto yy100
+						goto yy102
 					}
 				} else {
 					if yych <= ':' {
-						goto yy102
+						goto yy104
 					}
 					if yych != '|' {
-						goto yy100
+						goto yy102
 					}
 				}
 			}
-		yy102:
+		yy104:
 			{
 				eval.AddText(l.input_[start:p])
 				continue
 			}
-		yy103:
+		yy105:
 			p++
 			{
 				if path {
@@ -1189,82 +1201,82 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 					continue
 				}
 			}
-		yy105:
+		yy107:
 			p++
 			yych = l.input_[p]
 			if yych == '\n' {
-				goto yy108
+				goto yy110
 			}
 			{
 				l.last_token_ = start
 				return l.Error(l.DescribeLastError(), err)
 			}
-		yy107:
+		yy109:
 			p++
 			yych = l.input_[p]
 			if yych <= '-' {
 				if yych <= 0x1F {
 					if yych <= '\n' {
 						if yych <= '\t' {
-							goto yy110
+							goto yy112
 						}
-						goto yy112
+						goto yy114
 					} else {
 						if yych == '\r' {
-							goto yy115
+							goto yy117
 						}
-						goto yy110
+						goto yy112
 					}
 				} else {
 					if yych <= '#' {
 						if yych <= ' ' {
-							goto yy116
-						}
-						goto yy110
-					} else {
-						if yych <= '$' {
 							goto yy118
 						}
-						if yych <= ',' {
-							goto yy110
+						goto yy112
+					} else {
+						if yych <= '$' {
+							goto yy120
 						}
-						goto yy120
+						if yych <= ',' {
+							goto yy112
+						}
+						goto yy122
 					}
 				}
 			} else {
 				if yych <= 'Z' {
 					if yych <= '9' {
 						if yych <= '/' {
-							goto yy110
+							goto yy112
 						}
-						goto yy120
+						goto yy122
 					} else {
 						if yych <= ':' {
-							goto yy123
+							goto yy125
 						}
 						if yych <= '@' {
-							goto yy110
+							goto yy112
 						}
-						goto yy120
+						goto yy122
 					}
 				} else {
 					if yych <= '`' {
 						if yych == '_' {
-							goto yy120
+							goto yy122
 						}
-						goto yy110
+						goto yy112
 					} else {
 						if yych <= 'z' {
-							goto yy120
+							goto yy122
 						}
 						if yych <= '{' {
-							goto yy125
+							goto yy127
 						}
-						goto yy110
+						goto yy112
 					}
 				}
 			}
-		yy108:
+		yy110:
 			p++
 			{
 				if path {
@@ -1272,169 +1284,169 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 				}
 				break
 			}
-		yy110:
+		yy112:
 			p++
-		yy111:
+		yy113:
 			{
 				l.last_token_ = start
 				return l.Error("bad $-escape (literal $ must be written as $$)", err)
 			}
-		yy112:
+		yy114:
 			p++
 			yych = l.input_[p]
 			if yych == ' ' {
-				goto yy112
+				goto yy114
 			}
 			{
 				continue
 			}
-		yy115:
+		yy117:
 			p++
 			yych = l.input_[p]
 			if yych == '\n' {
-				goto yy126
+				goto yy128
 			}
-			goto yy111
-		yy116:
+			goto yy113
+		yy118:
 			p++
 			{
 				eval.AddText(" ")
 				continue
 			}
-		yy118:
+		yy120:
 			p++
 			{
 				eval.AddText("$")
 				continue
 			}
-		yy120:
+		yy122:
 			p++
 			yych = l.input_[p]
 			if yych <= '@' {
 				if yych <= '-' {
 					if yych >= '-' {
-						goto yy120
+						goto yy122
 					}
 				} else {
 					if yych <= '/' {
-						goto yy122
+						goto yy124
 					}
 					if yych <= '9' {
-						goto yy120
+						goto yy122
 					}
 				}
 			} else {
 				if yych <= '_' {
 					if yych <= 'Z' {
-						goto yy120
+						goto yy122
 					}
 					if yych >= '_' {
-						goto yy120
+						goto yy122
 					}
 				} else {
 					if yych <= '`' {
-						goto yy122
+						goto yy124
 					}
 					if yych <= 'z' {
-						goto yy120
+						goto yy122
 					}
 				}
 			}
-		yy122:
+		yy124:
 			{
 				eval.AddSpecial(l.input_[start+1 : p])
 				continue
 			}
-		yy123:
+		yy125:
 			p++
 			{
 				eval.AddText(":")
 				continue
 			}
-		yy125:
+		yy127:
 			p++
 			q = p
 			yych = l.input_[p]
 			if yych <= '@' {
 				if yych <= '.' {
 					if yych <= ',' {
-						goto yy111
+						goto yy113
 					}
-					goto yy129
+					goto yy131
 				} else {
 					if yych <= '/' {
-						goto yy111
+						goto yy113
 					}
 					if yych <= '9' {
-						goto yy129
+						goto yy131
 					}
-					goto yy111
+					goto yy113
 				}
 			} else {
 				if yych <= '_' {
 					if yych <= 'Z' {
-						goto yy129
+						goto yy131
 					}
 					if yych <= '^' {
-						goto yy111
+						goto yy113
 					}
-					goto yy129
+					goto yy131
 				} else {
 					if yych <= '`' {
-						goto yy111
+						goto yy113
 					}
 					if yych <= 'z' {
-						goto yy129
+						goto yy131
 					}
-					goto yy111
+					goto yy113
 				}
 			}
-		yy126:
+		yy128:
 			p++
 			yych = l.input_[p]
 			if yych == ' ' {
-				goto yy126
+				goto yy128
 			}
 			{
 				continue
 			}
-		yy129:
+		yy131:
 			p++
 			yych = l.input_[p]
 			if yych <= 'Z' {
 				if yych <= '/' {
 					if yych <= ',' {
-						goto yy131
+						goto yy133
 					}
 					if yych <= '.' {
-						goto yy129
+						goto yy131
 					}
 				} else {
 					if yych <= '9' {
-						goto yy129
+						goto yy131
 					}
 					if yych >= 'A' {
-						goto yy129
+						goto yy131
 					}
 				}
 			} else {
 				if yych <= '`' {
 					if yych == '_' {
-						goto yy129
+						goto yy131
 					}
 				} else {
 					if yych <= 'z' {
-						goto yy129
+						goto yy131
 					}
 					if yych == '}' {
-						goto yy132
+						goto yy134
 					}
 				}
 			}
-		yy131:
+		yy133:
 			p = q
-			goto yy111
-		yy132:
+			goto yy113
+		yy134:
 			p++
 			{
 				eval.AddSpecial(l.input_[start+2 : p-1])

@@ -35,6 +35,7 @@ const (
 	NEWLINE
 	PIPE
 	PIPE2
+	PIPEAT
 	POOL
 	RULE
 	SUBNINJA
@@ -148,6 +149,8 @@ func TokenName(t Token) string {
 		return "'||'"
 	case PIPE:
 		return "'|'"
+	case PIPEAT:
+		return "'|@'"
 	case POOL:
 		return "'pool'"
 	case RULE:
@@ -219,6 +222,7 @@ func (l *Lexer) ReadToken() Token {
 		    "default"  { token = DEFAULT;  break; }
 		    "="        { token = EQUALS;   break; }
 		    ":"        { token = COLON;    break; }
+				"|@"       { token = PIPEAT;   break; }
 		    "||"       { token = PIPE2;    break; }
 		    "|"        { token = PIPE;     break; }
 		    "include"  { token = INCLUDE;  break; }

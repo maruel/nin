@@ -333,11 +333,26 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 				}
 				fmt.Printf("    %s%s\n", label, edge.inputs_[in].path())
 			}
+			if len(edge.validations_) != 0 {
+				fmt.Printf("  validations:\n")
+				for _, validation := range edge.validations_ {
+					fmt.Printf("    %s\n", validation.path())
+				}
+			}
 		}
 		fmt.Printf("  outputs:\n")
 		for _, edge := range node.out_edges() {
 			for _, out := range edge.outputs_ {
-				fmt.Printf("    %s\n", (*out).path())
+				fmt.Printf("    %s\n", out.path())
+			}
+		}
+		validation_edges := node.validation_out_edges()
+		if len(validation_edges) != 0 {
+			fmt.Printf("  validation for:\n")
+			for _, edge := range validation_edges {
+				for _, out := range edge.outputs_ {
+					fmt.Printf("    %s\n", out.path())
+				}
 			}
 		}
 	}

@@ -230,6 +230,12 @@ func (s *State) AddOut(edge *Edge, path string, slash_bits uint64) bool {
 	return true
 }
 
+func (s *State) AddValidation(edge *Edge, path string, slash_bits uint64) {
+	node := s.GetNode(path, slash_bits)
+	edge.validations_ = append(edge.validations_, node)
+	node.AddValidationOutEdge(edge)
+}
+
 func (s *State) AddDefault(path string, err *string) bool {
 	node := s.LookupNode(path)
 	if node == nil {

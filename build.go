@@ -530,8 +530,19 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 	// have become wanted.
 	for n := range dependents {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
-		if !scan.RecomputeDirty(n, nil, err) {
+		var validation_nodes []*Node
+		if !scan.RecomputeDirty(n, &validation_nodes, err) {
 			return false
+		}
+
+		// Add any validation nodes found during RecomputeDirty as new top level
+		// targets.
+		for _, v := range validation_nodes {
+			if in_edge := v.in_edge(); in_edge != nil {
+				if !in_edge.outputs_ready() && !p.AddTarget(v, err) {
+					return false
+				}
+			}
 		}
 		if !n.dirty() {
 			continue
@@ -728,18 +739,26 @@ func (b *Builder) AddTargetName(name string, err *string) *Node {
 // Add a target to the build, scanning dependencies.
 // @return false on error.
 func (b *Builder) AddTarget(target *Node, err *string) bool {
-	if !b.scan_.RecomputeDirty(target, nil, err) {
+	var validation_nodes []*Node
+	if !b.scan_.RecomputeDirty(target, &validation_nodes, err) {
 		return false
 	}
 
-	if in_edge := target.in_edge(); in_edge != nil {
-		if in_edge.outputs_ready() {
-			return true // Nothing to do.
+	in_edge := target.in_edge()
+	if in_edge == nil || !in_edge.outputs_ready() {
+		if !b.plan_.AddTarget(target, err) {
+			return false
 		}
 	}
 
-	if !b.plan_.AddTarget(target, err) {
-		return false
+	// Also add any validation nodes found during RecomputeDirty as top level
+	// targets.
+	for _, n := range validation_nodes {
+		if validation_in_edge := n.in_edge(); validation_in_edge != nil {
+			if !validation_in_edge.outputs_ready() && !b.plan_.AddTarget(n, err) {
+				return false
+			}
+		}
 	}
 
 	return true

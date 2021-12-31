@@ -54,6 +54,9 @@ type Node struct {
 	// All Edges that use this Node as an input.
 	out_edges_ []*Edge
 
+	// All Edges that use this Node as a validation.
+	validation_out_edges_ []*Edge
+
 	// A dense integer id for the node, assigned and used by DepsLog.
 	id_ int
 }
@@ -141,8 +144,14 @@ func (n *Node) set_id(id int) {
 func (n *Node) out_edges() []*Edge {
 	return n.out_edges_
 }
+func (n *Node) validation_out_edges() []*Edge {
+	return n.validation_out_edges_
+}
 func (n *Node) AddOutEdge(edge *Edge) {
 	n.out_edges_ = append(n.out_edges_, edge)
+}
+func (n *Node) AddValidationOutEdge(edge *Edge) {
+	n.validation_out_edges_ = append(n.validation_out_edges_, edge)
 }
 
 type ExistenceStatus int
@@ -162,6 +171,7 @@ type Edge struct {
 	pool_                    *Pool
 	inputs_                  []*Node
 	outputs_                 []*Node
+	validations_             []*Node
 	dyndep_                  *Node
 	env_                     *BindingEnv
 	mark_                    VisitMark
@@ -380,12 +390,41 @@ func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
 	}
 }
 
-// Update the |dirty_| state of the given node by inspecting its input edge.
+// Update the |dirty_| state of the given node by transitively inspecting their
+// input edges.
 // Examine inputs, outputs, and command lines to judge whether an edge
 // needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
 // state accordingly.
+// Appends any validation nodes found to the nodes parameter.
 // Returns false on failure.
-func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string) bool {
+func (d *DependencyScan) RecomputeDirty(initial_node *Node, validation_nodes *[]*Node, err *string) bool {
+	var stack, new_validation_nodes []*Node
+	nodes := []*Node{initial_node} // dequeue
+
+	// RecomputeNodeDirty might return new validation nodes that need to be
+	// checked for dirty state, keep a queue of nodes to visit.
+	for len(nodes) != 0 {
+		node := nodes[0]
+		nodes = nodes[1:]
+
+		stack = stack[:0]
+		new_validation_nodes = new_validation_nodes[:0]
+
+		if !d.RecomputeNodeDirty(node, &stack, &new_validation_nodes, err) {
+			return false
+		}
+		nodes = append(nodes, new_validation_nodes...)
+		if len(new_validation_nodes) != 0 {
+			if validation_nodes == nil {
+				panic("validations require RecomputeDirty to be called with validation_nodes")
+			}
+			*validation_nodes = append(*validation_nodes, new_validation_nodes...)
+		}
+	}
+	return true
+}
+
+func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validation_nodes *[]*Node, err *string) bool {
 	edge := node.in_edge()
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
@@ -438,7 +477,7 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string)
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
 		if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
-			if !d.RecomputeDirty(edge.dyndep_, stack, err) {
+			if !d.RecomputeNodeDirty(edge.dyndep_, stack, validation_nodes, err) {
 				return false
 			}
 
@@ -472,11 +511,18 @@ func (d *DependencyScan) RecomputeDirty(node *Node, stack *[]*Node, err *string)
 		}
 	}
 
+	// Store any validation nodes from the edge for adding to the initial
+	// nodes.  Don't recurse into them, that would trigger the dependency
+	// cycle detector if the validation node depends on this node.
+	// RecomputeDirty will add the validation nodes to the initial nodes
+	// and recurse into them.
+	*validation_nodes = append(*validation_nodes, edge.validations_...)
+
 	// Visit all inputs; we're dirty if any of the inputs are dirty.
 	var most_recent_input *Node
 	for j, i := range edge.inputs_ {
 		// Visit this input.
-		if !d.RecomputeDirty(i, stack, err) {
+		if !d.RecomputeNodeDirty(i, stack, validation_nodes, err) {
 			return false
 		}
 
@@ -836,6 +882,12 @@ func (e *Edge) Dump(prefix string) {
 	for _, i := range e.outputs_ {
 		fmt.Printf("%s ", i.path())
 	}
+	if len(e.validations_) != 0 {
+		fmt.Printf(" validations ")
+		for _, i := range e.validations_ {
+			fmt.Printf("%s ", i.path())
+		}
+	}
 	if e.pool_ != nil {
 		if e.pool_.name() != "" {
 			fmt.Printf("(in pool '%s')", e.pool_.name())
@@ -901,6 +953,12 @@ func (n *Node) Dump(prefix string) {
 			break
 		}
 		e.Dump(" +- ")
+	}
+	if len(n.validation_out_edges()) != 0 {
+		fmt.Printf(" validation out edges:\n")
+		for _, e := range n.validation_out_edges() {
+			e.Dump(" +- ")
+		}
 	}
 }
 
