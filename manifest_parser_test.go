@@ -15,6 +15,9 @@
 package nin
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"testing"
 )
@@ -1273,5 +1276,52 @@ func TestParserTest_DyndepRuleInput(t *testing.T) {
 	}
 	if edge.dyndep_.path() != "in" {
 		t.Fatal("expected equal")
+	}
+}
+
+func writeFakeManifests(t testing.TB, dir string) {
+	if _, err := os.Stat(filepath.Join(dir, "build.ninja")); err == nil {
+		t.Logf("Creating manifest data... [SKIP]")
+		return
+	}
+	t.Logf("Creating manifest data...")
+	cmd := exec.Command("python3", filepath.Join("misc", "write_fake_manifests.py"), dir)
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func BenchmarkLoadManifest(b *testing.B) {
+	kManifestDir := filepath.Join("build", "manifest_perftest")
+	writeFakeManifests(b, kManifestDir)
+	old, err := os.Getwd()
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := os.Chdir(kManifestDir); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err2 := os.Chdir(old); err2 != nil {
+			b.Error(err2)
+		}
+	})
+	errX := ""
+	disk_interface := NewRealDiskInterface()
+	optimization_guard := 0
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		state := NewState()
+		parser := NewManifestParser(&state, &disk_interface, ManifestParserOptions{})
+		if !parser.Load("build.ninja", &errX, nil) {
+			b.Fatal("Failed to read test data: ", errX)
+		}
+		// Doing an empty build involves reading the manifest and evaluating all
+		// commands required for the requested targets. So include command
+		// evaluation in the perftest by default.
+		for _, e := range state.Edges() {
+			optimization_guard += len(e.EvaluateCommand(false))
+		}
 	}
 }
