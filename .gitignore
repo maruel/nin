@@ -1,5 +1,11 @@
 /build
+/build_log_perftest
+/build_log_perftest.exe
 /build.ninja
+/depfile_parser_perftest
+/depfile_parser_perftest.exe
+/manifest_parser_perftest
+/manifest_parser_perftest.exe
 /ninja
 /ninja.exe
 /ninja_test

@@ -102,6 +102,11 @@ jobs:
           false
         fi
 
+      # Run compare.sh.
+    - name: 'compare.sh'
+      if: always() && matrix.os == 'ubuntu-latest'
+      run: ./compare.sh
+
       # Fetch the tools.
     - name: 'go get necessary tools'
       if: always()
