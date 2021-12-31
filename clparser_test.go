@@ -59,7 +59,6 @@ func TestCLParserTest_FilterInputFilename(t *testing.T) {
 }
 
 func TestCLParserTest_ParseSimple(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
@@ -76,7 +75,6 @@ func TestCLParserTest_ParseSimple(t *testing.T) {
 }
 
 func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
@@ -89,7 +87,6 @@ func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
 }
 
 func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
@@ -102,7 +99,6 @@ func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
 }
 
 func TestCLParserTest_ParseSystemInclude(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
@@ -120,7 +116,6 @@ func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 }
 
 func TestCLParserTest_DuplicatedHeader(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
@@ -137,7 +132,6 @@ func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 }
 
 func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
-	t.Skip("TODO")
 	parser := NewCLParser()
 	output := ""
 	err := ""
