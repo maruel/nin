@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"runtime/pprof"
+	"runtime/trace"
 	"sort"
 	"strconv"
 	"strings"
@@ -49,6 +50,7 @@ type Options struct {
 
 	cpuprofile string
 	memprofile string
+	trace      string
 }
 
 // The Ninja main() loads up a series of data structures; various tools need
@@ -1136,6 +1138,7 @@ func readFlags(options *Options, config *BuildConfig) int {
 	options.dupe_edges_should_err = true
 	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "")
 	flag.StringVar(&options.memprofile, "memprofile", "", "")
+	flag.StringVar(&options.trace, "trace", "", "")
 
 	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "")
 	flag.IntVar(&config.failures_allowed, "k", 1, "")
@@ -1182,6 +1185,20 @@ func readFlags(options *Options, config *BuildConfig) int {
 		if options.tool == nil {
 			return 0
 		}
+	}
+	i := 0
+	if options.cpuprofile != "" {
+		i++
+	}
+	if options.memprofile != "" {
+		i++
+	}
+	if options.trace != "" {
+		i++
+	}
+	if i > 1 {
+		fmt.Fprintf(os.Stderr, "can only use one of -cpuprofile, -memprofile or -trace at a time.\n")
+		return 2
 	}
 
 	/*
@@ -1304,7 +1321,6 @@ func Main() int {
 			log.Fatal("could not create CPU profile: ", err)
 		}
 		defer f.Close()
-		// TODO(maruel): It's not providing good trace at the moment.
 		if err := pprof.StartCPUProfile(f); err != nil {
 			log.Fatal("could not start CPU profile: ", err)
 		}
@@ -1327,6 +1343,18 @@ func Main() int {
 	} else {
 		// No need.
 		runtime.MemProfileRate = 0
+	}
+	if options.trace != "" {
+		f, err := os.Create(options.trace)
+		if err != nil {
+			log.Fatal("could not create trace: ", err)
+		}
+		defer f.Close()
+		// TODO(maruel): Use regions.
+		if err := trace.Start(f); err != nil {
+			log.Fatal("could not start trace: ", err)
+		}
+		defer trace.Stop()
 	}
 
 	args := flag.Args()
