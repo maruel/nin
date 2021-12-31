@@ -289,7 +289,15 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
-	return ioutil.WriteFile(path, []byte(contents), 0o777) == nil
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+	if err != nil {
+		return err != nil
+	}
+	_, err = f.WriteString(contents)
+	if err1 := f.Close(); err1 != nil && err == nil {
+		err = err1
+	}
+	return err != nil
 }
 
 func (r *RealDiskInterface) MakeDir(path string) bool {
