@@ -19,6 +19,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"unsafe"
 )
 
 // Have a generic fall-through for different versions of C/C++.
@@ -77,7 +78,9 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	component_count := 0
 
 	// TODO(maruel): Optimize once the rest kinda works.
-	p := []byte(path + "\x00")
+	p := make([]byte, len(path)+1)
+	copy(p, path)
+	//p := []byte(path + "\x00")
 	start := 0
 	dst := 0
 	src := 0
@@ -171,7 +174,7 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	} else {
 		*slash_bits = 0
 	}
-	return string(p)
+	return unsafeString(p)
 }
 
 func IsKnownShellSafeCharacter(ch byte) bool {
@@ -585,3 +588,13 @@ func Truncate(path string, size uint, err *string) bool {
   return true
 }
 */
+
+// unsafeString performs an unsafe conversion from a []byte to a string. The
+// returned string will share the underlying memory with the []byte which thus
+// allows the string to be mutable through the []byte. We're careful to use
+// this method only in situations in which the []byte will not be modified.
+//
+// A workaround for the absence of https://github.com/golang/go/issues/2632.
+func unsafeString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
