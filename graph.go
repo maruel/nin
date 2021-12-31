@@ -914,7 +914,9 @@ func (e *Edge) maybe_phonycycle_diagnostic() bool {
 }
 
 func PathDecanonicalized(path string, slash_bits uint64) string {
-	// TODO(maruel): Memory allocation.
+	if runtime.GOOS != "windows" {
+		return path
+	}
 	result := []byte(path)
 	mask := uint64(1)
 
@@ -929,7 +931,7 @@ func PathDecanonicalized(path string, slash_bits uint64) string {
 		}
 		mask <<= 1
 	}
-	return string(result)
+	return unsafeString(result)
 }
 
 func (n *Node) Dump(prefix string) {
