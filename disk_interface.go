@@ -292,10 +292,10 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
-		return err != nil
+		return false
 	}
 	_, err = f.WriteString(contents)
-	if err1 := f.Close(); err1 != nil && err == nil {
+	if err1 := f.Close(); err == nil {
 		err = err1
 	}
 	return err == nil
