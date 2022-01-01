@@ -24,11 +24,11 @@ type Env interface {
 	LookupVariable(v string) string
 }
 
-type TokenType int
+type TokenType bool
 
 const (
-	RAW TokenType = iota
-	SPECIAL
+	RAW     TokenType = false
+	SPECIAL TokenType = true
 )
 
 type TokenListItem struct {
@@ -233,21 +233,35 @@ func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) str
 // @return The evaluated string with variable expanded using value found in
 //         environment @a env.
 func (e *EvalString) Evaluate(env Env) string {
-	result := ""
-	for _, i := range e.parsed_ {
-		if i.second == RAW {
-			result += i.first
+	// TODO(maruel): We could remove this allocation most of the time by
+	// defaulting to a 16 items array on the stack.
+	s := make([]string, len(e.parsed_))
+	total := 0
+	for i, p := range e.parsed_ {
+		if p.second == RAW {
+			x := p.first
+			s[i] = x
+			total += len(x)
 		} else {
-			result += env.LookupVariable(i.first)
+			x := env.LookupVariable(p.first)
+			s[i] = x
+			total += len(x)
 		}
 	}
-	return result
+	out := make([]byte, total)
+	offset := 0
+	for _, x := range s {
+		l := len(x)
+		copy(out[offset:], x)
+		offset += l
+	}
+	return unsafeString(out)
 }
 
 func (e *EvalString) AddText(text string) {
 	// Add it to the end of an existing RAW token if possible.
 	if len(e.parsed_) != 0 && e.parsed_[len(e.parsed_)-1].second == RAW {
-		e.parsed_[len(e.parsed_)-1].first = e.parsed_[len(e.parsed_)-1].first + text
+		e.parsed_[len(e.parsed_)-1].first += text
 	} else {
 		e.parsed_ = append(e.parsed_, TokenListItem{text, RAW})
 	}
