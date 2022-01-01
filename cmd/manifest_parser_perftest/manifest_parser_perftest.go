@@ -70,6 +70,11 @@ func mainImpl() error {
 		return errors.New("unexpected arguments")
 	}
 
+	// Disable __pycache__.
+	if err := os.Setenv("PYTHONDONTWRITEBYTECODE", "x"); err != nil {
+		return err
+	}
+
 	kManifestDir := filepath.Join("build", "manifest_perftest")
 
 	if err := WriteFakeManifests(kManifestDir); err != nil {

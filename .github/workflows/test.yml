@@ -27,6 +27,8 @@ jobs:
         gover: ["1.17"]
     runs-on: "${{matrix.os}}"
     name: "go${{matrix.gover}}.x on ${{matrix.os}}"
+    env:
+      PYTHONDONTWRITEBYTECODE: x
     steps:
     - uses: actions/setup-go@v2
       with:
@@ -71,7 +73,7 @@ jobs:
       run: |
         # Nothing should have changed in the tree up to that point and no
         # unsuspected file was created.
-        TOUCHED=$(git status --porcelain --ignored)
+        TOUCHED=$(git status --porcelain)
         if ! test -z "$TOUCHED"; then
           echo "Oops, something touched these files, please cleanup:"
           echo "$TOUCHED"
@@ -84,7 +86,7 @@ jobs:
       run: |
         go generate ./...
         # Also test for untracked files.
-        TOUCHED=$(git status --porcelain --ignored)
+        TOUCHED=$(git status --porcelain)
         if ! test -z "$TOUCHED"; then
           echo "go generate created these files, please fix:"
           echo "$TOUCHED"
@@ -95,7 +97,7 @@ jobs:
       if: always()
       run: |
         go mod tidy
-        TOUCHED=$(git status --porcelain --ignored)
+        TOUCHED=$(git status --porcelain)
         if ! test -z "$TOUCHED"; then
           echo "go mod tidy was not clean, please update:"
           git diff

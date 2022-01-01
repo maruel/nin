@@ -15,6 +15,9 @@
 
 set -eu
 
+# Disable __pycache__.
+export PYTHONDONTWRITEBYTECODE=x
+
 if [ ! -f ./ninja ]; then
   python3 ./configure.py --bootstrap
 fi
