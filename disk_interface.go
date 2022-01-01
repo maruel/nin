@@ -283,9 +283,8 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 			}
 		}
 		return ci[base]
-	} else {
-		return StatSingleFile(path, err)
 	}
+	return StatSingleFile(path, err)
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {

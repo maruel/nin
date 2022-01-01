@@ -154,8 +154,10 @@ const (
 )
 
 // Print usage information.
-func Usage(config *BuildConfig) {
-	fmt.Fprintf(os.Stderr, "usage: nin [options] [targets...]\n\nif targets are unspecified, builds the 'default' target (see manual).\n\noptions:\n  --version      print nin version (\"%s\")\n  -v, --verbose  show all command lines while building\n  --quiet        don't show progress status, just command output\n\n  -C DIR   change to DIR before doing anything else\n  -f FILE  specify input build file [default=build.ninja]\n\n  -j N     run N jobs in parallel (0 means infinity) [default=%d on this system]\n  -k N     keep going until N jobs fail (0 means infinity) [default=1]\n  -l N     do not start new jobs if the load average is greater than N\n  -n       dry run (don't run commands but act like they succeeded)\n\n  -d MODE  enable debugging (use '-d list' to list modes)\n  -t TOOL  run a subtool (use '-t list' to list subtools)\n    terminates toplevel options; further flags are passed to the tool\n  -w FLAG  adjust warnings (use '-w list' to list warnings)\n", kNinjaVersion, config.parallelism)
+func Usage() {
+	fmt.Fprintf(os.Stderr, "usage: nin [options] [targets...]\n\n")
+	fmt.Fprintf(os.Stderr, "if targets are unspecified, builds the 'default' target (see manual).\n\n")
+	flag.PrintDefaults()
 }
 
 // Choose a default value for the -j (parallelism) flag.
@@ -251,20 +253,19 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 			}
 		}
 		return node
-	} else {
-		*err = "unknown target '" + PathDecanonicalized(path, slash_bits) + "'"
-		if path == "clean" {
-			*err += ", did you mean 'nin -t clean'?"
-		} else if path == "help" {
-			*err += ", did you mean 'nin -h'?"
-		} else {
-			suggestion := n.state_.SpellcheckNode(path)
-			if suggestion != nil {
-				*err += ", did you mean '" + suggestion.path() + "'?"
-			}
-		}
-		return nil
 	}
+	*err = "unknown target '" + PathDecanonicalized(path, slash_bits) + "'"
+	if path == "clean" {
+		*err += ", did you mean 'nin -t clean'?"
+	} else if path == "help" {
+		*err += ", did you mean 'nin -h'?"
+	} else {
+		suggestion := n.state_.SpellcheckNode(path)
+		if suggestion != nil {
+			*err += ", did you mean '" + suggestion.path() + "'?"
+		}
+	}
+	return nil
 }
 
 // CollectTarget for all command-line arguments, filling in \a targets.
@@ -511,10 +512,10 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 			}
 			if len(rule) == 0 {
 				return ToolTargetsSourceList(&n.state_)
-			} else {
-				return ToolTargetsListRule(&n.state_, rule)
 			}
-		} else if mode == "depth" {
+			return ToolTargetsListRule(&n.state_, rule)
+		}
+		if mode == "depth" {
 			if len(args) > 1 {
 				// TODO(maruel): Handle error.
 				depth, _ = strconv.Atoi(args[1])
@@ -536,10 +537,9 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 	root_nodes := n.state_.RootNodes(&err)
 	if len(err) == 0 {
 		return ToolTargetsListNodes(root_nodes, depth, 0)
-	} else {
-		Error("%s", err)
-		return 1
 	}
+	Error("%s", err)
+	return 1
 }
 
 func ToolRules(n *NinjaMain, options *Options, args []string) int {
@@ -679,12 +679,10 @@ func ToolClean(n *NinjaMain, options *Options, args []string) int {
 	if len(args) >= 1 {
 		if clean_rules {
 			return cleaner.CleanRules(args)
-		} else {
-			return cleaner.CleanTargets(args)
 		}
-	} else {
-		return cleaner.CleanAll(generator)
+		return cleaner.CleanTargets(args)
 	}
+	return cleaner.CleanAll(generator)
 }
 
 func ToolCleanDead(n *NinjaMain, options *Options, args []string) int {
@@ -1133,27 +1131,29 @@ func readFlags(options *Options, config *BuildConfig) int {
 	// TODO(maruel): For now just do something simple to get started but we'll
 	// have to make it custom if we want it to be drop-in replacement.
 	// It's funny how "options" and "config" is a bit mixed up here.
-	flag.StringVar(&options.input_file, "f", "build.ninja", "")
-	flag.StringVar(&options.working_dir, "C", "", "")
+	flag.StringVar(&options.input_file, "f", "build.ninja", "specify input build file")
+	flag.StringVar(&options.working_dir, "C", "", "change to DIR before doing anything else")
 	options.dupe_edges_should_err = true
-	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "")
-	flag.StringVar(&options.memprofile, "memprofile", "", "")
-	flag.StringVar(&options.trace, "trace", "", "")
+	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "activate the CPU sampling profiler")
+	flag.StringVar(&options.memprofile, "memprofile", "", "snapshot a heap dump at the end")
+	flag.StringVar(&options.trace, "trace", "", "capture a runtime trace")
 
-	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "")
-	flag.IntVar(&config.failures_allowed, "k", 1, "")
-	flag.Float64Var(&config.max_load_average, "l", 0, "")
-	flag.BoolVar(&config.dry_run, "n", false, "")
+	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "run N jobs in parallel (0 means infinity)")
+	flag.IntVar(&config.failures_allowed, "k", 1, "keep going until N jobs fail (0 means infinity)")
+	flag.Float64Var(&config.max_load_average, "l", 0, "do not start new jobs if the load average is greater than N")
+	flag.BoolVar(&config.dry_run, "n", false, "dry run (don't run commands but act like they succeeded)")
 
-	tool := flag.String("t", "", "")
-	debugEnable := flag.String("d", "", "")
-	verbose := flag.Bool("v", false, "")
-	flag.BoolVar(verbose, "verbose", false, "")
-	quiet := flag.Bool("quiet", false, "")
-	warning := flag.String("w", "", "")
-	version := flag.Bool("version", false, "")
+	// TODO(maruel): terminates toplevel options; further flags are passed to the tool
+	tool := flag.String("t", "", "run a subtool (use '-t list' to list subtools)")
+	// TODO(maruel): It's supposed to be accumulative.
+	debugEnable := flag.String("d", "", "enable debugging (use '-d list' to list modes)")
+	verbose := flag.Bool("v", false, "show all command lines while building")
+	flag.BoolVar(verbose, "verbose", false, "show all command lines while building")
+	quiet := flag.Bool("quiet", false, "don't show progress status, just command output")
+	warning := flag.String("w", "", "adjust warnings (use '-w list' to list warnings)")
+	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", kNinjaVersion))
 
-	flag.Usage = func() { Usage(config) }
+	flag.Usage = Usage
 	flag.Parse()
 
 	if *verbose && *quiet {

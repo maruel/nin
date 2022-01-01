@@ -53,6 +53,9 @@ go tool trace -http=:33071 trace.out
 
 ## Comparing perf
 
+This runs both ninja's performance tests and nin's equivalent for an
+apple-to-apple comparison.
+
 ```
 ./compare.sh
 ```

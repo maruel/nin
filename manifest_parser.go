@@ -407,13 +407,12 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
 				m.lexer_.Error("multiple rules generate "+path, err)
 				return false
-			} else {
-				if !m.quiet_ {
-					Warning("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
-				}
-				if len(outs)-i <= implicit_outs {
-					implicit_outs--
-				}
+			}
+			if !m.quiet_ {
+				Warning("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
+			}
+			if len(outs)-i <= implicit_outs {
+				implicit_outs--
 			}
 		}
 	}
@@ -498,6 +497,8 @@ func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
 	}
 	path := eval.Evaluate(m.env_)
 
+	// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
+	// not create lock contention.
 	subparser := NewManifestParser(m.state_, m.file_reader_, m.options_)
 	if new_scope {
 		subparser.env_ = NewBindingEnv(m.env_)
