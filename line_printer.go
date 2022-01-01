@@ -57,11 +57,11 @@ func (l *LinePrinter) supports_color() bool {
 	return l.supports_color_
 }
 
-type LineType int
+type LineType bool
 
 const (
-	FULL LineType = iota
-	ELIDE
+	FULL  LineType = false
+	ELIDE LineType = true
 )
 
 func NewLinePrinter() LinePrinter {

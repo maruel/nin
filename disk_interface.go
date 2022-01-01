@@ -297,7 +297,7 @@ func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
 	if err1 := f.Close(); err1 != nil && err == nil {
 		err = err1
 	}
-	return err != nil
+	return err == nil
 }
 
 func (r *RealDiskInterface) MakeDir(path string) bool {

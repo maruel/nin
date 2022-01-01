@@ -886,6 +886,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	// XXX: this will block; do we care?
 	for _, o := range edge.outputs_ {
 		if !MakeDirs(b.disk_interface_, o.path()) {
+			*err = fmt.Sprintf("Can't make dir %q", o.path())
 			return false
 		}
 	}
@@ -896,6 +897,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	if len(rspfile) != 0 {
 		content := edge.GetBinding("rspfile_content")
 		if !b.disk_interface_.WriteFile(rspfile, content) {
+			*err = fmt.Sprintf("Can't write file %q", rspfile)
 			return false
 		}
 	}
