@@ -16,6 +16,7 @@ package nin
 
 import (
 	"bytes"
+	"os/exec"
 	"syscall"
 )
 
@@ -374,12 +375,12 @@ func (s *SubprocessSetImpl) Clear() {
 	*/
 }
 
-func (s *SubprocessGeneric) osSpecific(c string) {
+func (s *SubprocessGeneric) osSpecific(cmd *exec.Cmd, c string) {
 	// Ignore the parsed arguments on Windows and feed back the original string.
 	// See https://pkg.go.dev/os/exec#Command for an explanation.
-	s.cmd.SysProcAttr = &syscall.SysProcAttr{
+	cmd.SysProcAttr = &syscall.SysProcAttr{
 		//CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 		CmdLine: c,
 	}
-	s.cmd.Args = nil
+	cmd.Args = nil
 }

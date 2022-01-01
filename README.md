@@ -3,25 +3,19 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/maruel/nin.svg)](https://pkg.go.dev/github.com/maruel/nin)
 [![codecov](https://codecov.io/gh/maruel/nin/branch/main/graph/badge.svg?token=KAO6K039PJ)](https://codecov.io/gh/maruel/nin)
 
-An experimental fork of ninja translated in Go. Currently a toy.
+An experimental fork of ninja translated in Go.
 
 ## Are you serious?
 
 Yeah.
-
-## Marc-Antoine, isn't it a stupid idea?
-
-Yeah.
-
-When Google was created, Altavista was king. When Facebook was created, Myspace
-was hot. When nin was created, there were other options.
 
 The reason it's possible at all is because ninja is well written and has
 a reasonable amount of unit tests.
 
 ## Why?
 
-- The parser can be used as a library
+- The parser can be used as a
+  [library](https://pkg.go.dev/github.com/maruel/nin)
   - This opens the door to a lot of opportunity and a real ecosystem
 - Refactoring Go >> refactoring C++
   - As I made progress, I saw opportunities for simplification
@@ -32,7 +26,7 @@ a reasonable amount of unit tests.
   - Go has native benchmarking
   - Go has native CPU and memory profiling
   - Go has native code coverage
-  - Go has native documentation service
+  - Go has native [documentation](https://pkg.go.dev/github.com/maruel/nin)
 - Since it's GC, and the program runs as a one shot, we can just disable GC and
   save a significant amount of memory management (read: CPU) overhead.
 
@@ -50,6 +44,15 @@ Some people did advent of code 2021, I did a brain teaser instead.
   syscall functions on Windows.
 - Staying up to date changes done upstream, especially to the file format and
   correctness checks.
+
+## Current state
+
+- nin is in the same ballpark (-5%) for building ninja itself.
+- Parsing build.ninja file is 40% slower so it has to be drastically optimized.
+- 17 test cases out of 394 (5%) have to be fixed. `git grep Skip..TODO | wc -l`
+  versus `git grep "^func Test" | wc -l`.
+- Closely tracking upstream as-is.
+- Code is not Go idiomatic.
 
 ## ninja
 

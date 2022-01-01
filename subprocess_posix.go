@@ -19,6 +19,7 @@ package nin
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"syscall"
 )
 
@@ -383,8 +384,8 @@ func (s *SubprocessSetImpl) Clear() {
 	*/
 }
 
-func (s *SubprocessGeneric) osSpecific(c string) {
-	s.cmd.SysProcAttr = &syscall.SysProcAttr{
+func (s *SubprocessGeneric) osSpecific(cmd *exec.Cmd, c string) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{
 		//Setpgid: true,
 	}
 }

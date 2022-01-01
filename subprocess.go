@@ -16,17 +16,21 @@ package nin
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 // The Go runtime already handles poll under the hood so this abstraction layer
 // has to be replaced; unless we realize that the Go runtime is too slow.
 
 type Subprocess interface {
+	// Query if the process is done.
 	Done() bool
-	Close() error
+	// Only to be called after the process is done.
 	Finish() ExitStatus
 	GetOutput() string
 }
@@ -40,83 +44,32 @@ type SubprocessSet interface {
 	DoWork() bool
 }
 
-// SubprocessGeneric is the dumbest implmentation, just to get going.
+// SubprocessGeneric is the dumbest implementation, just to get going.
 type SubprocessGeneric struct {
-	buf          bytes.Buffer
-	cmd          *exec.Cmd
-	done         bool
-	use_console_ bool
+	done     int32
+	exitCode int // int32
+	buf      string
 }
 
+// Done is only used in tests.
 func (s *SubprocessGeneric) Done() bool {
-	return s.done
-}
-
-func (s *SubprocessGeneric) Close() error {
-	if s.cmd.ProcessState == nil {
-		// Process didn't start on Windows.
-		return nil
-	}
-	return s.cmd.Wait()
+	return atomic.LoadInt32(&s.done) != 0
 }
 
 func (s *SubprocessGeneric) Finish() ExitStatus {
-	if s.cmd.ProcessState == nil {
-		// Process didn't start on Windows.
-		return -1
-	}
-	_ = s.cmd.Wait()
-	return s.cmd.ProcessState.ExitCode()
+	return s.exitCode
 }
 
 func (s *SubprocessGeneric) GetOutput() string {
-	return s.buf.String()
+	return s.buf
 }
 
-type SubprocessSetGeneric struct {
-	running_  []*SubprocessGeneric
-	finished_ []*SubprocessGeneric // queue<Subprocess*>
-	// TODO(maruel): In Go, we'll use a context.Context.
-	interrupted_ int
-}
-
-func NewSubprocessSet() *SubprocessSetGeneric {
-	return &SubprocessSetGeneric{}
-}
-
-func (s *SubprocessSetGeneric) Clear() {
-	for _, p := range s.running_ {
-		// TODO(maruel): This is incorrect, we want to use -pid for process group
-		// on posix.
-		if !p.use_console_ {
-			// Can be nil if starting failed and was not reaped yet.
-			if p.cmd.Process != nil {
-				_ = p.cmd.Process.Kill()
-			}
-		}
-	}
-	for _, p := range s.running_ {
-		_ = p.Close()
-	}
-	s.running_ = nil
-}
-
-func (s *SubprocessSetGeneric) Running() int {
-	return len(s.running_)
-}
-
-func (s *SubprocessSetGeneric) Finished() int {
-	return len(s.finished_)
-}
-
-func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
-	// TODO(maruel): That's very bad. The goal is just to get going. Ninja
-	// handles unparsed command lines but Go expects parsed command lines, so
-	// care will be needed to make it fully work.
+func (s *SubprocessGeneric) run(ctx context.Context, c string, use_console bool) {
 	ex := ""
 	var args []string
 	if runtime.GOOS == "windows" {
-		// TODO(maruel): Handle quoted space.
+		// TODO(maruel): Handle quoted space. It's only necessary from the
+		// perspective of finding the primary executable to run.
 		i := strings.IndexByte(c, ' ')
 		if i == -1 {
 			ex = c
@@ -126,74 +79,139 @@ func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
 		args = []string{c}
 	} else {
 		// The commands being run use shell redirection. The C++ version uses
-		// system() which will use the default shell. Try hardcoding /bin/sh here
-		// to see how things go.
+		// system() which will use the default shell. I'd like to try to have a
+		// fast-track mode where if no shell escape characters are used, the
+		// command is ran without a shell.
 		ex = "/bin/sh"
 		args = []string{"-c", c}
 	}
-
-	subproc := &SubprocessGeneric{
-		use_console_: use_console,
-		cmd:          exec.Command(ex, args...),
-	}
 	// Ignore the parsed arguments on Windows and feedback the original string.
-	subproc.cmd.Stdout = &subproc.buf
-	subproc.cmd.Stderr = &subproc.buf
-	subproc.osSpecific(c)
-	if err := subproc.cmd.Start(); err != nil {
-		// TODO(maruel): Error handing.
-		subproc.done = true
-	} else if subproc.cmd.ProcessState == nil {
-		// This generally means that something bad happened. Calling Wait() seems
-		// to initialize ProcessState.
-		_ = subproc.cmd.Wait()
-		if subproc.cmd.ProcessState == nil {
-			panic("expected ProcessState to be set")
-		}
+	var cmd *exec.Cmd
+	if use_console {
+		cmd = exec.Command(ex, args...)
+	} else {
+		cmd = exec.CommandContext(ctx, ex, args...)
 	}
+	buf := bytes.Buffer{}
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	s.osSpecific(cmd, c)
+	_ = cmd.Run()
+	// Skip a memory copy.
+	s.buf = unsafeString(buf.Bytes())
+	s.exitCode = cmd.ProcessState.ExitCode()
+}
+
+type SubprocessSetGeneric struct {
+	ctx      context.Context
+	cancel   func()
+	wg       sync.WaitGroup
+	procDone chan *SubprocessGeneric
+	mu       sync.Mutex
+	running_ []*SubprocessGeneric
+
+	// A one off dequeue. Maybe a Go generic in 1.18?
+	finished_      []*SubprocessGeneric
+	finishedOffset int
+}
+
+func NewSubprocessSet() *SubprocessSetGeneric {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &SubprocessSetGeneric{
+		ctx:      ctx,
+		cancel:   cancel,
+		procDone: make(chan *SubprocessGeneric),
+	}
+}
+
+func (s *SubprocessSetGeneric) Clear() {
+	s.cancel()
+	s.wg.Wait()
+	s.mu.Lock()
+	s.running_ = nil
+	s.mu.Unlock()
+}
+
+func (s *SubprocessSetGeneric) Running() int {
+	s.mu.Lock()
+	r := len(s.running_)
+	s.mu.Unlock()
+	return r
+}
+
+func (s *SubprocessSetGeneric) Finished() int {
+	s.mu.Lock()
+	f := len(s.finished_) - s.finishedOffset
+	s.mu.Unlock()
+	return f
+}
+
+func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
+	subproc := &SubprocessGeneric{}
+	s.wg.Add(1)
+	go s.enqueue(subproc, c, use_console)
+	s.mu.Lock()
 	s.running_ = append(s.running_, subproc)
+	s.mu.Unlock()
 	return subproc
 }
 
+func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, use_console bool) {
+	subproc.run(s.ctx, c, use_console)
+	// Do it before sending the channel because procDone is a blocking channel
+	// and the caller relies on Running() == 0 && Finished() == 0. Otherwise
+	// Clear() would hang.
+	s.wg.Done()
+	s.procDone <- subproc
+}
+
 func (s *SubprocessSetGeneric) NextFinished() Subprocess {
-	if len(s.finished_) == 0 {
-		return nil
+	s.mu.Lock()
+	var subproc Subprocess
+	if len(s.finished_) != s.finishedOffset {
+		subproc = s.finished_[s.finishedOffset]
+		s.finishedOffset++
+		// 256 items on a 64 bits OS is 2kiB of RAM.
+		if s.finishedOffset >= 256 {
+			// Move stuff up front.
+			copy(s.finished_, s.finished_[s.finishedOffset:])
+			s.finished_ = s.finished_[:len(s.finished_)-s.finishedOffset]
+		}
 	}
-	// TODO(maruel): The original code use a dequeue. Once in a while, the
-	// pointer should be reset back to the top of the slice instead of being a
-	// memory leak.
-	//
-	// On the other hand, the current worse case scenarios is 200k processes, so
-	// that's 800KiB of RAM wasted at worst.
-	subproc := s.finished_[0]
-	s.finished_ = s.finished_[1:]
+	s.mu.Unlock()
 	return subproc
 }
 
 // DoWork should return on one of 3 events:
 //
 //  - Was interrupted, return true
-//  - A process completed, return true
+//  - A process completed, return false
 //  - A pipe got data, returns false
 //
-// In Go, the later can't happen. So hard block in an inefficient way (for
-// now).
+// In Go, the later can't happen.
 func (s *SubprocessSetGeneric) DoWork() bool {
 	o := false
-	for i := 0; i < len(s.running_); i++ {
-		p := s.running_[i]
-		// Can be nil on Windows if process startup failed.
-		if p.cmd.ProcessState == nil || p.cmd.ProcessState.Exited() {
-			// TODO(maruel): Figure out.
-			//o = true
-			p.done = true
+	for {
+		select {
+		case p := <-s.procDone:
+			s.mu.Lock()
+			i := 0
+			for i = range s.running_ {
+				if s.running_[i] == p {
+					break
+				}
+			}
 			s.finished_ = append(s.finished_, p)
 			if i < len(s.running_)-1 {
 				copy(s.running_[i:], s.running_[i+1:])
 			}
-			i--
 			s.running_ = s.running_[:len(s.running_)-1]
+			s.mu.Unlock()
+			// The unit tests expect that Subprocess.Done() is only true once the
+			// subprocess has been added to finished.
+			atomic.StoreInt32(&p.done, 1)
+		default:
+			return o
 		}
 	}
-	return o
 }
