@@ -166,37 +166,15 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 	return unsafeString(p)
 }
 
-func IsKnownShellSafeCharacter(ch byte) bool {
-	if 'A' <= ch && ch <= 'Z' {
-		return true
-	}
-	if 'a' <= ch && ch <= 'z' {
-		return true
-	}
-	if '0' <= ch && ch <= '9' {
-		return true
-	}
-
-	switch ch {
-	case '_', '+', '-', '.', '/':
-		return true
-	default:
-		return false
-	}
-}
-
-func IsKnownWin32SafeCharacter(ch byte) bool {
-	switch ch {
-	case ' ', '"':
-		return false
-	default:
-		return true
-	}
-}
-
 func StringNeedsShellEscaping(input string) bool {
-	for i := range input {
-		if !IsKnownShellSafeCharacter(input[i]) {
+	for i := 0; i < len(input); i++ {
+		ch := input[i]
+		if 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || '0' <= ch && ch <= '9' {
+			continue
+		}
+		switch ch {
+		case '_', '+', '-', '.', '/':
+		default:
 			return true
 		}
 	}
@@ -204,9 +182,11 @@ func StringNeedsShellEscaping(input string) bool {
 }
 
 func StringNeedsWin32Escaping(input string) bool {
-	for i := range input {
-		if !IsKnownWin32SafeCharacter(input[i]) {
+	for i := 0; i < len(input); i++ {
+		switch input[i] {
+		case ' ', '"':
 			return true
+		default:
 		}
 	}
 	return false
@@ -217,9 +197,6 @@ func StringNeedsWin32Escaping(input string) bool {
 // Appends the string directly to |result| without modification if we can
 // determine that it contains no problematic characters.
 func GetShellEscapedString(input string) string {
-	if input == "" {
-		panic("M-A")
-	}
 	if !StringNeedsShellEscaping(input) {
 		return input
 	}
@@ -244,9 +221,6 @@ func GetShellEscapedString(input string) string {
 }
 
 func GetWin32EscapedString(input string) string {
-	if input == "" {
-		panic("M-A")
-	}
 	if !StringNeedsWin32Escaping(input) {
 		return input
 	}
