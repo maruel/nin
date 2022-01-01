@@ -27,7 +27,7 @@ const (
 )
 
 // Enumerate possible steps we want for an edge.
-type Want int
+type Want int32
 
 const (
 	// We do not want to build the edge, but we might want to build one of
@@ -91,7 +91,7 @@ func NewBuildConfig() BuildConfig {
 	}
 }
 
-type Verbosity int
+type Verbosity int32
 
 const (
 	QUIET            Verbosity = iota // No output -- used when testing.

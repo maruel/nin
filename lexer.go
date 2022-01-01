@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-type Token int
+type Token int32
 
 const (
 	ERROR Token = iota

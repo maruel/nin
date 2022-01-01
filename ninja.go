@@ -139,7 +139,7 @@ type Tool struct {
 }
 
 // When to run the tool.
-type When int
+type When int32
 
 const (
 	// Run after parsing the command-line flags and potentially changing

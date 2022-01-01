@@ -35,7 +35,7 @@ type FileReader interface {
 }
 
 // Result of ReadFile.
-type DiskStatus int
+type DiskStatus int32
 
 const (
 	Okay DiskStatus = iota

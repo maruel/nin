@@ -209,7 +209,7 @@ func (n *Node) Dump(prefix string) {
 
 //
 
-type ExistenceStatus int
+type ExistenceStatus int32
 
 const (
 	// The file hasn't been examined.
@@ -218,6 +218,14 @@ const (
 	ExistenceStatusMissing
 	// The path is an actual file. mtime_ will be the file's mtime.
 	ExistenceStatusExists
+)
+
+type VisitMark int32
+
+const (
+	VisitNone VisitMark = iota
+	VisitInStack
+	VisitDone
 )
 
 // An edge in the dependency graph; links between Nodes using Rules.
@@ -254,13 +262,6 @@ type Edge struct {
 	// #2 to use when we need to access the various subsets.
 	implicit_outs_ int
 }
-type VisitMark int
-
-const (
-	VisitNone VisitMark = iota
-	VisitInStack
-	VisitDone
-)
 
 func NewEdge() *Edge {
 	return &Edge{
@@ -478,11 +479,12 @@ type EdgeEnv struct {
 	escape_in_out_ EscapeKind
 	recursive_     bool
 }
-type EscapeKind int
+
+type EscapeKind bool
 
 const (
-	kShellEscape EscapeKind = iota
-	kDoNotEscape
+	kShellEscape EscapeKind = false
+	kDoNotEscape EscapeKind = true
 )
 
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {

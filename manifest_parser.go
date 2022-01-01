@@ -16,18 +16,18 @@ package nin
 
 import "strconv"
 
-type DupeEdgeAction int
+type DupeEdgeAction bool
 
 const (
-	kDupeEdgeActionWarn DupeEdgeAction = iota
-	kDupeEdgeActionError
+	kDupeEdgeActionWarn  DupeEdgeAction = false
+	kDupeEdgeActionError DupeEdgeAction = true
 )
 
-type PhonyCycleAction int
+type PhonyCycleAction bool
 
 const (
-	kPhonyCycleActionWarn PhonyCycleAction = iota
-	kPhonyCycleActionError
+	kPhonyCycleActionWarn  PhonyCycleAction = false
+	kPhonyCycleActionError PhonyCycleAction = true
 )
 
 type ManifestParserOptions struct {
