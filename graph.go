@@ -472,6 +472,13 @@ func (e *EdgeSet) recreate() {
 
 //
 
+type EscapeKind bool
+
+const (
+	kShellEscape EscapeKind = false
+	kDoNotEscape EscapeKind = true
+)
+
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
 	lookups_       []string
@@ -479,13 +486,6 @@ type EdgeEnv struct {
 	escape_in_out_ EscapeKind
 	recursive_     bool
 }
-
-type EscapeKind bool
-
-const (
-	kShellEscape EscapeKind = false
-	kDoNotEscape EscapeKind = true
-)
 
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	return EdgeEnv{
@@ -539,23 +539,42 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
 func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
-	result := ""
-	for _, i := range span {
-		if len(result) != 0 {
-			result += string(sep)
-		}
-		path := i.PathDecanonicalized()
+	s := make([]string, len(span))
+	total := 0
+	first := false
+	for i, x := range span {
+		path := x.PathDecanonicalized()
 		if e.escape_in_out_ == kShellEscape {
 			if runtime.GOOS == "windows" {
-				result += GetWin32EscapedString(path)
+				path = GetWin32EscapedString(path)
 			} else {
-				result += GetShellEscapedString(path)
+				path = GetShellEscapedString(path)
+			}
+		}
+		l := len(path)
+		if !first {
+			if l != 0 {
+				first = true
 			}
 		} else {
-			result += path
+			// For the separator.
+			total++
 		}
+		s[i] = path
+		total += l
 	}
-	return result
+
+	out := make([]byte, total)
+	offset := 0
+	for _, x := range s {
+		if offset != 0 {
+			out[offset] = sep
+			offset++
+		}
+		copy(out[offset:], x)
+		offset += len(x)
+	}
+	return unsafeString(out)
 }
 
 func PathDecanonicalized(path string, slash_bits uint64) string {
