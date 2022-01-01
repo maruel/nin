@@ -65,28 +65,6 @@ func (p *Pool) ShouldDelayEdge() bool {
 	return p.depth_ != 0
 }
 
-// The C++ code checks for Edge.weight() before checking for the id. In
-// practice weight is hardcoded to 1.
-type DelayedEdges = EdgeSet
-
-// Global state (file status) for a single run.
-type State struct {
-	// Mapping of path -> Node.
-	paths_ Paths
-
-	// All the pools used in the graph.
-	pools_ map[string]*Pool
-
-	// All the edges of the graph.
-	edges_ []*Edge
-
-	bindings_ *BindingEnv
-	defaults_ []*Node
-}
-
-//type Paths ExternalStringHashMap<Node*>::Type
-type Paths map[string]*Node
-
 // informs this Pool that the given edge is committed to be run.
 // Pool will count this edge as using resources from this pool.
 func (p *Pool) EdgeScheduled(edge *Edge) {
@@ -145,6 +123,30 @@ var (
 	kConsolePool = NewPool("console", 1)
 	kPhonyRule   = NewRule("phony")
 )
+
+//
+
+// The C++ code checks for Edge.weight() before checking for the id. In
+// practice weight is hardcoded to 1.
+type DelayedEdges = EdgeSet
+
+// Global state (file status) for a single run.
+type State struct {
+	// Mapping of path -> Node.
+	paths_ Paths
+
+	// All the pools used in the graph.
+	pools_ map[string]*Pool
+
+	// All the edges of the graph.
+	edges_ []*Edge
+
+	bindings_ *BindingEnv
+	defaults_ []*Node
+}
+
+//type Paths ExternalStringHashMap<Node*>::Type
+type Paths map[string]*Node
 
 func NewState() State {
 	s := State{

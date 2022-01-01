@@ -154,6 +154,61 @@ func (n *Node) AddValidationOutEdge(edge *Edge) {
 	n.validation_out_edges_ = append(n.validation_out_edges_, edge)
 }
 
+// Return false on error.
+func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
+	defer METRIC_RECORD("node stat")()
+	n.mtime_ = disk_interface.Stat(n.path_, err)
+	if n.mtime_ == -1 {
+		return false
+	}
+	n.exists_ = ExistenceStatusMissing
+	if n.mtime_ != 0 {
+		n.exists_ = ExistenceStatusExists
+	}
+	return true
+}
+
+// If the file doesn't exist, set the mtime_ from its dependencies
+func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
+	if !n.exists() {
+		if mtime > n.mtime_ {
+			n.mtime_ = mtime
+		}
+	}
+}
+
+func (n *Node) Dump(prefix string) {
+	s := ""
+	if !n.exists() {
+		s = " (:missing)"
+	}
+	t := " clean"
+	if n.dirty() {
+		t = " dirty"
+	}
+	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.path(), n, n.mtime(), s, t)
+	if n.in_edge() != nil {
+		n.in_edge().Dump("in-edge: ")
+	} else {
+		fmt.Printf("no in-edge\n")
+	}
+	fmt.Printf(" out edges:\n")
+	for _, e := range n.out_edges() {
+		if e == nil {
+			break
+		}
+		e.Dump(" +- ")
+	}
+	if len(n.validation_out_edges()) != 0 {
+		fmt.Printf(" validation out edges:\n")
+		for _, e := range n.validation_out_edges() {
+			e.Dump(" +- ")
+		}
+	}
+}
+
+//
+
 type ExistenceStatus int
 
 const (
@@ -216,9 +271,11 @@ func NewEdge() *Edge {
 		mark_:   VisitNone,
 	}
 }
+
 func (e *Edge) rule() *Rule {
 	return e.rule_
 }
+
 func (e *Edge) pool() *Pool {
 	return e.pool_
 }
@@ -239,6 +296,102 @@ func (e *Edge) is_order_only(index int) bool {
 func (e *Edge) is_implicit_out(index int) bool {
 	return index >= len(e.outputs_)-e.implicit_outs_
 }
+
+// Expand all variables in a command and return it as a string.
+// If incl_rsp_file is enabled, the string will also contain the
+// full contents of a response file (if applicable)
+func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
+	command := e.GetBinding("command")
+	if incl_rsp_file {
+		rspfile_content := e.GetBinding("rspfile_content")
+		if rspfile_content != "" {
+			command += ";rspfile=" + rspfile_content
+		}
+	}
+	return command
+}
+
+// Returns the shell-escaped value of |key|.
+func (e *Edge) GetBinding(key string) string {
+	env := NewEdgeEnv(e, kShellEscape)
+	return env.LookupVariable(key)
+}
+
+func (e *Edge) GetBindingBool(key string) bool {
+	return e.GetBinding(key) != ""
+}
+
+// Like GetBinding("depfile"), but without shell escaping.
+func (e *Edge) GetUnescapedDepfile() string {
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("depfile")
+}
+
+// Like GetBinding("dyndep"), but without shell escaping.
+func (e *Edge) GetUnescapedDyndep() string {
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("dyndep")
+}
+
+// Like GetBinding("rspfile"), but without shell escaping.
+func (e *Edge) GetUnescapedRspfile() string {
+	env := NewEdgeEnv(e, kDoNotEscape)
+	return env.LookupVariable("rspfile")
+}
+
+func (e *Edge) Dump(prefix string) {
+	fmt.Printf("%s[ ", prefix)
+	for _, i := range e.inputs_ {
+		if i != nil {
+			fmt.Printf("%s ", i.path())
+		}
+	}
+	fmt.Printf("--%s-> ", e.rule_.name())
+	for _, i := range e.outputs_ {
+		fmt.Printf("%s ", i.path())
+	}
+	if len(e.validations_) != 0 {
+		fmt.Printf(" validations ")
+		for _, i := range e.validations_ {
+			fmt.Printf("%s ", i.path())
+		}
+	}
+	if e.pool_ != nil {
+		if e.pool_.name() != "" {
+			fmt.Printf("(in pool '%s')", e.pool_.name())
+		}
+	} else {
+		fmt.Printf("(null pool?)")
+	}
+	fmt.Printf("] 0x%p\n", e)
+}
+
+func (e *Edge) is_phony() bool {
+	return e.rule_ == kPhonyRule
+}
+
+func (e *Edge) use_console() bool {
+	return e.pool() == kConsolePool
+}
+
+func (e *Edge) maybe_phonycycle_diagnostic() bool {
+	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
+	// of the form "build a: phony ... a ...".   Restrict our
+	// "phonycycle" diagnostic option to the form it used.
+	return e.is_phony() && len(e.outputs_) == 1 && e.implicit_outs_ == 0 && e.implicit_deps_ == 0
+}
+
+// Return true if all inputs' in-edges are ready.
+func (e *Edge) AllInputsReady() bool {
+	for _, i := range e.inputs_ {
+		if i.in_edge() != nil && !i.in_edge().outputs_ready() {
+			return false
+		}
+	}
+	return true
+}
+
+//
 
 // EdgeSet acts as a sorted set of *Edge, so map[*Edge]struct{} but with sorted
 // pop.
@@ -316,27 +469,115 @@ func (e *EdgeSet) recreate() {
 	})
 }
 
-// ImplicitDepLoader loads implicit dependencies, as referenced via the
-// "depfile" attribute in build files.
-type ImplicitDepLoader struct {
-	state_                  *State
-	disk_interface_         DiskInterface
-	deps_log_               *DepsLog
-	depfile_parser_options_ *DepfileParserOptions
-}
+//
 
-func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
-	return ImplicitDepLoader{
-		state_:                  state,
-		disk_interface_:         disk_interface,
-		deps_log_:               deps_log,
-		depfile_parser_options_: depfile_parser_options,
+// An Env for an Edge, providing $in and $out.
+type EdgeEnv struct {
+	lookups_       []string
+	edge_          *Edge
+	escape_in_out_ EscapeKind
+	recursive_     bool
+}
+type EscapeKind int
+
+const (
+	kShellEscape EscapeKind = iota
+	kDoNotEscape
+)
+
+func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
+	return EdgeEnv{
+		edge_:          edge,
+		escape_in_out_: escape,
 	}
 }
 
-func (i *ImplicitDepLoader) deps_log() *DepsLog {
-	return i.deps_log_
+func (e *EdgeEnv) LookupVariable(var2 string) string {
+	if var2 == "in" || var2 == "in_newline" {
+		explicit_deps_count := len(e.edge_.inputs_) - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
+		s := byte('\n')
+		if var2 == "in" {
+			s = ' '
+		}
+		return e.MakePathList(e.edge_.inputs_[:explicit_deps_count], s)
+	} else if var2 == "out" {
+		explicit_outs_count := len(e.edge_.outputs_) - e.edge_.implicit_outs_
+		return e.MakePathList(e.edge_.outputs_[:explicit_outs_count], ' ')
+	}
+
+	if e.recursive_ {
+		i := 0
+		for ; i < len(e.lookups_); i++ {
+			if e.lookups_[i] == var2 {
+				break
+			}
+		}
+		if i != len(e.lookups_) {
+			cycle := ""
+			for ; i < len(e.lookups_); i++ {
+				cycle += e.lookups_[i] + " -> "
+			}
+			cycle += var2
+			Fatal(("cycle in rule variables: " + cycle))
+		}
+	}
+
+	// See notes on BindingEnv::LookupWithFallback.
+	eval := e.edge_.rule_.GetBinding(var2)
+	if e.recursive_ && eval != nil {
+		e.lookups_ = append(e.lookups_, var2)
+	}
+
+	// In practice, variables defined on rules never use another rule variable.
+	// For performance, only start checking for cycles after the first lookup.
+	e.recursive_ = true
+	return e.edge_.env_.LookupWithFallback(var2, eval, e)
 }
+
+// Given a span of Nodes, construct a list of paths suitable for a command
+// line.
+func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
+	result := ""
+	for _, i := range span {
+		if len(result) != 0 {
+			result += string(sep)
+		}
+		path := i.PathDecanonicalized()
+		if e.escape_in_out_ == kShellEscape {
+			if runtime.GOOS == "windows" {
+				result += GetWin32EscapedString(path)
+			} else {
+				result += GetShellEscapedString(path)
+			}
+		} else {
+			result += path
+		}
+	}
+	return result
+}
+
+func PathDecanonicalized(path string, slash_bits uint64) string {
+	if runtime.GOOS != "windows" {
+		return path
+	}
+	result := []byte(path)
+	mask := uint64(1)
+
+	for c := 0; ; c++ {
+		d := bytes.IndexByte(result[c:], '/')
+		if d == -1 {
+			break
+		}
+		c += d
+		if slash_bits&mask != 0 {
+			result[c] = '\\'
+		}
+		mask <<= 1
+	}
+	return unsafeString(result)
+}
+
+//
 
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputs_ready state of all the nodes and edges.
@@ -365,29 +606,6 @@ func (d *DependencyScan) set_build_log(log *BuildLog) {
 
 func (d *DependencyScan) deps_log() *DepsLog {
 	return d.dep_loader_.deps_log()
-}
-
-// Return false on error.
-func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
-	defer METRIC_RECORD("node stat")()
-	n.mtime_ = disk_interface.Stat(n.path_, err)
-	if n.mtime_ == -1 {
-		return false
-	}
-	n.exists_ = ExistenceStatusMissing
-	if n.mtime_ != 0 {
-		n.exists_ = ExistenceStatusExists
-	}
-	return true
-}
-
-// If the file doesn't exist, set the mtime_ from its dependencies
-func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
-	if !n.exists() {
-		if mtime > n.mtime_ {
-			n.mtime_ = mtime
-		}
-	}
 }
 
 // Update the |dirty_| state of the given node by transitively inspecting their
@@ -734,234 +952,28 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 	return d.dyndep_loader_.LoadDyndeps(node, ddf, err)
 }
 
-// Return true if all inputs' in-edges are ready.
-func (e *Edge) AllInputsReady() bool {
-	for _, i := range e.inputs_ {
-		if i.in_edge() != nil && !i.in_edge().outputs_ready() {
-			return false
-		}
-	}
-	return true
+//
+
+// ImplicitDepLoader loads implicit dependencies, as referenced via the
+// "depfile" attribute in build files.
+type ImplicitDepLoader struct {
+	state_                  *State
+	disk_interface_         DiskInterface
+	deps_log_               *DepsLog
+	depfile_parser_options_ *DepfileParserOptions
 }
 
-// An Env for an Edge, providing $in and $out.
-type EdgeEnv struct {
-	lookups_       []string
-	edge_          *Edge
-	escape_in_out_ EscapeKind
-	recursive_     bool
-}
-type EscapeKind int
-
-const (
-	kShellEscape EscapeKind = iota
-	kDoNotEscape
-)
-
-func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
-	return EdgeEnv{
-		edge_:          edge,
-		escape_in_out_: escape,
+func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
+	return ImplicitDepLoader{
+		state_:                  state,
+		disk_interface_:         disk_interface,
+		deps_log_:               deps_log,
+		depfile_parser_options_: depfile_parser_options,
 	}
 }
 
-func (e *EdgeEnv) LookupVariable(var2 string) string {
-	if var2 == "in" || var2 == "in_newline" {
-		explicit_deps_count := len(e.edge_.inputs_) - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
-		s := byte('\n')
-		if var2 == "in" {
-			s = ' '
-		}
-		return e.MakePathList(e.edge_.inputs_[:explicit_deps_count], s)
-	} else if var2 == "out" {
-		explicit_outs_count := len(e.edge_.outputs_) - e.edge_.implicit_outs_
-		return e.MakePathList(e.edge_.outputs_[:explicit_outs_count], ' ')
-	}
-
-	if e.recursive_ {
-		i := 0
-		for ; i < len(e.lookups_); i++ {
-			if e.lookups_[i] == var2 {
-				break
-			}
-		}
-		if i != len(e.lookups_) {
-			cycle := ""
-			for ; i < len(e.lookups_); i++ {
-				cycle += e.lookups_[i] + " -> "
-			}
-			cycle += var2
-			Fatal(("cycle in rule variables: " + cycle))
-		}
-	}
-
-	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge_.rule_.GetBinding(var2)
-	if e.recursive_ && eval != nil {
-		e.lookups_ = append(e.lookups_, var2)
-	}
-
-	// In practice, variables defined on rules never use another rule variable.
-	// For performance, only start checking for cycles after the first lookup.
-	e.recursive_ = true
-	return e.edge_.env_.LookupWithFallback(var2, eval, e)
-}
-
-// Given a span of Nodes, construct a list of paths suitable for a command
-// line.
-func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
-	result := ""
-	for _, i := range span {
-		if len(result) != 0 {
-			result += string(sep)
-		}
-		path := i.PathDecanonicalized()
-		if e.escape_in_out_ == kShellEscape {
-			if runtime.GOOS == "windows" {
-				result += GetWin32EscapedString(path)
-			} else {
-				result += GetShellEscapedString(path)
-			}
-		} else {
-			result += path
-		}
-	}
-	return result
-}
-
-// Expand all variables in a command and return it as a string.
-// If incl_rsp_file is enabled, the string will also contain the
-// full contents of a response file (if applicable)
-func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
-	command := e.GetBinding("command")
-	if incl_rsp_file {
-		rspfile_content := e.GetBinding("rspfile_content")
-		if rspfile_content != "" {
-			command += ";rspfile=" + rspfile_content
-		}
-	}
-	return command
-}
-
-// Returns the shell-escaped value of |key|.
-func (e *Edge) GetBinding(key string) string {
-	env := NewEdgeEnv(e, kShellEscape)
-	return env.LookupVariable(key)
-}
-
-func (e *Edge) GetBindingBool(key string) bool {
-	return e.GetBinding(key) != ""
-}
-
-// Like GetBinding("depfile"), but without shell escaping.
-func (e *Edge) GetUnescapedDepfile() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
-	return env.LookupVariable("depfile")
-}
-
-// Like GetBinding("dyndep"), but without shell escaping.
-func (e *Edge) GetUnescapedDyndep() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
-	return env.LookupVariable("dyndep")
-}
-
-// Like GetBinding("rspfile"), but without shell escaping.
-func (e *Edge) GetUnescapedRspfile() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
-	return env.LookupVariable("rspfile")
-}
-
-func (e *Edge) Dump(prefix string) {
-	fmt.Printf("%s[ ", prefix)
-	for _, i := range e.inputs_ {
-		if i != nil {
-			fmt.Printf("%s ", i.path())
-		}
-	}
-	fmt.Printf("--%s-> ", e.rule_.name())
-	for _, i := range e.outputs_ {
-		fmt.Printf("%s ", i.path())
-	}
-	if len(e.validations_) != 0 {
-		fmt.Printf(" validations ")
-		for _, i := range e.validations_ {
-			fmt.Printf("%s ", i.path())
-		}
-	}
-	if e.pool_ != nil {
-		if e.pool_.name() != "" {
-			fmt.Printf("(in pool '%s')", e.pool_.name())
-		}
-	} else {
-		fmt.Printf("(null pool?)")
-	}
-	fmt.Printf("] 0x%p\n", e)
-}
-
-func (e *Edge) is_phony() bool {
-	return e.rule_ == kPhonyRule
-}
-
-func (e *Edge) use_console() bool {
-	return e.pool() == kConsolePool
-}
-
-func (e *Edge) maybe_phonycycle_diagnostic() bool {
-	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
-	// of the form "build a: phony ... a ...".   Restrict our
-	// "phonycycle" diagnostic option to the form it used.
-	return e.is_phony() && len(e.outputs_) == 1 && e.implicit_outs_ == 0 && e.implicit_deps_ == 0
-}
-
-func PathDecanonicalized(path string, slash_bits uint64) string {
-	if runtime.GOOS != "windows" {
-		return path
-	}
-	result := []byte(path)
-	mask := uint64(1)
-
-	for c := 0; ; c++ {
-		d := bytes.IndexByte(result[c:], '/')
-		if d == -1 {
-			break
-		}
-		c += d
-		if slash_bits&mask != 0 {
-			result[c] = '\\'
-		}
-		mask <<= 1
-	}
-	return unsafeString(result)
-}
-
-func (n *Node) Dump(prefix string) {
-	s := ""
-	if !n.exists() {
-		s = " (:missing)"
-	}
-	t := " clean"
-	if n.dirty() {
-		t = " dirty"
-	}
-	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.path(), n, n.mtime(), s, t)
-	if n.in_edge() != nil {
-		n.in_edge().Dump("in-edge: ")
-	} else {
-		fmt.Printf("no in-edge\n")
-	}
-	fmt.Printf(" out edges:\n")
-	for _, e := range n.out_edges() {
-		if e == nil {
-			break
-		}
-		e.Dump(" +- ")
-	}
-	if len(n.validation_out_edges()) != 0 {
-		fmt.Printf(" validation out edges:\n")
-		for _, e := range n.validation_out_edges() {
-			e.Dump(" +- ")
-		}
-	}
+func (i *ImplicitDepLoader) deps_log() *DepsLog {
+	return i.deps_log_
 }
 
 // Load implicit dependencies for \a edge.

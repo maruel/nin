@@ -19,36 +19,6 @@ import (
 	"time"
 )
 
-// Plan stores the state of a build plan: what we intend to build,
-// which steps we're ready to execute.
-type Plan struct {
-	// Keep track of which edges we want to build in this plan.  If this map does
-	// not contain an entry for an edge, we do not want to build the entry or its
-	// dependents.  If it does contain an entry, the enumeration indicates what
-	// we want for the edge.
-	want_ map[*Edge]Want
-
-	ready_ *EdgeSet
-
-	builder_ *Builder
-
-	// Total number of edges that have commands (not phony).
-	command_edges_ int
-
-	// Total remaining number of wanted edges.
-	wanted_edges_ int
-}
-
-// Returns true if there's more work to be done.
-func (p *Plan) more_to_do() bool {
-	return p.wanted_edges_ > 0 && p.command_edges_ > 0
-}
-
-// Number of edges with commands to run.
-func (p *Plan) command_edge_count() int {
-	return p.command_edges_
-}
-
 type EdgeResult bool
 
 const (
@@ -101,13 +71,6 @@ func (r *Result) success() bool {
 	return r.status == ExitSuccess
 }
 
-/*
-func (c *CommandRunner) GetActiveEdges() []*Edge {
-	return nil
-}
-func (c *CommandRunner) Abort() {}
-*/
-
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
 	verbosity        Verbosity
@@ -136,29 +99,6 @@ const (
 	NORMAL                            // regular output and status update
 	VERBOSE
 )
-
-// Builder wraps the build process: starting commands, updating status.
-type Builder struct {
-	state_          *State
-	config_         *BuildConfig
-	plan_           Plan
-	command_runner_ CommandRunner
-	status_         Status
-
-	// Map of running edge to time the edge started running.
-	running_edges_ RunningEdgeMap
-
-	// Time the build started.
-	start_time_millis_ int64
-
-	disk_interface_ DiskInterface
-	scan_           DependencyScan
-}
-
-// Used for tests.
-func (b *Builder) SetBuildLog(log *BuildLog) {
-	b.scan_.set_build_log(log)
-}
 
 type RunningEdgeMap map[*Edge]int32
 
@@ -196,6 +136,102 @@ func (d *DryRunCommandRunner) GetActiveEdges() []*Edge {
 }
 
 func (d *DryRunCommandRunner) Abort() {
+}
+
+type RealCommandRunner struct {
+	config_          *BuildConfig
+	subprocs_        SubprocessSet
+	subproc_to_edge_ map[Subprocess]*Edge
+}
+
+func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
+	return &RealCommandRunner{
+		config_:          config,
+		subprocs_:        NewSubprocessSet(),
+		subproc_to_edge_: map[Subprocess]*Edge{},
+	}
+}
+
+func (r *RealCommandRunner) GetActiveEdges() []*Edge {
+	var edges []*Edge
+	for _, e := range r.subproc_to_edge_ {
+		edges = append(edges, e)
+	}
+	return edges
+}
+
+func (r *RealCommandRunner) Abort() {
+	r.subprocs_.Clear()
+}
+
+func (r *RealCommandRunner) CanRunMore() bool {
+	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
+	more := subproc_number < r.config_.parallelism
+	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || GetLoadAverage() < r.config_.max_load_average
+	return more && load
+}
+
+func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
+	command := edge.EvaluateCommand(false)
+	subproc := r.subprocs_.Add(command, edge.use_console())
+	if subproc == nil {
+		return false
+	}
+	r.subproc_to_edge_[subproc] = edge
+	return true
+}
+
+func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
+	var subproc Subprocess
+	for {
+		subproc = r.subprocs_.NextFinished()
+		if subproc != nil {
+			break
+		}
+		if r.subprocs_.DoWork() {
+			return false
+		}
+	}
+
+	result.status = subproc.Finish()
+	result.output = subproc.GetOutput()
+
+	e := r.subproc_to_edge_[subproc]
+	result.edge = e
+	delete(r.subproc_to_edge_, subproc)
+	return true
+}
+
+//
+
+// Plan stores the state of a build plan: what we intend to build,
+// which steps we're ready to execute.
+type Plan struct {
+	// Keep track of which edges we want to build in this plan.  If this map does
+	// not contain an entry for an edge, we do not want to build the entry or its
+	// dependents.  If it does contain an entry, the enumeration indicates what
+	// we want for the edge.
+	want_ map[*Edge]Want
+
+	ready_ *EdgeSet
+
+	builder_ *Builder
+
+	// Total number of edges that have commands (not phony).
+	command_edges_ int
+
+	// Total remaining number of wanted edges.
+	wanted_edges_ int
+}
+
+// Returns true if there's more work to be done.
+func (p *Plan) more_to_do() bool {
+	return p.wanted_edges_ > 0 && p.command_edges_ > 0
+}
+
+// Number of edges with commands to run.
+func (p *Plan) command_edge_count() int {
+	return p.command_edges_
 }
 
 func NewPlan(builder *Builder) Plan {
@@ -606,68 +642,29 @@ func (p *Plan) Dump() {
 	}
 }
 
-type RealCommandRunner struct {
-	config_          *BuildConfig
-	subprocs_        SubprocessSet
-	subproc_to_edge_ map[Subprocess]*Edge
+//
+
+// Builder wraps the build process: starting commands, updating status.
+type Builder struct {
+	state_          *State
+	config_         *BuildConfig
+	plan_           Plan
+	command_runner_ CommandRunner
+	status_         Status
+
+	// Map of running edge to time the edge started running.
+	running_edges_ RunningEdgeMap
+
+	// Time the build started.
+	start_time_millis_ int64
+
+	disk_interface_ DiskInterface
+	scan_           DependencyScan
 }
 
-func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
-	return &RealCommandRunner{
-		config_:          config,
-		subprocs_:        NewSubprocessSet(),
-		subproc_to_edge_: map[Subprocess]*Edge{},
-	}
-}
-
-func (r *RealCommandRunner) GetActiveEdges() []*Edge {
-	var edges []*Edge
-	for _, e := range r.subproc_to_edge_ {
-		edges = append(edges, e)
-	}
-	return edges
-}
-
-func (r *RealCommandRunner) Abort() {
-	r.subprocs_.Clear()
-}
-
-func (r *RealCommandRunner) CanRunMore() bool {
-	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
-	more := subproc_number < r.config_.parallelism
-	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || GetLoadAverage() < r.config_.max_load_average
-	return more && load
-}
-
-func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
-	command := edge.EvaluateCommand(false)
-	subproc := r.subprocs_.Add(command, edge.use_console())
-	if subproc == nil {
-		return false
-	}
-	r.subproc_to_edge_[subproc] = edge
-	return true
-}
-
-func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-	var subproc Subprocess
-	for {
-		subproc = r.subprocs_.NextFinished()
-		if subproc != nil {
-			break
-		}
-		if r.subprocs_.DoWork() {
-			return false
-		}
-	}
-
-	result.status = subproc.Finish()
-	result.output = subproc.GetOutput()
-
-	e := r.subproc_to_edge_[subproc]
-	result.edge = e
-	delete(r.subproc_to_edge_, subproc)
-	return true
+// Used for tests.
+func (b *Builder) SetBuildLog(log *BuildLog) {
+	b.scan_.set_build_log(log)
 }
 
 func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, status Status, start_time_millis int64) *Builder {

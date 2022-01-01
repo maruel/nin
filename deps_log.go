@@ -23,6 +23,21 @@ import (
 	"os"
 )
 
+// Reading (startup-time) interface.
+type Deps struct {
+	mtime      TimeStamp
+	node_count int
+	nodes      []*Node
+}
+
+func NewDeps(mtime TimeStamp, node_count int) *Deps {
+	return &Deps{
+		mtime:      mtime,
+		node_count: node_count,
+		nodes:      make([]*Node, node_count),
+	}
+}
+
 // As build commands run they can output extra dependency information
 // (e.g. header dependencies for C source) dynamically.  DepsLog collects
 // that information at build time and uses it for subsequent builds.
@@ -76,21 +91,6 @@ type DepsLog struct {
 
 func NewDepsLog() DepsLog {
 	return DepsLog{}
-}
-
-// Reading (startup-time) interface.
-type Deps struct {
-	mtime      TimeStamp
-	node_count int
-	nodes      []*Node
-}
-
-func NewDeps(mtime TimeStamp, node_count int) *Deps {
-	return &Deps{
-		mtime:      mtime,
-		node_count: node_count,
-		nodes:      make([]*Node, node_count),
-	}
 }
 
 // Used for tests.

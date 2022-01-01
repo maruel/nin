@@ -68,20 +68,6 @@ type DiskInterface interface {
 	RemoveFile(path string) int
 }
 
-// Implementation of DiskInterface that actually hits the disk.
-type RealDiskInterface struct {
-	// Whether stat information can be cached.
-	use_cache_ bool
-
-	// TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
-	// works out, come up with a better data structure.
-	cache_ Cache
-}
-
-func NewRealDiskInterface() RealDiskInterface {
-	return RealDiskInterface{}
-}
-
 type DirCache map[string]TimeStamp
 type Cache map[string]DirCache
 
@@ -238,6 +224,22 @@ func MakeDirs(d DiskInterface, path string) bool {
 		return false
 	}
 	return d.MakeDir(dir)
+}
+
+//
+
+// Implementation of DiskInterface that actually hits the disk.
+type RealDiskInterface struct {
+	// Whether stat information can be cached.
+	use_cache_ bool
+
+	// TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
+	// works out, come up with a better data structure.
+	cache_ Cache
+}
+
+func NewRealDiskInterface() RealDiskInterface {
+	return RealDiskInterface{}
 }
 
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {

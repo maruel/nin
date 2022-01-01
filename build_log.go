@@ -25,29 +25,6 @@ import (
 	"unsafe"
 )
 
-// Can answer questions about the manifest for the BuildLog.
-type BuildLogUser interface {
-	IsPathDead(s string) bool
-}
-
-// Store a log of every command ran for every build.
-// It has a few uses:
-//
-// 1) (hashes of) command lines for existing output files, so we know
-//    when we need to rebuild due to the command changing
-// 2) timing information, perhaps for generating reports
-// 3) restat information
-type BuildLog struct {
-	entries_            Entries
-	log_file_           *os.File
-	log_file_path_      string
-	needs_recompaction_ bool
-}
-
-func NewBuildLog() BuildLog {
-	return BuildLog{entries_: Entries{}}
-}
-
 type LogEntry struct {
 	output       string
 	command_hash uint64
@@ -133,6 +110,31 @@ func MurmurHash64A(data []byte) uint64 {
 func HashCommand(command string) uint64 {
 	// TODO(maruel): Memory copy.
 	return MurmurHash64A([]byte(command))
+}
+
+//
+
+// Can answer questions about the manifest for the BuildLog.
+type BuildLogUser interface {
+	IsPathDead(s string) bool
+}
+
+// Store a log of every command ran for every build.
+// It has a few uses:
+//
+// 1) (hashes of) command lines for existing output files, so we know
+//    when we need to rebuild due to the command changing
+// 2) timing information, perhaps for generating reports
+// 3) restat information
+type BuildLog struct {
+	entries_            Entries
+	log_file_           *os.File
+	log_file_path_      string
+	needs_recompaction_ bool
+}
+
+func NewBuildLog() BuildLog {
+	return BuildLog{entries_: Entries{}}
 }
 
 // Prepares writing to the log file without actually opening it - that will
