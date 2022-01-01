@@ -24,15 +24,15 @@ fi
 
 echo "Building ninja_test from scratch with both ninja and nin."
 echo ""
-echo "./ninja --quiet ninja_test"
+echo "./ninja --quiet -d stats ninja_test"
 rm -rf build ninja_test
-time ./ninja --quiet ninja_test
+time ./ninja --quiet -d stats ninja_test
 
 echo ""
-echo "nin --quiet ninja_test"
+echo "nin --quiet -d stats ninja_test"
 rm -rf build ninja_test
 go install ./cmd/nin
-time nin --quiet ninja_test
+time nin --quiet -d stats ninja_test
 
 # Build the remaining performance tests.
 ./ninja --quiet build_log_perftest depfile_parser_perftest manifest_parser_perftest
