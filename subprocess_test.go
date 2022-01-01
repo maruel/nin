@@ -334,25 +334,18 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipped on windows")
 	}
-	t.Skip("TODO")
+
 	// Arbitrary big number; needs to be over 1024 to confirm we're no longer
 	// hostage to pselect.
-	kNumProcs := 1025
+	const numProcs = 1025
 
-	/*
-	  // Make sure [ulimit -n] isn't going to stop us from working.
-	  var rlim rlimit
-	  if 0 != getrlimit(RLIMIT_NOFILE, &rlim) { t.Fatal("expected equal") }
-	  if rlim.rlim_cur < kNumProcs {
-	    fmt.Printf("Raise [ulimit -n] above %u (currently %lu) to make this test go\n", kNumProcs, rlim.rlim_cur)
-	    return
-	  }
-	*/
+	subprocessTestFixUlimit(t, numProcs)
+	cmd := "/bin/echo"
 
 	subprocs_ := NewSubprocessSetTest(t)
 	var procs []Subprocess
-	for i := 0; i < kNumProcs; i++ {
-		subproc := subprocs_.Add("/bin/echo", false)
+	for i := 0; i < numProcs; i++ {
+		subproc := subprocs_.Add(cmd, false)
 		if nil == subproc {
 			t.Fatal("expected different")
 		}
@@ -369,7 +362,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 			t.Fatal("expected different")
 		}
 	}
-	if kNumProcs != subprocs_.Finished() {
+	if numProcs != subprocs_.Finished() {
 		t.Fatal("expected equal")
 	}
 }

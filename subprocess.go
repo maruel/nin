@@ -47,7 +47,7 @@ type SubprocessSet interface {
 // SubprocessGeneric is the dumbest implementation, just to get going.
 type SubprocessGeneric struct {
 	done     int32
-	exitCode int // int32
+	exitCode int32
 	buf      string
 }
 
@@ -57,7 +57,7 @@ func (s *SubprocessGeneric) Done() bool {
 }
 
 func (s *SubprocessGeneric) Finish() ExitStatus {
-	return s.exitCode
+	return ExitStatus(s.exitCode)
 }
 
 func (s *SubprocessGeneric) GetOutput() string {
@@ -99,20 +99,19 @@ func (s *SubprocessGeneric) run(ctx context.Context, c string, use_console bool)
 	_ = cmd.Run()
 	// Skip a memory copy.
 	s.buf = unsafeString(buf.Bytes())
-	s.exitCode = cmd.ProcessState.ExitCode()
+	// TODO(maruel): For compatibility with ninja, use ExitInterrupted (2) for
+	// interrupted?
+	s.exitCode = int32(cmd.ProcessState.ExitCode())
 }
 
 type SubprocessSetGeneric struct {
-	ctx      context.Context
-	cancel   func()
-	wg       sync.WaitGroup
-	procDone chan *SubprocessGeneric
-	mu       sync.Mutex
-	running_ []*SubprocessGeneric
-
-	// A one off dequeue. Maybe a Go generic in 1.18?
-	finished_      []*SubprocessGeneric
-	finishedOffset int
+	ctx       context.Context
+	cancel    func()
+	wg        sync.WaitGroup
+	procDone  chan *SubprocessGeneric
+	mu        sync.Mutex
+	running_  []*SubprocessGeneric
+	finished_ []*SubprocessGeneric
 }
 
 func NewSubprocessSet() *SubprocessSetGeneric {
@@ -127,9 +126,8 @@ func NewSubprocessSet() *SubprocessSetGeneric {
 func (s *SubprocessSetGeneric) Clear() {
 	s.cancel()
 	s.wg.Wait()
-	s.mu.Lock()
-	s.running_ = nil
-	s.mu.Unlock()
+	// TODO(maruel): This is still broken, since the goroutines are stuck on
+	// s.procDone <- subproc.
 }
 
 func (s *SubprocessSetGeneric) Running() int {
@@ -141,7 +139,7 @@ func (s *SubprocessSetGeneric) Running() int {
 
 func (s *SubprocessSetGeneric) Finished() int {
 	s.mu.Lock()
-	f := len(s.finished_) - s.finishedOffset
+	f := len(s.finished_)
 	s.mu.Unlock()
 	return f
 }
@@ -168,15 +166,10 @@ func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, use
 func (s *SubprocessSetGeneric) NextFinished() Subprocess {
 	s.mu.Lock()
 	var subproc Subprocess
-	if len(s.finished_) != s.finishedOffset {
-		subproc = s.finished_[s.finishedOffset]
-		s.finishedOffset++
-		// 256 items on a 64 bits OS is 2kiB of RAM.
-		if s.finishedOffset >= 256 {
-			// Move stuff up front.
-			copy(s.finished_, s.finished_[s.finishedOffset:])
-			s.finished_ = s.finished_[:len(s.finished_)-s.finishedOffset]
-		}
+	if len(s.finished_) != 0 {
+		// LIFO queue.
+		subproc = s.finished_[len(s.finished_)-1]
+		s.finished_ = s.finished_[:len(s.finished_)-1]
 	}
 	s.mu.Unlock()
 	return subproc
@@ -194,6 +187,7 @@ func (s *SubprocessSetGeneric) DoWork() bool {
 	for {
 		select {
 		case p := <-s.procDone:
+			// TODO(maruel): Do a perf compare with a map[*SubprocessGeneric]struct{}.
 			s.mu.Lock()
 			i := 0
 			for i = range s.running_ {
