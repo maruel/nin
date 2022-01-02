@@ -301,12 +301,12 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			// TODO(maruel): Not super efficient but looking for correctness now.
 			// Optimize later.
 			r := bytes.NewReader(buf[:size])
-			out_id := uint32(0)
-			if err2 := binary.Read(r, binary.LittleEndian, &out_id); err2 != nil {
+			outID := int32(0)
+			if err2 := binary.Read(r, binary.LittleEndian, &outID); err2 != nil {
 				panic(err2)
 			}
 			// TODO(maruel): It seems like it's registering invalid IDs.
-			if out_id >= 0x1000000 {
+			if outID < 0 || outID >= 0x1000000 {
 				// That's a lot of nodes.
 				read_failed = true
 				// TODO(maruel): Make it a real error.
@@ -334,7 +334,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 
 			total_dep_record_count++
-			if !d.UpdateDeps(int(out_id), deps) {
+			if !d.UpdateDeps(outID, deps) {
 				unique_dep_record_count++
 			}
 		} else {
@@ -368,9 +368,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			if err2 := binary.Read(bytes.NewReader(buf[size-4:]), binary.LittleEndian, &checksum); err2 != nil {
 				panic(err2)
 			}
-			expected_id := ^checksum
-			id := len(d.nodes_)
-			if id != int(expected_id) {
+			expectedID := ^checksum
+			id := int32(len(d.nodes_))
+			if id != int32(expectedID) {
 				read_failed = true
 				// TODO(maruel): Make it a real error.
 				break
@@ -416,7 +416,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 func (d *DepsLog) GetDeps(node *Node) *Deps {
 	// Abort if the node has no id (never referenced in the deps) or if
 	// there's no deps recorded for the node.
-	if node.ID < 0 || node.ID >= len(d.deps_) {
+	if node.ID < 0 || int(node.ID) >= len(d.deps_) {
 		return nil
 	}
 	return d.deps_[node.ID]
@@ -515,12 +515,12 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
-func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
-	if n := out_id + 1 - len(d.deps_); n > 0 {
+func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
+	if n := int(outID) + 1 - len(d.deps_); n > 0 {
 		d.deps_ = append(d.deps_, make([]*Deps, n)...)
 	}
-	existed := d.deps_[out_id] != nil
-	d.deps_[out_id] = deps
+	existed := d.deps_[outID] != nil
+	d.deps_[outID] = deps
 	return existed
 }
 
@@ -557,7 +557,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
 			return false
 		}
 	}
-	id := len(d.nodes_)
+	id := int32(len(d.nodes_))
 	checksum := ^uint32(id)
 	if err := binary.Write(d.buf, binary.LittleEndian, checksum); err != nil {
 		// TODO(maruel): Make it a real error.

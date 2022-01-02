@@ -41,6 +41,9 @@ type Node struct {
 	//   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
 	mtime_ TimeStamp
 
+	// A dense integer id for the node, assigned and used by DepsLog.
+	ID int32
+
 	exists_ ExistenceStatus
 
 	// Dirty is true when the underlying file is out-of-date.
@@ -61,9 +64,6 @@ type Node struct {
 
 	// All Edges that use this Node as a validation.
 	ValidationOutEdges []*Edge
-
-	// A dense integer id for the node, assigned and used by DepsLog.
-	ID int
 }
 
 func NewNode(path string, slashBits uint64) *Node {
@@ -71,8 +71,8 @@ func NewNode(path string, slashBits uint64) *Node {
 		Path:      path,
 		SlashBits: slashBits,
 		mtime_:    -1,
-		exists_:   ExistenceStatusUnknown,
 		ID:        -1,
+		exists_:   ExistenceStatusUnknown,
 	}
 }
 

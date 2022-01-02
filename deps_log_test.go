@@ -84,7 +84,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 	for i := 0; i < len(log1.nodes()); i++ {
 		node1 := log1.nodes()[i]
 		node2 := log2.nodes()[i]
-		if i != node1.ID {
+		if int32(i) != node1.ID {
 			t.Fatal("expected equal")
 		}
 		if node1.ID != node2.ID {
