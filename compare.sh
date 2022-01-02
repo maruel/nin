@@ -40,11 +40,6 @@ time nin --quiet -d stats ninja_test
 # Build the remaining performance tests.
 ./ninja --quiet build_log_perftest depfile_parser_perftest manifest_parser_perftest
 
-# Unless the version of re2c locally exactly matches what is in the source
-# repositories, the version number will change.
-# TODO(maruel): Fix it upstream.
-git checkout HEAD src/depfile_parser.cc src/lexer.cc
-
 echo ""
 echo "Comparing build_log_perftest:"
 echo "C++"
