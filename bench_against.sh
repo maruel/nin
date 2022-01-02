@@ -18,6 +18,7 @@ set -eu
 AGAINST=HEAD~1
 COUNT=10
 BENCH=.
+DURATION=100ms
 
 # Make sure the tree is checked out and pristine, otherwise we could loose the
 # checkout.
@@ -37,12 +38,12 @@ if ! which benchstat > /dev/null ; then
   go install golang.org/x/perf/cmd/benchstat@latest
 fi
 
-echo "Running go test -bench=$BENCH -count=$COUNT on $BRANCH"
-go test -count=$COUNT -bench=$BENCH -run '^$' -cpu 1 > new.txt
+echo "Running go test -bench=$BENCH -benchtime=$DURATION -count=$COUNT on $BRANCH"
+go test -count=$COUNT -bench=$BENCH -benchtime=$DURATION  -run '^$' -cpu 1 > new.txt
 
-echo "Running go test -bench=$BENCH -count=$COUNT on $AGAINST"
+echo "Running go test -bench=$BENCH -benchtime=$DURATION  -count=$COUNT on $AGAINST"
 git checkout -q $AGAINST
-go test -count=$COUNT -bench=$BENCH -run '^$' -cpu 1 > old.txt
+go test -count=$COUNT -bench=$BENCH -benchtime=$DURATION  -run '^$' -cpu 1 > old.txt
 git checkout -q $BRANCH
 
 benchstat old.txt new.txt
