@@ -81,10 +81,10 @@ func CanonicalizePath(path string, slashBits *uint64) string {
 	dst := 0
 	src := 0
 
-	if IsPathSeparator(p[src]) {
-		if runtime.GOOS == "windows" {
+	if c := p[src]; c == '/' || c == '\\' {
+		if runtime.GOOS == "windows" && l > 1 {
 			// network path starts with //
-			if l > 1 && IsPathSeparator(p[src+1]) {
+			if c := p[src+1]; c == '/' || c == '\\' {
 				src += 2
 				dst += 2
 			} else {
@@ -100,28 +100,37 @@ func CanonicalizePath(path string, slashBits *uint64) string {
 	var components [60]int
 	for component_count := 0; src < l; {
 		if p[src] == '.' {
-			if src+1 == l || IsPathSeparator(p[src+1]) {
+			// It is fine to read one byte past because p is l+1 in
+			// length. It will be a 0 zero if so.
+			c := p[src+1]
+			if src+1 == l || (c == '/' || c == '\\') {
 				// '.' component; eliminate.
 				src += 2
 				continue
-			} else if p[src+1] == '.' && (src+2 == l || IsPathSeparator(p[src+2])) {
-				// '..' component.  Back up if possible.
-				if component_count > 0 {
-					dst = components[component_count-1]
-					src += 3
-					component_count--
-				} else {
-					p[dst] = p[src]
-					p[dst+1] = p[src+1]
-					p[dst+2] = p[src+2]
-					dst += 3
-					src += 3
+			}
+			if c == '.' {
+				// It is fine to read one byte past because p is l+1 in
+				// length. It will be a 0 zero if so.
+				c := p[src+2]
+				if src+2 == l || (c == '/' || c == '\\') {
+					// '..' component.  Back up if possible.
+					if component_count > 0 {
+						dst = components[component_count-1]
+						src += 3
+						component_count--
+					} else {
+						p[dst] = p[src]
+						p[dst+1] = p[src+1]
+						p[dst+2] = p[src+2]
+						dst += 3
+						src += 3
+					}
+					continue
 				}
-				continue
 			}
 		}
 
-		if IsPathSeparator(p[src]) {
+		if c := p[src]; c == '/' || c == '\\' {
 			src++
 			continue
 		}
@@ -132,8 +141,12 @@ func CanonicalizePath(path string, slashBits *uint64) string {
 		components[component_count] = dst
 		component_count++
 
-		for src != l && !IsPathSeparator(p[src]) {
-			p[dst] = p[src]
+		for src != l {
+			c := p[src]
+			if c == '/' || c == '\\' {
+				break
+			}
+			p[dst] = c
 			dst++
 			src++
 		}

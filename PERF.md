@@ -59,3 +59,15 @@ apple-to-apple comparison.
 ```
 ./compare.sh
 ```
+
+## Tips
+
+Use benchstat to compare Go benchmarks.
+
+```
+go install golang.org/x/perf/cmd/benchstat@latest
+go test -count=10 -bench=. -run '^$' -cpu 1 > new.txt
+git checkout HEAD~1
+go test -count=10 -bench=. -run '^$' -cpu 1 > old.txt
+benchstat old.txt new.txt
+```
