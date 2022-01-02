@@ -192,34 +192,42 @@ func StringNeedsWin32Escaping(input string) bool {
 	return false
 }
 
-// Appends |input| to |*result|, escaping according to the whims of either
-// Bash, or Win32's CommandLineToArgvW().
-// Appends the string directly to |result| without modification if we can
-// determine that it contains no problematic characters.
+// Escapes the item for bash.
 func GetShellEscapedString(input string) string {
 	if !StringNeedsShellEscaping(input) {
 		return input
 	}
 
-	kQuote := byte('\'')
-	kEscapeSequence := "'\\'"
-
-	result := string(kQuote)
-
-	span_begin := 0
-	end := len(input)
-	for it := 0; it != end; it++ {
-		if input[it] == kQuote {
-			result += input[span_begin:it]
-			result += kEscapeSequence
-			span_begin = it
+	const quote = byte('\'')
+	// Do one pass to calculate the ending size.
+	l := len(input) + 2
+	for i := 0; i != len(input); i++ {
+		if input[i] == quote {
+			l += 3
 		}
 	}
-	result += input[span_begin:]
-	result += string(kQuote)
-	return result
+
+	out := make([]byte, l)
+	out[0] = quote
+	offset := 1
+	for i := 0; i < len(input); i++ {
+		c := input[i]
+		out[offset] = c
+		if c == quote {
+			offset++
+			out[offset] = '\\'
+			offset++
+			out[offset] = '\''
+			offset++
+			out[offset] = '\''
+		}
+		offset++
+	}
+	out[offset] = quote
+	return unsafeString(out)
 }
 
+// Escapes the item for Windows's CommandLineToArgvW().
 func GetWin32EscapedString(input string) string {
 	if !StringNeedsWin32Escaping(input) {
 		return input
