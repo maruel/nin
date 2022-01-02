@@ -70,3 +70,9 @@ apple-to-apple comparison.
 ```
 ./compare_against_ninja.sh
 ```
+
+## Disassembling
+
+```
+./dump_asm.sh 'nin.CanonicalizePath$'
+```
