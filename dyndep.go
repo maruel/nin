@@ -120,7 +120,7 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 
 	// Add the dyndep-discovered outputs to the edge.
 	edge.outputs_ = append(edge.outputs_, dyndeps.implicit_outputs_...)
-	edge.implicit_outs_ += len(dyndeps.implicit_outputs_)
+	edge.implicit_outs_ += int32(len(dyndeps.implicit_outputs_))
 
 	// Add this edge as incoming to each new output.
 	for _, i := range dyndeps.implicit_outputs_ {
@@ -139,12 +139,12 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 
 	// Add the dyndep-discovered inputs to the edge.
 	old := edge.inputs_
-	offset := len(edge.inputs_) - edge.order_only_deps_
+	offset := len(edge.inputs_) - int(edge.order_only_deps_)
 	edge.inputs_ = make([]*Node, len(edge.inputs_)+len(dyndeps.implicit_inputs_))
 	copy(edge.inputs_, old[:offset])
 	copy(edge.inputs_[offset:], dyndeps.implicit_inputs_)
 	copy(edge.inputs_[offset+len(dyndeps.implicit_inputs_):], old[offset:])
-	edge.implicit_deps_ += len(dyndeps.implicit_inputs_)
+	edge.implicit_deps_ += int32(len(dyndeps.implicit_inputs_))
 
 	// Add this edge as outgoing from each new input.
 	for _, i := range dyndeps.implicit_inputs_ {

@@ -176,7 +176,7 @@ func (s *State) AddEdge(rule *Rule) *Edge {
 	edge.rule_ = rule
 	edge.pool_ = kDefaultPool
 	edge.env_ = s.bindings_
-	edge.id_ = len(s.edges_)
+	edge.id_ = int32(len(s.edges_))
 	s.edges_ = append(s.edges_, edge)
 	return edge
 }

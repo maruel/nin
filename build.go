@@ -450,7 +450,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 
 		// If all non-order-only inputs for this edge are now clean,
 		// we might have changed the dirty state of the outputs.
-		end := len(oe.inputs_) - oe.order_only_deps_
+		end := len(oe.inputs_) - int(oe.order_only_deps_)
 		found := false
 		for i := 0; i < end; i++ {
 			if oe.inputs_[i].Dirty {
@@ -972,7 +972,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			restat_mtime := TimeStamp(0)
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
-			for _, i := range edge.inputs_[:len(edge.inputs_)-edge.order_only_deps_] {
+			for _, i := range edge.inputs_[:len(edge.inputs_)-int(edge.order_only_deps_)] {
 				input_mtime := b.disk_interface_.Stat(i.Path, err)
 				if input_mtime == -1 {
 					return false

@@ -419,7 +419,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state_.edges_ = m.state_.edges_[:len(m.state_.edges_)-1]
 		return true
 	}
-	edge.implicit_outs_ = implicit_outs
+	edge.implicit_outs_ = int32(implicit_outs)
 
 	// TODO: edge.inputs_.reserve(ins.size())
 	for _, i := range ins {
@@ -430,8 +430,8 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		path, slashBits := CanonicalizePathBits(path)
 		m.state_.AddIn(edge, path, slashBits)
 	}
-	edge.implicit_deps_ = implicit
-	edge.order_only_deps_ = order_only
+	edge.implicit_deps_ = int32(implicit)
+	edge.order_only_deps_ = int32(order_only)
 
 	//edge.validations_.reserve(validations.size());
 	for _, v := range validations {

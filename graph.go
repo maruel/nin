@@ -35,6 +35,16 @@ type Node struct {
 
 	// Mutable.
 
+	// The Edge that produces this Node, or NULL when there is no
+	// known edge to produce it.
+	InEdge *Edge
+
+	// All Edges that use this Node as an input.
+	OutEdges []*Edge
+
+	// All Edges that use this Node as a validation.
+	ValidationOutEdges []*Edge
+
 	// Possible values of mtime_:
 	//   -1: file hasn't been examined
 	//   0:  we looked, and file doesn't exist
@@ -54,16 +64,6 @@ type Node struct {
 	// Store whether dyndep information is expected from this node but
 	// has not yet been loaded.
 	dyndep_pending_ bool
-
-	// The Edge that produces this Node, or NULL when there is no
-	// known edge to produce it.
-	InEdge *Edge
-
-	// All Edges that use this Node as an input.
-	OutEdges []*Edge
-
-	// All Edges that use this Node as a validation.
-	ValidationOutEdges []*Edge
 }
 
 func NewNode(path string, slashBits uint64) *Node {
@@ -202,19 +202,15 @@ const (
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
-	rule_                    *Rule
-	pool_                    *Pool
-	inputs_                  []*Node
-	outputs_                 []*Node
-	validations_             []*Node
-	dyndep_                  *Node
-	env_                     *BindingEnv
-	mark_                    VisitMark
-	id_                      int
-	outputs_ready_           bool
-	deps_loaded_             bool
-	deps_missing_            bool
-	generated_by_dep_loader_ bool
+	inputs_      []*Node
+	outputs_     []*Node
+	validations_ []*Node
+	rule_        *Rule
+	pool_        *Pool
+	dyndep_      *Node
+	env_         *BindingEnv
+	mark_        VisitMark
+	id_          int32
 
 	// There are three types of inputs.
 	// 1) explicit deps, which show up as $in on the command line;
@@ -224,15 +220,20 @@ type Edge struct {
 	//                     don't cause the target to rebuild.
 	// These are stored in inputs_ in that order, and we keep counts of
 	// #2 and #3 when we need to access the various subsets.
-	implicit_deps_   int
-	order_only_deps_ int
+	implicit_deps_   int32
+	order_only_deps_ int32
 
 	// There are two types of outputs.
 	// 1) explicit outs, which show up as $out on the command line;
 	// 2) implicit outs, which the target generates but are not part of $out.
 	// These are stored in outputs_ in that order, and we keep a count of
 	// #2 to use when we need to access the various subsets.
-	implicit_outs_ int
+	implicit_outs_ int32
+
+	outputs_ready_           bool
+	deps_loaded_             bool
+	deps_missing_            bool
+	generated_by_dep_loader_ bool
 }
 
 func NewEdge() *Edge {
@@ -261,13 +262,13 @@ func (e *Edge) outputs_ready() bool {
 	return e.outputs_ready_
 }
 func (e *Edge) is_implicit(index int) bool {
-	return index >= len(e.inputs_)-e.order_only_deps_-e.implicit_deps_ && !e.is_order_only(index)
+	return index >= len(e.inputs_)-int(e.order_only_deps_)-int(e.implicit_deps_) && !e.is_order_only(index)
 }
 func (e *Edge) is_order_only(index int) bool {
-	return index >= len(e.inputs_)-e.order_only_deps_
+	return index >= len(e.inputs_)-int(e.order_only_deps_)
 }
 func (e *Edge) is_implicit_out(index int) bool {
-	return index >= len(e.outputs_)-e.implicit_outs_
+	return index >= len(e.outputs_)-int(e.implicit_outs_)
 }
 
 // Expand all variables in a command and return it as a string.
@@ -468,14 +469,14 @@ func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
-		explicit_deps_count := len(e.edge_.inputs_) - e.edge_.implicit_deps_ - e.edge_.order_only_deps_
+		explicit_deps_count := len(e.edge_.inputs_) - int(e.edge_.implicit_deps_) - int(e.edge_.order_only_deps_)
 		s := byte('\n')
 		if var2 == "in" {
 			s = ' '
 		}
 		return e.MakePathList(e.edge_.inputs_[:explicit_deps_count], s)
 	} else if var2 == "out" {
-		explicit_outs_count := len(e.edge_.outputs_) - e.edge_.implicit_outs_
+		explicit_outs_count := len(e.edge_.outputs_) - int(e.edge_.implicit_outs_)
 		return e.MakePathList(e.edge_.outputs_[:explicit_outs_count], ' ')
 	}
 
@@ -1099,13 +1100,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	offset := len(edge.inputs_) - edge.order_only_deps_
+	offset := len(edge.inputs_) - int(edge.order_only_deps_)
 	old := edge.inputs_
 	edge.inputs_ = make([]*Node, len(old)+count)
 	copy(edge.inputs_, old[:offset])
 	copy(edge.inputs_[offset+count:], old[offset:])
-	edge.implicit_deps_ += count
-	return len(edge.inputs_) - edge.order_only_deps_ - count
+	edge.implicit_deps_ += int32(count)
+	return len(edge.inputs_) - int(edge.order_only_deps_) - count
 }
 
 // If we don't have a edge that generates this input already,
