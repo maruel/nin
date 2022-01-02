@@ -73,6 +73,33 @@ apple-to-apple comparison.
 
 ## Disassembling
 
+Disassemble a single function:
+
 ```
 ./dump_asm.sh 'nin.CanonicalizePath$'
+```
+
+List all bound checks:
+
+```
+go build ./cmd/nin
+go tool objdump -s 'nin\.' ./nin | grep panicIndex | cut -f 1 | sort -n
+```
+
+List all symbols in the binary and their size:
+
+```
+go tool nm -size nin  | grep github.com/maruel/nin
+```
+
+See the compiler optimization process in a web page:
+
+```
+GOSSAFUNC=nin.CanonicalizePath go build ./cmd/nin && open ssa.html
+```
+
+Escape analysis:
+
+```
+go build -gcflags="-m" .
 ```
