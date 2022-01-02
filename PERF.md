@@ -73,17 +73,22 @@ apple-to-apple comparison.
 
 ## Disassembling
 
+I wrote a small tool to post process `go tool objdump` output:
+
+```
+go install github.com/maruel/pat/cmd/...
+```
+
 Disassemble a single function:
 
 ```
-./dump_asm.sh 'nin.CanonicalizePath$'
+disfunc -f 'nin.CanonicalizePath$' -pkg ./cmd/nin | less -R
 ```
 
 List all bound checks:
 
 ```
-go build ./cmd/nin
-go tool objdump -s 'nin\.' ./nin | grep panicIndex | cut -f 1 | sort -n
+boundcheck -pkg ./cmd/nin | less -R
 ```
 
 List all symbols in the binary and their size:
