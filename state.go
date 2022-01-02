@@ -173,10 +173,10 @@ func (s *State) LookupPool(pool_name string) *Pool {
 
 func (s *State) AddEdge(rule *Rule) *Edge {
 	edge := NewEdge()
-	edge.rule_ = rule
-	edge.pool_ = kDefaultPool
-	edge.env_ = s.bindings_
-	edge.id_ = int32(len(s.edges_))
+	edge.Rule = rule
+	edge.Pool = kDefaultPool
+	edge.Env = s.bindings_
+	edge.ID = int32(len(s.edges_))
 	s.edges_ = append(s.edges_, edge)
 	return edge
 }
@@ -218,7 +218,7 @@ func (s *State) SpellcheckNode(path string) *Node {
 
 func (s *State) AddIn(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
-	edge.inputs_ = append(edge.inputs_, node)
+	edge.Inputs = append(edge.Inputs, node)
 	node.OutEdges = append(node.OutEdges, edge)
 }
 
@@ -227,14 +227,14 @@ func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
 	if node.InEdge != nil {
 		return false
 	}
-	edge.outputs_ = append(edge.outputs_, node)
+	edge.Outputs = append(edge.Outputs, node)
 	node.InEdge = edge
 	return true
 }
 
 func (s *State) AddValidation(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
-	edge.validations_ = append(edge.validations_, node)
+	edge.Validations = append(edge.Validations, node)
 	node.ValidationOutEdges = append(node.ValidationOutEdges, edge)
 }
 
@@ -254,7 +254,7 @@ func (s *State) RootNodes(err *string) []*Node {
 	var root_nodes []*Node
 	// Search for nodes with no output.
 	for _, e := range s.edges_ {
-		for _, out := range e.outputs_ {
+		for _, out := range e.Outputs {
 			if len(out.OutEdges) == 0 {
 				root_nodes = append(root_nodes, out)
 			}
@@ -284,9 +284,9 @@ func (s *State) Reset() {
 		n.Dirty = false
 	}
 	for _, e := range s.edges_ {
-		e.outputs_ready_ = false
-		e.deps_loaded_ = false
-		e.mark_ = VisitNone
+		e.OutputsReady = false
+		e.DepsLoaded = false
+		e.Mark = VisitNone
 	}
 }
 

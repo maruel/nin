@@ -166,15 +166,15 @@ const (
 
 // An edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
-	inputs_      []*Node
-	outputs_     []*Node
-	validations_ []*Node
-	rule_        *Rule
-	pool_        *Pool
-	dyndep_      *Node
-	env_         *BindingEnv
-	mark_        VisitMark
-	id_          int32
+	Inputs      []*Node
+	Outputs     []*Node
+	Validations []*Node
+	Rule        *Rule
+	Pool        *Pool
+	Dyndep      *Node
+	Env         *BindingEnv
+	Mark        VisitMark
+	ID          int32
 
 	// There are three types of inputs.
 	// 1) explicit deps, which show up as $in on the command line;
@@ -184,55 +184,44 @@ type Edge struct {
 	//                     don't cause the target to rebuild.
 	// These are stored in inputs_ in that order, and we keep counts of
 	// #2 and #3 when we need to access the various subsets.
-	implicit_deps_   int32
-	order_only_deps_ int32
+	ImplicitDeps  int32
+	OrderOnlyDeps int32
 
 	// There are two types of outputs.
 	// 1) explicit outs, which show up as $out on the command line;
 	// 2) implicit outs, which the target generates but are not part of $out.
 	// These are stored in outputs_ in that order, and we keep a count of
 	// #2 to use when we need to access the various subsets.
-	implicit_outs_ int32
+	ImplicitOuts int32
 
-	outputs_ready_           bool
-	deps_loaded_             bool
-	deps_missing_            bool
-	generated_by_dep_loader_ bool
+	OutputsReady         bool
+	DepsLoaded           bool
+	DepsMissing          bool
+	GeneratedByDepLoader bool
 }
 
 func NewEdge() *Edge {
 	return &Edge{
-		rule_:   nil,
-		pool_:   nil,
-		dyndep_: nil,
-		env_:    nil,
-		mark_:   VisitNone,
+		Rule:   nil,
+		Pool:   nil,
+		Dyndep: nil,
+		Env:    nil,
+		Mark:   VisitNone,
 	}
-}
-
-func (e *Edge) rule() *Rule {
-	return e.rule_
-}
-
-func (e *Edge) pool() *Pool {
-	return e.pool_
 }
 
 // If this ever gets changed, update DelayedEdgesSet to take this into account.
 func (e *Edge) weight() int {
 	return 1
 }
-func (e *Edge) outputs_ready() bool {
-	return e.outputs_ready_
-}
 func (e *Edge) is_implicit(index int) bool {
-	return index >= len(e.inputs_)-int(e.order_only_deps_)-int(e.implicit_deps_) && !e.is_order_only(index)
+	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.is_order_only(index)
 }
 func (e *Edge) is_order_only(index int) bool {
-	return index >= len(e.inputs_)-int(e.order_only_deps_)
+	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)
 }
 func (e *Edge) is_implicit_out(index int) bool {
-	return index >= len(e.outputs_)-int(e.implicit_outs_)
+	return index >= len(e.Outputs)-int(e.ImplicitOuts)
 }
 
 // Expand all variables in a command and return it as a string.
@@ -279,24 +268,24 @@ func (e *Edge) GetUnescapedRspfile() string {
 
 func (e *Edge) Dump(prefix string) {
 	fmt.Printf("%s[ ", prefix)
-	for _, i := range e.inputs_ {
+	for _, i := range e.Inputs {
 		if i != nil {
 			fmt.Printf("%s ", i.Path)
 		}
 	}
-	fmt.Printf("--%s-> ", e.rule_.name())
-	for _, i := range e.outputs_ {
+	fmt.Printf("--%s-> ", e.Rule.name())
+	for _, i := range e.Outputs {
 		fmt.Printf("%s ", i.Path)
 	}
-	if len(e.validations_) != 0 {
+	if len(e.Validations) != 0 {
 		fmt.Printf(" validations ")
-		for _, i := range e.validations_ {
+		for _, i := range e.Validations {
 			fmt.Printf("%s ", i.Path)
 		}
 	}
-	if e.pool_ != nil {
-		if e.pool_.name() != "" {
-			fmt.Printf("(in pool '%s')", e.pool_.name())
+	if e.Pool != nil {
+		if e.Pool.name() != "" {
+			fmt.Printf("(in pool '%s')", e.Pool.name())
 		}
 	} else {
 		fmt.Printf("(null pool?)")
@@ -305,24 +294,24 @@ func (e *Edge) Dump(prefix string) {
 }
 
 func (e *Edge) is_phony() bool {
-	return e.rule_ == kPhonyRule
+	return e.Rule == kPhonyRule
 }
 
 func (e *Edge) use_console() bool {
-	return e.pool() == kConsolePool
+	return e.Pool == kConsolePool
 }
 
 func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
 	// of the form "build a: phony ... a ...".   Restrict our
 	// "phonycycle" diagnostic option to the form it used.
-	return e.is_phony() && len(e.outputs_) == 1 && e.implicit_outs_ == 0 && e.implicit_deps_ == 0
+	return e.is_phony() && len(e.Outputs) == 1 && e.ImplicitOuts == 0 && e.ImplicitDeps == 0
 }
 
 // Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
-	for _, i := range e.inputs_ {
-		if i.InEdge != nil && !i.InEdge.outputs_ready() {
+	for _, i := range e.Inputs {
+		if i.InEdge != nil && !i.InEdge.OutputsReady {
 			return false
 		}
 	}
@@ -403,7 +392,7 @@ func (e *EdgeSet) recreate() {
 	}
 	// Sort in reverse order, so that Pop() removes the last (smallest) item.
 	sort.Slice(e.sorted, func(i, j int) bool {
-		return e.sorted[i].id_ > e.sorted[j].id_
+		return e.sorted[i].ID > e.sorted[j].ID
 	})
 }
 
@@ -433,15 +422,15 @@ func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
-		explicit_deps_count := len(e.edge_.inputs_) - int(e.edge_.implicit_deps_) - int(e.edge_.order_only_deps_)
+		explicit_deps_count := len(e.edge_.Inputs) - int(e.edge_.ImplicitDeps) - int(e.edge_.OrderOnlyDeps)
 		s := byte('\n')
 		if var2 == "in" {
 			s = ' '
 		}
-		return e.MakePathList(e.edge_.inputs_[:explicit_deps_count], s)
+		return e.MakePathList(e.edge_.Inputs[:explicit_deps_count], s)
 	} else if var2 == "out" {
-		explicit_outs_count := len(e.edge_.outputs_) - int(e.edge_.implicit_outs_)
-		return e.MakePathList(e.edge_.outputs_[:explicit_outs_count], ' ')
+		explicit_outs_count := len(e.edge_.Outputs) - int(e.edge_.ImplicitOuts)
+		return e.MakePathList(e.edge_.Outputs[:explicit_outs_count], ' ')
 	}
 
 	if e.recursive_ {
@@ -462,7 +451,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 	}
 
 	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge_.rule_.GetBinding(var2)
+	eval := e.edge_.Rule.GetBinding(var2)
 	if e.recursive_ && eval != nil {
 		e.lookups_ = append(e.lookups_, var2)
 	}
@@ -470,7 +459,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 	// In practice, variables defined on rules never use another rule variable.
 	// For performance, only start checking for cycles after the first lookup.
 	e.recursive_ = true
-	return e.edge_.env_.LookupWithFallback(var2, eval, e)
+	return e.edge_.Env.LookupWithFallback(var2, eval, e)
 }
 
 // Given a span of Nodes, construct a list of paths suitable for a command
@@ -619,7 +608,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// If we already finished this edge then we are done.
-	if edge.mark_ == VisitDone {
+	if edge.Mark == VisitDone {
 		return true
 	}
 
@@ -633,14 +622,14 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// Mark the edge temporarily while in the call stack.
-	edge.mark_ = VisitInStack
+	edge.Mark = VisitInStack
 	*stack = append(*stack, node)
 
 	dirty := false
-	edge.outputs_ready_ = true
-	edge.deps_missing_ = false
+	edge.OutputsReady = true
+	edge.DepsMissing = false
 
-	if !edge.deps_loaded_ {
+	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.
 		// If there is a pending dyndep file, visit it now:
 		// * If the dyndep file is ready then load it now to get any
@@ -652,14 +641,14 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		//   input to this edge, the edge will not be considered ready below.
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
-		if edge.dyndep_ != nil && edge.dyndep_.DyndepPending {
-			if !d.RecomputeNodeDirty(edge.dyndep_, stack, validation_nodes, err) {
+		if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
+			if !d.RecomputeNodeDirty(edge.Dyndep, stack, validation_nodes, err) {
 				return false
 			}
 
-			if edge.dyndep_.InEdge == nil || edge.dyndep_.InEdge.outputs_ready() {
+			if edge.Dyndep.InEdge == nil || edge.Dyndep.InEdge.OutputsReady {
 				// The dyndep file is ready, so load it now.
-				if !d.LoadDyndeps(edge.dyndep_, DyndepFile{}, err) {
+				if !d.LoadDyndeps(edge.Dyndep, DyndepFile{}, err) {
 					return false
 				}
 			}
@@ -667,15 +656,15 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// Load output mtimes so we can compare them to the most recent input below.
-	for _, o := range edge.outputs_ {
+	for _, o := range edge.Outputs {
 		if !o.StatIfNecessary(d.disk_interface_, err) {
 			return false
 		}
 	}
 
-	if !edge.deps_loaded_ {
+	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.  Load discovered deps.
-		edge.deps_loaded_ = true
+		edge.DepsLoaded = true
 		if !d.dep_loader_.LoadDeps(edge, err) {
 			if len(*err) != 0 {
 				return false
@@ -683,7 +672,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			// Failed to load dependency info: rebuild to regenerate it.
 			// LoadDeps() did EXPLAIN() already, no need to do it here.
 			dirty = true
-			edge.deps_missing_ = true
+			edge.DepsMissing = true
 		}
 	}
 
@@ -692,11 +681,11 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// cycle detector if the validation node depends on this node.
 	// RecomputeDirty will add the validation nodes to the initial nodes
 	// and recurse into them.
-	*validation_nodes = append(*validation_nodes, edge.validations_...)
+	*validation_nodes = append(*validation_nodes, edge.Validations...)
 
 	// Visit all inputs; we're dirty if any of the inputs are dirty.
 	var most_recent_input *Node
-	for j, i := range edge.inputs_ {
+	for j, i := range edge.Inputs {
 		// Visit this input.
 		if !d.RecomputeNodeDirty(i, stack, validation_nodes, err) {
 			return false
@@ -704,8 +693,8 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 		// If an input is not ready, neither are our outputs.
 		if in_edge := i.InEdge; in_edge != nil {
-			if !in_edge.outputs_ready_ {
-				edge.outputs_ready_ = false
+			if !in_edge.OutputsReady {
+				edge.OutputsReady = false
 			}
 		}
 
@@ -732,7 +721,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// Finally, visit each output and update their dirty state if necessary.
-	for _, o := range edge.outputs_ {
+	for _, o := range edge.Outputs {
 		if dirty {
 			o.Dirty = true
 		}
@@ -743,13 +732,13 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// order-only inputs.)
 	// But phony edges with no inputs have nothing to do, so are always
 	// ready.
-	if dirty && !(edge.is_phony() && len(edge.inputs_) == 0) {
-		edge.outputs_ready_ = false
+	if dirty && !(edge.is_phony() && len(edge.Inputs) == 0) {
+		edge.OutputsReady = false
 	}
 
 	// Mark the edge as finished during this walk now that it will no longer
 	// be in the call stack.
-	edge.mark_ = VisitDone
+	edge.Mark = VisitDone
 	if (*stack)[len(*stack)-1] != node {
 		panic("M-A")
 	}
@@ -764,7 +753,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 	}
 
 	// If we have no temporary mark on the edge then we do not yet have a cycle.
-	if edge.mark_ != VisitInStack {
+	if edge.Mark != VisitInStack {
 		return true
 	}
 
@@ -808,7 +797,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 // Returns false on failure.
 func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
 	command := edge.EvaluateCommand(true) // incl_rsp_file=
-	for _, o := range edge.outputs_ {
+	for _, o := range edge.Outputs {
 		if d.RecomputeOutputDirty(edge, most_recent_input, command, o) {
 			*outputs_dirty = true
 			return true
@@ -823,7 +812,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	if edge.is_phony() {
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
-		if len(edge.inputs_) == 0 && output.Exists != ExistenceStatusExists {
+		if len(edge.Inputs) == 0 && output.Exists != ExistenceStatusExists {
 			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.Path)
 			return true
 		}
@@ -990,7 +979,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 
 	// Check that this depfile matches the edge's output, if not return false to
 	// mark the edge as dirty.
-	first_output := edge.outputs_[0]
+	first_output := edge.Outputs[0]
 	if primaryOut := CanonicalizePath(depfile.outs_[0]); first_output.Path != primaryOut {
 		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.Path, primaryOut)
 		return false
@@ -999,7 +988,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// Ensure that all mentioned outputs are outputs of the edge.
 	for _, o := range depfile.outs_ {
 		found := false
-		for _, n := range edge.outputs_ {
+		for _, n := range edge.Outputs {
 			if n.Path == o {
 				found = true
 				break
@@ -1022,7 +1011,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 	// Add all its in-edges.
 	for _, j := range depfile_ins {
 		node := i.state_.GetNode(CanonicalizePathBits(j))
-		edge.inputs_[implicit_dep] = node
+		edge.Inputs[implicit_dep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
@@ -1034,7 +1023,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	// NOTE: deps are only supported for single-target edges.
-	output := edge.outputs_[0]
+	output := edge.Outputs[0]
 	var deps *Deps
 	if i.deps_log_ != nil {
 		deps = i.deps_log_.GetDeps(output)
@@ -1053,7 +1042,7 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	implicit_dep := i.PreallocateSpace(edge, deps.node_count)
 	for j := 0; j < deps.node_count; j++ {
 		node := deps.nodes[j]
-		edge.inputs_[implicit_dep] = node
+		edge.Inputs[implicit_dep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
@@ -1064,13 +1053,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
 func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
-	offset := len(edge.inputs_) - int(edge.order_only_deps_)
-	old := edge.inputs_
-	edge.inputs_ = make([]*Node, len(old)+count)
-	copy(edge.inputs_, old[:offset])
-	copy(edge.inputs_[offset+count:], old[offset:])
-	edge.implicit_deps_ += int32(count)
-	return len(edge.inputs_) - int(edge.order_only_deps_) - count
+	offset := len(edge.Inputs) - int(edge.OrderOnlyDeps)
+	old := edge.Inputs
+	edge.Inputs = make([]*Node, len(old)+count)
+	copy(edge.Inputs, old[:offset])
+	copy(edge.Inputs[offset+count:], old[offset:])
+	edge.ImplicitDeps += int32(count)
+	return len(edge.Inputs) - int(edge.OrderOnlyDeps) - count
 }
 
 // If we don't have a edge that generates this input already,
@@ -1082,9 +1071,9 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 	}
 
 	phony_edge := i.state_.AddEdge(kPhonyRule)
-	phony_edge.generated_by_dep_loader_ = true
+	phony_edge.GeneratedByDepLoader = true
 	node.InEdge = phony_edge
-	phony_edge.outputs_ = append(phony_edge.outputs_, node)
+	phony_edge.Outputs = append(phony_edge.Outputs, node)
 
 	// RecomputeDirty might not be called for phony_edge if a previous call
 	// to RecomputeDirty had caused the file to be stat'ed.  Because previous
@@ -1092,5 +1081,5 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 	// input edge (and therefore ready), we have to set outputs_ready_ to true
 	// to avoid a potential stuck build.  If we do call RecomputeDirty for
 	// this node, it will simply set outputs_ready_ to the correct value.
-	phony_edge.outputs_ready_ = true
+	phony_edge.OutputsReady = true
 }

@@ -96,7 +96,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	}
 	m.seen_[node] = struct{}{}
 
-	for _, in := range edge.inputs_ {
+	for _, in := range edge.Inputs {
 		m.ProcessNode(in)
 	}
 
@@ -159,9 +159,9 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node
 				}
 				if dep_nodes[i].InEdge == ne {
 					m.generated_nodes_[dep_nodes[i]] = struct{}{}
-					m.generator_rules_[ne.rule()] = struct{}{}
-					missing_deps_rule_names[ne.rule().name()] = struct{}{}
-					m.delegate_.OnMissingDep(node, dep_nodes[i].Path, ne.rule())
+					m.generator_rules_[ne.Rule] = struct{}{}
+					missing_deps_rule_names[ne.Rule.name()] = struct{}{}
+					m.delegate_.OnMissingDep(node, dep_nodes[i].Path, ne.Rule)
 				}
 			}
 		}
@@ -194,8 +194,8 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
 		m.adjacency_map_[from] = it
 	}
 	found := false
-	for i := 0; i < len(to.inputs_); i++ {
-		e := to.inputs_[i].InEdge
+	for i := 0; i < len(to.Inputs); i++ {
+		e := to.Inputs[i].InEdge
 		if e != nil && (e == from || m.PathExistsBetween(from, e)) {
 			found = true
 			break

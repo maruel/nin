@@ -59,24 +59,24 @@ func (g *GraphViz) AddTarget(node *Node) {
 	}
 	g.visited_edges_[edge] = struct{}{}
 
-	if edge.dyndep_ != nil && edge.dyndep_.DyndepPending {
+	if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
 		err := ""
-		if !g.dyndep_loader_.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
+		if !g.dyndep_loader_.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
 			Warning("%s\n", err)
 		}
 	}
 
-	if len(edge.inputs_) == 1 && len(edge.outputs_) == 1 {
+	if len(edge.Inputs) == 1 && len(edge.Outputs) == 1 {
 		// Can draw simply.
 		// Note extra space before label text -- this is cosmetic and feels
 		// like a graphviz bug.
-		fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.inputs_[0], edge.outputs_[0], edge.rule_.name())
+		fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.Inputs[0], edge.Outputs[0], edge.Rule.name())
 	} else {
-		fmt.Fprintf(g.out, "\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.rule_.name())
-		for _, out := range edge.outputs_ {
+		fmt.Fprintf(g.out, "\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.Rule.name())
+		for _, out := range edge.Outputs {
 			fmt.Fprintf(g.out, "\"%p\" -> \"%p\"\n", edge, out)
 		}
-		for i, in := range edge.inputs_ {
+		for i, in := range edge.Inputs {
 			order_only := ""
 			if edge.is_order_only(i) {
 				order_only = " style=dotted"
@@ -85,7 +85,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 		}
 	}
 
-	for _, in := range edge.inputs_ {
+	for _, in := range edge.Inputs {
 		g.AddTarget(in)
 	}
 }

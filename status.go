@@ -138,7 +138,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 	// Print the command that is spewing before printing its output.
 	if !success {
 		outputs := ""
-		for _, o := range edge.outputs_ {
+		for _, o := range edge.Outputs {
 			outputs += o.Path + " "
 		}
 		if s.printer_.supports_color() {

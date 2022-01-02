@@ -72,10 +72,10 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 
 func VerifyGraph(t *testing.T, state *State) {
 	for _, e := range state.edges_ {
-		if len(e.outputs_) == 0 {
+		if len(e.Outputs) == 0 {
 			t.Fatal("all edges need at least one output")
 		}
-		for _, in_node := range e.inputs_ {
+		for _, in_node := range e.Inputs {
 			found := false
 			for _, oe := range in_node.OutEdges {
 				if oe == e {
@@ -86,7 +86,7 @@ func VerifyGraph(t *testing.T, state *State) {
 				t.Fatal("each edge's inputs must have the edge as out-edge")
 			}
 		}
-		for _, out_node := range e.outputs_ {
+		for _, out_node := range e.Outputs {
 			if out_node.InEdge != e {
 				t.Fatal("each edge's output must have the edge as in-edge")
 			}

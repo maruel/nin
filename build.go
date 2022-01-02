@@ -270,7 +270,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		return false
 	}
 
-	if edge.outputs_ready() {
+	if edge.OutputsReady {
 		return false // Don't need to do anything.
 	}
 
@@ -302,7 +302,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		return true // We've already processed the inputs.
 	}
 
-	for _, i := range edge.inputs_ {
+	for _, i := range edge.Inputs {
 		if !p.AddSubTarget(i, node, err, dyndep_walk) && *err != "" {
 			return false
 		}
@@ -339,7 +339,7 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) {
 	}
 	p.want_[edge] = kWantToFinish
 
-	pool := edge.pool()
+	pool := edge.Pool
 	if pool.ShouldDelayEdge() {
 		pool.DelayEdge(edge)
 		pool.RetrieveReadyEdges(p.ready_)
@@ -362,9 +362,9 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 
 	// See if this job frees up any delayed jobs.
 	if directly_wanted {
-		edge.pool().EdgeFinished(edge)
+		edge.Pool.EdgeFinished(edge)
 	}
-	edge.pool().RetrieveReadyEdges(p.ready_)
+	edge.Pool.RetrieveReadyEdges(p.ready_)
 
 	// The rest of this function only applies to successful commands.
 	if result != kEdgeSucceeded {
@@ -375,10 +375,10 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 		p.wanted_edges_--
 	}
 	delete(p.want_, edge)
-	edge.outputs_ready_ = true
+	edge.OutputsReady = true
 
 	// Check off any nodes we were waiting for with this edge.
-	for _, o := range edge.outputs_ {
+	for _, o := range edge.Outputs {
 		if !p.NodeFinished(o, err) {
 			return false
 		}
@@ -444,16 +444,16 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 		}
 
 		// Don't attempt to clean an edge if it failed to load deps.
-		if oe.deps_missing_ {
+		if oe.DepsMissing {
 			continue
 		}
 
 		// If all non-order-only inputs for this edge are now clean,
 		// we might have changed the dirty state of the outputs.
-		end := len(oe.inputs_) - int(oe.order_only_deps_)
+		end := len(oe.Inputs) - int(oe.OrderOnlyDeps)
 		found := false
 		for i := 0; i < end; i++ {
-			if oe.inputs_[i].Dirty {
+			if oe.Inputs[i].Dirty {
 				found = true
 				break
 			}
@@ -462,7 +462,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			// Recompute most_recent_input.
 			most_recent_input := -1
 			for i := 0; i != end; i++ {
-				if most_recent_input == -1 || oe.inputs_[i].MTime > oe.inputs_[most_recent_input].MTime {
+				if most_recent_input == -1 || oe.Inputs[i].MTime > oe.Inputs[most_recent_input].MTime {
 					most_recent_input = i
 				}
 			}
@@ -471,11 +471,11 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
 			outputs_dirty := false
-			if !scan.RecomputeOutputsDirty(oe, oe.inputs_[most_recent_input], &outputs_dirty, err) {
+			if !scan.RecomputeOutputsDirty(oe, oe.Inputs[most_recent_input], &outputs_dirty, err) {
 				return false
 			}
 			if !outputs_dirty {
-				for _, o := range oe.outputs_ {
+				for _, o := range oe.Outputs {
 					if !p.CleanNode(scan, o, err) {
 						return false
 					}
@@ -510,7 +510,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	var dyndep_roots []*Edge
 	for edge := range ddf {
 		// If the edge outputs are ready we do not need to consider it here.
-		if edge.outputs_ready() {
+		if edge.OutputsReady {
 			continue
 		}
 
@@ -528,7 +528,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	dyndep_walk := map[*Edge]struct{}{}
 	for _, oe := range dyndep_roots {
 		for _, i := range ddf[oe].implicit_inputs_ {
-			if !p.AddSubTarget(i, oe.outputs_[0], err, dyndep_walk) && *err != "" {
+			if !p.AddSubTarget(i, oe.Outputs[0], err, dyndep_walk) && *err != "" {
 				return false
 			}
 		}
@@ -575,7 +575,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// targets.
 		for _, v := range validation_nodes {
 			if in_edge := v.InEdge; in_edge != nil {
-				if !in_edge.outputs_ready() && !p.AddTarget(v, err) {
+				if !in_edge.OutputsReady && !p.AddTarget(v, err) {
 					return false
 				}
 			}
@@ -588,7 +588,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// build it if the outputs were not known to be dirty.  With dyndep
 		// information an output is now known to be dirty, so we want the edge.
 		edge := n.InEdge
-		if edge == nil || edge.outputs_ready() {
+		if edge == nil || edge.OutputsReady {
 			panic("M-A")
 		}
 		want_e, ok := p.want_[edge]
@@ -610,9 +610,9 @@ func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
 			continue
 		}
 
-		if edge.mark_ != VisitNone {
-			edge.mark_ = VisitNone
-			for _, o := range edge.outputs_ {
+		if edge.Mark != VisitNone {
+			edge.Mark = VisitNone
+			for _, o := range edge.Outputs {
 				_, ok := dependents[o]
 				if ok {
 					p.UnmarkDependents(o, dependents)
@@ -694,7 +694,7 @@ func (b *Builder) Cleanup() {
 
 		for _, e := range active_edges {
 			depfile := e.GetUnescapedDepfile()
-			for _, o := range e.outputs_ {
+			for _, o := range e.Outputs {
 				// Only delete this output if it was actually modified.  This is
 				// important for things like the generator where we don't want to
 				// delete the manifest file if we can avoid it.  But if the rule
@@ -741,7 +741,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	}
 
 	in_edge := target.InEdge
-	if in_edge == nil || !in_edge.outputs_ready() {
+	if in_edge == nil || !in_edge.OutputsReady {
 		if !b.plan_.AddTarget(target, err) {
 			return false
 		}
@@ -751,7 +751,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	// targets.
 	for _, n := range validation_nodes {
 		if validation_in_edge := n.InEdge; validation_in_edge != nil {
-			if !validation_in_edge.outputs_ready() && !b.plan_.AddTarget(n, err) {
+			if !validation_in_edge.OutputsReady && !b.plan_.AddTarget(n, err) {
 				return false
 			}
 		}
@@ -881,7 +881,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
-	for _, o := range edge.outputs_ {
+	for _, o := range edge.Outputs {
 		if !MakeDirs(b.disk_interface_, o.Path) {
 			*err = fmt.Sprintf("Can't make dir %q", o.Path)
 			return false
@@ -949,7 +949,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	if !b.config_.dry_run {
 		node_cleaned := false
 
-		for _, o := range edge.outputs_ {
+		for _, o := range edge.Outputs {
 			new_mtime := b.disk_interface_.Stat(o.Path, err)
 			if new_mtime == -1 {
 				return false
@@ -972,7 +972,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			restat_mtime := TimeStamp(0)
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
-			for _, i := range edge.inputs_[:len(edge.inputs_)-int(edge.order_only_deps_)] {
+			for _, i := range edge.Inputs[:len(edge.Inputs)-int(edge.OrderOnlyDeps)] {
 				input_mtime := b.disk_interface_.Stat(i.Path, err)
 				if input_mtime == -1 {
 					return false
@@ -1019,10 +1019,10 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	}
 
 	if deps_type != "" && !b.config_.dry_run {
-		if len(edge.outputs_) == 0 {
+		if len(edge.Outputs) == 0 {
 			panic("should have been rejected by parser")
 		}
-		for _, o := range edge.outputs_ {
+		for _, o := range edge.Outputs {
 			deps_mtime := b.disk_interface_.Stat(o.Path, err)
 			if deps_mtime == -1 {
 				return false

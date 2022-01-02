@@ -158,7 +158,7 @@ func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) boo
 func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime TimeStamp) bool {
 	command := edge.EvaluateCommand(true)
 	command_hash := HashCommand(command)
-	for _, out := range edge.outputs_ {
+	for _, out := range edge.Outputs {
 		path := out.Path
 		i, ok := b.entries_[path]
 		var log_entry *LogEntry

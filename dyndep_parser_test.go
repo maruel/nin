@@ -636,13 +636,13 @@ func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 	if 2 != len(d.state_.edges_) {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(d.state_.edges_[1].outputs_) {
+	if 1 != len(d.state_.edges_[1].Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out2" != d.state_.edges_[1].outputs_[0].Path {
+	if "out2" != d.state_.edges_[1].Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(d.state_.edges_[0].inputs_) {
+	if 0 != len(d.state_.edges_[0].Inputs) {
 		t.Fatal("expected equal")
 	}
 

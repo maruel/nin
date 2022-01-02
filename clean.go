@@ -145,7 +145,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 		if !generator && e.GetBindingBool("generator") {
 			continue
 		}
-		for _, out_node := range e.outputs_ {
+		for _, out_node := range e.Outputs {
 			c.Remove(out_node.Path)
 		}
 
@@ -188,7 +188,7 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
 			c.Remove(target.Path)
 			c.RemoveEdgeFiles(e)
 		}
-		for _, next := range e.inputs_ {
+		for _, next := range e.Inputs {
 			// call DoCleanTarget recursively if this node has not been visited
 			if _, ok := c.cleaned_[next]; !ok {
 				c.DoCleanTarget(next)
@@ -272,8 +272,8 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 	}
 
 	for _, e := range c.state_.edges_ {
-		if e.rule().name() == rule.name() {
-			for _, out_node := range e.outputs_ {
+		if e.Rule.name() == rule.name() {
+			for _, out_node := range e.Outputs {
 				c.Remove(out_node.Path)
 				c.RemoveEdgeFiles(e)
 			}
@@ -352,11 +352,11 @@ func (c *Cleaner) Reset() {
 func (c *Cleaner) LoadDyndeps() {
 	// Load dyndep files that exist, before they are cleaned.
 	for _, e := range c.state_.edges_ {
-		if e.dyndep_ != nil {
+		if e.Dyndep != nil {
 			// Capture and ignore errors loading the dyndep file.
 			// We clean as much of the graph as we know.
 			err := ""
-			c.dyndep_loader_.LoadDyndeps(e.dyndep_, DyndepFile{}, &err)
+			c.dyndep_loader_.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
 		}
 	}
 }

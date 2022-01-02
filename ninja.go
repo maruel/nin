@@ -242,11 +242,11 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 				node = rev_deps
 			} else {
 				edge := node.OutEdges[0]
-				if len(edge.outputs_) == 0 {
+				if len(edge.Outputs) == 0 {
 					edge.Dump("")
 					Fatal("edge has no outputs")
 				}
-				node = edge.outputs_[0]
+				node = edge.Outputs[0]
 			}
 		}
 		return node
@@ -318,31 +318,31 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 
 		fmt.Printf("%s:\n", node.Path)
 		if edge := node.InEdge; edge != nil {
-			if edge.dyndep_ != nil && edge.dyndep_.DyndepPending {
-				if !dyndep_loader.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
+			if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
+				if !dyndep_loader.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
 					Warning("%s\n", err)
 				}
 			}
-			fmt.Printf("  input: %s\n", edge.rule_.name())
-			for in := 0; in < len(edge.inputs_); in++ {
+			fmt.Printf("  input: %s\n", edge.Rule.name())
+			for in := 0; in < len(edge.Inputs); in++ {
 				label := ""
 				if edge.is_implicit(in) {
 					label = "| "
 				} else if edge.is_order_only(in) {
 					label = "|| "
 				}
-				fmt.Printf("    %s%s\n", label, edge.inputs_[in].Path)
+				fmt.Printf("    %s%s\n", label, edge.Inputs[in].Path)
 			}
-			if len(edge.validations_) != 0 {
+			if len(edge.Validations) != 0 {
 				fmt.Printf("  validations:\n")
-				for _, validation := range edge.validations_ {
+				for _, validation := range edge.Validations {
 					fmt.Printf("    %s\n", validation.Path)
 				}
 			}
 		}
 		fmt.Printf("  outputs:\n")
 		for _, edge := range node.OutEdges {
-			for _, out := range edge.outputs_ {
+			for _, out := range edge.Outputs {
 				fmt.Printf("    %s\n", out.Path)
 			}
 		}
@@ -350,7 +350,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 		if len(validation_edges) != 0 {
 			fmt.Printf("  validation for:\n")
 			for _, edge := range validation_edges {
-				for _, out := range edge.outputs_ {
+				for _, out := range edge.Outputs {
 					fmt.Printf("    %s\n", out.Path)
 				}
 			}
@@ -381,9 +381,9 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 		}
 		target := n.Path
 		if n.InEdge != nil {
-			fmt.Printf("%s: %s\n", target, n.InEdge.rule_.name())
+			fmt.Printf("%s: %s\n", target, n.InEdge.Rule.name())
 			if depth > 1 || depth <= 0 {
-				ToolTargetsListNodes(n.InEdge.inputs_, depth-1, indent+1)
+				ToolTargetsListNodes(n.InEdge.Inputs, depth-1, indent+1)
 			}
 		} else {
 			fmt.Printf("%s\n", target)
@@ -394,7 +394,7 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 
 func ToolTargetsSourceList(state *State) int {
 	for _, e := range state.edges_ {
-		for _, inps := range e.inputs_ {
+		for _, inps := range e.Inputs {
 			if inps.InEdge == nil {
 				fmt.Printf("%s\n", inps.Path)
 			}
@@ -408,8 +408,8 @@ func ToolTargetsListRule(state *State, rule_name string) int {
 
 	// Gather the outputs.
 	for _, e := range state.edges_ {
-		if e.rule_.name() == rule_name {
-			for _, out_node := range e.outputs_ {
+		if e.Rule.name() == rule_name {
+			for _, out_node := range e.Outputs {
 				rules[out_node.Path] = struct{}{}
 			}
 		}
@@ -429,8 +429,8 @@ func ToolTargetsListRule(state *State, rule_name string) int {
 
 func ToolTargetsList(state *State) int {
 	for _, e := range state.edges_ {
-		for _, out_node := range e.outputs_ {
-			fmt.Printf("%s: %s\n", out_node.Path, e.rule_.name())
+		for _, out_node := range e.Outputs {
+			fmt.Printf("%s: %s\n", out_node.Path, e.Rule.name())
 		}
 	}
 	return 0
@@ -608,7 +608,7 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 	seen.Add(edge)
 
 	if mode == PCM_All {
-		for _, in := range edge.inputs_ {
+		for _, in := range edge.Inputs {
 			PrintCommands(in.InEdge, seen, mode)
 		}
 	}
@@ -729,9 +729,9 @@ func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
 	fmt.Printf("\",\n    \"command\": \"")
 	PrintJSONString(EvaluateCommandWithRspfile(edge, eval_mode))
 	fmt.Printf("\",\n    \"file\": \"")
-	PrintJSONString(edge.inputs_[0].Path)
+	PrintJSONString(edge.Inputs[0].Path)
 	fmt.Printf("\",\n    \"output\": \"")
-	PrintJSONString(edge.outputs_[0].Path)
+	PrintJSONString(edge.Outputs[0].Path)
 	fmt.Printf("\"\n  }")
 }
 
@@ -756,7 +756,7 @@ func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int 
 	}
 	fmt.Printf("[")
 	for _, e := range n.state_.edges_ {
-		if len(e.inputs_) == 0 {
+		if len(e.Inputs) == 0 {
 			continue
 		}
 		if len(args) == 0 {
@@ -767,7 +767,7 @@ func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int 
 			first = false
 		} else {
 			for i := 0; i != len(args); i++ {
-				if e.rule_.name() == args[i] {
+				if e.Rule.name() == args[i] {
 					if !first {
 						fmt.Printf(",")
 					}

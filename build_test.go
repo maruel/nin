@@ -60,7 +60,7 @@ func (p *PlanTest) FindWorkSorted(count int) []*Edge {
 		p.t.Fatal("expected false")
 	}
 	sort.Slice(out, func(i, j int) bool {
-		return out[i].outputs_[0].Path < out[j].outputs_[0].Path
+		return out[i].Outputs[0].Path < out[j].Outputs[0].Path
 	})
 	return out
 }
@@ -85,10 +85,10 @@ func TestPlanTest_Basic(t *testing.T) {
 	if edge == nil {
 		t.Fatalf("plan is inconsistent: %#v", p.plan_)
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "mid" != edge.outputs_[0].Path {
+	if "mid" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -105,10 +105,10 @@ func TestPlanTest_Basic(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if "mid" != edge.inputs_[0].Path {
+	if "mid" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out" != edge.outputs_[0].Path {
+	if "out" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -318,10 +318,10 @@ func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
 	if edge == nil {
 		p.t.Fatal("expected true")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		p.t.Fatal("expected equal")
 	}
-	if "out1" != edge.outputs_[0].Path {
+	if "out1" != edge.Outputs[0].Path {
 		p.t.Fatal("expected equal")
 	}
 
@@ -339,10 +339,10 @@ func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
 	if edge == nil {
 		p.t.Fatal("expected true")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		p.t.Fatal("expected equal")
 	}
-	if "out2" != edge.outputs_[0].Path {
+	if "out2" != edge.Outputs[0].Path {
 		p.t.Fatal("expected equal")
 	}
 
@@ -396,14 +396,14 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 
 	for i := 0; i < 4; i++ {
 		edge := edges[i]
-		if "in" != edge.inputs_[0].Path {
+		if "in" != edge.Inputs[0].Path {
 			t.Fatal("expected equal")
 		}
 		base_name := "outb"
 		if i < 2 {
 			base_name = "out"
 		}
-		if want := fmt.Sprintf("%s%d", base_name, 1+(i%2)); want != edge.outputs_[0].Path {
+		if want := fmt.Sprintf("%s%d", base_name, 1+(i%2)); want != edge.Outputs[0].Path {
 			t.Fatal(want)
 		}
 	}
@@ -413,10 +413,10 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "outb3" != edge.outputs_[0].Path {
+	if "outb3" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -432,10 +432,10 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	if out3 == nil {
 		t.Fatal("expected true")
 	}
-	if "in" != out3.inputs_[0].Path {
+	if "in" != out3.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out3" != out3.outputs_[0].Path {
+	if "out3" != out3.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -463,7 +463,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	if last == nil {
 		t.Fatal("expected true")
 	}
-	if "allTheThings" != last.outputs_[0].Path {
+	if "allTheThings" != last.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -503,7 +503,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	initial_edges := p.FindWorkSorted(2)
 
 	edge := initial_edges[1] // Foo first
-	if "foo.cpp" != edge.outputs_[0].Path {
+	if "foo.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -518,13 +518,13 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if p.plan_.FindWork() != nil {
 		t.Fatal("expected false")
 	}
-	if "foo.cpp" != edge.inputs_[0].Path {
+	if "foo.cpp" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "foo.cpp" != edge.inputs_[1].Path {
+	if "foo.cpp" != edge.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "foo.cpp.obj" != edge.outputs_[0].Path {
+	if "foo.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -533,7 +533,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	}
 
 	edge = initial_edges[0] // Now for bar
-	if "bar.cpp" != edge.outputs_[0].Path {
+	if "bar.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -548,34 +548,13 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if p.plan_.FindWork() != nil {
 		t.Fatal("expected false")
 	}
-	if "bar.cpp" != edge.inputs_[0].Path {
-		t.Fatal(edge.inputs_[0].Path)
+	if "bar.cpp" != edge.Inputs[0].Path {
+		t.Fatal(edge.Inputs[0].Path)
 	}
-	if "bar.cpp" != edge.inputs_[1].Path {
+	if "bar.cpp" != edge.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "bar.cpp.obj" != edge.outputs_[0].Path {
-		t.Fatal("expected equal")
-	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-
-	edge = p.plan_.FindWork()
-	if edge == nil {
-		t.Fatal("expected true")
-	}
-	if p.plan_.FindWork() != nil {
-		t.Fatal("expected false")
-	}
-	if "foo.cpp.obj" != edge.inputs_[0].Path {
-		t.Fatal("expected equal")
-	}
-	if "bar.cpp.obj" != edge.inputs_[1].Path {
-		t.Fatal("expected equal")
-	}
-	if "libfoo.a" != edge.outputs_[0].Path {
+	if "bar.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -590,10 +569,31 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if p.plan_.FindWork() != nil {
 		t.Fatal("expected false")
 	}
-	if "libfoo.a" != edge.inputs_[0].Path {
+	if "foo.cpp.obj" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "all" != edge.outputs_[0].Path {
+	if "bar.cpp.obj" != edge.Inputs[1].Path {
+		t.Fatal("expected equal")
+	}
+	if "libfoo.a" != edge.Outputs[0].Path {
+		t.Fatal("expected equal")
+	}
+	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+
+	edge = p.plan_.FindWork()
+	if edge == nil {
+		t.Fatal("expected true")
+	}
+	if p.plan_.FindWork() != nil {
+		t.Fatal("expected false")
+	}
+	if "libfoo.a" != edge.Inputs[0].Path {
+		t.Fatal("expected equal")
+	}
+	if "all" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
@@ -636,10 +636,10 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out1" != edge.outputs_[0].Path {
+	if "out1" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -657,10 +657,10 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out2" != edge.outputs_[0].Path {
+	if "out2" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -825,43 +825,43 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 		f.t.Fatalf("running same edge twice")
 	}
 	f.commands_ran_ = append(f.commands_ran_, cmd)
-	if edge.rule().name() == "cat" || edge.rule().name() == "cat_rsp" || edge.rule().name() == "cat_rsp_out" || edge.rule().name() == "cc" || edge.rule().name() == "cp_multi_msvc" || edge.rule().name() == "cp_multi_gcc" || edge.rule().name() == "touch" || edge.rule().name() == "touch-interrupt" || edge.rule().name() == "touch-fail-tick2" {
-		for _, out := range edge.outputs_ {
+	if edge.Rule.name() == "cat" || edge.Rule.name() == "cat_rsp" || edge.Rule.name() == "cat_rsp_out" || edge.Rule.name() == "cc" || edge.Rule.name() == "cp_multi_msvc" || edge.Rule.name() == "cp_multi_gcc" || edge.Rule.name() == "touch" || edge.Rule.name() == "touch-interrupt" || edge.Rule.name() == "touch-fail-tick2" {
+		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
-	} else if edge.rule().name() == "true" || edge.rule().name() == "fail" || edge.rule().name() == "interrupt" || edge.rule().name() == "console" {
+	} else if edge.Rule.name() == "true" || edge.Rule.name() == "fail" || edge.Rule.name() == "interrupt" || edge.Rule.name() == "console" {
 		// Don't do anything.
-	} else if edge.rule().name() == "cp" {
-		if len(edge.inputs_) == 0 {
+	} else if edge.Rule.name() == "cp" {
+		if len(edge.Inputs) == 0 {
 			f.t.Fatal("oops")
 		}
-		if len(edge.outputs_) != 1 {
-			f.t.Fatalf("%#v", edge.outputs_)
+		if len(edge.Outputs) != 1 {
+			f.t.Fatalf("%#v", edge.Outputs)
 		}
 		content := ""
 		err := ""
-		if f.fs_.ReadFile(edge.inputs_[0].Path, &content, &err) == Okay {
-			f.fs_.WriteFile(edge.outputs_[0].Path, content)
+		if f.fs_.ReadFile(edge.Inputs[0].Path, &content, &err) == Okay {
+			f.fs_.WriteFile(edge.Outputs[0].Path, content)
 		}
-	} else if edge.rule().name() == "touch-implicit-dep-out" {
+	} else if edge.Rule.name() == "touch-implicit-dep-out" {
 		dep := edge.GetBinding("test_dependency")
 		f.fs_.Create(dep, "")
 		f.fs_.Tick()
-		for _, out := range edge.outputs_ {
+		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
-	} else if edge.rule().name() == "touch-out-implicit-dep" {
+	} else if edge.Rule.name() == "touch-out-implicit-dep" {
 		dep := edge.GetBinding("test_dependency")
-		for _, out := range edge.outputs_ {
+		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
 		f.fs_.Tick()
 		f.fs_.Create(dep, "")
-	} else if edge.rule().name() == "generate-depfile" {
+	} else if edge.Rule.name() == "generate-depfile" {
 		dep := edge.GetBinding("test_dependency")
 		depfile := edge.GetUnescapedDepfile()
 		contents := ""
-		for _, out := range edge.outputs_ {
+		for _, out := range edge.Outputs {
 			contents += out.Path + ": " + dep + "\n"
 			f.fs_.Create(out.Path, "")
 		}
@@ -875,7 +875,7 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 
 	// Allow tests to control the order by the name of the first output.
 	sort.Slice(f.active_edges_, func(i, j int) bool {
-		return f.active_edges_[i].outputs_[0].Path < f.active_edges_[j].outputs_[0].Path
+		return f.active_edges_[i].Outputs[0].Path < f.active_edges_[j].Outputs[0].Path
 	})
 	return true
 }
@@ -893,12 +893,12 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	edge := f.active_edges_[edge_iter]
 	result.edge = edge
 
-	if edge.rule().name() == "interrupt" || edge.rule().name() == "touch-interrupt" {
+	if edge.Rule.name() == "interrupt" || edge.Rule.name() == "touch-interrupt" {
 		result.status = ExitInterrupted
 		return true
 	}
 
-	if edge.rule().name() == "console" {
+	if edge.Rule.name() == "console" {
 		if edge.use_console() {
 			result.status = ExitSuccess
 		} else {
@@ -909,14 +909,14 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 		return true
 	}
 
-	if edge.rule().name() == "cp_multi_msvc" {
+	if edge.Rule.name() == "cp_multi_msvc" {
 		prefix := edge.GetBinding("msvc_deps_prefix")
-		for _, in := range edge.inputs_ {
+		for _, in := range edge.Inputs {
 			result.output += prefix + in.Path + "\n"
 		}
 	}
 
-	if edge.rule().name() == "fail" || (edge.rule().name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
+	if edge.Rule.name() == "fail" || (edge.Rule.name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
 		result.status = ExitFailure
 	} else {
 		result.status = ExitSuccess
@@ -929,7 +929,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	if verify_active_edge != "" {
 		verify_active_edge_found := false
 		for _, i := range f.active_edges_ {
-			if len(i.outputs_) != 0 && i.outputs_[0].Path == verify_active_edge {
+			if len(i.Outputs) != 0 && i.Outputs[0].Path == verify_active_edge {
 				verify_active_edge_found = true
 			}
 		}
@@ -1328,8 +1328,8 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	// Expect our edge to now have three inputs: foo.c and two headers.
-	if 3 != len(edge.inputs_) {
-		t.Fatalf("%#v", edge.inputs_)
+	if 3 != len(edge.Inputs) {
+		t.Fatalf("%#v", edge.Inputs)
 	}
 
 	// Expect the command line we generate to only use the original input.
@@ -1361,10 +1361,10 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 	if 2 != len(c_out) {
 		t.Fatal("expected equal")
 	}
-	if "b" != c_out[0].outputs_[0].Path {
+	if "b" != c_out[0].Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "a" != c_out[1].outputs_[0].Path {
+	if "a" != c_out[1].Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -1404,27 +1404,27 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	}
 
 	// One explicit, two implicit, one order only.
-	if 4 != len(edge.inputs_) {
+	if 4 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if 2 != edge.implicit_deps_ {
+	if 2 != edge.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.order_only_deps_ {
+	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 	// Verify the inputs are in the order we expect
 	// (explicit then implicit then orderonly).
-	if "foo.c" != edge.inputs_[0].Path {
+	if "foo.c" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "blah.h" != edge.inputs_[1].Path {
+	if "blah.h" != edge.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "bar.h" != edge.inputs_[2].Path {
+	if "bar.h" != edge.Inputs[2].Path {
 		t.Fatal("expected equal")
 	}
-	if "otherfile" != edge.inputs_[3].Path {
+	if "otherfile" != edge.Inputs[3].Path {
 		t.Fatal("expected equal")
 	}
 
@@ -1614,8 +1614,8 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 		t.Fatal(len(b.state_.edges_))
 	}
 	// Expect our edge to now have three inputs: foo.c and two headers.
-	if 3 != len(edge.inputs_) {
-		t.Fatal(len(edge.inputs_))
+	if 3 != len(edge.Inputs) {
+		t.Fatal(len(edge.Inputs))
 	}
 
 	// Expect the command line we generate to only use the original input, and
@@ -3699,7 +3699,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 		// Expect our edge to now have three inputs: foo.c and two headers.
-		if 3 != len(edge.inputs_) {
+		if 3 != len(edge.Inputs) {
 			t.Fatal("expected equal")
 		}
 
@@ -3908,7 +3908,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 		// Expect our edge to now have three inputs: foo.c and two headers.
-		if 3 != len(edge.inputs_) {
+		if 3 != len(edge.Inputs) {
 			t.Fatal("expected equal")
 		}
 

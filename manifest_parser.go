@@ -382,7 +382,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	edge := m.state_.AddEdge(rule)
-	edge.env_ = env
+	edge.Env = env
 
 	pool_name := edge.GetBinding("pool")
 	if pool_name != "" {
@@ -390,7 +390,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if pool == nil {
 			return m.lexer_.Error("unknown pool name '"+pool_name+"'", err)
 		}
-		edge.pool_ = pool
+		edge.Pool = pool
 	}
 
 	// TODO: edge.outputs_.reserve(outs.size())
@@ -413,13 +413,13 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			}
 		}
 	}
-	if len(edge.outputs_) == 0 {
+	if len(edge.Outputs) == 0 {
 		// All outputs of the edge are already created by other edges. Don't add
 		// this edge.  Do this check before input nodes are connected to the edge.
 		m.state_.edges_ = m.state_.edges_[:len(m.state_.edges_)-1]
 		return true
 	}
-	edge.implicit_outs_ = int32(implicit_outs)
+	edge.ImplicitOuts = int32(implicit_outs)
 
 	// TODO: edge.inputs_.reserve(ins.size())
 	for _, i := range ins {
@@ -430,8 +430,8 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		path, slashBits := CanonicalizePathBits(path)
 		m.state_.AddIn(edge, path, slashBits)
 	}
-	edge.implicit_deps_ = int32(implicit)
-	edge.order_only_deps_ = int32(order_only)
+	edge.ImplicitDeps = int32(implicit)
+	edge.OrderOnlyDeps = int32(order_only)
 
 	//edge.validations_.reserve(validations.size());
 	for _, v := range validations {
@@ -448,11 +448,11 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to
 		// support users of those old CMake versions.
-		out := edge.outputs_[0]
-		for i, n := range edge.inputs_ {
+		out := edge.Outputs[0]
+		for i, n := range edge.Inputs {
 			if n == out {
-				copy(edge.inputs_[i:], edge.inputs_[i+1:])
-				edge.inputs_ = edge.inputs_[:len(edge.inputs_)-1]
+				copy(edge.Inputs[i:], edge.Inputs[i+1:])
+				edge.Inputs = edge.Inputs[:len(edge.Inputs)-1]
 				if !m.quiet_ {
 					Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
 				}
@@ -468,9 +468,9 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	if len(dyndep) != 0 {
 		n := m.state_.GetNode(CanonicalizePathBits(dyndep))
 		n.DyndepPending = true
-		edge.dyndep_ = n
+		edge.Dyndep = n
 		found := false
-		for _, x := range edge.inputs_ {
+		for _, x := range edge.Inputs {
 			if x == n {
 				found = true
 				break

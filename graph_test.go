@@ -133,16 +133,16 @@ func TestGraphTest_ImplicitOutputParse(t *testing.T) {
 	g.AssertParse(&g.state_, "build out | out.imp: cat in\n", ManifestParserOptions{})
 
 	edge := g.GetNode("out").InEdge
-	if 2 != len(edge.outputs_) {
+	if 2 != len(edge.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out" != edge.outputs_[0].Path {
+	if "out" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out.imp" != edge.outputs_[1].Path {
+	if "out.imp" != edge.Outputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.implicit_outs_ {
+	if 1 != edge.ImplicitOuts {
 		t.Fatal("expected equal")
 	}
 	if edge != g.GetNode("out.imp").InEdge {
@@ -201,13 +201,13 @@ func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
 	g.AssertParse(&g.state_, "build | out.imp: cat in\n", ManifestParserOptions{})
 
 	edge := g.GetNode("out.imp").InEdge
-	if 1 != len(edge.outputs_) {
+	if 1 != len(edge.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out.imp" != edge.outputs_[0].Path {
+	if "out.imp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.implicit_outs_ {
+	if 1 != edge.ImplicitOuts {
 		t.Fatal("expected equal")
 	}
 	if edge != g.GetNode("out.imp").InEdge {
@@ -512,10 +512,10 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 	// but the depfile also adds b as an input), the deps should have been loaded
 	// only once:
 	edge := g.GetNode("a").InEdge
-	if 1 != len(edge.inputs_) {
+	if 1 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "b" != edge.inputs_[0].Path {
+	if "b" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -538,10 +538,10 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 	// but c's in_edge has b as input but the depfile also adds |edge| as
 	// output)), the deps should have been loaded only once:
 	edge := g.GetNode("a").InEdge
-	if 1 != len(edge.inputs_) {
+	if 1 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "c" != edge.inputs_[0].Path {
+	if "c" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -565,10 +565,10 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 	// but c's in_edge has b as input but the depfile also adds |edge| as
 	// output)), the deps should have been loaded only once:
 	edge := g.GetNode("a").InEdge
-	if 1 != len(edge.inputs_) {
+	if 1 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "c" != edge.inputs_[0].Path {
+	if "c" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -631,25 +631,25 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	}
 
 	edge := g.GetNode("out").InEdge
-	if 1 != len(edge.outputs_) {
+	if 1 != len(edge.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out" != edge.outputs_[0].Path {
+	if "out" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(edge.inputs_) {
-		t.Fatal(len(edge.inputs_))
+	if 2 != len(edge.Inputs) {
+		t.Fatal(len(edge.Inputs))
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge.inputs_[1].Path {
+	if "dd" != edge.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if 0 != edge.implicit_deps_ {
+	if 0 != edge.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.order_only_deps_ {
+	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 	if edge.GetBindingBool("restat") {
@@ -677,28 +677,28 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	}
 
 	edge := g.GetNode("out1").InEdge
-	if 1 != len(edge.outputs_) {
+	if 1 != len(edge.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out1" != edge.outputs_[0].Path {
+	if "out1" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(edge.inputs_) {
+	if 3 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out2" != edge.inputs_[1].Path {
-		t.Fatal(edge.inputs_[1].Path)
+	if "out2" != edge.Inputs[1].Path {
+		t.Fatal(edge.Inputs[1].Path)
 	}
-	if "dd" != edge.inputs_[2].Path {
+	if "dd" != edge.Inputs[2].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.implicit_deps_ {
+	if 1 != edge.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.order_only_deps_ {
+	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 	if edge.GetBindingBool("restat") {
@@ -819,34 +819,34 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 		t.Fatal("expected false")
 	}
 	edge1 := g.GetNode("out1").InEdge
-	if 2 != len(edge1.outputs_) {
+	if 2 != len(edge1.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out1" != edge1.outputs_[0].Path {
+	if "out1" != edge1.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out1imp" != edge1.outputs_[1].Path {
+	if "out1imp" != edge1.Outputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge1.implicit_outs_ {
+	if 1 != edge1.ImplicitOuts {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(edge1.inputs_) {
+	if 3 != len(edge1.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != edge1.inputs_[0].Path {
+	if "in1" != edge1.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in1imp" != edge1.inputs_[1].Path {
-		t.Fatal(edge1.inputs_[1].Path)
+	if "in1imp" != edge1.Inputs[1].Path {
+		t.Fatal(edge1.Inputs[1].Path)
 	}
-	if "dd" != edge1.inputs_[2].Path {
+	if "dd" != edge1.Inputs[2].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge1.implicit_deps_ {
+	if 1 != edge1.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge1.order_only_deps_ {
+	if 1 != edge1.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 	if edge1.GetBindingBool("restat") {
@@ -864,31 +864,31 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	}
 
 	edge2 := g.GetNode("out2").InEdge
-	if 1 != len(edge2.outputs_) {
+	if 1 != len(edge2.Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out2" != edge2.outputs_[0].Path {
+	if "out2" != edge2.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 0 != edge2.implicit_outs_ {
+	if 0 != edge2.ImplicitOuts {
 		t.Fatal("expected equal")
 	}
-	if 3 != len(edge2.inputs_) {
+	if 3 != len(edge2.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "in2" != edge2.inputs_[0].Path {
+	if "in2" != edge2.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2imp" != edge2.inputs_[1].Path {
+	if "in2imp" != edge2.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge2.inputs_[2].Path {
+	if "dd" != edge2.Inputs[2].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge2.implicit_deps_ {
+	if 1 != edge2.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge2.order_only_deps_ {
+	if 1 != edge2.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 	if !edge2.GetBindingBool("restat") {
@@ -982,7 +982,7 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 	if g.GetNode("dd").Dirty {
 		t.Fatal("expected false")
 	}
-	if !g.GetNode("dd").InEdge.outputs_ready() {
+	if !g.GetNode("dd").InEdge.OutputsReady {
 		t.Fatal("expected true")
 	}
 
@@ -1011,7 +1011,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	if !g.GetNode("dd").Dirty {
 		t.Fatal("expected true")
 	}
-	if g.GetNode("dd").InEdge.outputs_ready() {
+	if g.GetNode("dd").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 
@@ -1019,7 +1019,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").InEdge.outputs_ready() {
+	if g.GetNode("out").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 }
@@ -1043,13 +1043,13 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
 	if g.GetNode("dd").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd").InEdge.outputs_ready() {
+	if g.GetNode("dd").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").InEdge.outputs_ready() {
+	if g.GetNode("out").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 }
@@ -1075,19 +1075,19 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
 	if !g.GetNode("dd1").Dirty {
 		t.Fatal("expected true")
 	}
-	if g.GetNode("dd1").InEdge.outputs_ready() {
+	if g.GetNode("dd1").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("dd2").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd2").InEdge.outputs_ready() {
+	if g.GetNode("dd2").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").InEdge.outputs_ready() {
+	if g.GetNode("out").InEdge.OutputsReady {
 		t.Fatal("expected false")
 	}
 }
@@ -1110,22 +1110,22 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 
 	// Verify that "out.d" was loaded exactly once despite
 	// circular reference discovered from dyndep file.
-	if 3 != len(edge.inputs_) {
+	if 3 != len(edge.Inputs) {
 		t.Fatal("expected equal")
 	}
-	if "in" != edge.inputs_[0].Path {
+	if "in" != edge.Inputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "inimp" != edge.inputs_[1].Path {
+	if "inimp" != edge.Inputs[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge.inputs_[2].Path {
+	if "dd" != edge.Inputs[2].Path {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.implicit_deps_ {
+	if 1 != edge.ImplicitDeps {
 		t.Fatal("expected equal")
 	}
-	if 1 != edge.order_only_deps_ {
+	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
 }
