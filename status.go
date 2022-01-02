@@ -108,11 +108,11 @@ func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, start_time_millis int32) {
 	s.started_edges_++
 	s.running_edges_++
 	s.time_millis_ = start_time_millis
-	if edge.use_console() || s.printer_.is_smart_terminal() {
+	if edge.Pool == ConsolePool || s.printer_.is_smart_terminal() {
 		s.PrintStatus(edge, start_time_millis)
 	}
 
-	if edge.use_console() {
+	if edge.Pool == ConsolePool {
 		s.printer_.SetConsoleLocked(true)
 	}
 }
@@ -121,7 +121,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 	s.time_millis_ = end_time_millis
 	s.finished_edges_++
 
-	if edge.use_console() {
+	if edge.Pool == ConsolePool {
 		s.printer_.SetConsoleLocked(false)
 	}
 
@@ -129,7 +129,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 		return
 	}
 
-	if !edge.use_console() {
+	if edge.Pool != ConsolePool {
 		s.PrintStatus(edge, end_time_millis)
 	}
 

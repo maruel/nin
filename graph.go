@@ -244,10 +244,6 @@ func (e *Edge) GetBinding(key string) string {
 	return env.LookupVariable(key)
 }
 
-func (e *Edge) GetBindingBool(key string) bool {
-	return e.GetBinding(key) != ""
-}
-
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
 	env := NewEdgeEnv(e, kDoNotEscape)
@@ -293,19 +289,11 @@ func (e *Edge) Dump(prefix string) {
 	fmt.Printf("] 0x%p\n", e)
 }
 
-func (e *Edge) is_phony() bool {
-	return e.Rule == kPhonyRule
-}
-
-func (e *Edge) use_console() bool {
-	return e.Pool == kConsolePool
-}
-
 func (e *Edge) maybe_phonycycle_diagnostic() bool {
 	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
 	// of the form "build a: phony ... a ...".   Restrict our
 	// "phonycycle" diagnostic option to the form it used.
-	return e.is_phony() && len(e.Outputs) == 1 && e.ImplicitOuts == 0 && e.ImplicitDeps == 0
+	return e.Rule == PhonyRule && len(e.Outputs) == 1 && e.ImplicitOuts == 0 && e.ImplicitDeps == 0
 }
 
 // Return true if all inputs' in-edges are ready.
@@ -732,7 +720,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// order-only inputs.)
 	// But phony edges with no inputs have nothing to do, so are always
 	// ready.
-	if dirty && !(edge.is_phony() && len(edge.Inputs) == 0) {
+	if dirty && !(edge.Rule == PhonyRule && len(edge.Inputs) == 0) {
 		edge.OutputsReady = false
 	}
 
@@ -809,7 +797,7 @@ func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *No
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
 func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Node, command string, output *Node) bool {
-	if edge.is_phony() {
+	if edge.Rule == PhonyRule {
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
 		if len(edge.Inputs) == 0 && output.Exists != ExistenceStatusExists {
@@ -844,7 +832,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 		// build log.  Use that mtime instead, so that the file will only be
 		// considered dirty if an input was modified since the previous run.
 		used_restat := false
-		if edge.GetBindingBool("restat") && d.build_log() != nil {
+		if edge.GetBinding("restat") != "" && d.build_log() != nil {
 			if entry = d.build_log().LookupByOutput(output.Path); entry != nil {
 				output_mtime = entry.mtime
 				used_restat = true
@@ -862,7 +850,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	}
 
 	if d.build_log() != nil {
-		generator := edge.GetBindingBool("generator")
+		generator := edge.GetBinding("generator") != ""
 		if entry == nil {
 			entry = d.build_log().LookupByOutput(output.Path)
 		}
@@ -1070,7 +1058,7 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 		return
 	}
 
-	phony_edge := i.state_.AddEdge(kPhonyRule)
+	phony_edge := i.state_.AddEdge(PhonyRule)
 	phony_edge.GeneratedByDepLoader = true
 	node.InEdge = phony_edge
 	phony_edge.Outputs = append(phony_edge.Outputs, node)

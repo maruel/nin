@@ -899,7 +899,7 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	}
 
 	if edge.Rule.name() == "console" {
-		if edge.use_console() {
+		if edge.Pool == ConsolePool {
 			result.status = ExitSuccess
 		} else {
 			result.status = ExitFailure
@@ -4431,7 +4431,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	}
 
 	// Loading the depfile gave tmp.imp a phony input edge.
-	if !b.GetNode("tmp.imp").InEdge.is_phony() {
+	if b.GetNode("tmp.imp").InEdge.Rule != PhonyRule {
 		t.Fatal("expected true")
 	}
 
@@ -4453,7 +4453,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	}
 
 	// Loading the dyndep file gave tmp.imp a real input edge.
-	if b.GetNode("tmp.imp").InEdge.is_phony() {
+	if b.GetNode("tmp.imp").InEdge.Rule == PhonyRule {
 		t.Fatal("expected false")
 	}
 

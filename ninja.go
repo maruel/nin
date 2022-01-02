@@ -613,7 +613,7 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 		}
 	}
 
-	if !edge.is_phony() {
+	if edge.Rule != PhonyRule {
 		fmt.Printf("%s\n", (edge.EvaluateCommand(false)))
 	}
 }

@@ -138,11 +138,11 @@ func (c *Cleaner) CleanAll(generator bool) int {
 	c.LoadDyndeps()
 	for _, e := range c.state_.edges_ {
 		// Do not try to remove phony targets
-		if e.is_phony() {
+		if e.Rule == PhonyRule {
 			continue
 		}
 		// Do not remove generator's files unless generator specified.
-		if !generator && e.GetBindingBool("generator") {
+		if !generator && e.GetBinding("generator") != "" {
 			continue
 		}
 		for _, out_node := range e.Outputs {
@@ -184,7 +184,7 @@ func (c *Cleaner) CleanDead(entries Entries) int {
 func (c *Cleaner) DoCleanTarget(target *Node) {
 	if e := target.InEdge; e != nil {
 		// Do not try to remove phony targets
-		if !e.is_phony() {
+		if e.Rule != PhonyRule {
 			c.Remove(target.Path)
 			c.RemoveEdgeFiles(e)
 		}

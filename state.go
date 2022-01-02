@@ -119,9 +119,9 @@ func (p *Pool) Dump() {
 }
 
 var (
-	kDefaultPool = NewPool("", 0)
-	kConsolePool = NewPool("console", 1)
-	kPhonyRule   = NewRule("phony")
+	DefaultPool = NewPool("", 0)
+	ConsolePool = NewPool("console", 1)
+	PhonyRule   = NewRule("phony")
 )
 
 //
@@ -154,9 +154,9 @@ func NewState() State {
 		pools_:    map[string]*Pool{},
 		bindings_: NewBindingEnv(nil),
 	}
-	s.bindings_.AddRule(kPhonyRule)
-	s.AddPool(kDefaultPool)
-	s.AddPool(kConsolePool)
+	s.bindings_.AddRule(PhonyRule)
+	s.AddPool(DefaultPool)
+	s.AddPool(ConsolePool)
 	return s
 }
 
@@ -174,7 +174,7 @@ func (s *State) LookupPool(pool_name string) *Pool {
 func (s *State) AddEdge(rule *Rule) *Edge {
 	edge := NewEdge()
 	edge.Rule = rule
-	edge.Pool = kDefaultPool
+	edge.Pool = DefaultPool
 	edge.Env = s.bindings_
 	edge.ID = int32(len(s.edges_))
 	s.edges_ = append(s.edges_, edge)

@@ -87,10 +87,10 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	edge := p.state.GetNode("result", 0).InEdge
-	if !edge.GetBindingBool("restat") {
+	if edge.GetBinding("restat") == "" {
 		t.Fatal("expected true")
 	}
-	if edge.GetBindingBool("generator") {
+	if edge.GetBinding("generator") != "" {
 		t.Fatal("expected false")
 	}
 }

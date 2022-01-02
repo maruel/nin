@@ -652,7 +652,7 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
-	if edge.GetBindingBool("restat") {
+	if edge.GetBinding("restat") != "" {
 		t.Fatal("expected false")
 	}
 }
@@ -701,7 +701,7 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	if 1 != edge.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
-	if edge.GetBindingBool("restat") {
+	if edge.GetBinding("restat") != "" {
 		t.Fatal("expected false")
 	}
 }
@@ -849,7 +849,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 1 != edge1.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
-	if edge1.GetBindingBool("restat") {
+	if edge1.GetBinding("restat") != "" {
 		t.Fatal("expected false")
 	}
 	if edge1 != g.GetNode("out1imp").InEdge {
@@ -891,7 +891,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 1 != edge2.OrderOnlyDeps {
 		t.Fatal("expected equal")
 	}
-	if !edge2.GetBindingBool("restat") {
+	if edge2.GetBinding("restat") == "" {
 		t.Fatal("expected true")
 	}
 	in2imp := g.GetNode("in2imp")

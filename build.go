@@ -173,7 +173,7 @@ func (r *RealCommandRunner) CanRunMore() bool {
 
 func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 	command := edge.EvaluateCommand(false)
-	subproc := r.subprocs_.Add(command, edge.use_console())
+	subproc := r.subprocs_.Add(command, edge.Pool == ConsolePool)
 	if subproc == nil {
 		return false
 	}
@@ -312,7 +312,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 
 func (p *Plan) EdgeWanted(edge *Edge) {
 	p.wanted_edges_++
-	if !edge.is_phony() {
+	if edge.Rule != PhonyRule {
 		p.command_edges_++
 	}
 }
@@ -483,7 +483,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 
 				p.want_[oe] = kWantNothing
 				p.wanted_edges_--
-				if !oe.is_phony() {
+				if oe.Rule != PhonyRule {
 					p.command_edges_--
 				}
 			}
@@ -797,7 +797,7 @@ func (b *Builder) Build(err *string) bool {
 		// See if we can start any more commands.
 		if failures_allowed != 0 && b.command_runner_.CanRunMore() {
 			if edge := b.plan_.FindWork(); edge != nil {
-				if edge.GetBindingBool("generator") {
+				if edge.GetBinding("generator") != "" {
 					_ = b.scan_.build_log().Close()
 				}
 
@@ -807,7 +807,7 @@ func (b *Builder) Build(err *string) bool {
 					return false
 				}
 
-				if edge.is_phony() {
+				if edge.Rule == PhonyRule {
 					if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
 						b.Cleanup()
 						b.status_.BuildFinished()
@@ -871,7 +871,7 @@ func (b *Builder) Build(err *string) bool {
 
 func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	defer METRIC_RECORD("StartEdge")()
-	if edge.is_phony() {
+	if edge.Rule == PhonyRule {
 		return true
 	}
 	start_time_millis := int32(time.Now().UnixMilli() - b.start_time_millis_)
@@ -945,7 +945,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	}
 	// Restat the edge outputs
 	output_mtime := TimeStamp(0)
-	restat := edge.GetBindingBool("restat")
+	restat := edge.GetBinding("restat") != ""
 	if !b.config_.dry_run {
 		node_cleaned := false
 
