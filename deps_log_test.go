@@ -59,10 +59,10 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 		if 2 != log_deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != log_deps.nodes[0].path() {
+		if "foo.h" != log_deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if "bar.h" != log_deps.nodes[1].path() {
+		if "bar.h" != log_deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
 	}
@@ -103,10 +103,10 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 	if 2 != log_deps.node_count {
 		t.Fatal("expected equal")
 	}
-	if "foo.h" != log_deps.nodes[0].path() {
+	if "foo.h" != log_deps.nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "bar2.h" != log_deps.nodes[1].path() {
+	if "bar2.h" != log_deps.nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -311,7 +311,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 1 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
 
@@ -326,10 +326,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 2 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if "baz.h" != deps.nodes[1].path() {
+		if "baz.h" != deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
 
@@ -348,7 +348,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 1 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
 		if out != log.nodes()[out.id()] {
@@ -365,10 +365,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 2 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if "baz.h" != deps.nodes[1].path() {
+		if "baz.h" != deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
 		if other_out != log.nodes()[other_out.id()] {
@@ -404,7 +404,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 1 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
 
@@ -419,10 +419,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if 2 != deps.node_count {
 			t.Fatal("expected equal")
 		}
-		if "foo.h" != deps.nodes[0].path() {
+		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if "baz.h" != deps.nodes[1].path() {
+		if "baz.h" != deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
 

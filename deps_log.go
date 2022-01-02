@@ -526,7 +526,7 @@ func (d *DepsLog) UpdateDeps(out_id int, deps *Deps) bool {
 
 // Write a node name record, assigning it an id.
 func (d *DepsLog) RecordId(node *Node) bool {
-	path_size := len(node.path())
+	path_size := len(node.Path)
 	padding := (4 - path_size%4) % 4 // Pad path to 4 byte boundary.
 
 	size := uint32(path_size + padding + 4)
@@ -544,8 +544,8 @@ func (d *DepsLog) RecordId(node *Node) bool {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
-	if _, err := d.buf.WriteString(node.path()); err != nil {
-		if node.path() == "" {
+	if _, err := d.buf.WriteString(node.Path); err != nil {
+		if node.Path == "" {
 			panic("M-A")
 		}
 		// TODO(maruel): Make it a real error.

@@ -263,9 +263,9 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		if node.dirty() {
 			referenced := ""
 			if dependent != nil {
-				referenced = ", needed by '" + dependent.path() + "',"
+				referenced = ", needed by '" + dependent.Path + "',"
 			}
-			*err = "'" + node.path() + "'" + referenced + " missing and no known rule to make it"
+			*err = "'" + node.Path + "'" + referenced + " missing and no known rule to make it"
 		}
 		return false
 	}
@@ -703,12 +703,12 @@ func (b *Builder) Cleanup() {
 				// mentioned in a depfile, and the command touches its depfile
 				// but is interrupted before it touches its output file.)
 				err := ""
-				new_mtime := b.disk_interface_.Stat(o.path(), &err)
+				new_mtime := b.disk_interface_.Stat(o.Path, &err)
 				if new_mtime == -1 { // Log and ignore Stat() errors.
 					b.status_.Error("%s", err)
 				}
 				if depfile != "" || o.mtime() != new_mtime {
-					b.disk_interface_.RemoveFile(o.path())
+					b.disk_interface_.RemoveFile(o.Path)
 				}
 			}
 			if len(depfile) != 0 {
@@ -882,8 +882,8 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
 	for _, o := range edge.outputs_ {
-		if !MakeDirs(b.disk_interface_, o.path()) {
-			*err = fmt.Sprintf("Can't make dir %q", o.path())
+		if !MakeDirs(b.disk_interface_, o.Path) {
+			*err = fmt.Sprintf("Can't make dir %q", o.Path)
 			return false
 		}
 	}
@@ -950,7 +950,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		node_cleaned := false
 
 		for _, o := range edge.outputs_ {
-			new_mtime := b.disk_interface_.Stat(o.path(), err)
+			new_mtime := b.disk_interface_.Stat(o.Path, err)
 			if new_mtime == -1 {
 				return false
 			}
@@ -973,7 +973,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
 			for _, i := range edge.inputs_[:len(edge.inputs_)-edge.order_only_deps_] {
-				input_mtime := b.disk_interface_.Stat(i.path(), err)
+				input_mtime := b.disk_interface_.Stat(i.Path, err)
 				if input_mtime == -1 {
 					return false
 				}
@@ -1023,7 +1023,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			panic("should have been rejected by parser")
 		}
 		for _, o := range edge.outputs_ {
-			deps_mtime := b.disk_interface_.Stat(o.path(), err)
+			deps_mtime := b.disk_interface_.Stat(o.Path, err)
 			if deps_mtime == -1 {
 				return false
 			}

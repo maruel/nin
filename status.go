@@ -139,7 +139,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, end_time_millis int32, suc
 	if !success {
 		outputs := ""
 		for _, o := range edge.outputs_ {
-			outputs += o.path() + " "
+			outputs += o.Path + " "
 		}
 		if s.printer_.supports_color() {
 			s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")

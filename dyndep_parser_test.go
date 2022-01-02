@@ -466,7 +466,7 @@ func TestDyndepParserTest_ImplicitIn(t *testing.T) {
 	if 1 != len(i.implicit_inputs_) {
 		t.Fatal(i.implicit_inputs_)
 	}
-	if "impin" != i.implicit_inputs_[0].path() {
+	if "impin" != i.implicit_inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -491,10 +491,10 @@ func TestDyndepParserTest_ImplicitIns(t *testing.T) {
 	if 2 != len(i.implicit_inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "impin1" != i.implicit_inputs_[0].path() {
+	if "impin1" != i.implicit_inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "impin2" != i.implicit_inputs_[1].path() {
+	if "impin2" != i.implicit_inputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -516,7 +516,7 @@ func TestDyndepParserTest_ImplicitOut(t *testing.T) {
 	if 1 != len(i.implicit_outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "impout" != i.implicit_outputs_[0].path() {
+	if "impout" != i.implicit_outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 0 != len(i.implicit_inputs_) {
@@ -541,10 +541,10 @@ func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
 	if 2 != len(i.implicit_outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "impout1" != i.implicit_outputs_[0].path() {
+	if "impout1" != i.implicit_outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "impout2" != i.implicit_outputs_[1].path() {
+	if "impout2" != i.implicit_outputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 	if 0 != len(i.implicit_inputs_) {
@@ -569,19 +569,19 @@ func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
 	if 2 != len(i.implicit_outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "impout1" != i.implicit_outputs_[0].path() {
+	if "impout1" != i.implicit_outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "impout2" != i.implicit_outputs_[1].path() {
+	if "impout2" != i.implicit_outputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 	if 2 != len(i.implicit_inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "impin1" != i.implicit_inputs_[0].path() {
+	if "impin1" != i.implicit_inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "impin2" != i.implicit_inputs_[1].path() {
+	if "impin2" != i.implicit_inputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -639,7 +639,7 @@ func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 	if 1 != len(d.state_.edges_[1].outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out2" != d.state_.edges_[1].outputs_[0].path() {
+	if "out2" != d.state_.edges_[1].outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 0 != len(d.state_.edges_[0].inputs_) {

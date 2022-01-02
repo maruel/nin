@@ -43,7 +43,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 		return
 	}
 
-	fmt.Fprintf(g.out, "\"%p\" [label=\"%s\"]\n", node, strings.ReplaceAll(node.path(), "\\", "/"))
+	fmt.Fprintf(g.out, "\"%p\" [label=\"%s\"]\n", node, strings.ReplaceAll(node.Path, "\\", "/"))
 	g.visited_nodes_[node] = struct{}{}
 
 	edge := node.in_edge()

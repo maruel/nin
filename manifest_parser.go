@@ -459,7 +459,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				copy(edge.inputs_[i:], edge.inputs_[i+1:])
 				edge.inputs_ = edge.inputs_[:len(edge.inputs_)-1]
 				if !m.quiet_ {
-					Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.path())
+					Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
 				}
 				break
 			}

@@ -159,7 +159,7 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime T
 	command := edge.EvaluateCommand(true)
 	command_hash := HashCommand(command)
 	for _, out := range edge.outputs_ {
-		path := out.path()
+		path := out.Path
 		i, ok := b.entries_[path]
 		var log_entry *LogEntry
 		if ok {

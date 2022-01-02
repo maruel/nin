@@ -24,11 +24,16 @@ import (
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
 type Node struct {
-	path_ string
+	// Immutable.
+
+	// Path is the path of the file that this node represents.
+	Path string
 
 	// Set bits starting from lowest for backslashes that were normalized to
 	// forward slashes by CanonicalizePath. See |PathDecanonicalized|.
 	slash_bits_ uint64
+
+	// Mutable.
 
 	// Possible values of mtime_:
 	//   -1: file hasn't been examined
@@ -63,7 +68,7 @@ type Node struct {
 
 func NewNode(path string, slash_bits uint64) *Node {
 	return &Node{
-		path_:       path,
+		Path:        path,
 		slash_bits_: slash_bits,
 		mtime_:      -1,
 		exists_:     ExistenceStatusUnknown,
@@ -99,13 +104,10 @@ func (n *Node) exists() bool {
 func (n *Node) status_known() bool {
 	return n.exists_ != ExistenceStatusUnknown
 }
-func (n *Node) path() string {
-	return n.path_
-}
 
-// Get |path()| but use slash_bits to convert back to original slash styles.
+// Get |Path| but use slash_bits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
-	return PathDecanonicalized(n.path_, n.slash_bits_)
+	return PathDecanonicalized(n.Path, n.slash_bits_)
 }
 
 func (n *Node) slash_bits() uint64 {
@@ -157,7 +159,7 @@ func (n *Node) AddValidationOutEdge(edge *Edge) {
 // Return false on error.
 func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
 	defer METRIC_RECORD("node stat")()
-	n.mtime_ = disk_interface.Stat(n.path_, err)
+	n.mtime_ = disk_interface.Stat(n.Path, err)
 	if n.mtime_ == -1 {
 		return false
 	}
@@ -186,7 +188,7 @@ func (n *Node) Dump(prefix string) {
 	if n.dirty() {
 		t = " dirty"
 	}
-	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.path(), n, n.mtime(), s, t)
+	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.Path, n, n.mtime(), s, t)
 	if n.in_edge() != nil {
 		n.in_edge().Dump("in-edge: ")
 	} else {
@@ -344,17 +346,17 @@ func (e *Edge) Dump(prefix string) {
 	fmt.Printf("%s[ ", prefix)
 	for _, i := range e.inputs_ {
 		if i != nil {
-			fmt.Printf("%s ", i.path())
+			fmt.Printf("%s ", i.Path)
 		}
 	}
 	fmt.Printf("--%s-> ", e.rule_.name())
 	for _, i := range e.outputs_ {
-		fmt.Printf("%s ", i.path())
+		fmt.Printf("%s ", i.Path)
 	}
 	if len(e.validations_) != 0 {
 		fmt.Printf(" validations ")
 		for _, i := range e.validations_ {
-			fmt.Printf("%s ", i.path())
+			fmt.Printf("%s ", i.Path)
 		}
 	}
 	if e.pool_ != nil {
@@ -675,7 +677,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return false
 		}
 		if !node.exists() {
-			EXPLAIN("%s has no in-edge and is missing", node.path())
+			EXPLAIN("%s has no in-edge and is missing", node.Path)
 		}
 		node.set_dirty(!node.exists())
 		return true
@@ -776,7 +778,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
 			if i.dirty() {
-				EXPLAIN("%s is dirty", i.path())
+				EXPLAIN("%s is dirty", i.Path)
 				dirty = true
 			} else {
 				if most_recent_input == nil || i.mtime() > most_recent_input.mtime() {
@@ -854,10 +856,10 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 	// Construct the error message rejecting the cycle.
 	*err = "dependency cycle: "
 	for i := start; i != len(stack); i++ {
-		*err += stack[i].path()
+		*err += stack[i].Path
 		*err += " -> "
 	}
-	*err += stack[start].path()
+	*err += stack[start].Path
 
 	if (start+1) == len(stack) && edge.maybe_phonycycle_diagnostic() {
 		// The manifest parser would have filtered out the self-referencing
@@ -887,7 +889,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
 		if len(edge.inputs_) == 0 && !output.exists() {
-			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.path())
+			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.Path)
 			return true
 		}
 
@@ -905,7 +907,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 
 	// Dirty if we're missing the output.
 	if !output.exists() {
-		EXPLAIN("output %s doesn't exist", output.path())
+		EXPLAIN("output %s doesn't exist", output.Path)
 		return true
 	}
 
@@ -919,7 +921,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 		// considered dirty if an input was modified since the previous run.
 		used_restat := false
 		if edge.GetBindingBool("restat") && d.build_log() != nil {
-			if entry = d.build_log().LookupByOutput(output.path()); entry != nil {
+			if entry = d.build_log().LookupByOutput(output.Path); entry != nil {
 				output_mtime = entry.mtime
 				used_restat = true
 			}
@@ -930,7 +932,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 			if used_restat {
 				s = "restat of "
 			}
-			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.path(), most_recent_input.path(), output_mtime, most_recent_input.mtime())
+			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, most_recent_input.Path, output_mtime, most_recent_input.mtime())
 			return true
 		}
 	}
@@ -938,14 +940,14 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	if d.build_log() != nil {
 		generator := edge.GetBindingBool("generator")
 		if entry == nil {
-			entry = d.build_log().LookupByOutput(output.path())
+			entry = d.build_log().LookupByOutput(output.Path)
 		}
 		if entry != nil {
 			if !generator && HashCommand(command) != entry.command_hash {
 				// May also be dirty due to the command changing since the last build.
 				// But if this is a generator rule, the command changing does not make us
 				// dirty.
-				EXPLAIN("command line changed for %s", output.path())
+				EXPLAIN("command line changed for %s", output.Path)
 				return true
 			}
 			if most_recent_input != nil && entry.mtime < most_recent_input.mtime() {
@@ -953,12 +955,12 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 				// mtime of the most recent input.  This can occur even when the mtime
 				// on disk is newer if a previous run wrote to the output file but
 				// exited with an error or was interrupted.
-				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.path(), most_recent_input.path(), entry.mtime, most_recent_input.mtime())
+				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, most_recent_input.Path, entry.mtime, most_recent_input.mtime())
 				return true
 			}
 		}
 		if entry == nil && !generator {
-			EXPLAIN("command line not found in log for %s", output.path())
+			EXPLAIN("command line not found in log for %s", output.Path)
 			return true
 		}
 	}
@@ -1057,8 +1059,8 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// Check that this depfile matches the edge's output, if not return false to
 	// mark the edge as dirty.
 	first_output := edge.outputs_[0]
-	if first_output.path() != primary_out {
-		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.path(), primary_out)
+	if first_output.Path != primary_out {
+		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.Path, primary_out)
 		return false
 	}
 
@@ -1066,7 +1068,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	for _, o := range depfile.outs_ {
 		found := false
 		for _, n := range edge.outputs_ {
-			if n.path() == o {
+			if n.Path == o {
 				found = true
 				break
 			}
@@ -1108,13 +1110,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		deps = i.deps_log_.GetDeps(output)
 	}
 	if deps == nil {
-		EXPLAIN("deps for '%s' are missing", output.path())
+		EXPLAIN("deps for '%s' are missing", output.Path)
 		return false
 	}
 
 	// Deps are invalid if the output is newer than the deps.
 	if output.mtime() > deps.mtime {
-		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.path(), deps.mtime, output.mtime())
+		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.mtime())
 		return false
 	}
 

@@ -192,7 +192,7 @@ func (s *State) GetNode(path string, slash_bits uint64) *Node {
 		return node
 	}
 	node = NewNode(path, slash_bits)
-	s.paths_[node.path()] = node
+	s.paths_[node.Path] = node
 	return node
 }
 
@@ -304,7 +304,7 @@ func (s *State) Dump() {
 				s = "dirty"
 			}
 		}
-		fmt.Printf("%s %s [id:%d]\n", node.path(), s, node.id())
+		fmt.Printf("%s %s [id:%d]\n", node.Path, s, node.id())
 	}
 	if len(s.pools_) != 0 {
 		fmt.Printf("resource_pools:\n")

@@ -136,10 +136,10 @@ func TestGraphTest_ImplicitOutputParse(t *testing.T) {
 	if 2 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out" != edge.outputs_[0].path() {
+	if "out" != edge.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out.imp" != edge.outputs_[1].path() {
+	if "out.imp" != edge.outputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge.implicit_outs_ {
@@ -204,7 +204,7 @@ func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out.imp" != edge.outputs_[0].path() {
+	if "out.imp" != edge.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge.implicit_outs_ {
@@ -283,7 +283,7 @@ func TestGraphTest_RootNodes(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	for i := 0; i < len(root_nodes); i++ {
-		name := root_nodes[i].path()
+		name := root_nodes[i].Path
 		if "out" != name[0:3] {
 			t.Fatal("expected equal")
 		}
@@ -515,7 +515,7 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "b" != edge.inputs_[0].path() {
+	if "b" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -541,7 +541,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "c" != edge.inputs_[0].path() {
+	if "c" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -568,7 +568,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "c" != edge.inputs_[0].path() {
+	if "c" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -585,16 +585,16 @@ func TestGraphTest_Decanonicalize(t *testing.T) {
 	if 4 != len(root_nodes) {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[0].path() != "out/out1" {
+	if root_nodes[0].Path != "out/out1" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[1].path() != "out/out2/out3/out4" {
+	if root_nodes[1].Path != "out/out2/out3/out4" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[2].path() != "out3" {
+	if root_nodes[2].Path != "out3" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[3].path() != "out4/foo" {
+	if root_nodes[3].Path != "out4/foo" {
 		t.Fatal("expected equal")
 	}
 	if root_nodes[0].PathDecanonicalized() != "out\\out1" {
@@ -634,16 +634,16 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out" != edge.outputs_[0].path() {
+	if "out" != edge.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 2 != len(edge.inputs_) {
 		t.Fatal(len(edge.inputs_))
 	}
-	if "in" != edge.inputs_[0].path() {
+	if "in" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge.inputs_[1].path() {
+	if "dd" != edge.inputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 	if 0 != edge.implicit_deps_ {
@@ -680,19 +680,19 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out1" != edge.outputs_[0].path() {
+	if "out1" != edge.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 3 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "in" != edge.inputs_[0].path() {
+	if "in" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out2" != edge.inputs_[1].path() {
-		t.Fatal(edge.inputs_[1].path())
+	if "out2" != edge.inputs_[1].Path {
+		t.Fatal(edge.inputs_[1].Path)
 	}
-	if "dd" != edge.inputs_[2].path() {
+	if "dd" != edge.inputs_[2].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge.implicit_deps_ {
@@ -822,10 +822,10 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 2 != len(edge1.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out1" != edge1.outputs_[0].path() {
+	if "out1" != edge1.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "out1imp" != edge1.outputs_[1].path() {
+	if "out1imp" != edge1.outputs_[1].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge1.implicit_outs_ {
@@ -834,13 +834,13 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 3 != len(edge1.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != edge1.inputs_[0].path() {
+	if "in1" != edge1.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in1imp" != edge1.inputs_[1].path() {
-		t.Fatal(edge1.inputs_[1].path())
+	if "in1imp" != edge1.inputs_[1].Path {
+		t.Fatal(edge1.inputs_[1].Path)
 	}
-	if "dd" != edge1.inputs_[2].path() {
+	if "dd" != edge1.inputs_[2].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge1.implicit_deps_ {
@@ -867,7 +867,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 1 != len(edge2.outputs_) {
 		t.Fatal("expected equal")
 	}
-	if "out2" != edge2.outputs_[0].path() {
+	if "out2" != edge2.outputs_[0].Path {
 		t.Fatal("expected equal")
 	}
 	if 0 != edge2.implicit_outs_ {
@@ -876,13 +876,13 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if 3 != len(edge2.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "in2" != edge2.inputs_[0].path() {
+	if "in2" != edge2.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2imp" != edge2.inputs_[1].path() {
+	if "in2imp" != edge2.inputs_[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge2.inputs_[2].path() {
+	if "dd" != edge2.inputs_[2].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge2.implicit_deps_ {
@@ -1113,13 +1113,13 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 	if 3 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
-	if "in" != edge.inputs_[0].path() {
+	if "in" != edge.inputs_[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "inimp" != edge.inputs_[1].path() {
+	if "inimp" != edge.inputs_[1].Path {
 		t.Fatal("expected equal")
 	}
-	if "dd" != edge.inputs_[2].path() {
+	if "dd" != edge.inputs_[2].Path {
 		t.Fatal("expected equal")
 	}
 	if 1 != edge.implicit_deps_ {
@@ -1144,7 +1144,7 @@ func TestGraphTest_Validation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(validation_nodes) != 1 || validation_nodes[0].path() != "validate" {
+	if len(validation_nodes) != 1 || validation_nodes[0].Path != "validate" {
 		t.Fatal(validation_nodes)
 	}
 

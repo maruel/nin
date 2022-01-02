@@ -262,7 +262,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 	} else {
 		suggestion := n.state_.SpellcheckNode(path)
 		if suggestion != nil {
-			*err += ", did you mean '" + suggestion.path() + "'?"
+			*err += ", did you mean '" + suggestion.Path + "'?"
 		}
 	}
 	return nil
@@ -319,7 +319,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 			return 1
 		}
 
-		fmt.Printf("%s:\n", node.path())
+		fmt.Printf("%s:\n", node.Path)
 		if edge := node.in_edge(); edge != nil {
 			if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
 				if !dyndep_loader.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
@@ -334,19 +334,19 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 				} else if edge.is_order_only(in) {
 					label = "|| "
 				}
-				fmt.Printf("    %s%s\n", label, edge.inputs_[in].path())
+				fmt.Printf("    %s%s\n", label, edge.inputs_[in].Path)
 			}
 			if len(edge.validations_) != 0 {
 				fmt.Printf("  validations:\n")
 				for _, validation := range edge.validations_ {
-					fmt.Printf("    %s\n", validation.path())
+					fmt.Printf("    %s\n", validation.Path)
 				}
 			}
 		}
 		fmt.Printf("  outputs:\n")
 		for _, edge := range node.out_edges() {
 			for _, out := range edge.outputs_ {
-				fmt.Printf("    %s\n", out.path())
+				fmt.Printf("    %s\n", out.Path)
 			}
 		}
 		validation_edges := node.validation_out_edges()
@@ -354,7 +354,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 			fmt.Printf("  validation for:\n")
 			for _, edge := range validation_edges {
 				for _, out := range edge.outputs_ {
-					fmt.Printf("    %s\n", out.path())
+					fmt.Printf("    %s\n", out.Path)
 				}
 			}
 		}
@@ -382,7 +382,7 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 		for i := 0; i < indent; i++ {
 			fmt.Printf("  ")
 		}
-		target := n.path()
+		target := n.Path
 		if n.in_edge() != nil {
 			fmt.Printf("%s: %s\n", target, n.in_edge().rule_.name())
 			if depth > 1 || depth <= 0 {
@@ -399,7 +399,7 @@ func ToolTargetsSourceList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, inps := range e.inputs_ {
 			if inps.in_edge() == nil {
-				fmt.Printf("%s\n", inps.path())
+				fmt.Printf("%s\n", inps.Path)
 			}
 		}
 	}
@@ -413,7 +413,7 @@ func ToolTargetsListRule(state *State, rule_name string) int {
 	for _, e := range state.edges_ {
 		if e.rule_.name() == rule_name {
 			for _, out_node := range e.outputs_ {
-				rules[out_node.path()] = struct{}{}
+				rules[out_node.Path] = struct{}{}
 			}
 		}
 	}
@@ -433,7 +433,7 @@ func ToolTargetsListRule(state *State, rule_name string) int {
 func ToolTargetsList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, out_node := range e.outputs_ {
-			fmt.Printf("%s: %s\n", out_node.path(), e.rule_.name())
+			fmt.Printf("%s: %s\n", out_node.Path, e.rule_.name())
 		}
 	}
 	return 0
@@ -459,12 +459,12 @@ func ToolDeps(n *NinjaMain, options *Options, args []string) int {
 	for _, it := range nodes {
 		deps := n.deps_log_.GetDeps(it)
 		if deps == nil {
-			fmt.Printf("%s: deps not found\n", it.path())
+			fmt.Printf("%s: deps not found\n", it.Path)
 			continue
 		}
 
 		err := ""
-		mtime := disk_interface.Stat(it.path(), &err)
+		mtime := disk_interface.Stat(it.Path, &err)
 		if mtime == -1 {
 			Error("%s", err) // Log and ignore Stat() errors;
 		}
@@ -472,9 +472,9 @@ func ToolDeps(n *NinjaMain, options *Options, args []string) int {
 		if mtime == 0 || mtime > deps.mtime {
 			s = "STALE"
 		}
-		fmt.Printf("%s: #deps %d, deps mtime %d (%s)\n", it.path(), deps.node_count, deps.mtime, s)
+		fmt.Printf("%s: #deps %d, deps mtime %d (%s)\n", it.Path, deps.node_count, deps.mtime, s)
 		for i := 0; i < deps.node_count; i++ {
-			fmt.Printf("    %s\n", deps.nodes[i].path())
+			fmt.Printf("    %s\n", deps.nodes[i].Path)
 		}
 		fmt.Printf("\n")
 	}
@@ -732,9 +732,9 @@ func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
 	fmt.Printf("\",\n    \"command\": \"")
 	PrintJSONString(EvaluateCommandWithRspfile(edge, eval_mode))
 	fmt.Printf("\",\n    \"file\": \"")
-	PrintJSONString(edge.inputs_[0].path())
+	PrintJSONString(edge.inputs_[0].Path)
 	fmt.Printf("\",\n    \"output\": \"")
-	PrintJSONString(edge.outputs_[0].path())
+	PrintJSONString(edge.outputs_[0].Path)
 	fmt.Printf("\"\n  }")
 }
 

@@ -146,7 +146,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 			continue
 		}
 		for _, out_node := range e.outputs_ {
-			c.Remove(out_node.path())
+			c.Remove(out_node.Path)
 		}
 
 		c.RemoveEdgeFiles(e)
@@ -185,7 +185,7 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
 	if e := target.in_edge(); e != nil {
 		// Do not try to remove phony targets
 		if !e.is_phony() {
-			c.Remove(target.path())
+			c.Remove(target.Path)
 			c.RemoveEdgeFiles(e)
 		}
 		for _, next := range e.inputs_ {
@@ -275,7 +275,7 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 	for _, e := range c.state_.edges_ {
 		if e.rule().name() == rule.name() {
 			for _, out_node := range e.outputs_ {
-				c.Remove(out_node.path())
+				c.Remove(out_node.Path)
 				c.RemoveEdgeFiles(e)
 			}
 		}
