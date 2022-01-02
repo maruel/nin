@@ -84,10 +84,10 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 	for i := 0; i < len(log1.nodes()); i++ {
 		node1 := log1.nodes()[i]
 		node2 := log2.nodes()[i]
-		if i != node1.id() {
+		if i != node1.ID {
 			t.Fatal("expected equal")
 		}
-		if node1.id() != node2.id() {
+		if node1.ID != node2.ID {
 			t.Fatal("expected equal")
 		}
 	}
@@ -351,7 +351,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if out != log.nodes()[out.id()] {
+		if out != log.nodes()[out.ID] {
 			t.Fatal("expected equal")
 		}
 
@@ -371,7 +371,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if "baz.h" != deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
-		if other_out != log.nodes()[other_out.id()] {
+		if other_out != log.nodes()[other_out.ID] {
 			t.Fatal("expected equal")
 		}
 
@@ -442,10 +442,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The .h files pulled in via deps should no longer have ids either.
-		if -1 != state.LookupNode("foo.h").id() {
+		if -1 != state.LookupNode("foo.h").ID {
 			t.Fatal("expected equal")
 		}
-		if -1 != state.LookupNode("baz.h").id() {
+		if -1 != state.LookupNode("baz.h").ID {
 			t.Fatal("expected equal")
 		}
 

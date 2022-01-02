@@ -134,14 +134,14 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	made_change := false
 
 	// Assign ids to all nodes that are missing one.
-	if node.id() < 0 {
+	if node.ID < 0 {
 		if !d.RecordId(node) {
 			return false
 		}
 		made_change = true
 	}
 	for i := 0; i < node_count; i++ {
-		if nodes[i].id() < 0 {
+		if nodes[i].ID < 0 {
 			if !d.RecordId(nodes[i]) {
 				return false
 			}
@@ -184,14 +184,14 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	if err := binary.Write(d.buf, binary.LittleEndian, size); err != nil {
 		return false
 	}
-	if err := binary.Write(d.buf, binary.LittleEndian, uint32(node.id())); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, uint32(node.ID)); err != nil {
 		return false
 	}
 	if err := binary.Write(d.buf, binary.LittleEndian, mtime); err != nil {
 		return false
 	}
 	for i := 0; i < node_count; i++ {
-		if err := binary.Write(d.buf, binary.LittleEndian, uint32(nodes[i].id())); err != nil {
+		if err := binary.Write(d.buf, binary.LittleEndian, uint32(nodes[i].ID)); err != nil {
 			return false
 		}
 	}
@@ -204,7 +204,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	for i := 0; i < node_count; i++ {
 		deps.nodes[i] = nodes[i]
 	}
-	d.UpdateDeps(node.id(), deps)
+	d.UpdateDeps(node.ID, deps)
 
 	return true
 }
@@ -376,10 +376,10 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				break
 			}
 
-			if node.id() >= 0 {
+			if node.ID >= 0 {
 				panic("M-A")
 			}
-			node.set_id(id)
+			node.ID = id
 			d.nodes_ = append(d.nodes_, node)
 		}
 	}
@@ -416,10 +416,10 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 func (d *DepsLog) GetDeps(node *Node) *Deps {
 	// Abort if the node has no id (never referenced in the deps) or if
 	// there's no deps recorded for the node.
-	if node.id() < 0 || node.id() >= len(d.deps_) {
+	if node.ID < 0 || node.ID >= len(d.deps_) {
 		return nil
 	}
-	return d.deps_[node.id()]
+	return d.deps_[node.ID]
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
@@ -459,7 +459,7 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 	// Clear all known ids so that new ones can be reassigned.  The new indices
 	// will refer to the ordering in new_log, not in the current log.
 	for _, i := range d.nodes_ {
-		i.set_id(-1)
+		i.ID = -1
 	}
 
 	// Write out all deps again.
@@ -566,7 +566,7 @@ func (d *DepsLog) RecordId(node *Node) bool {
 	if err := d.buf.Flush(); err != nil {
 		return false
 	}
-	node.set_id(id)
+	node.ID = id
 	d.nodes_ = append(d.nodes_, node)
 
 	return true

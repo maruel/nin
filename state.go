@@ -304,7 +304,7 @@ func (s *State) Dump() {
 				s = "dirty"
 			}
 		}
-		fmt.Printf("%s %s [id:%d]\n", node.Path, s, node.id())
+		fmt.Printf("%s %s [id:%d]\n", node.Path, s, node.ID)
 	}
 	if len(s.pools_) != 0 {
 		fmt.Printf("resource_pools:\n")

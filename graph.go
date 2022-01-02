@@ -63,7 +63,7 @@ type Node struct {
 	ValidationOutEdges []*Edge
 
 	// A dense integer id for the node, assigned and used by DepsLog.
-	id_ int
+	ID int
 }
 
 func NewNode(path string, slashBits uint64) *Node {
@@ -72,7 +72,7 @@ func NewNode(path string, slashBits uint64) *Node {
 		SlashBits: slashBits,
 		mtime_:    -1,
 		exists_:   ExistenceStatusUnknown,
-		id_:       -1,
+		ID:        -1,
 	}
 }
 
@@ -127,12 +127,6 @@ func (n *Node) dyndep_pending() bool {
 }
 func (n *Node) set_dyndep_pending(pending bool) {
 	n.dyndep_pending_ = pending
-}
-func (n *Node) id() int {
-	return n.id_
-}
-func (n *Node) set_id(id int) {
-	n.id_ = id
 }
 func (n *Node) AddOutEdge(edge *Edge) {
 	n.OutEdges = append(n.OutEdges, edge)
