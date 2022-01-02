@@ -104,10 +104,10 @@ jobs:
           false
         fi
 
-      # Run compare.sh.
-    - name: 'compare.sh'
+      # Run compare_against_ninja.sh.
+    - name: 'compare_against_ninja.sh'
       if: always() && matrix.os == 'ubuntu-latest'
-      run: ./compare.sh
+      run: ./compare_against_ninja.sh
 
       # Fetch the tools.
     - name: 'go get necessary tools'

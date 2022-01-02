@@ -6,7 +6,9 @@
 /depfile_parser_perftest.exe
 /manifest_parser_perftest
 /manifest_parser_perftest.exe
+/new.txt
 /ninja
 /ninja.exe
 /ninja_test
 /ninja_test.exe
+/old.txt

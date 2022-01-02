@@ -53,21 +53,20 @@ go tool trace -http=:33071 trace.out
 
 ## Comparing perf
 
+### Against previous commit
+
+Runs all Go benchmark on the current commit and the previous one, then compares
+with [benchstat](golang.org/x/perf/cmd/benchstat).
+
+```
+./bench_against.sh
+```
+
+### Against ninja
+
 This runs both ninja's performance tests and nin's equivalent for an
 apple-to-apple comparison.
 
 ```
-./compare.sh
-```
-
-## Tips
-
-Use benchstat to compare Go benchmarks.
-
-```
-go install golang.org/x/perf/cmd/benchstat@latest
-go test -count=10 -bench=. -run '^$' -cpu 1 > new.txt
-git checkout HEAD~1
-go test -count=10 -bench=. -run '^$' -cpu 1 > old.txt
-benchstat old.txt new.txt
+./compare_against_ninja.sh
 ```
