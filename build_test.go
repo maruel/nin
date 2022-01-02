@@ -959,7 +959,10 @@ func (b *BuildTest) Dirty(path string) {
 	// If it's an input file, mark that we've already stat()ed it and
 	// it's missing.
 	if node.InEdge == nil {
-		node.MarkMissing()
+		if node.MTime == -1 {
+			node.MTime = 0
+		}
+		node.Exists = ExistenceStatusMissing
 	}
 }
 
@@ -1818,28 +1821,28 @@ func PhonyUseCase(t *testing.T, i int) {
 			t.Fatal("expected true")
 		}
 
-		inputTime := inputNode.mtime()
+		inputTime := inputNode.MTime
 
-		if phonyNode.exists() {
+		if phonyNode.Exists == ExistenceStatusExists {
 			t.Fatal("expected false")
 		}
 		if phonyNode.Dirty {
 			t.Fatal("expected false")
 		}
 
-		if phonyNode.mtime() <= startTime {
+		if phonyNode.MTime <= startTime {
 			t.Fatal("expected greater")
 		}
-		if phonyNode.mtime() != inputTime {
+		if phonyNode.MTime != inputTime {
 			t.Fatal("expected equal")
 		}
 		if !testNode.Stat(&b.fs_, &err) {
 			t.Fatal("expected true")
 		}
-		if !testNode.exists() {
+		if testNode.Exists != ExistenceStatusExists {
 			t.Fatal("expected true")
 		}
-		if testNode.mtime() <= startTime {
+		if testNode.MTime <= startTime {
 			t.Fatal("expected greater")
 		}
 	} else {

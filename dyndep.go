@@ -70,7 +70,7 @@ func NewDyndepLoader(state *State, disk_interface DiskInterface) DyndepLoader {
 // information loaded from the dyndep file.
 func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
 	// We are loading the dyndep file now so it is no longer pending.
-	node.set_dyndep_pending(false)
+	node.DyndepPending = false
 
 	// Load the dyndep information from the file.
 	EXPLAIN("loading dyndep file '%s'", node.Path)
@@ -147,8 +147,8 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 	edge.implicit_deps_ += int32(len(dyndeps.implicit_inputs_))
 
 	// Add this edge as outgoing from each new input.
-	for _, i := range dyndeps.implicit_inputs_ {
-		i.AddOutEdge(edge)
+	for _, n := range dyndeps.implicit_inputs_ {
+		n.OutEdges = append(n.OutEdges, edge)
 	}
 	return true
 }

@@ -392,7 +392,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *Plan) NodeFinished(node *Node, err *string) bool {
 	// If this node provides dyndep info, load it now.
-	if node.dyndep_pending() {
+	if node.DyndepPending {
 		if p.builder_ == nil {
 			panic("dyndep requires Plan to have a Builder")
 		}
@@ -462,7 +462,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			// Recompute most_recent_input.
 			most_recent_input := -1
 			for i := 0; i != end; i++ {
-				if most_recent_input == -1 || oe.inputs_[i].mtime() > oe.inputs_[most_recent_input].mtime() {
+				if most_recent_input == -1 || oe.inputs_[i].MTime > oe.inputs_[most_recent_input].MTime {
 					most_recent_input = i
 				}
 			}
@@ -707,7 +707,7 @@ func (b *Builder) Cleanup() {
 				if new_mtime == -1 { // Log and ignore Stat() errors.
 					b.status_.Error("%s", err)
 				}
-				if depfile != "" || o.mtime() != new_mtime {
+				if depfile != "" || o.MTime != new_mtime {
 					b.disk_interface_.RemoveFile(o.Path)
 				}
 			}
@@ -957,7 +957,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			if new_mtime > output_mtime {
 				output_mtime = new_mtime
 			}
-			if o.mtime() == new_mtime && restat {
+			if o.MTime == new_mtime && restat {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).

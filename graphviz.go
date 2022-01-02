@@ -59,7 +59,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 	}
 	g.visited_edges_[edge] = struct{}{}
 
-	if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
+	if edge.dyndep_ != nil && edge.dyndep_.DyndepPending {
 		err := ""
 		if !g.dyndep_loader_.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
 			Warning("%s\n", err)

@@ -466,11 +466,12 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	// be one of our manifest-specified inputs.
 	dyndep := edge.GetUnescapedDyndep()
 	if len(dyndep) != 0 {
-		edge.dyndep_ = m.state_.GetNode(CanonicalizePathBits(dyndep))
-		edge.dyndep_.set_dyndep_pending(true)
+		n := m.state_.GetNode(CanonicalizePathBits(dyndep))
+		n.DyndepPending = true
+		edge.dyndep_ = n
 		found := false
-		for _, n := range edge.inputs_ {
-			if n == edge.dyndep_ {
+		for _, x := range edge.inputs_ {
+			if x == n {
 				found = true
 				break
 			}

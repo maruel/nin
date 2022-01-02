@@ -219,7 +219,7 @@ func (s *State) SpellcheckNode(path string) *Node {
 func (s *State) AddIn(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
 	edge.inputs_ = append(edge.inputs_, node)
-	node.AddOutEdge(edge)
+	node.OutEdges = append(node.OutEdges, edge)
 }
 
 func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
@@ -235,7 +235,7 @@ func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
 func (s *State) AddValidation(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
 	edge.validations_ = append(edge.validations_, node)
-	node.AddValidationOutEdge(edge)
+	node.ValidationOutEdges = append(node.ValidationOutEdges, edge)
 }
 
 func (s *State) AddDefault(path string, err *string) bool {
@@ -275,11 +275,13 @@ func (s *State) DefaultNodes(err *string) []*Node {
 	return s.defaults_
 }
 
-// Reset state.  Keeps all nodes and edges, but restores them to the
+// Reset state. Keeps all nodes and edges, but restores them to the
 // state where we haven't yet examined the disk for dirty state.
 func (s *State) Reset() {
-	for _, p := range s.paths_ {
-		p.ResetState()
+	for _, n := range s.paths_ {
+		n.MTime = -1
+		n.Exists = ExistenceStatusUnknown
+		n.Dirty = false
 	}
 	for _, e := range s.edges_ {
 		e.outputs_ready_ = false
@@ -298,7 +300,7 @@ func (s *State) Dump() {
 	for _, name := range names {
 		node := s.paths_[name]
 		s := "unknown"
-		if node.status_known() {
+		if node.Exists != ExistenceStatusUnknown {
 			s = "clean"
 			if node.Dirty {
 				s = "dirty"

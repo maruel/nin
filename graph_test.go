@@ -617,7 +617,7 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -626,7 +626,7 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if g.GetNode("dd").dyndep_pending() {
+	if g.GetNode("dd").DyndepPending {
 		t.Fatal("expected false")
 	}
 
@@ -663,7 +663,7 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out1: dyndep | out2\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -672,7 +672,7 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if g.GetNode("dd").dyndep_pending() {
+	if g.GetNode("dd").DyndepPending {
 		t.Fatal("expected false")
 	}
 
@@ -711,7 +711,7 @@ func TestGraphTest_DyndepLoadMissingFile(t *testing.T) {
 	g.AssertParse(&g.state_, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -728,7 +728,7 @@ func TestGraphTest_DyndepLoadMissingEntry(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -745,7 +745,7 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out2: dyndep\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -762,7 +762,7 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules1(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -780,7 +780,7 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 	g.fs_.Create("dd2", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
 
 	err := ""
-	if !g.GetNode("dd1").dyndep_pending() {
+	if !g.GetNode("dd1").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd1"), DyndepFile{}, &err) {
@@ -789,7 +789,7 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if !g.GetNode("dd2").dyndep_pending() {
+	if !g.GetNode("dd2").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if g.scan_.LoadDyndeps(g.GetNode("dd2"), DyndepFile{}, &err) {
@@ -806,7 +806,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out1 | out1imp: dyndep | in1imp\nbuild out2: dyndep | in2imp\n  restat = 1\n")
 
 	err := ""
-	if !g.GetNode("dd").dyndep_pending() {
+	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
 	if !g.scan_.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
@@ -815,7 +815,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if g.GetNode("dd").dyndep_pending() {
+	if g.GetNode("dd").DyndepPending {
 		t.Fatal("expected false")
 	}
 	edge1 := g.GetNode("out1").InEdge
@@ -1180,8 +1180,8 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	if !out1.Stat(&g.fs_, &err) {
 		t.Fatal("expected true")
 	}
-	out1Mtime1 := out1.mtime()
-	in1Mtime1 := in1.mtime()
+	out1Mtime1 := out1.MTime
+	in1Mtime1 := in1.MTime
 
 	// Touch in1. This should cause out1 to be dirty
 	g.state_.Reset()
@@ -1191,17 +1191,17 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	if !in1.Stat(&g.fs_, &err) {
 		t.Fatal("expected true")
 	}
-	if in1.mtime() <= in1Mtime1 {
+	if in1.MTime <= in1Mtime1 {
 		t.Fatal("expected greater")
 	}
 
 	if !g.scan_.RecomputeDirty(out1, nil, &err) {
 		t.Fatal("expected true")
 	}
-	if in1.mtime() <= in1Mtime1 {
+	if in1.MTime <= in1Mtime1 {
 		t.Fatal("expected greater")
 	}
-	if out1.mtime() != out1Mtime1 {
+	if out1.MTime != out1Mtime1 {
 		t.Fatal("expected equal")
 	}
 	if !out1.Dirty {

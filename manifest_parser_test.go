@@ -1226,7 +1226,7 @@ func TestParserTest_DyndepExplicitInput(t *testing.T) {
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
-	if !edge.dyndep_.dyndep_pending() {
+	if !edge.dyndep_.DyndepPending {
 		t.Fatal("expected true")
 	}
 	if edge.dyndep_.Path != "in" {
@@ -1241,7 +1241,7 @@ func TestParserTest_DyndepImplicitInput(t *testing.T) {
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
-	if !edge.dyndep_.dyndep_pending() {
+	if !edge.dyndep_.DyndepPending {
 		t.Fatal("expected true")
 	}
 	if edge.dyndep_.Path != "dd" {
@@ -1256,7 +1256,7 @@ func TestParserTest_DyndepOrderOnlyInput(t *testing.T) {
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
-	if !edge.dyndep_.dyndep_pending() {
+	if !edge.dyndep_.DyndepPending {
 		t.Fatal("expected true")
 	}
 	if edge.dyndep_.Path != "dd" {
@@ -1271,7 +1271,7 @@ func TestParserTest_DyndepRuleInput(t *testing.T) {
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
-	if !edge.dyndep_.dyndep_pending() {
+	if !edge.dyndep_.DyndepPending {
 		t.Fatal("expected true")
 	}
 	if edge.dyndep_.Path != "in" {

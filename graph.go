@@ -21,6 +21,17 @@ import (
 	"sort"
 )
 
+type ExistenceStatus int32
+
+const (
+	// The file hasn't been examined.
+	ExistenceStatusUnknown ExistenceStatus = iota
+	// The file doesn't exist. MTime will be the latest mtime of its dependencies.
+	ExistenceStatusMissing
+	// The path is an actual file. MTime will be the file's mtime.
+	ExistenceStatusExists
+)
+
 // Information about a node in the dependency graph: the file, whether
 // it's dirty, mtime, etc.
 type Node struct {
@@ -45,16 +56,16 @@ type Node struct {
 	// All Edges that use this Node as a validation.
 	ValidationOutEdges []*Edge
 
-	// Possible values of mtime_:
+	// Possible values of MTime:
 	//   -1: file hasn't been examined
 	//   0:  we looked, and file doesn't exist
 	//   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
-	mtime_ TimeStamp
+	MTime TimeStamp
 
 	// A dense integer id for the node, assigned and used by DepsLog.
 	ID int32
 
-	exists_ ExistenceStatus
+	Exists ExistenceStatus
 
 	// Dirty is true when the underlying file is out-of-date.
 	// But note that Edge::outputs_ready_ is also used in judging which
@@ -63,46 +74,25 @@ type Node struct {
 
 	// Store whether dyndep information is expected from this node but
 	// has not yet been loaded.
-	dyndep_pending_ bool
+	DyndepPending bool
 }
 
 func NewNode(path string, slashBits uint64) *Node {
 	return &Node{
 		Path:      path,
 		SlashBits: slashBits,
-		mtime_:    -1,
+		MTime:     -1,
 		ID:        -1,
-		exists_:   ExistenceStatusUnknown,
+		Exists:    ExistenceStatusUnknown,
 	}
 }
 
 // Return false on error.
 func (n *Node) StatIfNecessary(disk_interface DiskInterface, err *string) bool {
-	if n.status_known() {
+	if n.Exists != ExistenceStatusUnknown {
 		return true
 	}
 	return n.Stat(disk_interface, err)
-}
-
-// Mark as not-yet-stat()ed and not dirty.
-func (n *Node) ResetState() {
-	n.mtime_ = -1
-	n.exists_ = ExistenceStatusUnknown
-	n.Dirty = false
-}
-
-// Mark the Node as already-stat()ed and missing.
-func (n *Node) MarkMissing() {
-	if n.mtime_ == -1 {
-		n.mtime_ = 0
-	}
-	n.exists_ = ExistenceStatusMissing
-}
-func (n *Node) exists() bool {
-	return n.exists_ == ExistenceStatusExists
-}
-func (n *Node) status_known() bool {
-	return n.exists_ != ExistenceStatusUnknown
 }
 
 // Get |Path| but use SlashBits to convert back to original slash styles.
@@ -110,55 +100,40 @@ func (n *Node) PathDecanonicalized() string {
 	return PathDecanonicalized(n.Path, n.SlashBits)
 }
 
-func (n *Node) mtime() TimeStamp {
-	return n.mtime_
-}
-func (n *Node) dyndep_pending() bool {
-	return n.dyndep_pending_
-}
-func (n *Node) set_dyndep_pending(pending bool) {
-	n.dyndep_pending_ = pending
-}
-func (n *Node) AddOutEdge(edge *Edge) {
-	n.OutEdges = append(n.OutEdges, edge)
-}
-func (n *Node) AddValidationOutEdge(edge *Edge) {
-	n.ValidationOutEdges = append(n.ValidationOutEdges, edge)
-}
-
 // Return false on error.
 func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
 	defer METRIC_RECORD("node stat")()
-	n.mtime_ = disk_interface.Stat(n.Path, err)
-	if n.mtime_ == -1 {
+	n.MTime = disk_interface.Stat(n.Path, err)
+	if n.MTime == -1 {
 		return false
 	}
-	n.exists_ = ExistenceStatusMissing
-	if n.mtime_ != 0 {
-		n.exists_ = ExistenceStatusExists
+	if n.MTime != 0 {
+		n.Exists = ExistenceStatusExists
+	} else {
+		n.Exists = ExistenceStatusMissing
 	}
 	return true
 }
 
-// If the file doesn't exist, set the mtime_ from its dependencies
+// If the file doesn't exist, set the MTime from its dependencies
 func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
-	if !n.exists() {
-		if mtime > n.mtime_ {
-			n.mtime_ = mtime
+	if n.Exists != ExistenceStatusExists {
+		if mtime > n.MTime {
+			n.MTime = mtime
 		}
 	}
 }
 
 func (n *Node) Dump(prefix string) {
 	s := ""
-	if !n.exists() {
+	if n.Exists != ExistenceStatusExists {
 		s = " (:missing)"
 	}
 	t := " clean"
 	if n.Dirty {
 		t = " dirty"
 	}
-	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.Path, n, n.mtime(), s, t)
+	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.Path, n, n.MTime, s, t)
 	if n.InEdge != nil {
 		n.InEdge.Dump("in-edge: ")
 	} else {
@@ -180,17 +155,6 @@ func (n *Node) Dump(prefix string) {
 }
 
 //
-
-type ExistenceStatus int32
-
-const (
-	// The file hasn't been examined.
-	ExistenceStatusUnknown ExistenceStatus = iota
-	// The file doesn't exist. mtime_ will be the latest mtime of its dependencies.
-	ExistenceStatusMissing
-	// The path is an actual file. mtime_ will be the file's mtime.
-	ExistenceStatusExists
-)
 
 type VisitMark int32
 
@@ -640,17 +604,17 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	edge := node.InEdge
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
-		if node.status_known() {
+		if node.Exists != ExistenceStatusUnknown {
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
 		if !node.StatIfNecessary(d.disk_interface_, err) {
 			return false
 		}
-		if !node.exists() {
+		if node.Exists != ExistenceStatusExists {
 			EXPLAIN("%s has no in-edge and is missing", node.Path)
 		}
-		node.Dirty = !node.exists()
+		node.Dirty = node.Exists != ExistenceStatusExists
 		return true
 	}
 
@@ -688,7 +652,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		//   input to this edge, the edge will not be considered ready below.
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
-		if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
+		if edge.dyndep_ != nil && edge.dyndep_.DyndepPending {
 			if !d.RecomputeNodeDirty(edge.dyndep_, stack, validation_nodes, err) {
 				return false
 			}
@@ -752,7 +716,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 				EXPLAIN("%s is dirty", i.Path)
 				dirty = true
 			} else {
-				if most_recent_input == nil || i.mtime() > most_recent_input.mtime() {
+				if most_recent_input == nil || i.MTime > most_recent_input.MTime {
 					most_recent_input = i
 				}
 			}
@@ -859,7 +823,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	if edge.is_phony() {
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
-		if len(edge.inputs_) == 0 && !output.exists() {
+		if len(edge.inputs_) == 0 && output.Exists != ExistenceStatusExists {
 			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.Path)
 			return true
 		}
@@ -867,7 +831,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 		// Update the mtime with the newest input. Dependents can thus call mtime()
 		// on the fake node and get the latest mtime of the dependencies
 		if most_recent_input != nil {
-			output.UpdatePhonyMtime(most_recent_input.mtime())
+			output.UpdatePhonyMtime(most_recent_input.MTime)
 		}
 
 		// Phony edges are clean, nothing to do
@@ -877,14 +841,14 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	var entry *LogEntry
 
 	// Dirty if we're missing the output.
-	if !output.exists() {
+	if output.Exists != ExistenceStatusExists {
 		EXPLAIN("output %s doesn't exist", output.Path)
 		return true
 	}
 
 	// Dirty if the output is older than the input.
-	if most_recent_input != nil && output.mtime() < most_recent_input.mtime() {
-		output_mtime := output.mtime()
+	if most_recent_input != nil && output.MTime < most_recent_input.MTime {
+		output_mtime := output.MTime
 
 		// If this is a restat rule, we may have cleaned the output with a restat
 		// rule in a previous run and stored the most recent input mtime in the
@@ -898,12 +862,12 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 			}
 		}
 
-		if output_mtime < most_recent_input.mtime() {
+		if output_mtime < most_recent_input.MTime {
 			s := ""
 			if used_restat {
 				s = "restat of "
 			}
-			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, most_recent_input.Path, output_mtime, most_recent_input.mtime())
+			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, most_recent_input.Path, output_mtime, most_recent_input.MTime)
 			return true
 		}
 	}
@@ -921,12 +885,12 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 				EXPLAIN("command line changed for %s", output.Path)
 				return true
 			}
-			if most_recent_input != nil && entry.mtime < most_recent_input.mtime() {
+			if most_recent_input != nil && entry.mtime < most_recent_input.MTime {
 				// May also be dirty due to the mtime in the log being older than the
 				// mtime of the most recent input.  This can occur even when the mtime
 				// on disk is newer if a previous run wrote to the output file but
 				// exited with an error or was interrupted.
-				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, most_recent_input.Path, entry.mtime, most_recent_input.mtime())
+				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, most_recent_input.Path, entry.mtime, most_recent_input.MTime)
 				return true
 			}
 		}
@@ -1059,7 +1023,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 	for _, j := range depfile_ins {
 		node := i.state_.GetNode(CanonicalizePathBits(j))
 		edge.inputs_[implicit_dep] = node
-		node.AddOutEdge(edge)
+		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
 	}
@@ -1081,8 +1045,8 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	}
 
 	// Deps are invalid if the output is newer than the deps.
-	if output.mtime() > deps.mtime {
-		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.mtime())
+	if output.MTime > deps.mtime {
+		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.MTime)
 		return false
 	}
 
@@ -1090,7 +1054,7 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	for j := 0; j < deps.node_count; j++ {
 		node := deps.nodes[j]
 		edge.inputs_[implicit_dep] = node
-		node.AddOutEdge(edge)
+		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
 		implicit_dep++
 	}
