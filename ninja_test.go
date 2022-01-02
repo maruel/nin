@@ -77,7 +77,7 @@ func VerifyGraph(t *testing.T, state *State) {
 		}
 		for _, in_node := range e.inputs_ {
 			found := false
-			for _, oe := range in_node.out_edges() {
+			for _, oe := range in_node.OutEdges {
 				if oe == e {
 					found = true
 				}
@@ -87,7 +87,7 @@ func VerifyGraph(t *testing.T, state *State) {
 			}
 		}
 		for _, out_node := range e.outputs_ {
-			if out_node.in_edge() != e {
+			if out_node.InEdge != e {
 				t.Fatal("each edge's output must have the edge as in-edge")
 			}
 		}
@@ -96,10 +96,10 @@ func VerifyGraph(t *testing.T, state *State) {
 	// The union of all in- and out-edges of each nodes should be exactly edges_.
 	node_edge_set := map[*Edge]struct{}{}
 	for _, n := range state.paths_ {
-		if n.in_edge() != nil {
-			node_edge_set[n.in_edge()] = struct{}{}
+		if n.InEdge != nil {
+			node_edge_set[n.InEdge] = struct{}{}
 		}
-		for _, oe := range n.out_edges() {
+		for _, oe := range n.OutEdges {
 			node_edge_set[oe] = struct{}{}
 		}
 	}

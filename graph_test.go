@@ -132,7 +132,7 @@ func TestGraphTest_ImplicitOutputParse(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build out | out.imp: cat in\n", ManifestParserOptions{})
 
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	if 2 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -145,7 +145,7 @@ func TestGraphTest_ImplicitOutputParse(t *testing.T) {
 	if 1 != edge.implicit_outs_ {
 		t.Fatal("expected equal")
 	}
-	if edge != g.GetNode("out.imp").in_edge() {
+	if edge != g.GetNode("out.imp").InEdge {
 		t.Fatal("expected equal")
 	}
 }
@@ -200,7 +200,7 @@ func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build | out.imp: cat in\n", ManifestParserOptions{})
 
-	edge := g.GetNode("out.imp").in_edge()
+	edge := g.GetNode("out.imp").InEdge
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -210,7 +210,7 @@ func TestGraphTest_ImplicitOutputOnlyParse(t *testing.T) {
 	if 1 != edge.implicit_outs_ {
 		t.Fatal("expected equal")
 	}
-	if edge != g.GetNode("out.imp").in_edge() {
+	if edge != g.GetNode("out.imp").InEdge {
 		t.Fatal("expected equal")
 	}
 }
@@ -294,7 +294,7 @@ func TestGraphTest_VarInOutPathEscaping(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "build a$ b: cat no'space with$ space$$ no\"space2\n", ManifestParserOptions{})
 
-	edge := g.GetNode("a b").in_edge()
+	edge := g.GetNode("a b").InEdge
 	want := "cat 'no'\\''space' 'with space$' 'no\"space2' > 'a b'"
 	if runtime.GOOS == "windows" {
 		want = "cat no'space \"with space$\" \"no\\\"space2\" > \"a b\""
@@ -363,7 +363,7 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 func TestGraphTest_RuleVariablesInScope(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  depfile = x\n  command = depfile is $depfile\nbuild out: r in\n", ManifestParserOptions{})
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	if "depfile is x" != edge.EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
@@ -373,7 +373,7 @@ func TestGraphTest_RuleVariablesInScope(t *testing.T) {
 func TestGraphTest_DepfileOverride(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  depfile = x\n  command = unused\nbuild out: r in\n  depfile = y\n", ManifestParserOptions{})
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	if "y" != edge.GetBinding("depfile") {
 		t.Fatal("expected equal")
 	}
@@ -383,7 +383,7 @@ func TestGraphTest_DepfileOverride(t *testing.T) {
 func TestGraphTest_DepfileOverrideParent(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  depfile = x\n  command = depfile is $depfile\nbuild out: r in\n  depfile = y\n", ManifestParserOptions{})
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	if "depfile is y" != edge.GetBinding("command") {
 		t.Fatal("expected equal")
 	}
@@ -511,7 +511,7 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 	// Despite the depfile causing edge to be a cycle (it has outputs a and b,
 	// but the depfile also adds b as an input), the deps should have been loaded
 	// only once:
-	edge := g.GetNode("a").in_edge()
+	edge := g.GetNode("a").InEdge
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
@@ -537,7 +537,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 	// Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
 	// but c's in_edge has b as input but the depfile also adds |edge| as
 	// output)), the deps should have been loaded only once:
-	edge := g.GetNode("a").in_edge()
+	edge := g.GetNode("a").InEdge
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
@@ -564,7 +564,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 	// Despite the depfile causing edge to be a cycle (|edge| has outputs a and b,
 	// but c's in_edge has b as input but the depfile also adds |edge| as
 	// output)), the deps should have been loaded only once:
-	edge := g.GetNode("a").in_edge()
+	edge := g.GetNode("a").InEdge
 	if 1 != len(edge.inputs_) {
 		t.Fatal("expected equal")
 	}
@@ -630,7 +630,7 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -676,7 +676,7 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	edge := g.GetNode("out1").in_edge()
+	edge := g.GetNode("out1").InEdge
 	if 1 != len(edge.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -818,7 +818,7 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if g.GetNode("dd").dyndep_pending() {
 		t.Fatal("expected false")
 	}
-	edge1 := g.GetNode("out1").in_edge()
+	edge1 := g.GetNode("out1").InEdge
 	if 2 != len(edge1.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -852,18 +852,18 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	if edge1.GetBindingBool("restat") {
 		t.Fatal("expected false")
 	}
-	if edge1 != g.GetNode("out1imp").in_edge() {
+	if edge1 != g.GetNode("out1imp").InEdge {
 		t.Fatal("expected equal")
 	}
 	in1imp := g.GetNode("in1imp")
-	if 1 != len(in1imp.out_edges()) {
+	if 1 != len(in1imp.OutEdges) {
 		t.Fatal("expected equal")
 	}
-	if edge1 != in1imp.out_edges()[0] {
+	if edge1 != in1imp.OutEdges[0] {
 		t.Fatal("expected equal")
 	}
 
-	edge2 := g.GetNode("out2").in_edge()
+	edge2 := g.GetNode("out2").InEdge
 	if 1 != len(edge2.outputs_) {
 		t.Fatal("expected equal")
 	}
@@ -895,10 +895,10 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	in2imp := g.GetNode("in2imp")
-	if 1 != len(in2imp.out_edges()) {
+	if 1 != len(in2imp.OutEdges) {
 		t.Fatal("expected equal")
 	}
-	if edge2 != in2imp.out_edges()[0] {
+	if edge2 != in2imp.OutEdges[0] {
 		t.Fatal("expected equal")
 	}
 }
@@ -982,7 +982,7 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 	if g.GetNode("dd").dirty() {
 		t.Fatal("expected false")
 	}
-	if !g.GetNode("dd").in_edge().outputs_ready() {
+	if !g.GetNode("dd").InEdge.outputs_ready() {
 		t.Fatal("expected true")
 	}
 
@@ -1011,7 +1011,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	if !g.GetNode("dd").dirty() {
 		t.Fatal("expected true")
 	}
-	if g.GetNode("dd").in_edge().outputs_ready() {
+	if g.GetNode("dd").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 
@@ -1019,7 +1019,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	if g.GetNode("out").dirty() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").in_edge().outputs_ready() {
+	if g.GetNode("out").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 }
@@ -1043,13 +1043,13 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
 	if g.GetNode("dd").dirty() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd").in_edge().outputs_ready() {
+	if g.GetNode("dd").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").dirty() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").in_edge().outputs_ready() {
+	if g.GetNode("out").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 }
@@ -1075,19 +1075,19 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
 	if !g.GetNode("dd1").dirty() {
 		t.Fatal("expected true")
 	}
-	if g.GetNode("dd1").in_edge().outputs_ready() {
+	if g.GetNode("dd1").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("dd2").dirty() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd2").in_edge().outputs_ready() {
+	if g.GetNode("dd2").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").dirty() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").in_edge().outputs_ready() {
+	if g.GetNode("out").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
 }
@@ -1099,7 +1099,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 	g.fs_.Create("dd", "ninja_dyndep_version = 1\nbuild out | circ: dyndep\n")
 	g.fs_.Create("out", "")
 
-	edge := g.GetNode("out").in_edge()
+	edge := g.GetNode("out").InEdge
 	err := ""
 	if g.scan_.RecomputeDirty(g.GetNode("out"), nil, &err) {
 		t.Fatal("expected false")

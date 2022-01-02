@@ -90,7 +90,7 @@ func (m *MissingDependencyScannerTest) CreateInitialState() {
 
 func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
 	from_node := m.state_.LookupNode(from)
-	from_edge := from_node.in_edge()
+	from_edge := from_node.InEdge
 	m.state_.AddIn(from_edge, to, 0)
 }
 

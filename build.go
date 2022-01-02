@@ -258,7 +258,7 @@ func (p *Plan) AddTarget(target *Node, err *string) bool {
 }
 
 func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
-	edge := node.in_edge()
+	edge := node.InEdge
 	if edge == nil { // Leaf node.
 		if node.dirty() {
 			referenced := ""
@@ -402,7 +402,7 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 	}
 
 	// See if we we want any edges from this node.
-	for _, oe := range node.out_edges() {
+	for _, oe := range node.OutEdges {
 		want, ok := p.want_[oe]
 		if !ok {
 			continue
@@ -436,7 +436,7 @@ func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 	node.set_dirty(false)
 
-	for _, oe := range node.out_edges() {
+	for _, oe := range node.OutEdges {
 		// Don't process edges that we don't actually want.
 		want, ok := p.want_[oe]
 		if !ok || want == kWantNothing {
@@ -536,7 +536,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 
 	// Add out edges from this node that are in the plan (just as
 	// NodeFinished would have without taking the dyndep code path).
-	for _, oe := range node.out_edges() {
+	for _, oe := range node.OutEdges {
 		if _, ok := p.want_[oe]; !ok {
 			continue
 		}
@@ -574,7 +574,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// Add any validation nodes found during RecomputeDirty as new top level
 		// targets.
 		for _, v := range validation_nodes {
-			if in_edge := v.in_edge(); in_edge != nil {
+			if in_edge := v.InEdge; in_edge != nil {
 				if !in_edge.outputs_ready() && !p.AddTarget(v, err) {
 					return false
 				}
@@ -587,7 +587,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// This edge was encountered before.  However, we may not have wanted to
 		// build it if the outputs were not known to be dirty.  With dyndep
 		// information an output is now known to be dirty, so we want the edge.
-		edge := n.in_edge()
+		edge := n.InEdge
 		if edge == nil || edge.outputs_ready() {
 			panic("M-A")
 		}
@@ -604,7 +604,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 }
 
 func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
-	for _, edge := range node.out_edges() {
+	for _, edge := range node.OutEdges {
 		_, ok := p.want_[edge]
 		if !ok {
 			continue
@@ -740,7 +740,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 		return false
 	}
 
-	in_edge := target.in_edge()
+	in_edge := target.InEdge
 	if in_edge == nil || !in_edge.outputs_ready() {
 		if !b.plan_.AddTarget(target, err) {
 			return false
@@ -750,7 +750,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	// Also add any validation nodes found during RecomputeDirty as top level
 	// targets.
 	for _, n := range validation_nodes {
-		if validation_in_edge := n.in_edge(); validation_in_edge != nil {
+		if validation_in_edge := n.InEdge; validation_in_edge != nil {
 			if !validation_in_edge.outputs_ready() && !b.plan_.AddTarget(n, err) {
 				return false
 			}

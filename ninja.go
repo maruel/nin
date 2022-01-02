@@ -104,7 +104,7 @@ type ToolFunc func(*NinjaMain, *Options, []string) int
 
 func (n *NinjaMain) IsPathDead(s string) bool {
 	nd := n.state_.LookupNode(s)
-	if nd != nil && nd.in_edge() != nil {
+	if nd != nil && nd.InEdge != nil {
 		return false
 	}
 	// Just checking nd isn't enough: If an old output is both in the build log
@@ -236,7 +236,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 	node := n.state_.LookupNode(path)
 	if node != nil {
 		if first_dependent {
-			if len(node.out_edges()) == 0 {
+			if len(node.OutEdges) == 0 {
 				rev_deps := n.deps_log_.GetFirstReverseDepsNode(node)
 				if rev_deps == nil {
 					*err = "'" + path + "' has no out edge"
@@ -244,7 +244,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 				}
 				node = rev_deps
 			} else {
-				edge := node.out_edges()[0]
+				edge := node.OutEdges[0]
 				if len(edge.outputs_) == 0 {
 					edge.Dump("")
 					Fatal("edge has no outputs")
@@ -320,7 +320,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 		}
 
 		fmt.Printf("%s:\n", node.Path)
-		if edge := node.in_edge(); edge != nil {
+		if edge := node.InEdge; edge != nil {
 			if edge.dyndep_ != nil && edge.dyndep_.dyndep_pending() {
 				if !dyndep_loader.LoadDyndeps(edge.dyndep_, DyndepFile{}, &err) {
 					Warning("%s\n", err)
@@ -344,12 +344,12 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 			}
 		}
 		fmt.Printf("  outputs:\n")
-		for _, edge := range node.out_edges() {
+		for _, edge := range node.OutEdges {
 			for _, out := range edge.outputs_ {
 				fmt.Printf("    %s\n", out.Path)
 			}
 		}
-		validation_edges := node.validation_out_edges()
+		validation_edges := node.ValidationOutEdges
 		if len(validation_edges) != 0 {
 			fmt.Printf("  validation for:\n")
 			for _, edge := range validation_edges {
@@ -383,10 +383,10 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 			fmt.Printf("  ")
 		}
 		target := n.Path
-		if n.in_edge() != nil {
-			fmt.Printf("%s: %s\n", target, n.in_edge().rule_.name())
+		if n.InEdge != nil {
+			fmt.Printf("%s: %s\n", target, n.InEdge.rule_.name())
 			if depth > 1 || depth <= 0 {
-				ToolTargetsListNodes(n.in_edge().inputs_, depth-1, indent+1)
+				ToolTargetsListNodes(n.InEdge.inputs_, depth-1, indent+1)
 			}
 		} else {
 			fmt.Printf("%s\n", target)
@@ -398,7 +398,7 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 func ToolTargetsSourceList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, inps := range e.inputs_ {
-			if inps.in_edge() == nil {
+			if inps.InEdge == nil {
 				fmt.Printf("%s\n", inps.Path)
 			}
 		}
@@ -612,7 +612,7 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 
 	if mode == PCM_All {
 		for _, in := range edge.inputs_ {
-			PrintCommands(in.in_edge(), seen, mode)
+			PrintCommands(in.InEdge, seen, mode)
 		}
 	}
 
@@ -644,7 +644,7 @@ func ToolCommands(n *NinjaMain, options *Options, args []string) int {
 
 	seen := NewEdgeSet()
 	for _, in := range nodes {
-		PrintCommands(in.in_edge(), seen, mode)
+		PrintCommands(in.InEdge, seen, mode)
 	}
 	return 0
 }

@@ -125,10 +125,10 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		var slashBits uint64
 		path = CanonicalizePath(path, &slashBits)
 		node := d.state_.LookupNode(path)
-		if node == nil || node.in_edge() == nil {
+		if node == nil || node.InEdge == nil {
 			return d.lexer_.Error("no build statement exists for '"+path+"'", err)
 		}
-		edge := node.in_edge()
+		edge := node.InEdge
 		_, ok := d.dyndep_file_[edge]
 		dyndeps = NewDyndeps()
 		d.dyndep_file_[edge] = dyndeps

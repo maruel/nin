@@ -89,7 +89,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	if node == nil {
 		return
 	}
-	edge := node.in_edge()
+	edge := node.InEdge
 	if edge == nil {
 		return
 	}
@@ -121,7 +121,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 }
 
 func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node) {
-	edge := node.in_edge()
+	edge := node.InEdge
 	deplog_edges := map[*Edge]struct{}{}
 	for i := 0; i < len(dep_nodes); i++ {
 		deplog_node := dep_nodes[i]
@@ -134,7 +134,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node
 		if deplog_node.Path == "build.ninja" {
 			return
 		}
-		deplog_edge := deplog_node.in_edge()
+		deplog_edge := deplog_node.InEdge
 		if deplog_edge != nil {
 			deplog_edges[deplog_edge] = struct{}{}
 		}
@@ -153,13 +153,13 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, dep_nodes []*Node
 				panic("M-A")
 			}
 			for i := 0; i < len(dep_nodes); i++ {
-				if dep_nodes[i].in_edge() == nil {
+				if dep_nodes[i].InEdge == nil {
 					panic("M-A")
 				}
 				if m.delegate_ == nil {
 					panic("M-A")
 				}
-				if dep_nodes[i].in_edge() == ne {
+				if dep_nodes[i].InEdge == ne {
 					m.generated_nodes_[dep_nodes[i]] = struct{}{}
 					m.generator_rules_[ne.rule()] = struct{}{}
 					missing_deps_rule_names[ne.rule().name()] = struct{}{}
@@ -197,7 +197,7 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
 	}
 	found := false
 	for i := 0; i < len(to.inputs_); i++ {
-		e := to.inputs_[i].in_edge()
+		e := to.inputs_[i].InEdge
 		if e != nil && (e == from || m.PathExistsBetween(from, e)) {
 			found = true
 			break

@@ -172,7 +172,7 @@ func (c *Cleaner) CleanDead(entries Entries) int {
 		//   entry in the deps log, but no longer referenced from the build
 		//   graph.
 		//
-		if n == nil || (n.in_edge() == nil && len(n.out_edges()) == 0) {
+		if n == nil || (n.InEdge == nil && len(n.OutEdges) == 0) {
 			c.Remove(k)
 		}
 	}
@@ -182,7 +182,7 @@ func (c *Cleaner) CleanDead(entries Entries) int {
 
 // Helper recursive method for CleanTarget().
 func (c *Cleaner) DoCleanTarget(target *Node) {
-	if e := target.in_edge(); e != nil {
+	if e := target.InEdge; e != nil {
 		// Do not try to remove phony targets
 		if !e.is_phony() {
 			c.Remove(target.Path)

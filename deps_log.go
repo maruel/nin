@@ -510,7 +510,7 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 	// entries are no longer needed.
 	// (Without the check for "deps", a chain of two or more nodes that each
 	// had deps wouldn't be collected in a single recompaction.)
-	return node.in_edge() != nil && node.in_edge().GetBinding("deps") != ""
+	return node.InEdge != nil && node.InEdge.GetBinding("deps") != ""
 }
 
 // Updates the in-memory representation.  Takes ownership of |deps|.

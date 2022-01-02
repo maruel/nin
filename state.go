@@ -224,11 +224,11 @@ func (s *State) AddIn(edge *Edge, path string, slashBits uint64) {
 
 func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
 	node := s.GetNode(path, slashBits)
-	if node.in_edge() != nil {
+	if node.InEdge != nil {
 		return false
 	}
 	edge.outputs_ = append(edge.outputs_, node)
-	node.set_in_edge(edge)
+	node.InEdge = edge
 	return true
 }
 
@@ -255,7 +255,7 @@ func (s *State) RootNodes(err *string) []*Node {
 	// Search for nodes with no output.
 	for _, e := range s.edges_ {
 		for _, out := range e.outputs_ {
-			if len(out.out_edges()) == 0 {
+			if len(out.OutEdges) == 0 {
 				root_nodes = append(root_nodes, out)
 			}
 		}

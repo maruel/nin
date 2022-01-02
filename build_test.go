@@ -958,7 +958,7 @@ func (b *BuildTest) Dirty(path string) {
 
 	// If it's an input file, mark that we've already stat()ed it and
 	// it's missing.
-	if node.in_edge() == nil {
+	if node.InEdge == nil {
 		node.MarkMissing()
 	}
 }
@@ -1354,7 +1354,7 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 	err := ""
 	b.AssertParse(&b.state_, "rule touch\n  command = touch $out\nbuild c: touch\nbuild b: touch || c\nbuild a: touch | b || c\n", ManifestParserOptions{})
 
-	c_out := b.GetNode("c").out_edges()
+	c_out := b.GetNode("c").OutEdges
 	if 2 != len(c_out) {
 		t.Fatal("expected equal")
 	}
@@ -4428,7 +4428,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	}
 
 	// Loading the depfile gave tmp.imp a phony input edge.
-	if !b.GetNode("tmp.imp").in_edge().is_phony() {
+	if !b.GetNode("tmp.imp").InEdge.is_phony() {
 		t.Fatal("expected true")
 	}
 
@@ -4450,7 +4450,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	}
 
 	// Loading the dyndep file gave tmp.imp a real input edge.
-	if b.GetNode("tmp.imp").in_edge().is_phony() {
+	if b.GetNode("tmp.imp").InEdge.is_phony() {
 		t.Fatal("expected false")
 	}
 

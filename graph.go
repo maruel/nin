@@ -54,13 +54,13 @@ type Node struct {
 
 	// The Edge that produces this Node, or NULL when there is no
 	// known edge to produce it.
-	in_edge_ *Edge
+	InEdge *Edge
 
 	// All Edges that use this Node as an input.
-	out_edges_ []*Edge
+	OutEdges []*Edge
 
 	// All Edges that use this Node as a validation.
-	validation_out_edges_ []*Edge
+	ValidationOutEdges []*Edge
 
 	// A dense integer id for the node, assigned and used by DepsLog.
 	id_ int
@@ -128,29 +128,17 @@ func (n *Node) dyndep_pending() bool {
 func (n *Node) set_dyndep_pending(pending bool) {
 	n.dyndep_pending_ = pending
 }
-func (n *Node) in_edge() *Edge {
-	return n.in_edge_
-}
-func (n *Node) set_in_edge(edge *Edge) {
-	n.in_edge_ = edge
-}
 func (n *Node) id() int {
 	return n.id_
 }
 func (n *Node) set_id(id int) {
 	n.id_ = id
 }
-func (n *Node) out_edges() []*Edge {
-	return n.out_edges_
-}
-func (n *Node) validation_out_edges() []*Edge {
-	return n.validation_out_edges_
-}
 func (n *Node) AddOutEdge(edge *Edge) {
-	n.out_edges_ = append(n.out_edges_, edge)
+	n.OutEdges = append(n.OutEdges, edge)
 }
 func (n *Node) AddValidationOutEdge(edge *Edge) {
-	n.validation_out_edges_ = append(n.validation_out_edges_, edge)
+	n.ValidationOutEdges = append(n.ValidationOutEdges, edge)
 }
 
 // Return false on error.
@@ -186,21 +174,21 @@ func (n *Node) Dump(prefix string) {
 		t = " dirty"
 	}
 	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.Path, n, n.mtime(), s, t)
-	if n.in_edge() != nil {
-		n.in_edge().Dump("in-edge: ")
+	if n.InEdge != nil {
+		n.InEdge.Dump("in-edge: ")
 	} else {
 		fmt.Printf("no in-edge\n")
 	}
 	fmt.Printf(" out edges:\n")
-	for _, e := range n.out_edges() {
+	for _, e := range n.OutEdges {
 		if e == nil {
 			break
 		}
 		e.Dump(" +- ")
 	}
-	if len(n.validation_out_edges()) != 0 {
+	if len(n.ValidationOutEdges) != 0 {
 		fmt.Printf(" validation out edges:\n")
-		for _, e := range n.validation_out_edges() {
+		for _, e := range n.ValidationOutEdges {
 			e.Dump(" +- ")
 		}
 	}
@@ -384,7 +372,7 @@ func (e *Edge) maybe_phonycycle_diagnostic() bool {
 // Return true if all inputs' in-edges are ready.
 func (e *Edge) AllInputsReady() bool {
 	for _, i := range e.inputs_ {
-		if i.in_edge() != nil && !i.in_edge().outputs_ready() {
+		if i.InEdge != nil && !i.InEdge.outputs_ready() {
 			return false
 		}
 	}
@@ -663,7 +651,7 @@ func (d *DependencyScan) RecomputeDirty(initial_node *Node, validation_nodes *[]
 }
 
 func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validation_nodes *[]*Node, err *string) bool {
-	edge := node.in_edge()
+	edge := node.InEdge
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
 		if node.status_known() {
@@ -719,7 +707,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 				return false
 			}
 
-			if edge.dyndep_.in_edge() == nil || edge.dyndep_.in_edge().outputs_ready() {
+			if edge.dyndep_.InEdge == nil || edge.dyndep_.InEdge.outputs_ready() {
 				// The dyndep file is ready, so load it now.
 				if !d.LoadDyndeps(edge.dyndep_, DyndepFile{}, err) {
 					return false
@@ -765,7 +753,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		}
 
 		// If an input is not ready, neither are our outputs.
-		if in_edge := i.in_edge(); in_edge != nil {
+		if in_edge := i.InEdge; in_edge != nil {
 			if !in_edge.outputs_ready_ {
 				edge.outputs_ready_ = false
 			}
@@ -820,7 +808,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 }
 
 func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool {
-	edge := node.in_edge()
+	edge := node.InEdge
 	if edge == nil {
 		panic("M-A")
 	}
@@ -833,7 +821,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 	// We have this edge earlier in the call stack.  Find it.
 	start := -1
 	for i := range stack {
-		if stack[i].in_edge() == edge {
+		if stack[i].InEdge == edge {
 			start = i
 			break
 		}
@@ -1144,13 +1132,13 @@ func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
 // create one; this makes us not abort if the input is missing,
 // but instead will rebuild in that circumstance.
 func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
-	if node.in_edge() != nil {
+	if node.InEdge != nil {
 		return
 	}
 
 	phony_edge := i.state_.AddEdge(kPhonyRule)
 	phony_edge.generated_by_dep_loader_ = true
-	node.set_in_edge(phony_edge)
+	node.InEdge = phony_edge
 	phony_edge.outputs_ = append(phony_edge.outputs_, node)
 
 	// RecomputeDirty might not be called for phony_edge if a previous call

@@ -86,7 +86,7 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 	if "cat" != rule.name() {
 		t.Fatal("expected equal")
 	}
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if !edge.GetBindingBool("restat") {
 		t.Fatal("expected true")
 	}
@@ -432,7 +432,7 @@ func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
 	p.AssertParse("build a: phony a\n")
 
 	node := p.state.LookupNode("a")
-	edge := node.in_edge()
+	edge := node.InEdge
 	if len(edge.inputs_) != 0 {
 		t.Fatal("expected true")
 	}
@@ -453,7 +453,7 @@ func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	}
 
 	node := p.state.LookupNode("a")
-	edge := node.in_edge()
+	edge := node.InEdge
 	if len(edge.inputs_) != 1 {
 		t.Fatal("expected equal")
 	}
@@ -1032,7 +1032,7 @@ func TestParserTest_Implicit(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar | baz\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if !edge.is_implicit(1) {
 		t.Fatal("expected true")
 	}
@@ -1042,7 +1042,7 @@ func TestParserTest_OrderOnly(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar || baz\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if !edge.is_order_only(1) {
 		t.Fatal("expected true")
 	}
@@ -1052,7 +1052,7 @@ func TestParserTest_Validations(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar |@ baz\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if len(edge.validations_) != 1 {
 		t.Fatal(edge.validations_)
 	}
@@ -1065,7 +1065,7 @@ func TestParserTest_ImplicitOutput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo | imp: cat bar\n")
 
-	edge := p.state.LookupNode("imp").in_edge()
+	edge := p.state.LookupNode("imp").InEdge
 	if len(edge.outputs_) != 2 {
 		t.Fatal("expected equal")
 	}
@@ -1078,7 +1078,7 @@ func TestParserTest_ImplicitOutputEmpty(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo | : cat bar\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if len(edge.outputs_) != 1 {
 		t.Fatal("expected equal")
 	}
@@ -1091,7 +1091,7 @@ func TestParserTest_ImplicitOutputDupe(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo baz | foo baq foo: cat bar\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if len(edge.outputs_) != 3 {
 		t.Fatal("expected equal")
 	}
@@ -1110,7 +1110,7 @@ func TestParserTest_ImplicitOutputDupes(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo foo foo | foo foo foo foo: cat bar\n")
 
-	edge := p.state.LookupNode("foo").in_edge()
+	edge := p.state.LookupNode("foo").InEdge
 	if len(edge.outputs_) != 1 {
 		t.Fatal("expected equal")
 	}
@@ -1201,7 +1201,7 @@ func TestParserTest_CRLF(t *testing.T) {
 func TestParserTest_DyndepNotSpecified(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n")
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if edge.dyndep_ != nil {
 		t.Fatal("expected false")
 	}
@@ -1222,7 +1222,7 @@ func TestParserTest_DyndepNotInput(t *testing.T) {
 func TestParserTest_DyndepExplicitInput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n  dyndep = in\n")
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
@@ -1237,7 +1237,7 @@ func TestParserTest_DyndepExplicitInput(t *testing.T) {
 func TestParserTest_DyndepImplicitInput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in | dd\n  dyndep = dd\n")
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
@@ -1252,7 +1252,7 @@ func TestParserTest_DyndepImplicitInput(t *testing.T) {
 func TestParserTest_DyndepOrderOnlyInput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in || dd\n  dyndep = dd\n")
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
@@ -1267,7 +1267,7 @@ func TestParserTest_DyndepOrderOnlyInput(t *testing.T) {
 func TestParserTest_DyndepRuleInput(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\n  dyndep = $in\nbuild result: cat in\n")
-	edge := p.state.GetNode("result", 0).in_edge()
+	edge := p.state.GetNode("result", 0).InEdge
 	if edge.dyndep_ == nil {
 		t.Fatal("expected true")
 	}
