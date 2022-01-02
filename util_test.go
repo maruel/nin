@@ -60,10 +60,13 @@ func TestCanonicalizePath_PathSamples(t *testing.T) {
 	}
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var unused uint64
-			got := CanonicalizePath(l.in, &unused)
+			got := CanonicalizePath(l.in)
 			if l.want != got {
 				t.Fatalf("want: %q, got: %q", l.want, got)
+			}
+			got2, _ := CanonicalizePathBits(l.in)
+			if got != got2 {
+				t.Fatal("Mismatch between CanonicalizePath and CanonicalizePathBits")
 			}
 		})
 	}
@@ -96,16 +99,19 @@ func TestCanonicalizePath_PathSamplesWindows(t *testing.T) {
 	}
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var unused uint64
-			got := CanonicalizePath(l.in, &unused)
+			got := CanonicalizePath(l.in)
 			if l.want != got {
 				t.Fatalf("want: %q, got: %q", l.want, got)
+			}
+			got2, _ := CanonicalizePathBits(l.in)
+			if got != got2 {
+				t.Fatal("Mismatch between CanonicalizePath and CanonicalizePathBits")
 			}
 		})
 	}
 }
 
-func TestCanonicalizePath_SlashTracking(t *testing.T) {
+func TestCanonicalizePathBits_SlashTracking(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("windows only")
 	}
@@ -136,13 +142,16 @@ func TestCanonicalizePath_SlashTracking(t *testing.T) {
 	}
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var slashBits uint64
-			got := CanonicalizePath(l.in, &slashBits)
+			got, slashBits := CanonicalizePathBits(l.in)
 			if l.want != got {
 				t.Fatalf("want: %q, got: %q", l.want, got)
 			}
 			if slashBits != l.want_bits {
 				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
+			}
+			got2 := CanonicalizePath(l.in)
+			if got != got2 {
+				t.Fatal("Mismatch between CanonicalizePath and CanonicalizePathBits")
 			}
 		})
 	}
@@ -207,10 +216,13 @@ func TestCanonicalizePath_TooManyComponents(t *testing.T) {
 
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var slashBits uint64
-			_ = CanonicalizePath(l.in, &slashBits)
+			got, slashBits := CanonicalizePathBits(l.in)
 			if slashBits != l.want_bits {
 				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
+			}
+			got2 := CanonicalizePath(l.in)
+			if got != got2 {
+				t.Fatal("Mismatch between CanonicalizePath and CanonicalizePathBits")
 			}
 		})
 	}
@@ -316,13 +328,23 @@ var dummyBenchmarkValue = ""
 // The Go version with "go test -cpu 1 -bench=. -run BenchmarkCanonicalizePath"
 // has a minimum of 157ns, which multiplied by 2000000 gives 306ms. So the code
 // is nearly 4x slower. I'll have to optimize later.
+func BenchmarkCanonicalizePathBits(b *testing.B) {
+	b.ReportAllocs()
+	kPath := "../../third_party/WebKit/Source/WebCore/platform/leveldb/LevelDBWriteBatch.cpp"
+	s := ""
+	for i := 0; i < b.N; i++ {
+		s, _ = CanonicalizePathBits(kPath)
+	}
+	// Use s so it's not optimized out.
+	dummyBenchmarkValue = s
+}
+
 func BenchmarkCanonicalizePath(b *testing.B) {
 	b.ReportAllocs()
 	kPath := "../../third_party/WebKit/Source/WebCore/platform/leveldb/LevelDBWriteBatch.cpp"
-	var slashBits uint64
 	s := ""
 	for i := 0; i < b.N; i++ {
-		s = CanonicalizePath(kPath, &slashBits)
+		s = CanonicalizePath(kPath)
 	}
 	// Use s so it's not optimized out.
 	dummyBenchmarkValue = s

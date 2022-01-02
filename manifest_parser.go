@@ -233,10 +233,8 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slashBits uint64 // Unused because this only does lookup.
-		path = CanonicalizePath(path, &slashBits)
 		default_err := ""
-		if !m.state_.AddDefault(path, &default_err) {
+		if !m.state_.AddDefault(CanonicalizePath(path), &default_err) {
 			return m.lexer_.Error(default_err, err)
 		}
 
@@ -401,8 +399,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slashBits uint64
-		path = CanonicalizePath(path, &slashBits)
+		path, slashBits := CanonicalizePathBits(path)
 		if !m.state_.AddOut(edge, path, slashBits) {
 			if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
 				m.lexer_.Error("multiple rules generate "+path, err)
@@ -430,8 +427,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slashBits uint64
-		path = CanonicalizePath(path, &slashBits)
+		path, slashBits := CanonicalizePathBits(path)
 		m.state_.AddIn(edge, path, slashBits)
 	}
 	edge.implicit_deps_ = implicit
@@ -443,8 +439,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if path == "" {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slashBits uint64
-		path = CanonicalizePath(path, &slashBits)
+		path, slashBits := CanonicalizePathBits(path)
 		m.state_.AddValidation(edge, path, slashBits)
 	}
 
@@ -471,9 +466,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	// be one of our manifest-specified inputs.
 	dyndep := edge.GetUnescapedDyndep()
 	if len(dyndep) != 0 {
-		var slashBits uint64
-		dyndep = CanonicalizePath(dyndep, &slashBits)
-		edge.dyndep_ = m.state_.GetNode(dyndep, slashBits)
+		edge.dyndep_ = m.state_.GetNode(CanonicalizePathBits(dyndep))
 		edge.dyndep_.set_dyndep_pending(true)
 		found := false
 		for _, n := range edge.inputs_ {

@@ -30,7 +30,7 @@ type Node struct {
 	Path string
 
 	// Set bits starting from lowest for backslashes that were normalized to
-	// forward slashes by CanonicalizePath. See |PathDecanonicalized|.
+	// forward slashes by CanonicalizePathBits. See |PathDecanonicalized|.
 	SlashBits uint64
 
 	// Mutable.
@@ -1023,14 +1023,11 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 		return false
 	}
 
-	var unused uint64
-	primary_out := CanonicalizePath(depfile.outs_[0], &unused)
-
 	// Check that this depfile matches the edge's output, if not return false to
 	// mark the edge as dirty.
 	first_output := edge.outputs_[0]
-	if first_output.Path != primary_out {
-		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.Path, primary_out)
+	if primaryOut := CanonicalizePath(depfile.outs_[0]); first_output.Path != primaryOut {
+		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.Path, primaryOut)
 		return false
 	}
 
@@ -1059,9 +1056,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 
 	// Add all its in-edges.
 	for _, j := range depfile_ins {
-		var slashBits uint64
-		j = CanonicalizePath(j, &slashBits)
-		node := i.state_.GetNode(j, slashBits)
+		node := i.state_.GetNode(CanonicalizePathBits(j))
 		edge.inputs_[implicit_dep] = node
 		node.AddOutEdge(edge)
 		i.CreatePhonyInEdge(node)

@@ -1081,9 +1081,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 		// XXX check depfile matches expected output.
 		//deps_nodes.reserve(deps.ins_.size())
 		for _, i := range deps.ins_ {
-			var slashBits uint64
-			i = CanonicalizePath(i, &slashBits)
-			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, slashBits))
+			*deps_nodes = append(*deps_nodes, b.state_.GetNode(CanonicalizePathBits(i)))
 		}
 
 		if !g_keep_depfile {

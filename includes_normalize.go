@@ -167,8 +167,7 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
 		*err = "path too long"
 		return false
 	}
-	var slashBits uint64
-	cp := CanonicalizePath(input, &slashBits)
+	cp := CanonicalizePath(input)
 	abs_input := AbsPath(cp, err)
 	if len(*err) != 0 {
 		return false

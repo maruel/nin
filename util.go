@@ -62,9 +62,7 @@ func IsPathSeparator(c byte) bool {
 }
 
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
-// |slashBits| has bits set starting from lowest for a backslash that was
-// normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path string, slashBits *uint64) string {
+func CanonicalizePath(path string) string {
 	// TODO(maruel): Call site should be the lexers, so that it's done as a
 	// single pass.
 	// WARNING: this function is performance-critical; please benchmark
@@ -161,8 +159,112 @@ func CanonicalizePath(path string, slashBits *uint64) string {
 		dst += 2
 	}
 	p = p[:dst-1]
+	return unsafeString(p)
+}
+
+// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+//
+// Returns a bits set starting from lowest for a backslash that was
+// normalized to a forward slash. (only used on Windows)
+func CanonicalizePathBits(path string) (string, uint64) {
+	// TODO(maruel): Call site should be the lexers, so that it's done as a
+	// single pass.
+	// WARNING: this function is performance-critical; please benchmark
+	// any changes you make to it.
+	l := len(path)
+	if l == 0 {
+		return path, 0
+	}
+
+	p := make([]byte, l+1)
+	copy(p, path)
+	// Tell the compiler that l is safe for p.
+	_ = p[l]
+	dst := 0
+	src := 0
+
+	if c := p[src]; c == '/' || c == '\\' {
+		if runtime.GOOS == "windows" && l > 1 {
+			// network path starts with //
+			if c := p[src+1]; c == '/' || c == '\\' {
+				src += 2
+				dst += 2
+			} else {
+				src++
+				dst++
+			}
+		} else {
+			src++
+			dst++
+		}
+	}
+
+	var components [60]int
+	for component_count := 0; src < l; {
+		if p[src] == '.' {
+			// It is fine to read one byte past because p is l+1 in
+			// length. It will be a 0 zero if so.
+			c := p[src+1]
+			if src+1 == l || (c == '/' || c == '\\') {
+				// '.' component; eliminate.
+				src += 2
+				continue
+			}
+			if c == '.' {
+				// It is fine to read one byte past because p is l+1 in
+				// length. It will be a 0 zero if so.
+				c := p[src+2]
+				if src+2 == l || (c == '/' || c == '\\') {
+					// '..' component.  Back up if possible.
+					if component_count > 0 {
+						dst = components[component_count-1]
+						src += 3
+						component_count--
+					} else {
+						p[dst] = p[src]
+						p[dst+1] = p[src+1]
+						p[dst+2] = p[src+2]
+						dst += 3
+						src += 3
+					}
+					continue
+				}
+			}
+		}
+
+		if c := p[src]; c == '/' || c == '\\' {
+			src++
+			continue
+		}
+
+		if component_count == len(components) {
+			Fatal("path has too many components : %s", path)
+		}
+		components[component_count] = dst
+		component_count++
+
+		for src != l {
+			c := p[src]
+			if c == '/' || c == '\\' {
+				break
+			}
+			p[dst] = c
+			dst++
+			src++
+		}
+		// Copy '/' or final \0 character as well.
+		p[dst] = p[src]
+		dst++
+		src++
+	}
+
+	if dst == 0 {
+		p[dst] = '.'
+		dst += 2
+	}
+	p = p[:dst-1]
+	bits := uint64(0)
 	if runtime.GOOS == "windows" {
-		bits := uint64(0)
 		bits_mask := uint64(1)
 		for i, c := range p {
 			switch c {
@@ -174,9 +276,8 @@ func CanonicalizePath(path string, slashBits *uint64) string {
 				bits_mask <<= 1
 			}
 		}
-		*slashBits = bits
 	}
-	return unsafeString(p)
+	return unsafeString(p), bits
 }
 
 func StringNeedsShellEscaping(input string) bool {
