@@ -183,8 +183,8 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status Statu
 		*err = "empty path"
 		return false
 	}
-	var slash_bits uint64 // Unused because this path is only used for lookup.
-	path = CanonicalizePath(path, &slash_bits)
+	var slashBits uint64 // Unused because this path is only used for lookup.
+	path = CanonicalizePath(path, &slashBits)
 	node := n.state_.LookupNode(path)
 	if node == nil {
 		return false
@@ -223,8 +223,8 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 		*err = "empty path"
 		return nil
 	}
-	var slash_bits uint64
-	path = CanonicalizePath(path, &slash_bits)
+	var slashBits uint64
+	path = CanonicalizePath(path, &slashBits)
 
 	// Special syntax: "foo.cc^" means "the first output of foo.cc".
 	first_dependent := false
@@ -254,7 +254,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 		}
 		return node
 	}
-	*err = "unknown target '" + PathDecanonicalized(path, slash_bits) + "'"
+	*err = "unknown target '" + PathDecanonicalized(path, slashBits) + "'"
 	if path == "clean" {
 		*err += ", did you mean 'nin -t clean'?"
 	} else if path == "help" {

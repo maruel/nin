@@ -250,8 +250,8 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 			c.status_ = 1
 			continue
 		}
-		var slash_bits uint64
-		target_name = CanonicalizePath(target_name, &slash_bits)
+		var slashBits uint64
+		target_name = CanonicalizePath(target_name, &slashBits)
 		target := c.state_.LookupNode(target_name)
 		if target != nil {
 			if c.IsVerbose() {

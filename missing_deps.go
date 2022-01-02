@@ -59,9 +59,9 @@ func NewNodeStoringImplicitDepLoader(state *State, deps_log *DepsLog, disk_inter
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string, err *string) bool {
 	for _, i := range depfile_ins {
-		var slash_bits uint64
-		i = CanonicalizePath(i, &slash_bits)
-		node := n.state_.GetNode(i, slash_bits)
+		var slashBits uint64
+		i = CanonicalizePath(i, &slashBits)
+		node := n.state_.GetNode(i, slashBits)
 		n.dep_nodes_output_ = append(n.dep_nodes_output_, node)
 	}
 	return true

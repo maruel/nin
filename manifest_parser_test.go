@@ -284,14 +284,14 @@ func TestParserTest_CanonicalizeFileBackslashes(t *testing.T) {
 	if node == nil {
 		t.Fatal("expected true")
 	}
-	if 1 != node.slash_bits() {
+	if 1 != node.SlashBits {
 		t.Fatal("expected equal")
 	}
 	node = p.state.LookupNode("in/2")
 	if node == nil {
 		t.Fatal("expected true")
 	}
-	if 1 != node.slash_bits() {
+	if 1 != node.SlashBits {
 		t.Fatal("expected equal")
 	}
 	if p.state.LookupNode("in//1") != nil {
@@ -370,14 +370,14 @@ func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
 	if node == nil {
 		t.Fatal("expected true")
 	}
-	if 0 != node.slash_bits() {
+	if 0 != node.SlashBits {
 		t.Fatal("expected equal")
 	}
 	node = p.state.LookupNode("bar/foo3.cc")
 	if node == nil {
 		t.Fatal("expected true")
 	}
-	if 1 != node.slash_bits() {
+	if 1 != node.SlashBits {
 		t.Fatal("expected equal")
 	}
 }

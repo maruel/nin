@@ -136,13 +136,13 @@ func TestCanonicalizePath_SlashTracking(t *testing.T) {
 	}
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var slash_bits uint64
-			got := CanonicalizePath(l.in, &slash_bits)
+			var slashBits uint64
+			got := CanonicalizePath(l.in, &slashBits)
 			if l.want != got {
 				t.Fatalf("want: %q, got: %q", l.want, got)
 			}
-			if slash_bits != l.want_bits {
-				t.Fatalf("want: %d, got: %d", l.want_bits, slash_bits)
+			if slashBits != l.want_bits {
+				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
 			}
 		})
 	}
@@ -207,10 +207,10 @@ func TestCanonicalizePath_TooManyComponents(t *testing.T) {
 
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var slash_bits uint64
-			_ = CanonicalizePath(l.in, &slash_bits)
-			if slash_bits != l.want_bits {
-				t.Fatalf("want: %d, got: %d", l.want_bits, slash_bits)
+			var slashBits uint64
+			_ = CanonicalizePath(l.in, &slashBits)
+			if slashBits != l.want_bits {
+				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
 			}
 		})
 	}
@@ -319,10 +319,10 @@ var dummyBenchmarkValue = ""
 func BenchmarkCanonicalizePath(b *testing.B) {
 	b.ReportAllocs()
 	kPath := "../../third_party/WebKit/Source/WebCore/platform/leveldb/LevelDBWriteBatch.cpp"
-	var slash_bits uint64
+	var slashBits uint64
 	s := ""
 	for i := 0; i < b.N; i++ {
-		s = CanonicalizePath(kPath, &slash_bits)
+		s = CanonicalizePath(kPath, &slashBits)
 	}
 	// Use s so it's not optimized out.
 	dummyBenchmarkValue = s

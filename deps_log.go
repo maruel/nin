@@ -353,9 +353,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				path_size--
 			}
 			subpath := string(buf[:path_size])
-			// It is not necessary to pass in a correct slash_bits here. It will
+			// It is not necessary to pass in a correct slashBits here. It will
 			// either be a Node that's in the manifest (in which case it will already
-			// have a correct slash_bits that GetNode will look up), or it is an
+			// have a correct slashBits that GetNode will look up), or it is an
 			// implicit dependency from a .d which does not affect the build command
 			// (and so need not have its slashes maintained).
 			node := state.GetNode(subpath, 0)

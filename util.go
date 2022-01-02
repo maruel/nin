@@ -62,9 +62,9 @@ func IsPathSeparator(c byte) bool {
 }
 
 // Canonicalize a path like "foo/../bar.h" into just "bar.h".
-// |slash_bits| has bits set starting from lowest for a backslash that was
+// |slashBits| has bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
-func CanonicalizePath(path string, slash_bits *uint64) string {
+func CanonicalizePath(path string, slashBits *uint64) string {
 	// TODO(maruel): Call site should be the lexers, so that it's done as a
 	// single pass.
 	// WARNING: this function is performance-critical; please benchmark
@@ -161,7 +161,7 @@ func CanonicalizePath(path string, slash_bits *uint64) string {
 				bits_mask <<= 1
 			}
 		}
-		*slash_bits = bits
+		*slashBits = bits
 	}
 	return unsafeString(p)
 }

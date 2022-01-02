@@ -122,8 +122,8 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return d.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
 		node := d.state_.LookupNode(path)
 		if node == nil || node.in_edge() == nil {
 			return d.lexer_.Error("no build statement exists for '"+path+"'", err)
@@ -226,9 +226,9 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return d.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
-		n := d.state_.GetNode(path, slash_bits)
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
+		n := d.state_.GetNode(path, slashBits)
 		dyndeps.implicit_inputs_ = append(dyndeps.implicit_inputs_, n)
 	}
 
@@ -238,9 +238,9 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return d.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
-		n := d.state_.GetNode(path, slash_bits)
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
+		n := d.state_.GetNode(path, slashBits)
 		dyndeps.implicit_outputs_ = append(dyndeps.implicit_outputs_, n)
 	}
 	return true

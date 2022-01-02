@@ -186,12 +186,12 @@ func (s *State) Edges() []*Edge {
 	return s.edges_
 }
 
-func (s *State) GetNode(path string, slash_bits uint64) *Node {
+func (s *State) GetNode(path string, slashBits uint64) *Node {
 	node := s.LookupNode(path)
 	if node != nil {
 		return node
 	}
-	node = NewNode(path, slash_bits)
+	node = NewNode(path, slashBits)
 	s.paths_[node.Path] = node
 	return node
 }
@@ -216,14 +216,14 @@ func (s *State) SpellcheckNode(path string) *Node {
 	return result
 }
 
-func (s *State) AddIn(edge *Edge, path string, slash_bits uint64) {
-	node := s.GetNode(path, slash_bits)
+func (s *State) AddIn(edge *Edge, path string, slashBits uint64) {
+	node := s.GetNode(path, slashBits)
 	edge.inputs_ = append(edge.inputs_, node)
 	node.AddOutEdge(edge)
 }
 
-func (s *State) AddOut(edge *Edge, path string, slash_bits uint64) bool {
-	node := s.GetNode(path, slash_bits)
+func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
+	node := s.GetNode(path, slashBits)
 	if node.in_edge() != nil {
 		return false
 	}
@@ -232,8 +232,8 @@ func (s *State) AddOut(edge *Edge, path string, slash_bits uint64) bool {
 	return true
 }
 
-func (s *State) AddValidation(edge *Edge, path string, slash_bits uint64) {
-	node := s.GetNode(path, slash_bits)
+func (s *State) AddValidation(edge *Edge, path string, slashBits uint64) {
+	node := s.GetNode(path, slashBits)
 	edge.validations_ = append(edge.validations_, node)
 	node.AddValidationOutEdge(edge)
 }

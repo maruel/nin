@@ -233,8 +233,8 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64 // Unused because this only does lookup.
-		path = CanonicalizePath(path, &slash_bits)
+		var slashBits uint64 // Unused because this only does lookup.
+		path = CanonicalizePath(path, &slashBits)
 		default_err := ""
 		if !m.state_.AddDefault(path, &default_err) {
 			return m.lexer_.Error(default_err, err)
@@ -401,9 +401,9 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
-		if !m.state_.AddOut(edge, path, slash_bits) {
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
+		if !m.state_.AddOut(edge, path, slashBits) {
 			if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
 				m.lexer_.Error("multiple rules generate "+path, err)
 				return false
@@ -430,9 +430,9 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
-		m.state_.AddIn(edge, path, slash_bits)
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
+		m.state_.AddIn(edge, path, slashBits)
 	}
 	edge.implicit_deps_ = implicit
 	edge.order_only_deps_ = order_only
@@ -443,9 +443,9 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if path == "" {
 			return m.lexer_.Error("empty path", err)
 		}
-		var slash_bits uint64
-		path = CanonicalizePath(path, &slash_bits)
-		m.state_.AddValidation(edge, path, slash_bits)
+		var slashBits uint64
+		path = CanonicalizePath(path, &slashBits)
+		m.state_.AddValidation(edge, path, slashBits)
 	}
 
 	if m.options_.phony_cycle_action_ == kPhonyCycleActionWarn && edge.maybe_phonycycle_diagnostic() {
@@ -471,9 +471,9 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	// be one of our manifest-specified inputs.
 	dyndep := edge.GetUnescapedDyndep()
 	if len(dyndep) != 0 {
-		var slash_bits uint64
-		dyndep = CanonicalizePath(dyndep, &slash_bits)
-		edge.dyndep_ = m.state_.GetNode(dyndep, slash_bits)
+		var slashBits uint64
+		dyndep = CanonicalizePath(dyndep, &slashBits)
+		edge.dyndep_ = m.state_.GetNode(dyndep, slashBits)
 		edge.dyndep_.set_dyndep_pending(true)
 		found := false
 		for _, n := range edge.inputs_ {

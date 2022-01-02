@@ -31,7 +31,7 @@ type Node struct {
 
 	// Set bits starting from lowest for backslashes that were normalized to
 	// forward slashes by CanonicalizePath. See |PathDecanonicalized|.
-	slash_bits_ uint64
+	SlashBits uint64
 
 	// Mutable.
 
@@ -66,13 +66,13 @@ type Node struct {
 	id_ int
 }
 
-func NewNode(path string, slash_bits uint64) *Node {
+func NewNode(path string, slashBits uint64) *Node {
 	return &Node{
-		Path:        path,
-		slash_bits_: slash_bits,
-		mtime_:      -1,
-		exists_:     ExistenceStatusUnknown,
-		id_:         -1,
+		Path:      path,
+		SlashBits: slashBits,
+		mtime_:    -1,
+		exists_:   ExistenceStatusUnknown,
+		id_:       -1,
 	}
 }
 
@@ -105,14 +105,11 @@ func (n *Node) status_known() bool {
 	return n.exists_ != ExistenceStatusUnknown
 }
 
-// Get |Path| but use slash_bits to convert back to original slash styles.
+// Get |Path| but use SlashBits to convert back to original slash styles.
 func (n *Node) PathDecanonicalized() string {
-	return PathDecanonicalized(n.Path, n.slash_bits_)
+	return PathDecanonicalized(n.Path, n.SlashBits)
 }
 
-func (n *Node) slash_bits() uint64 {
-	return n.slash_bits_
-}
 func (n *Node) mtime() TimeStamp {
 	return n.mtime_
 }
@@ -579,7 +576,7 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	return unsafeString(out)
 }
 
-func PathDecanonicalized(path string, slash_bits uint64) string {
+func PathDecanonicalized(path string, slashBits uint64) string {
 	if runtime.GOOS != "windows" {
 		return path
 	}
@@ -592,7 +589,7 @@ func PathDecanonicalized(path string, slash_bits uint64) string {
 			break
 		}
 		c += d
-		if slash_bits&mask != 0 {
+		if slashBits&mask != 0 {
 			result[c] = '\\'
 		}
 		mask <<= 1
@@ -1089,9 +1086,9 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string,
 
 	// Add all its in-edges.
 	for _, j := range depfile_ins {
-		var slash_bits uint64
-		j = CanonicalizePath(j, &slash_bits)
-		node := i.state_.GetNode(j, slash_bits)
+		var slashBits uint64
+		j = CanonicalizePath(j, &slashBits)
+		node := i.state_.GetNode(j, slashBits)
 		edge.inputs_[implicit_dep] = node
 		node.AddOutEdge(edge)
 		i.CreatePhonyInEdge(node)
