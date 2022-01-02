@@ -68,8 +68,8 @@ func (p *PlanTest) FindWorkSorted(count int) []*Edge {
 func TestPlanTest_Basic(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
-	p.GetNode("mid").MarkDirty()
-	p.GetNode("out").MarkDirty()
+	p.GetNode("mid").Dirty = true
+	p.GetNode("out").Dirty = true
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
@@ -130,9 +130,9 @@ func TestPlanTest_Basic(t *testing.T) {
 func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n", ManifestParserOptions{})
-	p.GetNode("mid1").MarkDirty()
-	p.GetNode("mid2").MarkDirty()
-	p.GetNode("out").MarkDirty()
+	p.GetNode("mid1").Dirty = true
+	p.GetNode("mid2").Dirty = true
+	p.GetNode("out").Dirty = true
 
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
@@ -173,11 +173,11 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n", ManifestParserOptions{})
-	p.GetNode("a1").MarkDirty()
-	p.GetNode("a2").MarkDirty()
-	p.GetNode("b1").MarkDirty()
-	p.GetNode("b2").MarkDirty()
-	p.GetNode("out").MarkDirty()
+	p.GetNode("a1").Dirty = true
+	p.GetNode("a2").Dirty = true
+	p.GetNode("b1").Dirty = true
+	p.GetNode("b2").Dirty = true
+	p.GetNode("out").Dirty = true
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
@@ -235,10 +235,10 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 func TestPlanTest_DoubleDependent(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
-	p.GetNode("mid").MarkDirty()
-	p.GetNode("a1").MarkDirty()
-	p.GetNode("a2").MarkDirty()
-	p.GetNode("out").MarkDirty()
+	p.GetNode("mid").Dirty = true
+	p.GetNode("a1").Dirty = true
+	p.GetNode("a2").Dirty = true
+	p.GetNode("out").Dirty = true
 
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out"), &err) {
@@ -295,8 +295,8 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 
 func (p *PlanTest) TestPoolWithDepthOne(test_case string) {
 	p.AssertParse(&p.state_, test_case, ManifestParserOptions{})
-	p.GetNode("out1").MarkDirty()
-	p.GetNode("out2").MarkDirty()
+	p.GetNode("out1").Dirty = true
+	p.GetNode("out2").Dirty = true
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out1"), &err) {
 		p.t.Fatal("expected true")
@@ -379,10 +379,10 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	p.AssertParse(&p.state_, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n", ManifestParserOptions{})
 	// Mark all the out* nodes dirty
 	for i := 0; i < 3; i++ {
-		p.GetNode(fmt.Sprintf("out%d", i+1)).MarkDirty()
-		p.GetNode(fmt.Sprintf("outb%d", i+1)).MarkDirty()
+		p.GetNode(fmt.Sprintf("out%d", i+1)).Dirty = true
+		p.GetNode(fmt.Sprintf("outb%d", i+1)).Dirty = true
 	}
-	p.GetNode("allTheThings").MarkDirty()
+	p.GetNode("allTheThings").Dirty = true
 
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("allTheThings"), &err) {
@@ -483,12 +483,12 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n", ManifestParserOptions{})
-	p.GetNode("foo.cpp").MarkDirty()
-	p.GetNode("foo.cpp.obj").MarkDirty()
-	p.GetNode("bar.cpp").MarkDirty()
-	p.GetNode("bar.cpp.obj").MarkDirty()
-	p.GetNode("libfoo.a").MarkDirty()
-	p.GetNode("all").MarkDirty()
+	p.GetNode("foo.cpp").Dirty = true
+	p.GetNode("foo.cpp.obj").Dirty = true
+	p.GetNode("bar.cpp").Dirty = true
+	p.GetNode("bar.cpp.obj").Dirty = true
+	p.GetNode("libfoo.a").Dirty = true
+	p.GetNode("all").Dirty = true
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("all"), &err) {
 		t.Fatal("expected true")
@@ -613,8 +613,8 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	p := NewPlanTest(t)
 	p.AssertParse(&p.state_, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n", ManifestParserOptions{})
-	p.GetNode("out1").MarkDirty()
-	p.GetNode("out2").MarkDirty()
+	p.GetNode("out1").Dirty = true
+	p.GetNode("out2").Dirty = true
 	err := ""
 	if !p.plan_.AddTarget(p.GetNode("out1"), &err) {
 		t.Fatal("expected true")
@@ -954,7 +954,7 @@ func (f *FakeCommandRunner) Abort() {
 // Mark a path dirty.
 func (b *BuildTest) Dirty(path string) {
 	node := b.GetNode(path)
-	node.MarkDirty()
+	node.Dirty = true
 
 	// If it's an input file, mark that we've already stat()ed it and
 	// it's missing.
@@ -1304,7 +1304,7 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 	edge := b.state_.edges_[len(b.state_.edges_)-1]
 
 	b.fs_.Create("foo.c", "")
-	b.GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
+	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
 	b.fs_.Create("foo.o.d", "foo.o: blah.h bar.h\n")
 	if b.builder_.AddTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
@@ -1590,7 +1590,7 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 	edge := b.state_.edges_[len(b.state_.edges_)-1]
 
 	b.fs_.Create("x/y/z/foo.c", "")
-	b.GetNode("bar.h").MarkDirty() // Mark bar.h as missing.
+	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
 	// Note, different slashes from manifest.
 	b.fs_.Create("gen/stuff\\things/foo.o.d", "gen\\stuff\\things\\foo.o: blah.h bar.h\n")
 	if b.builder_.AddTargetName("gen/stuff/things/foo.o", &err) == nil {
@@ -1823,7 +1823,7 @@ func PhonyUseCase(t *testing.T, i int) {
 		if phonyNode.exists() {
 			t.Fatal("expected false")
 		}
-		if phonyNode.dirty() {
+		if phonyNode.Dirty {
 			t.Fatal("expected false")
 		}
 
@@ -2050,7 +2050,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	if !b.GetNode("out.imp").dirty() {
+	if !b.GetNode("out.imp").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -2091,7 +2091,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 	if !b.builder_.AlreadyUpToDate() {
 		t.Fatal("expected true")
 	}
-	if b.GetNode("out.imp").dirty() {
+	if b.GetNode("out.imp").Dirty {
 		t.Fatal("expected false")
 	}
 }
@@ -3682,7 +3682,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 		edge := state.edges_[len(state.edges_)-1]
 
-		state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
+		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
 		if builder.AddTargetName("fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}
@@ -3891,7 +3891,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 		edge := state.edges_[len(state.edges_)-1]
 
-		state.GetNode("bar.h", 0).MarkDirty() // Mark bar.h as missing.
+		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
 		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}

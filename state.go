@@ -300,7 +300,7 @@ func (s *State) Dump() {
 		s := "unknown"
 		if node.status_known() {
 			s = "clean"
-			if node.dirty() {
+			if node.Dirty {
 				s = "dirty"
 			}
 		}

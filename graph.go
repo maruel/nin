@@ -49,7 +49,7 @@ type Node struct {
 	// Dirty is true when the underlying file is out-of-date.
 	// But note that Edge::outputs_ready_ is also used in judging which
 	// edges to build.
-	dirty_ bool
+	Dirty bool
 
 	// Store whether dyndep information is expected from this node but
 	// has not yet been loaded.
@@ -88,7 +88,7 @@ func (n *Node) StatIfNecessary(disk_interface DiskInterface, err *string) bool {
 func (n *Node) ResetState() {
 	n.mtime_ = -1
 	n.exists_ = ExistenceStatusUnknown
-	n.dirty_ = false
+	n.Dirty = false
 }
 
 // Mark the Node as already-stat()ed and missing.
@@ -112,15 +112,6 @@ func (n *Node) PathDecanonicalized() string {
 
 func (n *Node) mtime() TimeStamp {
 	return n.mtime_
-}
-func (n *Node) dirty() bool {
-	return n.dirty_
-}
-func (n *Node) set_dirty(dirty bool) {
-	n.dirty_ = dirty
-}
-func (n *Node) MarkDirty() {
-	n.dirty_ = true
 }
 func (n *Node) dyndep_pending() bool {
 	return n.dyndep_pending_
@@ -164,7 +155,7 @@ func (n *Node) Dump(prefix string) {
 		s = " (:missing)"
 	}
 	t := " clean"
-	if n.dirty() {
+	if n.Dirty {
 		t = " dirty"
 	}
 	fmt.Printf("%s <%s 0x%p> mtime: %x%s, (:%s), ", prefix, n.Path, n, n.mtime(), s, t)
@@ -658,7 +649,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		if !node.exists() {
 			EXPLAIN("%s has no in-edge and is missing", node.Path)
 		}
-		node.set_dirty(!node.exists())
+		node.Dirty = !node.exists()
 		return true
 	}
 
@@ -756,7 +747,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		if !edge.is_order_only(j) {
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
-			if i.dirty() {
+			if i.Dirty {
 				EXPLAIN("%s is dirty", i.Path)
 				dirty = true
 			} else {
@@ -778,7 +769,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// Finally, visit each output and update their dirty state if necessary.
 	for _, o := range edge.outputs_ {
 		if dirty {
-			o.MarkDirty()
+			o.Dirty = true
 		}
 	}
 

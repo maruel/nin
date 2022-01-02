@@ -51,7 +51,7 @@ func TestGraphTest_MissingImplicit(t *testing.T) {
 	// A missing implicit dep *should* make the output dirty.
 	// (In fact, a build will fail.)
 	// This is a change from prior semantics of ninja.
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -73,7 +73,7 @@ func TestGraphTest_ModifiedImplicit(t *testing.T) {
 	}
 
 	// A modified implicit dep should make the output dirty.
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -97,7 +97,7 @@ func TestGraphTest_FunkyMakefilePath(t *testing.T) {
 
 	// implicit.h has changed, though our depfile refers to it with a
 	// non-canonical path; we should still find it.
-	if !g.GetNode("out.o").dirty() {
+	if !g.GetNode("out.o").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -123,7 +123,7 @@ func TestGraphTest_ExplicitImplicit(t *testing.T) {
 	// We have both an implicit and an explicit dep on implicit.h.
 	// The implicit dep should "win" (in the sense that it should cause
 	// the output to be dirty).
-	if !g.GetNode("out.o").dirty() {
+	if !g.GetNode("out.o").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -164,10 +164,10 @@ func TestGraphTest_ImplicitOutputMissing(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
-	if !g.GetNode("out.imp").dirty() {
+	if !g.GetNode("out.imp").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -188,10 +188,10 @@ func TestGraphTest_ImplicitOutputOutOfDate(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
-	if !g.GetNode("out.imp").dirty() {
+	if !g.GetNode("out.imp").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -228,7 +228,7 @@ func TestGraphTest_ImplicitOutputOnlyMissing(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("out.imp").dirty() {
+	if !g.GetNode("out.imp").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -248,7 +248,7 @@ func TestGraphTest_ImplicitOutputOnlyOutOfDate(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("out.imp").dirty() {
+	if !g.GetNode("out.imp").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -268,7 +268,7 @@ func TestGraphTest_PathWithCurrentDirectory(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if g.GetNode("out.o").dirty() {
+	if g.GetNode("out.o").Dirty {
 		t.Fatal("expected false")
 	}
 }
@@ -320,7 +320,7 @@ func TestGraphTest_DepfileWithCanonicalizablePath(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if g.GetNode("out.o").dirty() {
+	if g.GetNode("out.o").Dirty {
 		t.Fatal("expected false")
 	}
 }
@@ -342,7 +342,7 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if g.GetNode("out.o").dirty() {
+	if g.GetNode("out.o").Dirty {
 		t.Fatal("expected false")
 	}
 
@@ -354,7 +354,7 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 	if "" != err {
 		t.Fatal(err)
 	}
-	if !g.GetNode("out.o").dirty() {
+	if !g.GetNode("out.o").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -946,15 +946,15 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if g.GetNode("in").dirty() {
+	if g.GetNode("in").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd").dirty() {
+	if g.GetNode("dd").Dirty {
 		t.Fatal("expected false")
 	}
 
 	// "out" is dirty due to dyndep-specified implicit input
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -976,10 +976,10 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if g.GetNode("in").dirty() {
+	if g.GetNode("in").Dirty {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd").dirty() {
+	if g.GetNode("dd").Dirty {
 		t.Fatal("expected false")
 	}
 	if !g.GetNode("dd").InEdge.outputs_ready() {
@@ -987,7 +987,7 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 	}
 
 	// "out" is dirty due to dyndep-specified implicit input
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 }
@@ -1008,7 +1008,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("dd").dirty() {
+	if !g.GetNode("dd").Dirty {
 		t.Fatal("expected true")
 	}
 	if g.GetNode("dd").InEdge.outputs_ready() {
@@ -1016,7 +1016,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	}
 
 	// "out" is clean but not ready since "dd" is not ready
-	if g.GetNode("out").dirty() {
+	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").InEdge.outputs_ready() {
@@ -1040,13 +1040,13 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if g.GetNode("dd").dirty() {
+	if g.GetNode("dd").Dirty {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("dd").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").dirty() {
+	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").InEdge.outputs_ready() {
@@ -1072,19 +1072,19 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !g.GetNode("dd1").dirty() {
+	if !g.GetNode("dd1").Dirty {
 		t.Fatal("expected true")
 	}
 	if g.GetNode("dd1").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("dd2").dirty() {
+	if g.GetNode("dd2").Dirty {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("dd2").InEdge.outputs_ready() {
 		t.Fatal("expected false")
 	}
-	if g.GetNode("out").dirty() {
+	if g.GetNode("out").Dirty {
 		t.Fatal("expected false")
 	}
 	if g.GetNode("out").InEdge.outputs_ready() {
@@ -1148,10 +1148,10 @@ func TestGraphTest_Validation(t *testing.T) {
 		t.Fatal(validation_nodes)
 	}
 
-	if !g.GetNode("out").dirty() {
+	if !g.GetNode("out").Dirty {
 		t.Fatal("expected dirty")
 	}
-	if !g.GetNode("validate").dirty() {
+	if !g.GetNode("validate").Dirty {
 		t.Fatal("expected dirty")
 	}
 }
@@ -1169,7 +1169,7 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	if !g.scan_.RecomputeDirty(out1, nil, &err) {
 		t.Fatal("expected true")
 	}
-	if out1.dirty() {
+	if out1.Dirty {
 		t.Fatal("expected true")
 	}
 
@@ -1204,7 +1204,7 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	if out1.mtime() != out1Mtime1 {
 		t.Fatal("expected equal")
 	}
-	if !out1.dirty() {
+	if !out1.Dirty {
 		t.Fatal("expected true")
 	}
 }

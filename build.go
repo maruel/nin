@@ -260,7 +260,7 @@ func (p *Plan) AddTarget(target *Node, err *string) bool {
 func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
 	edge := node.InEdge
 	if edge == nil { // Leaf node.
-		if node.dirty() {
+		if node.Dirty {
 			referenced := ""
 			if dependent != nil {
 				referenced = ", needed by '" + dependent.Path + "',"
@@ -285,7 +285,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 
 	// If we do need to build edge and we haven't already marked it as wanted,
 	// mark it now.
-	if node.dirty() && want == kWantNothing {
+	if node.Dirty && want == kWantNothing {
 		want = kWantToStart
 		p.want_[edge] = want
 		p.EdgeWanted(edge)
@@ -434,7 +434,7 @@ func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 // Clean the given node during the build.
 // Return false on error.
 func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
-	node.set_dirty(false)
+	node.Dirty = false
 
 	for _, oe := range node.OutEdges {
 		// Don't process edges that we don't actually want.
@@ -453,7 +453,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 		end := len(oe.inputs_) - oe.order_only_deps_
 		found := false
 		for i := 0; i < end; i++ {
-			if oe.inputs_[i].dirty() {
+			if oe.inputs_[i].Dirty {
 				found = true
 				break
 			}
@@ -580,7 +580,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 				}
 			}
 		}
-		if !n.dirty() {
+		if !n.Dirty {
 			continue
 		}
 

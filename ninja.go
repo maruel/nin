@@ -205,7 +205,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status Statu
 
 	// The manifest was only rebuilt if it is now dirty (it may have been cleaned
 	// by a restat).
-	if !node.dirty() {
+	if !node.Dirty {
 		// Reset the state to prevent problems like
 		// https://github.com/ninja-build/ninja/issues/874
 		n.state_.Reset()

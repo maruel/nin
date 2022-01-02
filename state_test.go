@@ -43,13 +43,13 @@ func TestState_Basic(t *testing.T) {
 		t.Fatal(got)
 	}
 
-	if state.GetNode("in1", 0).dirty() {
+	if state.GetNode("in1", 0).Dirty {
 		t.Fatal("dirty")
 	}
-	if state.GetNode("in2", 0).dirty() {
+	if state.GetNode("in2", 0).Dirty {
 		t.Fatal("dirty")
 	}
-	if state.GetNode("out", 0).dirty() {
+	if state.GetNode("out", 0).Dirty {
 		t.Fatal("dirty")
 	}
 }

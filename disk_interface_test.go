@@ -480,13 +480,13 @@ func TestStatTest_TwoStep(t *testing.T) {
 	if "out" != s.stats_[0] {
 		t.Fatal("expected equal")
 	}
-	if !s.GetNode("out").dirty() {
+	if !s.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 	if "mid" != s.stats_[1] {
 		t.Fatal("expected equal")
 	}
-	if !s.GetNode("mid").dirty() {
+	if !s.GetNode("mid").Dirty {
 		t.Fatal("expected true")
 	}
 	if "in" != s.stats_[2] {
@@ -516,7 +516,7 @@ func TestStatTest_Tree(t *testing.T) {
 	if "mid1" != s.stats_[1] {
 		t.Fatal("expected equal")
 	}
-	if !s.GetNode("mid1").dirty() {
+	if !s.GetNode("mid1").Dirty {
 		t.Fatal("expected true")
 	}
 	if "in11" != s.stats_[2] {
@@ -544,13 +544,13 @@ func TestStatTest_Middle(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	s.scan_.RecomputeDirty(out, nil, nil)
-	if s.GetNode("in").dirty() {
+	if s.GetNode("in").Dirty {
 		t.Fatal("expected false")
 	}
-	if !s.GetNode("mid").dirty() {
+	if !s.GetNode("mid").Dirty {
 		t.Fatal("expected true")
 	}
-	if !s.GetNode("out").dirty() {
+	if !s.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
 }
