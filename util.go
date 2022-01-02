@@ -159,6 +159,13 @@ func CanonicalizePath(path string) string {
 		dst += 2
 	}
 	p = p[:dst-1]
+	if runtime.GOOS == "windows" {
+		for i, c := range p {
+			if c == '\\' {
+				p[i] = '/'
+			}
+		}
+	}
 	return unsafeString(p)
 }
 
