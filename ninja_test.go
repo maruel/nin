@@ -127,7 +127,7 @@ type VirtualFileSystem struct {
 // An entry for a single in-memory file.
 type Entry struct {
 	mtime     TimeStamp
-	statError string // If mtime is -1.
+	statError error // If mtime is -1.
 	contents  string
 }
 type FileMap map[string]Entry
@@ -159,13 +159,12 @@ func (v *VirtualFileSystem) Create(path string, contents string) {
 }
 
 // DiskInterface
-func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
+func (v *VirtualFileSystem) Stat(path string) (TimeStamp, error) {
 	i, ok := v.files[path]
 	if ok {
-		*err = i.statError
-		return i.mtime
+		return i.mtime, i.statError
 	}
-	return 0
+	return 0, nil
 }
 
 func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {

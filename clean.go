@@ -51,8 +51,7 @@ func (c *Cleaner) RemoveFile(path string) int {
 
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
-	err := ""
-	mtime := c.di.Stat(path, &err)
+	mtime, err := c.di.Stat(path)
 	if mtime == -1 {
 		errorf("%s", err)
 	}

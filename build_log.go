@@ -478,8 +478,9 @@ func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *
 			}
 		}
 		if !skip {
-			mtime := di.Stat(i.output, err)
+			mtime, err2 := di.Stat(i.output)
 			if mtime == -1 {
+				*err = err2.Error()
 				_ = f.Close()
 				return false
 			}

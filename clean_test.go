@@ -61,18 +61,17 @@ func TestCleanTest_CleanAll(t *testing.T) {
 	}
 
 	// Check they are removed.
-	err := ""
-	if 0 != c.fs.Stat("in1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("in2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -112,18 +111,17 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 	}
 
 	// Check they are not removed.
-	err := ""
-	if 0 >= c.fs.Stat("in1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("in2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -162,18 +160,17 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 	}
 
 	// Check they are removed.
-	err := ""
-	if 0 != c.fs.Stat("in1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("in2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -213,18 +210,17 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	}
 
 	// Check they are not removed.
-	err := ""
-	if 0 >= c.fs.Stat("in1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("in2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -263,18 +259,17 @@ func TestCleanTest_CleanRule(t *testing.T) {
 	}
 
 	// Check they are removed.
-	err := ""
-	if 0 != c.fs.Stat("in1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("in2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -314,18 +309,17 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 	}
 
 	// Check they are not removed.
-	err := ""
-	if 0 >= c.fs.Stat("in1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out1", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("in2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("in2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 >= c.fs.Stat("out2", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	c.fs.filesRemoved = nil
 
@@ -450,12 +444,11 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	err := ""
-	if 0 != c.fs.Stat("out", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out.imp", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out.imp"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -482,12 +475,11 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	err := ""
-	if 0 != c.fs.Stat("out", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 1 != c.fs.Stat("out.imp", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out.imp"); mtime != 1 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -547,24 +539,23 @@ func TestCleanTest_CleanRsp(t *testing.T) {
 	}
 
 	// Check they are removed.
-	err := ""
-	if 0 != c.fs.Stat("in1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("in2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("in2.rsp", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("in2.rsp"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out2.rsp", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out2.rsp"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -580,7 +571,6 @@ func TestCleanTest_CleanFailure(t *testing.T) {
 
 func TestCleanTest_CleanPhony(t *testing.T) {
 	c := NewCleanTest(t)
-	err := ""
 	c.AssertParse(&c.state, "build phony: phony t1 t2\nbuild t1: cat\nbuild t2: cat\n", ManifestParserOptions{})
 
 	c.fs.Create("phony", "")
@@ -595,8 +585,8 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 	if 2 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 >= c.fs.Stat("phony", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("phony"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	c.fs.Create("t1", "")
@@ -609,8 +599,8 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 	if 2 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 >= c.fs.Stat("phony", &err) {
-		t.Fatal("expected less or equal")
+	if mtime, err := c.fs.Stat("phony"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -633,18 +623,17 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	err := ""
-	if 0 != c.fs.Stat("out 1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out 1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out 2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out 2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out 1.d", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out 1.d"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out 2.rsp", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out 2.rsp"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -712,14 +701,14 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 0 != len(c.fs.filesRemoved) {
 		t.Fatal("expected equal")
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out1", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	// Then use the manifest that does not build out1 anymore.
@@ -733,14 +722,14 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs.filesRemoved); diff != "" {
 		t.Fatal(diff)
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	// Nothing to do now.
@@ -756,14 +745,14 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs.filesRemoved); diff != "" {
 		t.Fatal(diff)
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 != c.fs.Stat("out1", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := c.fs.Stat("out1"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	log2.Close()
 }
@@ -821,14 +810,14 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != len(c.fs.filesRemoved) {
 		t.Fatal("expected equal")
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out1", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	// Then use the manifest that does not build out1 anymore.
@@ -842,14 +831,14 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != len(c.fs.filesRemoved) {
 		t.Fatal("expected equal")
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out1", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	// Nothing to do now.
@@ -862,14 +851,14 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != len(c.fs.filesRemoved) {
 		t.Fatal("expected equal")
 	}
-	if 0 == c.fs.Stat("in", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("in"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out1", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
-	if 0 == c.fs.Stat("out2", &err) {
-		t.Fatal("expected different")
+	if mtime, err := c.fs.Stat("out2"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	log2.Close()
 }

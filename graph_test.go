@@ -1174,11 +1174,11 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	}
 
 	// Get the mtime of out1
-	if !in1.Stat(&g.fs, &err) {
-		t.Fatal("expected true")
+	if err := in1.Stat(&g.fs); err != nil {
+		t.Fatal(err)
 	}
-	if !out1.Stat(&g.fs, &err) {
-		t.Fatal("expected true")
+	if err := out1.Stat(&g.fs); err != nil {
+		t.Fatal(err)
 	}
 	out1Mtime1 := out1.MTime
 	in1Mtime1 := in1.MTime
@@ -1188,8 +1188,8 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("in1", "")
 
-	if !in1.Stat(&g.fs, &err) {
-		t.Fatal("expected true")
+	if err := in1.Stat(&g.fs); err != nil {
+		t.Fatal(err)
 	}
 	if in1.MTime <= in1Mtime1 {
 		t.Fatal("expected greater")

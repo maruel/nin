@@ -51,7 +51,7 @@ type DiskInterface interface {
 	FileReader
 	// stat() a file, returning the mtime, or 0 if missing and -1 on
 	// other errors.
-	Stat(path string, err *string) TimeStamp
+	Stat(path string) (TimeStamp, error)
 
 	// Create a directory, returning false on failure.
 	MakeDir(path string) bool
@@ -107,32 +107,17 @@ func TimeStampFromFileTime(filetime *FILETIME) TimeStamp {
 }
 */
 
-func StatSingleFile(path string, err *string) TimeStamp {
-	/*
-		var attrs WIN32_FILE_ATTRIBUTE_DATA
-		if !GetFileAttributesExA(path, GetFileExInfoStandard, &attrs) {
-			winErr := GetLastError()
-			if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
-				return 0
-			}
-			*err = "GetFileAttributesEx(" + path + "): " + GetLastErrorString()
-			return -1
-		}
-		return TimeStampFromFileTime(attrs.ftLastWriteTime)
-	*/
-
-	// This will obviously have to be optimized.
-	s, err2 := os.Stat(path)
-	if err2 != nil {
+func StatSingleFile(path string) (TimeStamp, error) {
+	s, err := os.Stat(path)
+	if err != nil {
 		// See TestDiskInterfaceTest_StatMissingFile for rationale for ENOTDIR
 		// check.
-		if os.IsNotExist(err2) || errors.Unwrap(err2) == syscall.ENOTDIR {
-			return 0
+		if os.IsNotExist(err) || errors.Unwrap(err) == syscall.ENOTDIR {
+			return 0, nil
 		}
-		*err = err2.Error()
-		return -1
+		return -1, err
 	}
-	return TimeStamp(s.ModTime().UnixMicro())
+	return TimeStamp(s.ModTime().UnixMicro()), nil
 }
 
 /*
@@ -145,7 +130,7 @@ func IsWindows7OrLater() bool {
 }
 */
 
-func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) bool {
+func StatAllFilesInDir(dir string, stamps map[string]TimeStamp) error {
 	/*
 		// FindExInfoBasic is 30% faster than FindExInfoStandard.
 		//canUseBasicInfo := IsWindows7OrLater()
@@ -182,24 +167,21 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 		FindClose(findHandle)
 		return true
 	*/
-	f, err2 := os.Open(dir)
-	if err2 != nil {
-		*err = err2.Error()
-		return false
+	f, err := os.Open(dir)
+	if err != nil {
+		return err
 	}
-	d, err2 := f.Readdir(0)
-	if err2 != nil {
-		*err = err2.Error()
+	d, err := f.Readdir(0)
+	if err != nil {
 		_ = f.Close()
-		return false
+		return err
 	}
 	for _, i := range d {
 		if !i.IsDir() {
 			stamps[i.Name()] = TimeStamp(i.ModTime().UnixMicro())
 		}
 	}
-	_ = f.Close()
-	return true
+	return f.Close()
 }
 
 // Create all the parent directories for path; like mkdir -p
@@ -209,8 +191,7 @@ func MakeDirs(d DiskInterface, path string) bool {
 	if dir == path || dir == "." || dir == "" {
 		return true // Reached root; assume it's there.
 	}
-	err := ""
-	mtime := d.Stat(dir, &err)
+	mtime, err := d.Stat(dir)
 	if mtime < 0 {
 		errorf("%s", err)
 		return false
@@ -246,15 +227,14 @@ func NewRealDiskInterface() RealDiskInterface {
 // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 const maxPath = 260
 
-func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
+func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
 	defer MetricRecord("node stat")()
 	if runtime.GOOS == "windows" {
 		if path != "" && path[0] != '\\' && len(path) >= maxPath {
-			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, maxPath)
-			return -1
+			return -1, fmt.Errorf("Stat(%s): Filename longer than %d characters", path, maxPath)
 		}
 		if !r.useCache {
-			return StatSingleFile(path, err)
+			return StatSingleFile(path)
 		}
 
 		dir := DirName(path)
@@ -280,14 +260,14 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 			if dir != "" {
 				s = dir
 			}
-			if !StatAllFilesInDir(s, ci, err) {
+			if err := StatAllFilesInDir(s, ci); err != nil {
 				delete(r.cache, dir)
-				return -1
+				return -1, err
 			}
 		}
-		return ci[base]
+		return ci[base], nil
 	}
-	return StatSingleFile(path, err)
+	return StatSingleFile(path)
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {

@@ -314,8 +314,8 @@ type TestDiskInterface struct {
 	t *testing.T
 }
 
-func (t *TestDiskInterface) Stat(path string, err *string) TimeStamp {
-	return 4
+func (t *TestDiskInterface) Stat(path string) (TimeStamp, error) {
+	return 4, nil
 }
 func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
 	t.t.Fatal("Should not be reached")

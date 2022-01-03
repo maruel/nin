@@ -88,11 +88,11 @@ func NewNode(path string, slashBits uint64) *Node {
 }
 
 // Return false on error.
-func (n *Node) StatIfNecessary(di DiskInterface, err *string) bool {
+func (n *Node) StatIfNecessary(di DiskInterface) error {
 	if n.Exists != ExistenceStatusUnknown {
-		return true
+		return nil
 	}
-	return n.Stat(di, err)
+	return n.Stat(di)
 }
 
 // Get |Path| but use SlashBits to convert back to original slash styles.
@@ -101,18 +101,19 @@ func (n *Node) PathDecanonicalized() string {
 }
 
 // Return false on error.
-func (n *Node) Stat(di DiskInterface, err *string) bool {
+func (n *Node) Stat(di DiskInterface) error {
 	defer MetricRecord("node stat")()
-	n.MTime = di.Stat(n.Path, err)
-	if n.MTime == -1 {
-		return false
+	mtime, err := di.Stat(n.Path)
+	n.MTime = mtime
+	if mtime == -1 {
+		return err
 	}
 	if n.MTime != 0 {
 		n.Exists = ExistenceStatusExists
 	} else {
 		n.Exists = ExistenceStatusMissing
 	}
-	return true
+	return nil
 }
 
 // If the file doesn't exist, set the MTime from its dependencies
@@ -584,7 +585,8 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
-		if !node.StatIfNecessary(d.di, err) {
+		if err2 := node.StatIfNecessary(d.di); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
@@ -644,7 +646,8 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
-		if !o.StatIfNecessary(d.di, err) {
+		if err2 := o.StatIfNecessary(d.di); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 	}

@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -1836,8 +1837,8 @@ func PhonyUseCase(t *testing.T, i int) {
 		if phonyNode.MTime != inputTime {
 			t.Fatal("expected equal")
 		}
-		if !testNode.Stat(&b.fs, &err) {
-			t.Fatal("expected true")
+		if err := testNode.Stat(&b.fs); err != nil {
+			t.Fatal(err)
 		}
 		if testNode.Exists != ExistenceStatusExists {
 			t.Fatal("expected true")
@@ -2141,14 +2142,11 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	b.fs.Create("in", "")
 
 	// Run once successfully to get out1 in the log
-	if b.builder.AddTargetName("out1", &err) == nil {
-		t.Fatal("expected true")
+	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+		t.Fatal(err)
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if !b.builder.Build(&err) || err != "" {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2163,15 +2161,13 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	b.fs.Create("in", "")
 
 	// Run again with a failure that updates the output file timestamp
-	if b.builder.AddTargetName("out1", &err) == nil {
-		t.Fatal("expected true")
+	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+		t.Fatal(err)
 	}
-	if b.builder.Build(&err) {
-		t.Fatal("expected false")
+	if b.builder.Build(&err) || err != "subcommand failed" {
+		t.Fatal(err)
 	}
-	if "subcommand failed" != err {
-		t.Fatal("expected equal")
-	}
+	err = ""
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
 	}
@@ -2184,19 +2180,16 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	b.fs.Tick()
 
 	// Run again, should rerun even though the output file is up to date on disk
-	if b.builder.AddTargetName("out1", &err) == nil {
-		t.Fatal("expected true")
+	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+		t.Fatal(err)
 	}
 	if b.builder.AlreadyUpToDate() {
 		t.Fatal("expected false")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if !b.builder.Build(&err) || err != "" {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-	if "" != err {
 		t.Fatal("expected equal")
 	}
 }
@@ -2805,8 +2798,8 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	b.builder.Cleanup()
-	if b.fs.Stat("out1", &err) <= 0 {
-		t.Fatal("expected greater")
+	if mtime, err := b.fs.Stat("out1"); mtime <= 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 	err = ""
 
@@ -2824,8 +2817,8 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	b.builder.Cleanup()
-	if 0 != b.fs.Stat("out2", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := b.fs.Stat("out2"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 }
 
@@ -2838,7 +2831,7 @@ func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
 	// This simulates a stat failure:
 	b.fs.files[tooLongToStat] = Entry{
 		mtime:     -1,
-		statError: "stat failed",
+		statError: errors.New("stat failed"),
 	}
 
 	err := ""
@@ -3321,8 +3314,8 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		}
 
 		// The deps file should have been removed.
-		if 0 != b.fs.Stat("in1.d", &err) {
-			t.Fatal("expected equal")
+		if mtime, err := b.fs.Stat("in1.d"); mtime != 0 || err != nil {
+			t.Fatal(mtime, err)
 		}
 		// Recreate it for the next step.
 		b.fs.Create("in1.d", "out: in2")
@@ -3428,8 +3421,8 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 	b.fs.Create("out", "")
 
 	// The deps file should have been removed, so no need to timestamp it.
-	if 0 != b.fs.Stat("in1.d", &err) {
-		t.Fatal("expected equal")
+	if mtime, err := b.fs.Stat("in1.d"); mtime != 0 || err != nil {
+		t.Fatal(mtime, err)
 	}
 
 	{
@@ -4973,8 +4966,8 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		}
 
 		// The deps file should have been removed.
-		if b.fs.Stat("out2.d", &err) != 0 || err != "" {
-			t.Fatal(err)
+		if mtime, err := b.fs.Stat("out2.d"); mtime != 0 || err != nil {
+			t.Fatal(mtime, err)
 		}
 
 		depsLog.Close()

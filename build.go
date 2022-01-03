@@ -687,8 +687,7 @@ func (b *Builder) Cleanup() {
 				// need to rebuild an output because of a modified header file
 				// mentioned in a depfile, and the command touches its depfile
 				// but is interrupted before it touches its output file.)
-				err := ""
-				newMtime := b.di.Stat(o.Path, &err)
+				newMtime, err := b.di.Stat(o.Path)
 				if newMtime == -1 { // Log and ignore Stat() errors.
 					b.status.Error("%s", err)
 				}
@@ -935,8 +934,9 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		nodeCleaned := false
 
 		for _, o := range edge.Outputs {
-			newMtime := b.di.Stat(o.Path, err)
+			newMtime, err2 := b.di.Stat(o.Path)
 			if newMtime == -1 {
+				*err = err2.Error()
 				return false
 			}
 			if newMtime > outputMtime {
@@ -958,8 +958,9 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
 			for _, i := range edge.Inputs[:len(edge.Inputs)-int(edge.OrderOnlyDeps)] {
-				inputMtime := b.di.Stat(i.Path, err)
+				inputMtime, err2 := b.di.Stat(i.Path)
 				if inputMtime == -1 {
+					*err = err2.Error()
 					return false
 				}
 				if inputMtime > restatMtime {
@@ -969,8 +970,9 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 
 			depfile := edge.GetUnescapedDepfile()
 			if restatMtime != 0 && depsType == "" && depfile != "" {
-				depfileMtime := b.di.Stat(depfile, err)
+				depfileMtime, err2 := b.di.Stat(depfile)
 				if depfileMtime == -1 {
+					*err = err2.Error()
 					return false
 				}
 				if depfileMtime > restatMtime {
@@ -1008,8 +1010,9 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			panic("should have been rejected by parser")
 		}
 		for _, o := range edge.Outputs {
-			depsMtime := b.di.Stat(o.Path, err)
+			depsMtime, err2 := b.di.Stat(o.Path)
 			if depsMtime == -1 {
+				*err = err2.Error()
 				return false
 			}
 			if !b.scan.depsLog().RecordDeps(o, depsMtime, depsNodes) {

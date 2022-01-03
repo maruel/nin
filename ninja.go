@@ -116,8 +116,7 @@ func (n *ninjaMain) IsPathDead(s string) bool {
 	// which seems good enough for this corner case.)
 	// Do keep entries around for files which still exist on disk, for
 	// generators that want to use this information.
-	err := ""
-	mtime := n.di.Stat(s, &err)
+	mtime, err := n.di.Stat(s)
 	if mtime == -1 {
 		errorf("%s", err) // Log and ignore Stat() errors.
 	}
@@ -460,8 +459,7 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 			continue
 		}
 
-		err := ""
-		mtime := di.Stat(it.Path, &err)
+		mtime, err := di.Stat(it.Path)
 		if mtime == -1 {
 			errorf("%s", err) // Log and ignore Stat() errors;
 		}
