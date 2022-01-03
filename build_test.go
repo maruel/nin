@@ -891,18 +891,18 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	edge_iter := len(f.active_edges_) - 1
 
 	edge := f.active_edges_[edge_iter]
-	result.edge = edge
+	result.Edge = edge
 
 	if edge.Rule.name() == "interrupt" || edge.Rule.name() == "touch-interrupt" {
-		result.status = ExitInterrupted
+		result.ExitCode = ExitInterrupted
 		return true
 	}
 
 	if edge.Rule.name() == "console" {
 		if edge.Pool == ConsolePool {
-			result.status = ExitSuccess
+			result.ExitCode = ExitSuccess
 		} else {
-			result.status = ExitFailure
+			result.ExitCode = ExitFailure
 		}
 		copy(f.active_edges_[edge_iter:], f.active_edges_[edge_iter+1:])
 		f.active_edges_ = f.active_edges_[:len(f.active_edges_)-1]
@@ -912,14 +912,14 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	if edge.Rule.name() == "cp_multi_msvc" {
 		prefix := edge.GetBinding("msvc_deps_prefix")
 		for _, in := range edge.Inputs {
-			result.output += prefix + in.Path + "\n"
+			result.Output += prefix + in.Path + "\n"
 		}
 	}
 
 	if edge.Rule.name() == "fail" || (edge.Rule.name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
-		result.status = ExitFailure
+		result.ExitCode = ExitFailure
 	} else {
-		result.status = ExitSuccess
+		result.ExitCode = ExitSuccess
 	}
 
 	// Provide a way for test cases to verify when an edge finishes that
@@ -2280,7 +2280,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	if 3 != len(b.command_runner_.commands_ran_) {
 		t.Fatal("expected equal")
 	}
-	if 3 != b.builder_.plan_.command_edge_count() {
+	if 3 != b.builder_.plan_.command_edges_ {
 		t.Fatal("expected equal")
 	}
 	b.command_runner_.commands_ran_ = nil

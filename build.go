@@ -54,21 +54,11 @@ type CommandRunner interface {
 	Abort()
 }
 
-// The result of waiting for a command.
+// Result is the result of waiting for a command.
 type Result struct {
-	edge   *Edge
-	status ExitStatus
-	output string
-}
-
-func NewResult() Result {
-	return Result{
-		edge: nil,
-	}
-}
-
-func (r *Result) success() bool {
-	return r.status == ExitSuccess
+	Edge     *Edge
+	ExitCode ExitStatus
+	Output   string
 }
 
 // Options (e.g. verbosity, parallelism) passed to a build.
@@ -125,8 +115,8 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
 		return false
 	}
 
-	result.status = ExitSuccess
-	result.edge = d.finished_[len(d.finished_)-1]
+	result.ExitCode = ExitSuccess
+	result.Edge = d.finished_[len(d.finished_)-1]
 	d.finished_ = d.finished_[:len(d.finished_)-1]
 	return true
 }
@@ -193,11 +183,11 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
 		}
 	}
 
-	result.status = subproc.Finish()
-	result.output = subproc.GetOutput()
+	result.ExitCode = subproc.Finish()
+	result.Output = subproc.GetOutput()
 
 	e := r.subproc_to_edge_[subproc]
-	result.edge = e
+	result.Edge = e
 	delete(r.subproc_to_edge_, subproc)
 	return true
 }
@@ -227,11 +217,6 @@ type Plan struct {
 // Returns true if there's more work to be done.
 func (p *Plan) more_to_do() bool {
 	return p.wanted_edges_ > 0 && p.command_edges_ > 0
-}
-
-// Number of edges with commands to run.
-func (p *Plan) command_edge_count() int {
-	return p.command_edges_
 }
 
 func NewPlan(builder *Builder) Plan {
@@ -772,7 +757,7 @@ func (b *Builder) Build(err *string) bool {
 		panic("M-A")
 	}
 
-	b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
+	b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
 	pending_commands := 0
 	failures_allowed := b.config_.failures_allowed
 
@@ -825,7 +810,7 @@ func (b *Builder) Build(err *string) bool {
 		// See if we can reap any finished commands.
 		if pending_commands != 0 {
 			var result Result
-			if !b.command_runner_.WaitForCommand(&result) || result.status == ExitInterrupted {
+			if !b.command_runner_.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
 				b.Cleanup()
 				b.status_.BuildFinished()
 				*err = "interrupted by user"
@@ -839,7 +824,7 @@ func (b *Builder) Build(err *string) bool {
 				return false
 			}
 
-			if !result.success() {
+			if result.ExitCode != ExitSuccess {
 				if failures_allowed != 0 {
 					failures_allowed--
 				}
@@ -911,7 +896,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 // @return false if the build can not proceed further due to a fatal error.
 func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	defer METRIC_RECORD("FinishCommand")()
-	edge := result.edge
+	edge := result.Edge
 
 	// First try to extract dependencies from the result, if any.
 	// This must happen first as it filters the command output (we want
@@ -923,12 +908,12 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	deps_prefix := edge.GetBinding("msvc_deps_prefix")
 	if deps_type != "" {
 		extract_err := ""
-		if !b.ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.success() {
-			if result.output != "" {
-				result.output += "\n"
+		if !b.ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.ExitCode == ExitSuccess {
+			if result.Output != "" {
+				result.Output += "\n"
 			}
-			result.output += extract_err
-			result.status = ExitFailure
+			result.Output += extract_err
+			result.ExitCode = ExitFailure
 		}
 	}
 
@@ -937,10 +922,10 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	end_time_millis = int32(time.Now().UnixMilli() - b.start_time_millis_)
 	delete(b.running_edges_, edge)
 
-	b.status_.BuildEdgeFinished(edge, end_time_millis, result.success(), result.output)
+	b.status_.BuildEdgeFinished(edge, end_time_millis, result.ExitCode == ExitSuccess, result.Output)
 
 	// The rest of this function only applies to successful commands.
-	if !result.success() {
+	if result.ExitCode != ExitSuccess {
 		return b.plan_.EdgeFinished(edge, kEdgeFailed, err)
 	}
 	// Restat the edge outputs
@@ -995,7 +980,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 
 			// The total number of edges in the plan may have changed as a result
 			// of a restat.
-			b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
+			b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
 
 			output_mtime = restat_mtime
 		}
@@ -1041,10 +1026,10 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 	if deps_type == "msvc" {
 		parser := NewCLParser()
 		output := ""
-		if !parser.Parse(result.output, deps_prefix, &output, err) {
+		if !parser.Parse(result.Output, deps_prefix, &output, err) {
 			return false
 		}
-		result.output = output
+		result.Output = output
 		for i := range parser.includes_ {
 			// ~0 is assuming that with MSVC-parsed headers, it's ok to always make
 			// all backslashes (as some of the slashes will certainly be backslashes
@@ -1053,7 +1038,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
 		}
 	} else if deps_type == "gcc" {
-		depfile := result.edge.GetUnescapedDepfile()
+		depfile := result.Edge.GetUnescapedDepfile()
 		if len(depfile) == 0 {
 			*err = "edge with deps=gcc but no depfile makes no sense"
 			return false
@@ -1112,7 +1097,7 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 	}
 
 	// New command edges may have been added to the plan.
-	b.status_.PlanHasTotalEdges(b.plan_.command_edge_count())
+	b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
 
 	return true
 }

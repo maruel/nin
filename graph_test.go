@@ -409,7 +409,7 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 0 != plan_.command_edge_count() {
+	if 0 != plan_.command_edges_ {
 		t.Fatal("expected equal")
 	}
 	if plan_.more_to_do() {
