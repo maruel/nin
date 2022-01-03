@@ -94,12 +94,7 @@ func (e *EvalString) Evaluate(env Env) string {
 }
 
 func (e *EvalString) AddText(text string) {
-	// Add it to the end of an existing RAW token if possible.
-	if len(e.Parsed) != 0 && e.Parsed[len(e.Parsed)-1].second == RAW {
-		e.Parsed[len(e.Parsed)-1].first += text
-	} else {
-		e.Parsed = append(e.Parsed, TokenListItem{text, RAW})
-	}
+	e.Parsed = append(e.Parsed, TokenListItem{text, RAW})
 }
 
 func (e *EvalString) AddSpecial(text string) {
