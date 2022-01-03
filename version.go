@@ -64,7 +64,7 @@ func checkNinjaVersion(version string) error {
 	if binMajor > fileMajor {
 		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", NinjaVersion, version)
 	} else if (binMajor == fileMajor && binMinor < fileMinor) || binMajor < fileMajor {
-		return fmt.Errorf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", NinjaVersion, version)
+		return fmt.Errorf("ninja version (%s) incompatible with build file ninja_required_version version (%s)", NinjaVersion, version)
 	}
 	return nil
 }
