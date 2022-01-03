@@ -50,8 +50,8 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	log1.RecordCommand(b.state.edges[0], 15, 18, 0)
-	log1.RecordCommand(b.state.edges[1], 20, 25, 0)
+	log1.RecordCommand(b.state.Edges[0], 15, 18, 0)
+	log1.RecordCommand(b.state.Edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()
@@ -171,8 +171,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		log1.RecordCommand(b.state.edges[0], 15, 18, 0)
-		log1.RecordCommand(b.state.edges[1], 20, 25, 0)
+		log1.RecordCommand(b.state.Edges[0], 15, 18, 0)
+		log1.RecordCommand(b.state.Edges[1], 20, 25, 0)
 		log1.Close()
 	}
 
@@ -188,8 +188,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		log2.RecordCommand(b.state.edges[0], 15, 18, 0)
-		log2.RecordCommand(b.state.edges[1], 20, 25, 0)
+		log2.RecordCommand(b.state.Edges[0], 15, 18, 0)
+		log2.RecordCommand(b.state.Edges[1], 20, 25, 0)
 		log2.Close()
 
 		if err := os.Truncate(testFilename, int64(size)); err != nil {
@@ -436,7 +436,7 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 
 	log := NewBuildLog()
 	defer log.Close()
-	log.RecordCommand(b.state.edges[0], 21, 22, 0)
+	log.RecordCommand(b.state.Edges[0], 21, 22, 0)
 
 	if 2 != len(log.entries) {
 		t.Fatal("expected equal")
@@ -499,9 +499,9 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		// Record the same edge several times, to trigger recompaction
 		// the next time the log is opened.
 		for i := 0; i < 200; i++ {
-			log1.RecordCommand(b.state.edges[0], 15, int32(18+i), 0)
+			log1.RecordCommand(b.state.Edges[0], 15, int32(18+i), 0)
 		}
-		log1.RecordCommand(b.state.edges[1], 21, 22, 0)
+		log1.RecordCommand(b.state.Edges[1], 21, 22, 0)
 		log1.Close()
 	}
 

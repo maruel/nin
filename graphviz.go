@@ -78,7 +78,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 		}
 		for i, in := range edge.Inputs {
 			orderOnly := ""
-			if edge.isOrderOnly(i) {
+			if edge.IsOrderOnly(i) {
 				orderOnly = " style=dotted"
 			}
 			fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [arrowhead=none%s]\n", in, edge, orderOnly)

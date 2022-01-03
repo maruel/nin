@@ -669,8 +669,8 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	log1.RecordCommand(state.edges[0], 15, 18, 0)
-	log1.RecordCommand(state.edges[1], 20, 25, 0)
+	log1.RecordCommand(state.Edges[0], 15, 18, 0)
+	log1.RecordCommand(state.Edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()
@@ -778,8 +778,8 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	log1.RecordCommand(state.edges[0], 15, 18, 0)
-	log1.RecordCommand(state.edges[1], 20, 25, 0)
+	log1.RecordCommand(state.Edges[0], 15, 18, 0)
+	log1.RecordCommand(state.Edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()

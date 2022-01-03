@@ -71,7 +71,7 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 }
 
 func VerifyGraph(t *testing.T, state *State) {
-	for _, e := range state.edges {
+	for _, e := range state.Edges {
 		if len(e.Outputs) == 0 {
 			t.Fatal("all edges need at least one output")
 		}
@@ -95,7 +95,7 @@ func VerifyGraph(t *testing.T, state *State) {
 
 	// The union of all in- and out-edges of each nodes should be exactly edges.
 	nodeEdgeSet := map[*Edge]struct{}{}
-	for _, n := range state.paths {
+	for _, n := range state.Paths {
 		if n.InEdge != nil {
 			nodeEdgeSet[n.InEdge] = struct{}{}
 		}
@@ -103,7 +103,7 @@ func VerifyGraph(t *testing.T, state *State) {
 			nodeEdgeSet[oe] = struct{}{}
 		}
 	}
-	if len(state.edges) != len(nodeEdgeSet) {
+	if len(state.Edges) != len(nodeEdgeSet) {
 		t.Fatal("the union of all in- and out-edges must match State.edges")
 	}
 }

@@ -1303,9 +1303,9 @@ func TestBuildTest_DepFileMissing(t *testing.T) {
 func TestBuildTest_DepFileOK(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	origEdges := len(b.state.edges)
+	origEdges := len(b.state.Edges)
 	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
-	edge := b.state.edges[len(b.state.edges)-1]
+	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("foo.c", "")
 	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
@@ -1325,7 +1325,7 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 
 	// Expect three new edges: one generating foo.o, and two more from
 	// loading the depfile.
-	if origEdges+3 != len(b.state.edges) {
+	if origEdges+3 != len(b.state.Edges) {
 		t.Fatal("expected equal")
 	}
 	// Expect our edge to now have three inputs: foo.c and two headers.
@@ -1392,7 +1392,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
 	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c || otherfile\n", ManifestParserOptions{})
-	edge := b.state.edges[len(b.state.edges)-1]
+	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("foo.c", "")
 	b.fs.Create("otherfile", "")
@@ -1586,12 +1586,12 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 	t.Skip("TODO")
 	b := NewBuildTest(t)
 	err := ""
-	origEdges := len(b.state.edges)
+	origEdges := len(b.state.Edges)
 	if origEdges != 3 {
 		t.Fatal(origEdges)
 	}
 	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild gen/stuff\\things/foo.o: cc x\\y/z\\foo.c\n", ManifestParserOptions{})
-	edge := b.state.edges[len(b.state.edges)-1]
+	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("x/y/z/foo.c", "")
 	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
@@ -1611,8 +1611,8 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 
 	// Expect three new edges: one generating foo.o, and two more from
 	// loading the depfile.
-	if origEdges+3 != len(b.state.edges) {
-		t.Fatal(len(b.state.edges))
+	if origEdges+3 != len(b.state.Edges) {
+		t.Fatal(len(b.state.Edges))
 	}
 	// Expect our edge to now have three inputs: foo.c and two headers.
 	if 3 != len(edge.Inputs) {
@@ -2016,7 +2016,7 @@ func TestBuildTest_PoolEdgesReadyButNotWanted(t *testing.T) {
 
 	saveState := NewState()
 	b.RebuildTarget("final.stamp", manifest, "", "", &saveState)
-	if saveState.LookupPool("some_pool").currentUse < 0 {
+	if saveState.Pools["some_pool"].currentUse < 0 {
 		t.Fatal("expected greater or equal")
 	}
 }
@@ -3000,7 +3000,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 1 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3009,7 +3009,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 1 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3043,7 +3043,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 2 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3055,7 +3055,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 2 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3092,7 +3092,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 2 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3104,7 +3104,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 2 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3141,7 +3141,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 2 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3153,7 +3153,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 2 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3190,7 +3190,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 2 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3202,7 +3202,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 2 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3241,7 +3241,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 		t.Fatal(diff)
 	}
 
-	out1Node := b.state.LookupNode("out1")
+	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
 	if 2 != out1Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3253,7 +3253,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 		t.Fatal("expected equal")
 	}
 
-	out2Node := b.state.LookupNode("out2")
+	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
 	if 2 != out2Deps.nodeCount {
 		t.Fatal("expected equal")
@@ -3676,7 +3676,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 
-		edge := state.edges[len(state.edges)-1]
+		edge := state.Edges[len(state.Edges)-1]
 
 		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
 		if builder.AddTargetName("fo o.o", &err) == nil {
@@ -3688,7 +3688,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 		// Expect three new edges: one generating fo o.o, and two more from
 		// loading the depfile.
-		if 3 != len(state.edges) {
+		if 3 != len(state.Edges) {
 			t.Fatal("expected equal")
 		}
 		// Expect our edge to now have three inputs: foo.c and two headers.
@@ -3885,7 +3885,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 
-		edge := state.edges[len(state.edges)-1]
+		edge := state.Edges[len(state.Edges)-1]
 
 		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
 		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
@@ -3897,7 +3897,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 		// Expect three new edges: one generating fo o.o, and two more from
 		// loading the depfile.
-		if 3 != len(state.edges) {
+		if 3 != len(state.Edges) {
 			t.Fatal("expected equal")
 		}
 		// Expect our edge to now have three inputs: foo.c and two headers.

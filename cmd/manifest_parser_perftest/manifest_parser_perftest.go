@@ -56,7 +56,7 @@ func LoadManifests(measureCommandEvaluation bool) int {
 	// evaluation in the perftest by default.
 	optimizationGuard := 0
 	if measureCommandEvaluation {
-		for _, e := range state.Edges() {
+		for _, e := range state.Edges {
 			optimizationGuard += len(e.EvaluateCommand(false))
 		}
 	}

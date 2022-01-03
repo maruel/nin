@@ -52,7 +52,7 @@ func (m *ManifestParser) ParseTest(input string, err *string) bool {
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
 	m := &ManifestParser{
 		options: options,
-		env:     state.bindings,
+		env:     state.Bindings,
 	}
 	m.Parser = NewParser(state, fileReader, m)
 	return m
@@ -130,7 +130,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 		return false
 	}
 
-	if m.state.LookupPool(name) != nil {
+	if m.state.Pools[name] != nil {
 		return m.lexer.Error("duplicate pool '"+name+"'", err)
 	}
 
@@ -159,7 +159,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 		return m.lexer.Error("expected 'depth =' line", err)
 	}
 
-	m.state.AddPool(NewPool(name, depth))
+	m.state.Pools[name] = NewPool(name, depth)
 	return true
 }
 
@@ -389,7 +389,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 	poolName := edge.GetBinding("pool")
 	if poolName != "" {
-		pool := m.state.LookupPool(poolName)
+		pool := m.state.Pools[poolName]
 		if pool == nil {
 			return m.lexer.Error("unknown pool name '"+poolName+"'", err)
 		}
@@ -419,7 +419,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	if len(edge.Outputs) == 0 {
 		// All outputs of the edge are already created by other edges. Don't add
 		// this edge.  Do this check before input nodes are connected to the edge.
-		m.state.edges = m.state.edges[:len(m.state.edges)-1]
+		m.state.Edges = m.state.Edges[:len(m.state.Edges)-1]
 		return true
 	}
 	edge.ImplicitOuts = int32(implicitOuts)

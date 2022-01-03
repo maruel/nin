@@ -32,7 +32,7 @@ func TestState_Basic(t *testing.T) {
 
 	rule := NewRule("cat")
 	rule.Bindings["command"] = &command
-	state.bindings.Rules[rule.Name] = rule
+	state.Bindings.Rules[rule.Name] = rule
 
 	edge := state.AddEdge(rule)
 	state.AddIn(edge, "in1", 0)

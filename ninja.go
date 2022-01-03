@@ -103,7 +103,7 @@ func (n *ninjaMain) Close() error {
 type toolFunc func(*ninjaMain, *options, []string) int
 
 func (n *ninjaMain) IsPathDead(s string) bool {
-	nd := n.state.LookupNode(s)
+	nd := n.state.Paths[s]
 	if nd != nil && nd.InEdge != nil {
 		return false
 	}
@@ -182,7 +182,7 @@ func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status Status
 		*err = "empty path"
 		return false
 	}
-	node := n.state.LookupNode(CanonicalizePath(path))
+	node := n.state.Paths[CanonicalizePath(path)]
 	if node == nil {
 		return false
 	}
@@ -229,7 +229,7 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *Node {
 		firstDependent = true
 	}
 
-	node := n.state.LookupNode(path)
+	node := n.state.Paths[path]
 	if node != nil {
 		if firstDependent {
 			if len(node.OutEdges) == 0 {
@@ -325,9 +325,9 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 			fmt.Printf("  input: %s\n", edge.Rule.Name)
 			for in := 0; in < len(edge.Inputs); in++ {
 				label := ""
-				if edge.isImplicit(in) {
+				if edge.IsImplicit(in) {
 					label = "| "
-				} else if edge.isOrderOnly(in) {
+				} else if edge.IsOrderOnly(in) {
 					label = "|| "
 				}
 				fmt.Printf("    %s%s\n", label, edge.Inputs[in].Path)
@@ -392,7 +392,7 @@ func toolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 }
 
 func toolTargetsSourceList(state *State) int {
-	for _, e := range state.edges {
+	for _, e := range state.Edges {
 		for _, inps := range e.Inputs {
 			if inps.InEdge == nil {
 				fmt.Printf("%s\n", inps.Path)
@@ -406,7 +406,7 @@ func toolTargetsListRule(state *State, ruleName string) int {
 	rules := map[string]struct{}{}
 
 	// Gather the outputs.
-	for _, e := range state.edges {
+	for _, e := range state.Edges {
 		if e.Rule.Name == ruleName {
 			for _, outNode := range e.Outputs {
 				rules[outNode.Path] = struct{}{}
@@ -427,7 +427,7 @@ func toolTargetsListRule(state *State, ruleName string) int {
 }
 
 func toolTargetsList(state *State) int {
-	for _, e := range state.edges {
+	for _, e := range state.Edges {
 		for _, outNode := range e.Outputs {
 			fmt.Printf("%s: %s\n", outNode.Path, e.Rule.Name)
 		}
@@ -551,7 +551,7 @@ func toolRules(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	rules := n.state.bindings.Rules
+	rules := n.state.Bindings.Rules
 	names := make([]string, 0, len(rules))
 	for n := range rules {
 		names = append(names, n)
@@ -753,7 +753,7 @@ func toolCompilationDatabase(n *ninjaMain, opts *options, args []string) int {
 		panic(err)
 	}
 	fmt.Printf("[")
-	for _, e := range n.state.edges {
+	for _, e := range n.state.Edges {
 		if len(e.Inputs) == 0 {
 			continue
 		}
@@ -1046,7 +1046,7 @@ func (n *ninjaMain) DumpMetrics() {
 // Ensure the build directory exists, creating it if necessary.
 // @return false on error.
 func (n *ninjaMain) EnsureBuildDirExists() bool {
-	n.buildDir = n.state.bindings.LookupVariable("builddir")
+	n.buildDir = n.state.Bindings.LookupVariable("builddir")
 	if n.buildDir != "" && !n.config.dryRun {
 		// TODO(maruel): We need real error.
 		if !MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {

@@ -58,8 +58,8 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 }
 
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
-	nodeDeps := []*Node{m.state.LookupNode(to)}
-	m.depsLog.RecordDeps(m.state.LookupNode(from), 0, nodeDeps)
+	nodeDeps := []*Node{m.state.Paths[to]}
+	m.depsLog.RecordDeps(m.state.Paths[from], 0, nodeDeps)
 }
 
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
@@ -85,17 +85,17 @@ func (m *MissingDependencyScannerTest) CreateInitialState() {
 }
 
 func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
-	fromNode := m.state.LookupNode(from)
+	fromNode := m.state.Paths[from]
 	fromEdge := fromNode.InEdge
 	m.state.AddIn(fromEdge, to, 0)
 }
 
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
-	flakyNode := m.state.LookupNode(flaky)
+	flakyNode := m.state.Paths[flaky]
 	if 1 != countNodes(m.scanner.nodesMissingDeps, flakyNode) {
 		m.t.Fatal("expected equal")
 	}
-	generatedNode := m.state.LookupNode(generated)
+	generatedNode := m.state.Paths[generated]
 	if 1 != countNodes(m.scanner.generatedNodes, generatedNode) {
 		m.t.Fatal("expected equal")
 	}

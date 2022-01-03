@@ -123,7 +123,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 			return d.lexer.Error("empty path", err)
 		}
 		path = CanonicalizePath(path)
-		node := d.state.LookupNode(path)
+		node := d.state.Paths[path]
 		if node == nil || node.InEdge == nil {
 			return d.lexer.Error("no build statement exists for '"+path+"'", err)
 		}

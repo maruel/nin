@@ -705,7 +705,7 @@ func (b *Builder) Cleanup() {
 // Add a target to the build, scanning dependencies.
 // @return false on error.
 func (b *Builder) AddTargetName(name string, err *string) *Node {
-	node := b.state.LookupNode(name)
+	node := b.state.Paths[name]
 	if node == nil {
 		*err = "unknown target: '" + name + "'"
 		return nil

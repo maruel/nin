@@ -215,13 +215,13 @@ func NewEdge() *Edge {
 func (e *Edge) weight() int {
 	return 1
 }
-func (e *Edge) isImplicit(index int) bool {
-	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.isOrderOnly(index)
+func (e *Edge) IsImplicit(index int) bool {
+	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.IsOrderOnly(index)
 }
-func (e *Edge) isOrderOnly(index int) bool {
+func (e *Edge) IsOrderOnly(index int) bool {
 	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)
 }
-func (e *Edge) isImplicitOut(index int) bool {
+func (e *Edge) IsImplicitOut(index int) bool {
 	return index >= len(e.Outputs)-int(e.ImplicitOuts)
 }
 
@@ -688,7 +688,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			}
 		}
 
-		if !edge.isOrderOnly(j) {
+		if !edge.IsOrderOnly(j) {
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
 			if i.Dirty {

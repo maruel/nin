@@ -130,7 +130,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for _, e := range c.state.edges {
+	for _, e := range c.state.Edges {
 		// Do not try to remove phony targets
 		if e.Rule == PhonyRule {
 			continue
@@ -156,7 +156,7 @@ func (c *Cleaner) CleanDead(entries map[string]*LogEntry) int {
 	c.Reset()
 	c.PrintHeader()
 	for k := range entries {
-		n := c.state.LookupNode(k)
+		n := c.state.Paths[k]
 		// Detecting stale outputs works as follows:
 		//
 		// - If it has no Node, it is not in the build graph, or the deps log
@@ -221,7 +221,7 @@ func (c *Cleaner) CleanTarget(target string) int {
 	}
 
 	c.Reset()
-	node := c.state.LookupNode(target)
+	node := c.state.Paths[target]
 	if node != nil {
 		c.CleanTargetNode(node)
 	} else {
@@ -245,7 +245,7 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 			continue
 		}
 		targetName = CanonicalizePath(targetName)
-		target := c.state.LookupNode(targetName)
+		target := c.state.Paths[targetName]
 		if target != nil {
 			if c.IsVerbose() {
 				fmt.Printf("Target %s\n", targetName)
@@ -265,7 +265,7 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 		panic("oops")
 	}
 
-	for _, e := range c.state.edges {
+	for _, e := range c.state.Edges {
 		if e.Rule.Name == rule.Name {
 			for _, outNode := range e.Outputs {
 				c.Remove(outNode.Path)
@@ -298,7 +298,7 @@ func (c *Cleaner) CleanRuleName(rule string) int {
 	}
 
 	c.Reset()
-	r := c.state.bindings.LookupRule(rule)
+	r := c.state.Bindings.LookupRule(rule)
 	if r != nil {
 		c.CleanRule(r)
 	} else {
@@ -320,7 +320,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 	c.PrintHeader()
 	c.LoadDyndeps()
 	for _, ruleName := range rules {
-		rule := c.state.bindings.LookupRule(ruleName)
+		rule := c.state.Bindings.LookupRule(ruleName)
 		if rule != nil {
 			if c.IsVerbose() {
 				fmt.Printf("Rule %s\n", ruleName)
@@ -345,7 +345,7 @@ func (c *Cleaner) Reset() {
 // Load dependencies from dyndep bindings.
 func (c *Cleaner) LoadDyndeps() {
 	// Load dyndep files that exist, before they are cleaned.
-	for _, e := range c.state.edges {
+	for _, e := range c.state.Edges {
 		if e.Dyndep != nil {
 			// Capture and ignore errors loading the dyndep file.
 			// We clean as much of the graph as we know.

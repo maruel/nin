@@ -441,10 +441,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The .h files pulled in via deps should no longer have ids either.
-		if -1 != state.LookupNode("foo.h").ID {
+		if -1 != state.Paths["foo.h"].ID {
 			t.Fatal("expected equal")
 		}
-		if -1 != state.LookupNode("baz.h").ID {
+		if -1 != state.Paths["baz.h"].ID {
 			t.Fatal("expected equal")
 		}
 

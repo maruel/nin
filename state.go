@@ -124,78 +124,61 @@ var (
 // Global state (file status) for a single run.
 type State struct {
 	// Mapping of path -> Node.
-	paths Paths
+	Paths map[string]*Node
 
-	// All the pools used in the graph.
-	pools map[string]*Pool
+	// All the Pools used in the graph.
+	Pools map[string]*Pool
 
-	// All the edges of the graph.
-	edges []*Edge
+	// All the Edges of the graph.
+	Edges []*Edge
 
-	bindings *BindingEnv
-	defaults []*Node
+	Bindings *BindingEnv
+	Defaults []*Node
 }
 
 //type Paths ExternalStringHashMap<Node*>::Type
-type Paths map[string]*Node
 
+// NewState returns an initialized State.
+//
+// It is preloaded with PhonyRule, and DefaultPool and ConsolePool.
 func NewState() State {
 	s := State{
-		paths:    Paths{},
-		pools:    map[string]*Pool{},
-		bindings: NewBindingEnv(nil),
+		Paths:    map[string]*Node{},
+		Pools:    map[string]*Pool{},
+		Bindings: NewBindingEnv(nil),
 	}
-	s.bindings.Rules[PhonyRule.Name] = PhonyRule
-	s.AddPool(DefaultPool)
-	s.AddPool(ConsolePool)
+	s.Bindings.Rules[PhonyRule.Name] = PhonyRule
+	s.Pools[DefaultPool.Name] = DefaultPool
+	s.Pools[ConsolePool.Name] = ConsolePool
 	return s
 }
 
-func (s *State) AddPool(pool *Pool) {
-	if s.LookupPool(pool.Name) != nil {
-		panic(pool.Name)
-	}
-	s.pools[pool.Name] = pool
-}
-
-func (s *State) LookupPool(poolName string) *Pool {
-	return s.pools[poolName]
-}
-
+// AddEdge creates a new edge with this rule on the default pool.
 func (s *State) AddEdge(rule *Rule) *Edge {
 	edge := NewEdge()
 	edge.Rule = rule
 	edge.Pool = DefaultPool
-	edge.Env = s.bindings
-	edge.ID = int32(len(s.edges))
-	s.edges = append(s.edges, edge)
+	edge.Env = s.Bindings
+	edge.ID = int32(len(s.Edges))
+	s.Edges = append(s.Edges, edge)
 	return edge
 }
 
-func (s *State) Edges() []*Edge {
-	// Eventually the member will be renamed Edges.
-	return s.edges
-}
-
 func (s *State) GetNode(path string, slashBits uint64) *Node {
-	node := s.LookupNode(path)
+	node := s.Paths[path]
 	if node != nil {
 		return node
 	}
 	node = NewNode(path, slashBits)
-	s.paths[node.Path] = node
+	s.Paths[node.Path] = node
 	return node
-}
-
-func (s *State) LookupNode(path string) *Node {
-	return s.paths[path]
 }
 
 func (s *State) SpellcheckNode(path string) *Node {
 	const maxValidEditDistance = 3
 	minDistance := maxValidEditDistance + 1
 	var result *Node
-	for p, node := range s.paths {
+	for p, node := range s.Paths {
 		distance := EditDistance(p, path, true, maxValidEditDistance)
 		if distance < minDistance && node != nil {
 			minDistance = distance
@@ -228,12 +211,12 @@ func (s *State) AddValidation(edge *Edge, path string, slashBits uint64) {
 }
 
 func (s *State) AddDefault(path string, err *string) bool {
-	node := s.LookupNode(path)
+	node := s.Paths[path]
 	if node == nil {
 		*err = "unknown target '" + path + "'"
 		return false
 	}
-	s.defaults = append(s.defaults, node)
+	s.Defaults = append(s.Defaults, node)
 	return true
 }
 
@@ -242,7 +225,7 @@ func (s *State) AddDefault(path string, err *string) bool {
 func (s *State) RootNodes(err *string) []*Node {
 	var rootNodes []*Node
 	// Search for nodes with no output.
-	for _, e := range s.edges {
+	for _, e := range s.Edges {
 		for _, out := range e.Outputs {
 			if len(out.OutEdges) == 0 {
 				rootNodes = append(rootNodes, out)
@@ -250,7 +233,7 @@ func (s *State) RootNodes(err *string) []*Node {
 		}
 	}
 
-	if len(s.edges) != 0 && len(rootNodes) == 0 {
+	if len(s.Edges) != 0 && len(rootNodes) == 0 {
 		*err = "could not determine root nodes of build graph"
 	}
 
@@ -258,21 +241,21 @@ func (s *State) RootNodes(err *string) []*Node {
 }
 
 func (s *State) DefaultNodes(err *string) []*Node {
-	if len(s.defaults) == 0 {
+	if len(s.Defaults) == 0 {
 		return s.RootNodes(err)
 	}
-	return s.defaults
+	return s.Defaults
 }
 
 // Reset state. Keeps all nodes and edges, but restores them to the
 // state where we haven't yet examined the disk for dirty state.
 func (s *State) Reset() {
-	for _, n := range s.paths {
+	for _, n := range s.Paths {
 		n.MTime = -1
 		n.Exists = ExistenceStatusUnknown
 		n.Dirty = false
 	}
-	for _, e := range s.edges {
+	for _, e := range s.Edges {
 		e.OutputsReady = false
 		e.DepsLoaded = false
 		e.Mark = VisitNone
@@ -281,13 +264,13 @@ func (s *State) Reset() {
 
 // Dump the nodes and Pools (useful for debugging).
 func (s *State) Dump() {
-	names := make([]string, 0, len(s.paths))
-	for n := range s.paths {
+	names := make([]string, 0, len(s.Paths))
+	for n := range s.Paths {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		node := s.paths[name]
+		node := s.Paths[name]
 		s := "unknown"
 		if node.Exists != ExistenceStatusUnknown {
 			s = "clean"
@@ -297,9 +280,9 @@ func (s *State) Dump() {
 		}
 		fmt.Printf("%s %s [id:%d]\n", node.Path, s, node.ID)
 	}
-	if len(s.pools) != 0 {
+	if len(s.Pools) != 0 {
 		fmt.Printf("resource_pools:\n")
-		for _, p := range s.pools {
+		for _, p := range s.Pools {
 			if p.Name != "" {
 				p.Dump()
 			}

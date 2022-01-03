@@ -409,7 +409,7 @@ func TestDyndepParserTest_NoImplicit(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -431,7 +431,7 @@ func TestDyndepParserTest_EmptyImplicit(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -453,7 +453,7 @@ func TestDyndepParserTest_ImplicitIn(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -478,7 +478,7 @@ func TestDyndepParserTest_ImplicitIns(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -506,7 +506,7 @@ func TestDyndepParserTest_ImplicitOut(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -531,7 +531,7 @@ func TestDyndepParserTest_ImplicitOuts(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -559,7 +559,7 @@ func TestDyndepParserTest_ImplicitInsAndOuts(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -593,7 +593,7 @@ func TestDyndepParserTest_Restat(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -615,7 +615,7 @@ func TestDyndepParserTest_OtherOutput(t *testing.T) {
 	if 1 != len(d.dyndepFile) {
 		t.Fatal("expected equal")
 	}
-	i := d.dyndepFile[d.state.edges[0]]
+	i := d.dyndepFile[d.state.Edges[0]]
 	if i == nil {
 		t.Fatal("expected different")
 	}
@@ -633,16 +633,16 @@ func TestDyndepParserTest_OtherOutput(t *testing.T) {
 func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 	d := NewDyndepParserTest(t)
 	assertParse(t, "build out2: touch\n", &d.state)
-	if 2 != len(d.state.edges) {
+	if 2 != len(d.state.Edges) {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(d.state.edges[1].Outputs) {
+	if 1 != len(d.state.Edges[1].Outputs) {
 		t.Fatal("expected equal")
 	}
-	if "out2" != d.state.edges[1].Outputs[0].Path {
+	if "out2" != d.state.Edges[1].Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(d.state.edges[0].Inputs) {
+	if 0 != len(d.state.Edges[0].Inputs) {
 		t.Fatal("expected equal")
 	}
 
@@ -652,7 +652,7 @@ func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	{
-		i := d.dyndepFile[d.state.edges[0]]
+		i := d.dyndepFile[d.state.Edges[0]]
 		if i == nil {
 			t.Fatal("expected different")
 		}
@@ -667,7 +667,7 @@ func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 		}
 	}
 	{
-		i := d.dyndepFile[d.state.edges[1]]
+		i := d.dyndepFile[d.state.Edges[1]]
 		if i == nil {
 			t.Fatal("expected different")
 		}
