@@ -151,7 +151,7 @@ func NewState() State {
 		pools_:    map[string]*Pool{},
 		bindings_: NewBindingEnv(nil),
 	}
-	s.bindings_.AddRule(PhonyRule)
+	s.bindings_.Rules[PhonyRule.Name] = PhonyRule
 	s.AddPool(DefaultPool)
 	s.AddPool(ConsolePool)
 	return s

@@ -115,7 +115,7 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 	// We know the edge already has its own binding
 	// scope because it has a "dyndep" binding.
 	if dyndeps.restat_ {
-		edge.Env.AddBinding("restat", "1")
+		edge.Env.Bindings["restat"] = "1"
 	}
 
 	// Add the dyndep-discovered outputs to the edge.

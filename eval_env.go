@@ -181,84 +181,64 @@ func (r *Rule) String() string {
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
 type BindingEnv struct {
-	bindings_ map[string]string
-	rules_    map[string]*Rule
-	parent_   *BindingEnv
+	Bindings map[string]string
+	Rules    map[string]*Rule
+	Parent   *BindingEnv
 }
 
 func NewBindingEnv(parent *BindingEnv) *BindingEnv {
 	return &BindingEnv{
-		bindings_: map[string]string{},
-		rules_:    map[string]*Rule{},
-		parent_:   parent,
+		Bindings: map[string]string{},
+		Rules:    map[string]*Rule{},
+		Parent:   parent,
 	}
 }
 
 func (b *BindingEnv) String() string {
 	out := "BindingEnv{"
-	if b.parent_ != nil {
+	if b.Parent != nil {
 		out += "(has parent)"
 	}
 	out += "\n  Bindings:"
-	names := make([]string, 0, len(b.bindings_))
-	for n := range b.bindings_ {
+	names := make([]string, 0, len(b.Bindings))
+	for n := range b.Bindings {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	for _, n := range names {
-		out += "\n    " + n + ":" + b.bindings_[n]
+		out += "\n    " + n + ":" + b.Bindings[n]
 	}
 	out += "\n  Rules:"
-	names = make([]string, 0, len(b.rules_))
-	for n := range b.rules_ {
+	names = make([]string, 0, len(b.Rules))
+	for n := range b.Rules {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	for _, n := range names {
-		out += "\n    " + n + ":" + b.rules_[n].String()
+		out += "\n    " + n + ":" + b.Rules[n].String()
 	}
 	out += "\n}"
 	return out
 }
 
 func (b *BindingEnv) LookupVariable(v string) string {
-	if i, ok := b.bindings_[v]; ok {
+	if i, ok := b.Bindings[v]; ok {
 		return i
 	}
-	if b.parent_ != nil {
-		return b.parent_.LookupVariable(v)
+	if b.Parent != nil {
+		return b.Parent.LookupVariable(v)
 	}
 	return ""
 }
 
-func (b *BindingEnv) AddBinding(key string, val string) {
-	b.bindings_[key] = val
-}
-
-func (b *BindingEnv) AddRule(rule *Rule) {
-	if b.LookupRuleCurrentScope(rule.Name) != nil {
-		panic("oops")
-	}
-	b.rules_[rule.Name] = rule
-}
-
-func (b *BindingEnv) LookupRuleCurrentScope(ruleName string) *Rule {
-	return b.rules_[ruleName]
-}
-
 func (b *BindingEnv) LookupRule(ruleName string) *Rule {
-	i := b.rules_[ruleName]
-	if i != nil {
+	if i := b.Rules[ruleName]; i != nil {
 		return i
 	}
-	if b.parent_ != nil {
-		return b.parent_.LookupRule(ruleName)
+	if b.Parent != nil {
+		return b.Parent.LookupRule(ruleName)
 	}
 	return nil
-}
-
-func (b *BindingEnv) GetRules() map[string]*Rule {
-	return b.rules_
 }
 
 // This is tricky.  Edges want lookup scope to go in this order:
@@ -267,17 +247,14 @@ func (b *BindingEnv) GetRules() map[string]*Rule {
 // 3) value set on enclosing scope of edge (edge_->env_->parent_)
 // This function takes as parameters the necessary info to do (2).
 func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) string {
-	if i, ok := b.bindings_[v]; ok {
+	if i, ok := b.Bindings[v]; ok {
 		return i
 	}
-
 	if eval != nil {
 		return eval.Evaluate(env)
 	}
-
-	if b.parent_ != nil {
-		return b.parent_.LookupVariable(v)
+	if b.Parent != nil {
+		return b.Parent.LookupVariable(v)
 	}
-
 	return ""
 }

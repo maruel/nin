@@ -553,7 +553,7 @@ func toolRules(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	rules := n.state_.bindings_.GetRules()
+	rules := n.state_.bindings_.Rules
 	names := make([]string, 0, len(rules))
 	for n := range rules {
 		names = append(names, n)

@@ -57,10 +57,10 @@ func TestParserTest_Rules(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\n\nrule date\n  command = date > $out\n\nbuild result: cat in_1.cc in-2.O\n")
 
-	if 3 != len(p.state.bindings_.GetRules()) {
+	if 3 != len(p.state.bindings_.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.GetRules()["cat"]
+	rule := p.state.bindings_.Rules["cat"]
 	if got := rule.Name; got != "cat" {
 		t.Fatal(got)
 	}
@@ -82,10 +82,10 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("  #indented comment\nrule cat\n  command = cat $in > $out\n  #generator = 1\n  restat = 1 # comment\n  #comment\nbuild result: cat in_1.cc in-2.O\n  #comment\n")
 
-	if 2 != len(p.state.bindings_.GetRules()) {
+	if 2 != len(p.state.bindings_.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.GetRules()["cat"]
+	rule := p.state.bindings_.Rules["cat"]
 	if "cat" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -113,10 +113,10 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\n\nbuild out: cat_rsp in\n  rspfile=out.rsp\n")
 
-	if 2 != len(p.state.bindings_.GetRules()) {
+	if 2 != len(p.state.bindings_.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.GetRules()["cat_rsp"]
+	rule := p.state.bindings_.Rules["cat_rsp"]
 	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -138,10 +138,10 @@ func TestParserTest_InNewline(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat_rsp\n  command = cat $in_newline > $out\n\nbuild out: cat_rsp in in2\n  rspfile=out.rsp\n")
 
-	if 2 != len(p.state.bindings_.GetRules()) {
+	if 2 != len(p.state.bindings_.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.GetRules()["cat_rsp"]
+	rule := p.state.bindings_.Rules["cat_rsp"]
 	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -198,10 +198,10 @@ func TestParserTest_Continuation(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule link\n  command = foo bar $\n    baz\n\nbuild a: link c $\n d e f\n")
 
-	if 2 != len(p.state.bindings_.GetRules()) {
+	if 2 != len(p.state.bindings_.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.GetRules()["link"]
+	rule := p.state.bindings_.Rules["link"]
 	if "link" != rule.Name {
 		t.Fatal("expected equal")
 	}

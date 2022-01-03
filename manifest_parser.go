@@ -95,7 +95,7 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 				if name == "ninja_required_version" {
 					CheckNinjaVersion(value)
 				}
-				m.env_.AddBinding(name, value)
+				m.env_.Bindings[name] = value
 			}
 		case INCLUDE:
 			if !m.ParseFileInclude(false, err) {
@@ -170,7 +170,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		return false
 	}
 
-	if m.env_.LookupRuleCurrentScope(name) != nil {
+	if m.env_.Rules[name] != nil {
 		return m.lexer_.Error("duplicate rule '"+name+"'", err)
 	}
 
@@ -202,7 +202,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 	if !ok || len(b.Parsed) == 0 {
 		return m.lexer_.Error("expected 'command =' line", err)
 	}
-	m.env_.AddRule(rule)
+	m.env_.Rules[rule.Name] = rule
 	return true
 }
 
@@ -377,7 +377,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			return false
 		}
 
-		env.AddBinding(key, val.Evaluate(m.env_))
+		env.Bindings[key] = val.Evaluate(m.env_)
 		hasIndentToken = m.lexer_.PeekToken(INDENT)
 	}
 
