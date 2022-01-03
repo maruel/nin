@@ -194,12 +194,12 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 
 	b1, ok1 := rule.bindings_["rspfile"]
 	b2, ok2 := rule.bindings_["rspfile_content"]
-	if ok1 != ok2 || (ok1 && b1.empty() != b2.empty()) {
+	if ok1 != ok2 || (ok1 && (len(b1.Parsed) == 0) != (len(b2.Parsed) == 0)) {
 		return m.lexer_.Error("rspfile and rspfile_content need to be both specified", err)
 	}
 
 	b, ok := rule.bindings_["command"]
-	if !ok || b.empty() {
+	if !ok || len(b.Parsed) == 0 {
 		return m.lexer_.Error("expected 'command =' line", err)
 	}
 	m.env_.AddRule(rule)
@@ -224,7 +224,7 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 	if !m.lexer_.ReadPath(&eval, err) {
 		return false
 	}
-	if eval.empty() {
+	if len(eval.Parsed) == 0 {
 		return m.lexer_.Error("expected target name", err)
 	}
 
@@ -238,11 +238,11 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 			return m.lexer_.Error(default_err, err)
 		}
 
-		eval.Clear()
+		eval.Parsed = nil
 		if !m.lexer_.ReadPath(&eval, err) {
 			return false
 		}
-		if eval.empty() {
+		if len(eval.Parsed) == 0 {
 			break
 		}
 	}
@@ -258,10 +258,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if !m.lexer_.ReadPath(&out, err) {
 			return false
 		}
-		for !out.empty() {
+		for len(out.Parsed) != 0 {
 			outs = append(outs, out)
 
-			out.Clear()
+			out.Parsed = nil
 			if !m.lexer_.ReadPath(&out, err) {
 				return false
 			}
@@ -276,7 +276,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if !m.lexer_.ReadPath(&out, err) {
 				return false
 			}
-			if out.empty() {
+			if len(out.Parsed) == 0 {
 				break
 			}
 			outs = append(outs, out)
@@ -308,7 +308,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		if !m.lexer_.ReadPath(&in, err) {
 			return false
 		}
-		if in.empty() {
+		if len(in.Parsed) == 0 {
 			break
 		}
 		ins = append(ins, in)
@@ -322,7 +322,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if !m.lexer_.ReadPath(&in, err) {
 				return false
 			}
-			if in.empty() {
+			if len(in.Parsed) == 0 {
 				break
 			}
 			ins = append(ins, in)
@@ -338,7 +338,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if !m.lexer_.ReadPath(&in, err) {
 				return false
 			}
-			if in.empty() {
+			if len(in.Parsed) == 0 {
 				break
 			}
 			ins = append(ins, in)
@@ -353,7 +353,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if !m.lexer_.ReadPath(&validation, err) {
 				return false
 			}
-			if validation.empty() {
+			if len(validation.Parsed) == 0 {
 				break
 			}
 			validations = append(validations, validation)

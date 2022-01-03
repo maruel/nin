@@ -114,7 +114,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if !d.lexer_.ReadPath(&out0, err) {
 			return false
 		}
-		if out0.empty() {
+		if len(out0.Parsed) == 0 {
 			return d.lexer_.Error("expected path", err)
 		}
 
@@ -142,7 +142,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if !d.lexer_.ReadPath(&out, err) {
 			return false
 		}
-		if !out.empty() {
+		if len(out.Parsed) != 0 {
 			return d.lexer_.Error("explicit outputs not supported", err)
 		}
 	}
@@ -155,7 +155,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 			if !d.lexer_.ReadPath(&out, err) {
 				return false // TODO(maruel): Bug upstream.
 			}
-			if out.empty() {
+			if len(out.Parsed) == 0 {
 				break
 			}
 			outs = append(outs, out)
@@ -177,7 +177,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		if !d.lexer_.ReadPath(&in, err) {
 			return false
 		}
-		if !in.empty() {
+		if len(in.Parsed) != 0 {
 			return d.lexer_.Error("explicit inputs not supported", err)
 		}
 	}
@@ -190,7 +190,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 			if !d.lexer_.ReadPath(&in, err) {
 				return false // TODO(maruel): Bug upstream.
 			}
-			if in.empty() {
+			if len(in.Parsed) == 0 {
 				break
 			}
 			ins = append(ins, in)

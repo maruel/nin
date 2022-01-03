@@ -51,14 +51,12 @@ type TokenList []TokenListItem
 // A tokenized string that contains variable references.
 // Can be evaluated relative to an Env.
 type EvalString struct {
-	parsed_ TokenList
+	Parsed TokenList
 }
 
-func (e *EvalString) Clear()      { e.parsed_ = nil }
-func (e *EvalString) empty() bool { return len(e.parsed_) == 0 }
 func (e *EvalString) String() string {
 	out := ""
-	for i, t := range e.parsed_ {
+	for i, t := range e.Parsed {
 		if i != 0 {
 			out += ","
 		}
@@ -67,7 +65,95 @@ func (e *EvalString) String() string {
 	return out
 }
 
+// @return The evaluated string with variable expanded using value found in
+//         environment @a env.
+func (e *EvalString) Evaluate(env Env) string {
+	// TODO(maruel): We could remove this allocation most of the time by
+	// defaulting to a 16 items array on the stack.
+	s := make([]string, len(e.Parsed))
+	total := 0
+	for i, p := range e.Parsed {
+		if p.second == RAW {
+			x := p.first
+			s[i] = x
+			total += len(x)
+		} else {
+			x := env.LookupVariable(p.first)
+			s[i] = x
+			total += len(x)
+		}
+	}
+	out := make([]byte, total)
+	offset := 0
+	for _, x := range s {
+		l := len(x)
+		copy(out[offset:], x)
+		offset += l
+	}
+	return unsafeString(out)
+}
+
+func (e *EvalString) AddText(text string) {
+	// Add it to the end of an existing RAW token if possible.
+	if len(e.Parsed) != 0 && e.Parsed[len(e.Parsed)-1].second == RAW {
+		e.Parsed[len(e.Parsed)-1].first += text
+	} else {
+		e.Parsed = append(e.Parsed, TokenListItem{text, RAW})
+	}
+}
+
+func (e *EvalString) AddSpecial(text string) {
+	e.Parsed = append(e.Parsed, TokenListItem{text, SPECIAL})
+}
+
+// Construct a human-readable representation of the parsed state,
+// for use in tests.
+func (e *EvalString) Serialize() string {
+	result := ""
+	for _, i := range e.Parsed {
+		result += "["
+		if i.second == SPECIAL {
+			result += "$"
+		}
+		result += i.first
+		result += "]"
+	}
+	return result
+}
+
+// @return The string with variables not expanded.
+func (e *EvalString) Unparse() string {
+	result := ""
+	for _, i := range e.Parsed {
+		special := (i.second == SPECIAL)
+		if special {
+			result += "${"
+		}
+		result += i.first
+		if special {
+			result += "}"
+		}
+	}
+	return result
+}
+
+//
+
 type Bindings map[string]*EvalString
+
+func IsReservedBinding(v string) bool {
+	return v == "command" ||
+		v == "depfile" ||
+		v == "dyndep" ||
+		v == "description" ||
+		v == "deps" ||
+		v == "generator" ||
+		v == "pool" ||
+		v == "restat" ||
+		v == "rspfile" ||
+		v == "rspfile_content" ||
+		v == "msvc_deps_prefix"
+}
 
 // An invocable build command and associated metadata (description, etc.).
 type Rule struct {
@@ -102,6 +188,17 @@ func (r *Rule) String() string {
 	out += "}"
 	return out
 }
+
+func (r *Rule) AddBinding(key string, val *EvalString) {
+	r.bindings_[key] = val
+}
+
+func (r *Rule) GetBinding(key string) *EvalString {
+	//log.Printf("Rule.GetBinding(%s): %#v", key, r.bindings_[key])
+	return r.bindings_[key]
+}
+
+//
 
 // An Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
@@ -182,29 +279,6 @@ func (b *BindingEnv) LookupRule(rule_name string) *Rule {
 	return nil
 }
 
-func (r *Rule) AddBinding(key string, val *EvalString) {
-	r.bindings_[key] = val
-}
-
-func (r *Rule) GetBinding(key string) *EvalString {
-	//log.Printf("Rule.GetBinding(%s): %#v", key, r.bindings_[key])
-	return r.bindings_[key]
-}
-
-func IsReservedBinding(v string) bool {
-	return v == "command" ||
-		v == "depfile" ||
-		v == "dyndep" ||
-		v == "description" ||
-		v == "deps" ||
-		v == "generator" ||
-		v == "pool" ||
-		v == "restat" ||
-		v == "rspfile" ||
-		v == "rspfile_content" ||
-		v == "msvc_deps_prefix"
-}
-
 func (b *BindingEnv) GetRules() map[string]*Rule {
 	return b.rules_
 }
@@ -228,76 +302,4 @@ func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) str
 	}
 
 	return ""
-}
-
-// @return The evaluated string with variable expanded using value found in
-//         environment @a env.
-func (e *EvalString) Evaluate(env Env) string {
-	// TODO(maruel): We could remove this allocation most of the time by
-	// defaulting to a 16 items array on the stack.
-	s := make([]string, len(e.parsed_))
-	total := 0
-	for i, p := range e.parsed_ {
-		if p.second == RAW {
-			x := p.first
-			s[i] = x
-			total += len(x)
-		} else {
-			x := env.LookupVariable(p.first)
-			s[i] = x
-			total += len(x)
-		}
-	}
-	out := make([]byte, total)
-	offset := 0
-	for _, x := range s {
-		l := len(x)
-		copy(out[offset:], x)
-		offset += l
-	}
-	return unsafeString(out)
-}
-
-func (e *EvalString) AddText(text string) {
-	// Add it to the end of an existing RAW token if possible.
-	if len(e.parsed_) != 0 && e.parsed_[len(e.parsed_)-1].second == RAW {
-		e.parsed_[len(e.parsed_)-1].first += text
-	} else {
-		e.parsed_ = append(e.parsed_, TokenListItem{text, RAW})
-	}
-}
-
-func (e *EvalString) AddSpecial(text string) {
-	e.parsed_ = append(e.parsed_, TokenListItem{text, SPECIAL})
-}
-
-// Construct a human-readable representation of the parsed state,
-// for use in tests.
-func (e *EvalString) Serialize() string {
-	result := ""
-	for _, i := range e.parsed_ {
-		result += "["
-		if i.second == SPECIAL {
-			result += "$"
-		}
-		result += i.first
-		result += "]"
-	}
-	return result
-}
-
-// @return The string with variables not expanded.
-func (e *EvalString) Unparse() string {
-	result := ""
-	for _, i := range e.parsed_ {
-		special := (i.second == SPECIAL)
-		if special {
-			result += "${"
-		}
-		result += i.first
-		if special {
-			result += "}"
-		}
-	}
-	return result
 }
