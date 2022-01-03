@@ -214,9 +214,8 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
-		fileSize_2 := getFileSize(t, testFilename)
-		if fileSize != fileSize_2 {
-			t.Fatal("expected equal")
+		if fileSize2 := getFileSize(t, testFilename); fileSize != fileSize2 {
+			t.Fatal(fileSize2)
 		}
 	}
 }
@@ -259,7 +258,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	}
 
 	// Now reload the file, and add slightly different deps.
-	fileSize_2 := 0
+	fileSize2 := 0
 	{
 		state := NewState()
 		assertParse(t, manifest, &state)
@@ -281,16 +280,16 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
-		fileSize_2 = getFileSize(t, testFilename)
+		fileSize2 = getFileSize(t, testFilename)
 		// The file should grow to record the new deps.
-		if fileSize_2 <= fileSize {
+		if fileSize2 <= fileSize {
 			t.Fatal("expected greater")
 		}
 	}
 
 	// Now reload the file, verify the new deps have replaced the old, then
 	// recompact.
-	fileSize_3 := 0
+	fileSize3 := 0
 	{
 		state := NewState()
 		assertParse(t, manifest, &state)
@@ -376,8 +375,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The file should have shrunk a bit for the smaller deps.
-		fileSize_3 = getFileSize(t, testFilename)
-		if fileSize_3 >= fileSize_2 {
+		fileSize3 = getFileSize(t, testFilename)
+		if fileSize3 >= fileSize2 {
 			t.Fatal("expected less or equal")
 		}
 	}
@@ -450,9 +449,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The file should have shrunk more.
-		fileSize_4 := getFileSize(t, testFilename)
-		if fileSize_4 >= fileSize_3 {
-			t.Fatal("expected less or equal")
+		if fileSize4 := getFileSize(t, testFilename); fileSize4 >= fileSize3 {
+			t.Fatal(fileSize4)
 		}
 	}
 }
