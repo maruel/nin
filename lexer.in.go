@@ -204,7 +204,7 @@ func (l *Lexer) ReadToken() Token {
 				re2c:define:YYSKIP = "p++";
 		    re2c:define:YYMARKER = q;
 		    re2c:yyfill:enable = 0;
-				re2c:flags:nested-ifs = 1;
+				re2c:flags:nested-ifs = 0;
 		    re2c:define:YYPEEK = "l.input_[p]";
 				re2c:define:YYBACKUP = "q = p";
 				re2c:define:YYRESTORE = "p = q";

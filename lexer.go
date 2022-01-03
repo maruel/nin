@@ -201,107 +201,155 @@ func (l *Lexer) ReadToken() Token {
 			var yych byte
 			yyaccept := 0
 			yych = l.input_[p]
-			if yych <= 'Z' {
-				if yych <= '#' {
-					if yych <= '\f' {
-						if yych <= 0x00 {
-							goto yy2
-						}
-						if yych == '\n' {
-							goto yy6
-						}
-						goto yy4
-					} else {
-						if yych <= 0x1F {
-							if yych <= '\r' {
-								goto yy8
-							}
-							goto yy4
-						} else {
-							if yych <= ' ' {
-								goto yy9
-							}
-							if yych <= '"' {
-								goto yy4
-							}
-							goto yy12
-						}
-					}
-				} else {
-					if yych <= '9' {
-						if yych <= ',' {
-							goto yy4
-						}
-						if yych == '/' {
-							goto yy4
-						}
-						goto yy13
-					} else {
-						if yych <= '<' {
-							if yych <= ':' {
-								goto yy16
-							}
-							goto yy4
-						} else {
-							if yych <= '=' {
-								goto yy18
-							}
-							if yych <= '@' {
-								goto yy4
-							}
-							goto yy13
-						}
-					}
-				}
-			} else {
-				if yych <= 'i' {
-					if yych <= 'a' {
-						if yych == '_' {
-							goto yy13
-						}
-						if yych <= '`' {
-							goto yy4
-						}
-						goto yy13
-					} else {
-						if yych <= 'c' {
-							if yych <= 'b' {
-								goto yy20
-							}
-							goto yy13
-						} else {
-							if yych <= 'd' {
-								goto yy21
-							}
-							if yych <= 'h' {
-								goto yy13
-							}
-							goto yy22
-						}
-					}
-				} else {
-					if yych <= 'r' {
-						if yych == 'p' {
-							goto yy23
-						}
-						if yych <= 'q' {
-							goto yy13
-						}
-						goto yy24
-					} else {
-						if yych <= 'z' {
-							if yych <= 's' {
-								goto yy25
-							}
-							goto yy13
-						} else {
-							if yych == '|' {
-								goto yy26
-							}
-							goto yy4
-						}
-					}
-				}
+			switch yych {
+			case 0x00:
+				goto yy2
+			case '\n':
+				goto yy6
+			case '\r':
+				goto yy8
+			case ' ':
+				goto yy9
+			case '#':
+				goto yy12
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			case ':':
+				goto yy16
+			case '=':
+				goto yy18
+			case 'b':
+				goto yy20
+			case 'd':
+				goto yy21
+			case 'i':
+				goto yy22
+			case 'p':
+				goto yy23
+			case 'r':
+				goto yy24
+			case 's':
+				goto yy25
+			case '|':
+				goto yy26
+			default:
+				goto yy4
 			}
 		yy2:
 			p++
@@ -325,32 +373,28 @@ func (l *Lexer) ReadToken() Token {
 		yy8:
 			p++
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy28
+			default:
+				goto yy5
 			}
-			goto yy5
 		yy9:
 			yyaccept = 0
 			p++
 			q = p
 			yych = l.input_[p]
-			if yych <= '\r' {
-				if yych == '\n' {
-					goto yy6
-				}
-				if yych >= '\r' {
-					goto yy30
-				}
-			} else {
-				if yych <= ' ' {
-					if yych >= ' ' {
-						goto yy9
-					}
-				} else {
-					if yych == '#' {
-						goto yy32
-					}
-				}
+			switch yych {
+			case '\n':
+				goto yy6
+			case '\r':
+				goto yy30
+			case ' ':
+				goto yy9
+			case '#':
+				goto yy32
+			default:
+				goto yy11
 			}
 		yy11:
 			{
@@ -370,35 +414,139 @@ func (l *Lexer) ReadToken() Token {
 			p++
 			yych = l.input_[p]
 		yy14:
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy15
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy15
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy15
 			}
 		yy15:
 			{
@@ -420,54 +568,69 @@ func (l *Lexer) ReadToken() Token {
 		yy20:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
+			switch yych {
+			case 'u':
 				goto yy36
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy21:
 			p++
 			yych = l.input_[p]
-			if yych == 'e' {
+			switch yych {
+			case 'e':
 				goto yy37
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy22:
 			p++
 			yych = l.input_[p]
-			if yych == 'n' {
+			switch yych {
+			case 'n':
 				goto yy38
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy23:
 			p++
 			yych = l.input_[p]
-			if yych == 'o' {
+			switch yych {
+			case 'o':
 				goto yy39
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy24:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
+			switch yych {
+			case 'u':
 				goto yy40
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy25:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
+			switch yych {
+			case 'u':
 				goto yy41
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy26:
 			p++
 			yych = l.input_[p]
-			if yych == '@' {
+			switch yych {
+			case '@':
 				goto yy42
-			}
-			if yych == '|' {
+			case '|':
 				goto yy44
+			default:
+				goto yy27
 			}
+		yy27:
 			{
 				token = PIPE
 				break
@@ -481,8 +644,11 @@ func (l *Lexer) ReadToken() Token {
 		yy30:
 			p++
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy28
+			default:
+				goto yy31
 			}
 		yy31:
 			p = q
@@ -495,12 +661,15 @@ func (l *Lexer) ReadToken() Token {
 			p++
 			yych = l.input_[p]
 		yy33:
-			if yych <= 0x00 {
+			switch yych {
+			case 0x00:
 				goto yy31
-			}
-			if yych != '\n' {
+			case '\n':
+				goto yy34
+			default:
 				goto yy32
 			}
+		yy34:
 			p++
 			{
 				continue
@@ -508,45 +677,57 @@ func (l *Lexer) ReadToken() Token {
 		yy36:
 			p++
 			yych = l.input_[p]
-			if yych == 'i' {
+			switch yych {
+			case 'i':
 				goto yy46
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy37:
 			p++
 			yych = l.input_[p]
-			if yych == 'f' {
+			switch yych {
+			case 'f':
 				goto yy47
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy38:
 			p++
 			yych = l.input_[p]
-			if yych == 'c' {
+			switch yych {
+			case 'c':
 				goto yy48
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy39:
 			p++
 			yych = l.input_[p]
-			if yych == 'o' {
+			switch yych {
+			case 'o':
 				goto yy49
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy40:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			switch yych {
+			case 'l':
 				goto yy50
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy41:
 			p++
 			yych = l.input_[p]
-			if yych == 'b' {
+			switch yych {
+			case 'b':
 				goto yy51
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy42:
 			p++
 			{
@@ -562,98 +743,220 @@ func (l *Lexer) ReadToken() Token {
 		yy46:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			switch yych {
+			case 'l':
 				goto yy52
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy47:
 			p++
 			yych = l.input_[p]
-			if yych == 'a' {
+			switch yych {
+			case 'a':
 				goto yy53
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy48:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			switch yych {
+			case 'l':
 				goto yy54
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy49:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			switch yych {
+			case 'l':
 				goto yy55
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy50:
 			p++
 			yych = l.input_[p]
-			if yych == 'e' {
+			switch yych {
+			case 'e':
 				goto yy57
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy51:
 			p++
 			yych = l.input_[p]
-			if yych == 'n' {
+			switch yych {
+			case 'n':
 				goto yy59
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy52:
 			p++
 			yych = l.input_[p]
-			if yych == 'd' {
+			switch yych {
+			case 'd':
 				goto yy60
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy53:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
+			switch yych {
+			case 'u':
 				goto yy62
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy54:
 			p++
 			yych = l.input_[p]
-			if yych == 'u' {
+			switch yych {
+			case 'u':
 				goto yy63
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy55:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy56
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy56
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy56
 			}
 		yy56:
 			{
@@ -663,35 +966,139 @@ func (l *Lexer) ReadToken() Token {
 		yy57:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy58
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy58
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy58
 			}
 		yy58:
 			{
@@ -701,42 +1108,148 @@ func (l *Lexer) ReadToken() Token {
 		yy59:
 			p++
 			yych = l.input_[p]
-			if yych == 'i' {
+			switch yych {
+			case 'i':
 				goto yy64
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy60:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy61
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy61
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy61
 			}
 		yy61:
 			{
@@ -746,77 +1259,193 @@ func (l *Lexer) ReadToken() Token {
 		yy62:
 			p++
 			yych = l.input_[p]
-			if yych == 'l' {
+			switch yych {
+			case 'l':
 				goto yy65
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy63:
 			p++
 			yych = l.input_[p]
-			if yych == 'd' {
+			switch yych {
+			case 'd':
 				goto yy66
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy64:
 			p++
 			yych = l.input_[p]
-			if yych == 'n' {
+			switch yych {
+			case 'n':
 				goto yy67
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy65:
 			p++
 			yych = l.input_[p]
-			if yych == 't' {
+			switch yych {
+			case 't':
 				goto yy68
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy66:
 			p++
 			yych = l.input_[p]
-			if yych == 'e' {
+			switch yych {
+			case 'e':
 				goto yy70
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy67:
 			p++
 			yych = l.input_[p]
-			if yych == 'j' {
+			switch yych {
+			case 'j':
 				goto yy72
+			default:
+				goto yy14
 			}
-			goto yy14
 		yy68:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy69
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy69
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy69
 			}
 		yy69:
 			{
@@ -826,35 +1455,139 @@ func (l *Lexer) ReadToken() Token {
 		yy70:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy71
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy71
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy71
 			}
 		yy71:
 			{
@@ -864,40 +1597,148 @@ func (l *Lexer) ReadToken() Token {
 		yy72:
 			p++
 			yych = l.input_[p]
-			if yych != 'a' {
+			switch yych {
+			case 'a':
+				goto yy73
+			default:
 				goto yy14
 			}
+		yy73:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy13
-					}
-				} else {
-					if yych <= '/' {
-						goto yy74
-					}
-					if yych <= '9' {
-						goto yy13
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy13
-					}
-					if yych >= '_' {
-						goto yy13
-					}
-				} else {
-					if yych <= '`' {
-						goto yy74
-					}
-					if yych <= 'z' {
-						goto yy13
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy13
+			default:
+				goto yy74
 			}
 		yy74:
 			{
@@ -936,18 +1777,14 @@ func (l *Lexer) eatWhitespace() {
 		{
 			var yych byte
 			yych = l.input_[p]
-			if yych <= ' ' {
-				if yych <= 0x00 {
-					goto yy77
-				}
-				if yych <= 0x1F {
-					goto yy79
-				}
+			switch yych {
+			case 0x00:
+				goto yy77
+			case ' ':
 				goto yy81
-			} else {
-				if yych == '$' {
-					goto yy84
-				}
+			case '$':
+				goto yy84
+			default:
 				goto yy79
 			}
 		yy77:
@@ -964,9 +1801,13 @@ func (l *Lexer) eatWhitespace() {
 		yy81:
 			p++
 			yych = l.input_[p]
-			if yych == ' ' {
+			switch yych {
+			case ' ':
 				goto yy81
+			default:
+				goto yy83
 			}
+		yy83:
 			{
 				continue
 			}
@@ -974,13 +1815,14 @@ func (l *Lexer) eatWhitespace() {
 			p++
 			q = p
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy85
-			}
-			if yych == '\r' {
+			case '\r':
 				goto yy87
+			default:
+				goto yy80
 			}
-			goto yy80
 		yy85:
 			p++
 			{
@@ -989,9 +1831,13 @@ func (l *Lexer) eatWhitespace() {
 		yy87:
 			p++
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy89
+			default:
+				goto yy88
 			}
+		yy88:
 			p = q
 			goto yy80
 		yy89:
@@ -1015,35 +1861,139 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		{
 			var yych byte
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy95
-					}
-				} else {
-					if yych <= '/' {
-						goto yy93
-					}
-					if yych <= '9' {
-						goto yy95
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy95
-					}
-					if yych >= '_' {
-						goto yy95
-					}
-				} else {
-					if yych <= '`' {
-						goto yy93
-					}
-					if yych <= 'z' {
-						goto yy95
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy95
+			default:
+				goto yy93
 			}
 		yy93:
 			p++
@@ -1054,35 +2004,139 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		yy95:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych >= '-' {
-						goto yy95
-					}
-				} else {
-					if yych <= '/' {
-						goto yy97
-					}
-					if yych <= '9' {
-						goto yy95
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy95
-					}
-					if yych >= '_' {
-						goto yy95
-					}
-				} else {
-					if yych <= '`' {
-						goto yy97
-					}
-					if yych <= 'z' {
-						goto yy95
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy95
+			default:
+				goto yy97
 			}
 		yy97:
 			{
@@ -1109,39 +2163,23 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		{
 			var yych byte
 			yych = l.input_[p]
-			if yych <= ' ' {
-				if yych <= '\n' {
-					if yych <= 0x00 {
-						goto yy100
-					}
-					if yych <= '\t' {
-						goto yy102
-					}
-					goto yy105
-				} else {
-					if yych == '\r' {
-						goto yy107
-					}
-					if yych <= 0x1F {
-						goto yy102
-					}
-					goto yy105
-				}
-			} else {
-				if yych <= '9' {
-					if yych == '$' {
-						goto yy109
-					}
-					goto yy102
-				} else {
-					if yych <= ':' {
-						goto yy105
-					}
-					if yych == '|' {
-						goto yy105
-					}
-					goto yy102
-				}
+			switch yych {
+			case 0x00:
+				goto yy100
+			case '\n':
+				fallthrough
+			case ' ':
+				fallthrough
+			case ':':
+				fallthrough
+			case '|':
+				goto yy105
+			case '\r':
+				goto yy107
+			case '$':
+				goto yy109
+			default:
+				goto yy102
 			}
 		yy100:
 			p++
@@ -1152,35 +2190,23 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy102:
 			p++
 			yych = l.input_[p]
-			if yych <= ' ' {
-				if yych <= '\n' {
-					if yych <= 0x00 {
-						goto yy104
-					}
-					if yych <= '\t' {
-						goto yy102
-					}
-				} else {
-					if yych == '\r' {
-						goto yy104
-					}
-					if yych <= 0x1F {
-						goto yy102
-					}
-				}
-			} else {
-				if yych <= '9' {
-					if yych != '$' {
-						goto yy102
-					}
-				} else {
-					if yych <= ':' {
-						goto yy104
-					}
-					if yych != '|' {
-						goto yy102
-					}
-				}
+			switch yych {
+			case 0x00:
+				fallthrough
+			case '\n':
+				fallthrough
+			case '\r':
+				fallthrough
+			case ' ':
+				fallthrough
+			case '$':
+				fallthrough
+			case ':':
+				fallthrough
+			case '|':
+				goto yy104
+			default:
+				goto yy102
 			}
 		yy104:
 			{
@@ -1204,9 +2230,13 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy107:
 			p++
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy110
+			default:
+				goto yy108
 			}
+		yy108:
 			{
 				l.last_token_ = start
 				return l.Error(l.DescribeLastError(), err)
@@ -1214,67 +2244,149 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy109:
 			p++
 			yych = l.input_[p]
-			if yych <= '-' {
-				if yych <= 0x1F {
-					if yych <= '\n' {
-						if yych <= '\t' {
-							goto yy112
-						}
-						goto yy114
-					} else {
-						if yych == '\r' {
-							goto yy117
-						}
-						goto yy112
-					}
-				} else {
-					if yych <= '#' {
-						if yych <= ' ' {
-							goto yy118
-						}
-						goto yy112
-					} else {
-						if yych <= '$' {
-							goto yy120
-						}
-						if yych <= ',' {
-							goto yy112
-						}
-						goto yy122
-					}
-				}
-			} else {
-				if yych <= 'Z' {
-					if yych <= '9' {
-						if yych <= '/' {
-							goto yy112
-						}
-						goto yy122
-					} else {
-						if yych <= ':' {
-							goto yy125
-						}
-						if yych <= '@' {
-							goto yy112
-						}
-						goto yy122
-					}
-				} else {
-					if yych <= '`' {
-						if yych == '_' {
-							goto yy122
-						}
-						goto yy112
-					} else {
-						if yych <= 'z' {
-							goto yy122
-						}
-						if yych <= '{' {
-							goto yy127
-						}
-						goto yy112
-					}
-				}
+			switch yych {
+			case '\n':
+				goto yy114
+			case '\r':
+				goto yy117
+			case ' ':
+				goto yy118
+			case '$':
+				goto yy120
+			case '-':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy122
+			case ':':
+				goto yy125
+			case '{':
+				goto yy127
+			default:
+				goto yy112
 			}
 		yy110:
 			p++
@@ -1294,19 +2406,25 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy114:
 			p++
 			yych = l.input_[p]
-			if yych == ' ' {
+			switch yych {
+			case ' ':
 				goto yy114
+			default:
+				goto yy116
 			}
+		yy116:
 			{
 				continue
 			}
 		yy117:
 			p++
 			yych = l.input_[p]
-			if yych == '\n' {
+			switch yych {
+			case '\n':
 				goto yy128
+			default:
+				goto yy113
 			}
-			goto yy113
 		yy118:
 			p++
 			{
@@ -1322,35 +2440,137 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy122:
 			p++
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '-' {
-					if yych >= '-' {
-						goto yy122
-					}
-				} else {
-					if yych <= '/' {
-						goto yy124
-					}
-					if yych <= '9' {
-						goto yy122
-					}
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy122
-					}
-					if yych >= '_' {
-						goto yy122
-					}
-				} else {
-					if yych <= '`' {
-						goto yy124
-					}
-					if yych <= 'z' {
-						goto yy122
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy122
+			default:
+				goto yy124
 			}
 		yy124:
 			{
@@ -1367,81 +2587,291 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			p++
 			q = p
 			yych = l.input_[p]
-			if yych <= '@' {
-				if yych <= '.' {
-					if yych <= ',' {
-						goto yy113
-					}
-					goto yy131
-				} else {
-					if yych <= '/' {
-						goto yy113
-					}
-					if yych <= '9' {
-						goto yy131
-					}
-					goto yy113
-				}
-			} else {
-				if yych <= '_' {
-					if yych <= 'Z' {
-						goto yy131
-					}
-					if yych <= '^' {
-						goto yy113
-					}
-					goto yy131
-				} else {
-					if yych <= '`' {
-						goto yy113
-					}
-					if yych <= 'z' {
-						goto yy131
-					}
-					goto yy113
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy131
+			default:
+				goto yy113
 			}
 		yy128:
 			p++
 			yych = l.input_[p]
-			if yych == ' ' {
+			switch yych {
+			case ' ':
 				goto yy128
+			default:
+				goto yy130
 			}
+		yy130:
 			{
 				continue
 			}
 		yy131:
 			p++
 			yych = l.input_[p]
-			if yych <= 'Z' {
-				if yych <= '/' {
-					if yych <= ',' {
-						goto yy133
-					}
-					if yych <= '.' {
-						goto yy131
-					}
-				} else {
-					if yych <= '9' {
-						goto yy131
-					}
-					if yych >= 'A' {
-						goto yy131
-					}
-				}
-			} else {
-				if yych <= '`' {
-					if yych == '_' {
-						goto yy131
-					}
-				} else {
-					if yych <= 'z' {
-						goto yy131
-					}
-					if yych == '}' {
-						goto yy134
-					}
-				}
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy131
+			case '}':
+				goto yy134
+			default:
+				goto yy133
 			}
 		yy133:
 			p = q
