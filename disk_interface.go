@@ -242,14 +242,15 @@ func NewRealDiskInterface() RealDiskInterface {
 	return RealDiskInterface{}
 }
 
+// MSDN: "Naming Files, Paths, and Namespaces"
+// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+const maxPath = 260
+
 func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
-	defer METRIC_RECORD("node stat")()
+	defer MetricRecord("node stat")()
 	if runtime.GOOS == "windows" {
-		// MSDN: "Naming Files, Paths, and Namespaces"
-		// http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-		const MAX_PATH = 260
-		if path != "" && path[0] != '\\' && len(path) > MAX_PATH {
-			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, MAX_PATH)
+		if path != "" && path[0] != '\\' && len(path) >= maxPath {
+			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, maxPath)
 			return -1
 		}
 		if !r.useCache_ {

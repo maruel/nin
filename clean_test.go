@@ -33,7 +33,7 @@ func NewCleanTest(t *testing.T) *CleanTest {
 		fs_:                       NewVirtualFileSystem(),
 		config_:                   NewBuildConfig(),
 	}
-	c.config_.verbosity = QUIET
+	c.config_.verbosity = Quiet
 	return c
 }
 
@@ -685,7 +685,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log2.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -794,7 +794,7 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log2.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {

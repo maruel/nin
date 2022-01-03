@@ -89,7 +89,7 @@ func NewStatusPrinter(config *BuildConfig) *StatusPrinter {
 		},
 	}
 	// Don't do anything fancy in verbose mode.
-	if s.config_.verbosity != NORMAL {
+	if s.config_.verbosity != Normal {
 		s.printer_.setSmartTerminal(false)
 	}
 
@@ -125,7 +125,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		s.printer_.SetConsoleLocked(false)
 	}
 
-	if s.config_.verbosity == QUIET {
+	if s.config_.verbosity == Quiet {
 		return
 	}
 
@@ -180,7 +180,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 }
 
 func (s *StatusPrinter) BuildLoadDyndeps() {
-	// The DependencyScan calls EXPLAIN() to print lines explaining why
+	// The DependencyScan calls Explain() to print lines explaining why
 	// it considers a portion of the graph to be out of date.  Normally
 	// this is done before the build starts, but our caller is about to
 	// load a dyndep file during the build.  Doing so may generate more
@@ -282,11 +282,11 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 }
 
 func (s *StatusPrinter) PrintStatus(edge *Edge, timeMillis int32) {
-	if s.config_.verbosity == QUIET || s.config_.verbosity == NO_STATUS_UPDATE {
+	if s.config_.verbosity == Quiet || s.config_.verbosity == NoStatusUpdate {
 		return
 	}
 
-	forceFullCommand := s.config_.verbosity == VERBOSE
+	forceFullCommand := s.config_.verbosity == Verbose
 
 	toPrint := edge.GetBinding("description")
 	if toPrint == "" || forceFullCommand {

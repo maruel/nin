@@ -22,7 +22,7 @@ import (
 
 // TODO(maruel): Rewrite as a native Go server anyway, no need to depend on
 // python.
-const kBrowsePy = "abc"
+const browsePy = "abc"
 
 // Run in "browse" mode, which execs a Python webserver.
 // \a ninjaCommand is the command used to invoke ninja.
@@ -37,7 +37,7 @@ func runBrowsePython(state *State, ninjaCommand string, inputFile string, args [
 	cmd.Args = append(cmd.Args, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	cmd.Stdin = strings.NewReader(kBrowsePy)
+	cmd.Stdin = strings.NewReader(browsePy)
 	if err := cmd.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitErr.ExitCode())

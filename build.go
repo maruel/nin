@@ -22,8 +22,8 @@ import (
 type EdgeResult bool
 
 const (
-	kEdgeFailed    EdgeResult = false
-	kEdgeSucceeded EdgeResult = true
+	EdgeFailed    EdgeResult = false
+	EdgeSucceeded EdgeResult = true
 )
 
 // Enumerate possible steps we want for an edge.
@@ -32,12 +32,12 @@ type Want int32
 const (
 	// We do not want to build the edge, but we might want to build one of
 	// its dependents.
-	kWantNothing Want = iota
+	WantNothing Want = iota
 	// We want to build the edge, but have not yet scheduled it.
-	kWantToStart
+	WantToStart
 	// We want to build the edge, have scheduled it, and are waiting
 	// for it to complete.
-	kWantToFinish
+	WantToFinish
 )
 
 // CommandRunner is an interface that wraps running the build
@@ -75,7 +75,7 @@ type BuildConfig struct {
 
 func NewBuildConfig() BuildConfig {
 	return BuildConfig{
-		verbosity:       NORMAL,
+		verbosity:       Normal,
 		parallelism:     1,
 		failuresAllowed: 1,
 	}
@@ -84,10 +84,10 @@ func NewBuildConfig() BuildConfig {
 type Verbosity int32
 
 const (
-	QUIET            Verbosity = iota // No output -- used when testing.
-	NO_STATUS_UPDATE                  // just regular output but suppress status update
-	NORMAL                            // regular output and status update
-	VERBOSE
+	Quiet          Verbosity = iota // No output -- used when testing.
+	NoStatusUpdate                  // just regular output but suppress status update
+	Normal                          // regular output and status update
+	Verbose
 )
 
 type RunningEdgeMap map[*Edge]int32
@@ -260,18 +260,18 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 	}
 
 	// If an entry in want_ does not already exist for edge, create an entry which
-	// maps to kWantNothing, indicating that we do not want to build this entry itself.
+	// maps to WantNothing, indicating that we do not want to build this entry itself.
 	want, ok := p.want_[edge]
 	if !ok {
-		p.want_[edge] = kWantNothing
-	} else if len(dyndepWalk) != 0 && want == kWantToFinish {
+		p.want_[edge] = WantNothing
+	} else if len(dyndepWalk) != 0 && want == WantToFinish {
 		return false // Don't need to do anything with already-scheduled edge.
 	}
 
 	// If we do need to build edge and we haven't already marked it as wanted,
 	// mark it now.
-	if node.Dirty && want == kWantNothing {
-		want = kWantToStart
+	if node.Dirty && want == WantNothing {
+		want = WantToStart
 		p.want_[edge] = want
 		p.EdgeWanted(edge)
 		if len(dyndepWalk) == 0 && edge.AllInputsReady() {
@@ -312,17 +312,17 @@ func (p *Plan) FindWork() *Edge {
 // The edge may be delayed from running, for example if it's a member of a
 // currently-full pool.
 func (p *Plan) ScheduleWork(edge *Edge, want Want) {
-	if want == kWantToFinish {
+	if want == WantToFinish {
 		// This edge has already been scheduled.  We can get here again if an edge
 		// and one of its dependencies share an order-only input, or if a node
 		// duplicates an out edge (see https://github.com/ninja-build/ninja/pull/519).
 		// Avoid scheduling the work again.
 		return
 	}
-	if want != kWantToStart {
+	if want != WantToStart {
 		panic("M-A")
 	}
-	p.want_[edge] = kWantToFinish
+	p.want_[edge] = WantToFinish
 
 	pool := edge.Pool
 	if pool.ShouldDelayEdge() {
@@ -343,7 +343,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	if !ok {
 		panic("M-A")
 	}
-	directlyWanted := want != kWantNothing
+	directlyWanted := want != WantNothing
 
 	// See if this job frees up any delayed jobs.
 	if directlyWanted {
@@ -352,7 +352,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	edge.Pool.RetrieveReadyEdges(p.ready_)
 
 	// The rest of this function only applies to successful commands.
-	if result != kEdgeSucceeded {
+	if result != EdgeSucceeded {
 		return true
 	}
 
@@ -403,12 +403,12 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 
 func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 	if edge.AllInputsReady() {
-		if want != kWantNothing {
+		if want != WantNothing {
 			p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of
 			// its dependents.
-			if !p.EdgeFinished(edge, kEdgeSucceeded, err) {
+			if !p.EdgeFinished(edge, EdgeSucceeded, err) {
 				return false
 			}
 		}
@@ -424,7 +424,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 	for _, oe := range node.OutEdges {
 		// Don't process edges that we don't actually want.
 		want, ok := p.want_[oe]
-		if !ok || want == kWantNothing {
+		if !ok || want == WantNothing {
 			continue
 		}
 
@@ -466,7 +466,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 					}
 				}
 
-				p.want_[oe] = kWantNothing
+				p.want_[oe] = WantNothing
 				p.wantedEdges_--
 				if oe.Rule != PhonyRule {
 					p.commandEdges_--
@@ -580,8 +580,8 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		if !ok {
 			panic("M-A")
 		}
-		if wantE == kWantNothing {
-			p.want_[edge] = kWantToStart
+		if wantE == WantNothing {
+			p.want_[edge] = WantToStart
 			p.EdgeWanted(edge)
 		}
 	}
@@ -613,7 +613,7 @@ func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
 func (p *Plan) Dump() {
 	fmt.Printf("pending: %d\n", len(p.want_))
 	for e, w := range p.want_ {
-		if w != kWantNothing {
+		if w != WantNothing {
 			fmt.Printf("want ")
 		}
 		e.Dump("")
@@ -793,7 +793,7 @@ func (b *Builder) Build(err *string) bool {
 				}
 
 				if edge.Rule == PhonyRule {
-					if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
+					if !b.plan_.EdgeFinished(edge, EdgeSucceeded, err) {
 						b.Cleanup()
 						b.status_.BuildFinished()
 						return false
@@ -855,7 +855,7 @@ func (b *Builder) Build(err *string) bool {
 }
 
 func (b *Builder) StartEdge(edge *Edge, err *string) bool {
-	defer METRIC_RECORD("StartEdge")()
+	defer MetricRecord("StartEdge")()
 	if edge.Rule == PhonyRule {
 		return true
 	}
@@ -895,7 +895,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 // Update status ninja logs following a command termination.
 // @return false if the build can not proceed further due to a fatal error.
 func (b *Builder) FinishCommand(result *Result, err *string) bool {
-	defer METRIC_RECORD("FinishCommand")()
+	defer MetricRecord("FinishCommand")()
 	edge := result.Edge
 
 	// First try to extract dependencies from the result, if any.
@@ -926,7 +926,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 
 	// The rest of this function only applies to successful commands.
 	if result.ExitCode != ExitSuccess {
-		return b.plan_.EdgeFinished(edge, kEdgeFailed, err)
+		return b.plan_.EdgeFinished(edge, EdgeFailed, err)
 	}
 	// Restat the edge outputs
 	outputMtime := TimeStamp(0)
@@ -986,7 +986,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		}
 	}
 
-	if !b.plan_.EdgeFinished(edge, kEdgeSucceeded, err) {
+	if !b.plan_.EdgeFinished(edge, EdgeSucceeded, err) {
 		return false
 	}
 

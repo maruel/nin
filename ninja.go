@@ -807,11 +807,11 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 
 	err := ""
 	status := n.buildLog_.Load(logPath, &err)
-	if status == LOAD_ERROR {
+	if status == LoadError {
 		errorf("loading build log %s: %s", logPath, err)
 		return ExitFailure
 	}
-	if status == LOAD_NOT_FOUND {
+	if status == LoadNotFound {
 		// Nothing to restat, ignore this
 		return ExitSuccess
 	}
@@ -960,7 +960,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 
 	err := ""
 	status := n.buildLog_.Load(logPath, &err)
-	if status == LOAD_ERROR {
+	if status == LoadError {
 		errorf("loading build log %s: %s", logPath, err)
 		return false
 	}
@@ -971,7 +971,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 	}
 
 	if recompactOnly {
-		if status == LOAD_NOT_FOUND {
+		if status == LoadNotFound {
 			return true
 		}
 		success := n.buildLog_.Recompact(logPath, n, &err)
@@ -1003,7 +1003,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 
 	err := ""
 	status := n.depsLog_.Load(path, &n.state_, &err)
-	if status == LOAD_ERROR {
+	if status == LoadError {
 		errorf("loading deps log %s: %s", path, err)
 		return false
 	}
@@ -1014,7 +1014,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 	}
 
 	if recompactOnly {
-		if status == LOAD_NOT_FOUND {
+		if status == LoadNotFound {
 			return true
 		}
 		success := n.depsLog_.Recompact(path, &err)
@@ -1148,7 +1148,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 	flag.BoolVar(verbose, "verbose", false, "show all command lines while building")
 	quiet := flag.Bool("quiet", false, "don't show progress status, just command output")
 	warning := flag.String("w", "", "adjust warnings (use '-w list' to list warnings)")
-	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", kNinjaVersion))
+	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", NinjaVersion))
 
 	flag.Usage = usage
 	flag.Parse()
@@ -1158,10 +1158,10 @@ func readFlags(opts *options, config *BuildConfig) int {
 		return 2
 	}
 	if *verbose {
-		config.verbosity = VERBOSE
+		config.verbosity = Verbose
 	}
 	if *quiet {
-		config.verbosity = NO_STATUS_UPDATE
+		config.verbosity = NoStatusUpdate
 	}
 	if *warning != "" {
 		if !warningEnable(*warning, opts) {
@@ -1174,7 +1174,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 		}
 	}
 	if *version {
-		fmt.Printf("%s\n", kNinjaVersion)
+		fmt.Printf("%s\n", NinjaVersion)
 		return 0
 	}
 	if *t != "" {
@@ -1281,7 +1281,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 			         opts.workingDir = optarg
 			         break
 			       case OPT_VERSION:
-			         fmt.Printf("%s\n", kNinjaVersion)
+			         fmt.Printf("%s\n", NinjaVersion)
 			         return 0
 			       case 'h':
 			       default:
@@ -1363,7 +1363,7 @@ func Main() int {
 		// subsequent commands.
 		// Don't print this if a tool is being used, so that tool output
 		// can be piped into a file without this string showing up.
-		if opts.tool == nil && config.verbosity != NO_STATUS_UPDATE {
+		if opts.tool == nil && config.verbosity != NoStatusUpdate {
 			status.Info("Entering directory `%s'", opts.workingDir)
 		}
 		if err := os.Chdir(opts.workingDir); err != nil {
@@ -1398,10 +1398,10 @@ func Main() int {
 
 		var parserOpts ManifestParserOptions
 		if opts.dupeEdgesShouldErr {
-			parserOpts.dupeEdgeAction_ = kDupeEdgeActionError
+			parserOpts.dupeEdgeAction_ = DupeEdgeActionError
 		}
 		if opts.phonyCycleShouldErr {
-			parserOpts.phonyCycleAction_ = kPhonyCycleActionError
+			parserOpts.phonyCycleAction_ = PhonyCycleActionError
 		}
 		parser := NewManifestParser(&ninja.state_, &ninja.diskInterface_, parserOpts)
 		err := ""

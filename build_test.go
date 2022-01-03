@@ -96,7 +96,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatalf("%#v", e)
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -112,7 +112,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -149,7 +149,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -158,7 +158,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid1 mid2
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -193,7 +193,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -202,7 +202,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -211,7 +211,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a2
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -220,7 +220,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat b1 b2
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -255,7 +255,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -264,7 +264,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -273,7 +273,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -282,7 +282,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1 a2
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -330,7 +330,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
@@ -350,7 +350,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
@@ -421,7 +421,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	}
 
 	// finish out1
-	p.plan_.EdgeFinished(edges[0], kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edges[0], EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -443,7 +443,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan_.EdgeFinished(out3, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(out3, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -453,7 +453,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	}
 
 	for _, it := range edges {
-		p.plan_.EdgeFinished(it, kEdgeSucceeded, &err)
+		p.plan_.EdgeFinished(it, EdgeSucceeded, &err)
 		if "" != err {
 			t.Fatal("expected equal")
 		}
@@ -467,7 +467,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan_.EdgeFinished(last, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(last, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -506,7 +506,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -527,7 +527,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -536,7 +536,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -557,7 +557,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -578,7 +578,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "libfoo.a" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -596,7 +596,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "all" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan_.EdgeFinished(edge, kEdgeSucceeded, &err)
+	p.plan_.EdgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -648,7 +648,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeFailed, &err)
+	p.plan_.EdgeFinished(edge, EdgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -668,7 +668,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan_.EdgeFinished(edge, kEdgeFailed, &err)
+	p.plan_.EdgeFinished(edge, EdgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -696,7 +696,7 @@ func NewBuildTestBase(t *testing.T) *BuildTestBase {
 		config_:                   NewBuildConfig(),
 		fs_:                       NewVirtualFileSystem(),
 	}
-	b.config_.verbosity = QUIET
+	b.config_.verbosity = Quiet
 	b.commandRunner_ = NewFakeCommandRunner(t, &b.fs_)
 	//b.builder_ = NewBuilder(&b.state_, &b.config_, nil, nil, &b.fs_, b.status_, 0)
 	b.status_ = NewStatusPrinter(&b.config_)
@@ -728,7 +728,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	if logPath != "" {
 		buildLog := NewBuildLog()
 		defer buildLog.Close()
-		if s := buildLog.Load(logPath, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
+		if s := buildLog.Load(logPath, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", logPath, s, err)
 		}
 		if !buildLog.OpenForWrite(logPath, b, &err) {
@@ -744,7 +744,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	if depsPath != "" {
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if s := depsLog.Load(depsPath, pstate, &err); s != LOAD_SUCCESS && s != LOAD_NOT_FOUND {
+		if s := depsLog.Load(depsPath, pstate, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", depsPath, s, err)
 		}
 		if !depsLog.OpenForWrite(depsPath, &err) {
@@ -3342,7 +3342,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		// Run the build again.
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3439,7 +3439,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3590,7 +3590,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		// Run the build again.
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3670,7 +3670,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3766,7 +3766,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3804,7 +3804,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -3879,7 +3879,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 		depsLog := NewDepsLog()
 		defer depsLog.Close()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) {
@@ -4992,7 +4992,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 		depsLog := NewDepsLog()
-		if depsLog.Load("ninja_deps", &state, &err) != LOAD_SUCCESS {
+		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
 		if !depsLog.OpenForWrite("ninja_deps", &err) || err != "" {

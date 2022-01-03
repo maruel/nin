@@ -71,7 +71,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 
 	state2 := NewState()
 	log2 := NewDepsLog()
-	if log2.Load(kTestFilename, &state2, &err) != LOAD_SUCCESS {
+	if log2.Load(kTestFilename, &state2, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -143,7 +143,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
 	state2 := NewState()
 	log2 := NewDepsLog()
-	if log2.Load(kTestFilename, &state2, &err) != LOAD_SUCCESS {
+	if log2.Load(kTestFilename, &state2, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -197,7 +197,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -265,7 +265,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		assertParse(t, kManifest, &state)
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -296,7 +296,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		assertParse(t, kManifest, &state)
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -389,7 +389,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		// Intentionally not parsing kManifest here.
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -482,7 +482,7 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 		err := ""
 		log := NewDepsLog()
 		state := NewState()
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -536,7 +536,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) == LOAD_NOT_FOUND {
+		if log.Load(kTestFilename, &state, &err) == LoadNotFound {
 			t.Fatal(err)
 		}
 		if len(err) != 0 {
@@ -609,7 +609,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "premature end of file; recovering" != err {
@@ -644,7 +644,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LOAD_SUCCESS {
+		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 

@@ -22,7 +22,9 @@ import (
 
 // The version number of the current Ninja release.  This will always
 // be "git" on trunk.
-const kNinjaVersion = "1.10.2.git"
+//
+// TODO(maruel): Figure out our versioning convention.
+const NinjaVersion = "1.10.2.git"
 
 // Parse the major/minor components of a version string.
 func ParseVersion(version string) (int, int) {
@@ -56,11 +58,11 @@ func keepNumbers(s string) string {
 // Check whether a version is compatible with the current Ninja version,
 // aborting if not.
 func CheckNinjaVersion(version string) {
-	binMajor, binMinor := ParseVersion(kNinjaVersion)
+	binMajor, binMinor := ParseVersion(NinjaVersion)
 	fileMajor, fileMinor := ParseVersion(version)
 	if binMajor > fileMajor {
-		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", kNinjaVersion, version)
+		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", NinjaVersion, version)
 	} else if (binMajor == fileMajor && binMinor < fileMinor) || binMajor < fileMajor {
-		log.Fatalf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", kNinjaVersion, version)
+		log.Fatalf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", NinjaVersion, version)
 	}
 }

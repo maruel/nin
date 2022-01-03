@@ -110,7 +110,7 @@ const (
 
 // Record size is currently limited to less than the full 32 bit, due to
 // internal buffers having to have this size.
-const kMaxRecordSize = (1 << 19) - 1
+const maxRecordSize = (1 << 19) - 1
 
 // Writing (build-time) interface.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
@@ -172,7 +172,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 
 	// Update on-disk representation.
 	size := uint32(4 * (1 + 2 + nodeCount))
-	if size > kMaxRecordSize {
+	if size > maxRecordSize {
 		//errno = ERANGE
 		return false
 	}
@@ -229,15 +229,15 @@ func (d *DepsLog) Close() error {
 }
 
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
-	defer METRIC_RECORD(".ninja_deps load")()
-	buf := [kMaxRecordSize + 1]byte{}
+	defer MetricRecord(".ninja_deps load")()
+	buf := [maxRecordSize + 1]byte{}
 	f, err2 := os.Open(path)
 	if f == nil {
 		if os.IsNotExist(err2) {
-			return LOAD_NOT_FOUND
+			return LoadNotFound
 		}
 		*err = err2.Error()
-		return LOAD_ERROR
+		return LoadError
 	}
 
 	// TODO(maruel): Read the file all at once then use a buffer.
@@ -267,7 +267,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		_ = os.Remove(path)
 		// Don't report this as a failure.  An empty deps log will cause
 		// us to rebuild the outputs anyway.
-		return LOAD_SUCCESS
+		return LoadSuccess
 	}
 	readFailed := false
 	uniqueDepRecordCount := 0
@@ -283,8 +283,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		}
 		isDeps := size&0x80000000 != 0
 		size = size & 0x7FFFFFFF
-		//log.Printf("is_deps=%t; size=%d", isDeps, size)
-		if size > kMaxRecordSize {
+		if size > maxRecordSize {
 			readFailed = true
 			// TODO(maruel): Make it a real error.
 			break
@@ -394,14 +393,14 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
 		if err := f.Truncate(0); err != nil {
 			_ = f.Close()
-			return LOAD_ERROR
+			return LoadError
 		}
 		_ = f.Close()
 
 		// The truncate succeeded; we'll just report the load error as a
 		// warning because the build can proceed.
 		*err += "; recovering"
-		return LOAD_SUCCESS
+		return LoadSuccess
 	}
 	_ = f.Close()
 
@@ -411,7 +410,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	if totalDepRecordCount > kMinCompactionEntryCount && totalDepRecordCount > uniqueDepRecordCount*kCompactionRatio {
 		d.needsRecompaction_ = true
 	}
-	return LOAD_SUCCESS
+	return LoadSuccess
 }
 
 func (d *DepsLog) GetDeps(node *Node) *Deps {
@@ -440,7 +439,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 
 // Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
-	defer METRIC_RECORD(".ninja_deps recompact")()
+	defer MetricRecord(".ninja_deps recompact")()
 
 	_ = d.Close()
 	tempPath := path + ".recompact"
@@ -464,17 +463,17 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 	}
 
 	// Write out all deps again.
-	for oldId := 0; oldId < len(d.deps_); oldId++ {
-		deps := d.deps_[oldId]
-		if deps == nil { // If nodes_[oldId] is a leaf, it has no deps.
+	for oldID := 0; oldID < len(d.deps_); oldID++ {
+		deps := d.deps_[oldID]
+		if deps == nil { // If nodes_[oldID] is a leaf, it has no deps.
 			continue
 		}
 
-		if !d.IsDepsEntryLiveFor(d.nodes_[oldId]) {
+		if !d.IsDepsEntryLiveFor(d.nodes_[oldID]) {
 			continue
 		}
 
-		if !newLog.RecordDeps(d.nodes_[oldId], deps.mtime, deps.nodes) {
+		if !newLog.RecordDeps(d.nodes_[oldID], deps.mtime, deps.nodes) {
 			_ = newLog.Close()
 			return false
 		}
@@ -531,7 +530,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 	padding := (4 - pathSize%4) % 4 // Pad path to 4 byte boundary.
 
 	size := uint32(pathSize + padding + 4)
-	if size > kMaxRecordSize {
+	if size > maxRecordSize {
 		// TODO(maruel): Make it a real error.
 		//errno = ERANGE
 		return false
@@ -589,7 +588,7 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	}
 	// Set the buffer size to this and flush the file buffer after every record
 	// to make sure records aren't written partially.
-	d.buf = bufio.NewWriterSize(d.file_, kMaxRecordSize+1)
+	d.buf = bufio.NewWriterSize(d.file_, maxRecordSize+1)
 	//SetCloseOnExec(fileno(d.file_))
 
 	// Opening a file in append mode doesn't set the file pointer to the file's

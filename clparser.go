@@ -32,9 +32,9 @@ func NewCLParser() CLParser {
 // If a dependency is extracted, returns a nonempty string.
 // Exposed for testing.
 func filterShowIncludes(line string, depsPrefix string) string {
-	const kDepsPrefixEnglish = "Note: including file: "
+	const depsPrefixEnglish = "Note: including file: "
 	if depsPrefix == "" {
-		depsPrefix = kDepsPrefixEnglish
+		depsPrefix = depsPrefixEnglish
 	}
 	if strings.HasPrefix(line, depsPrefix) {
 		return strings.TrimLeft(line[len(depsPrefix):], " ")
@@ -69,7 +69,7 @@ func filterInputFilename(line string) bool {
 // should be printed (if any). Returns true on success, or false with err
 // filled. output must not be the same object as filteredObject.
 func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err *string) bool {
-	defer METRIC_RECORD("CLParser::Parse")()
+	defer MetricRecord("CLParser::Parse")()
 	// Loop over all lines in the output to process them.
 	start := 0
 	seenShowIncludes := false

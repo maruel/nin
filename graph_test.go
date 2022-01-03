@@ -420,7 +420,7 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
 	g := NewGraphTest(t)
 	var parserOpts ManifestParserOptions
-	parserOpts.phonyCycleAction_ = kPhonyCycleActionError
+	parserOpts.phonyCycleAction_ = PhonyCycleActionError
 	g.AssertParse(&g.state_, "build a: phony a\n", parserOpts)
 
 	err := ""

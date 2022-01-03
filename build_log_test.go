@@ -56,7 +56,7 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
 	log2 := NewBuildLog()
 	defer log2.Close()
-	if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log2.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -142,7 +142,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -199,7 +199,7 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		log3 := NewBuildLog()
 		defer log3.Close()
 		err = ""
-		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS || err != "" {
+		if log3.Load(kTestFilename, &err) != LoadSuccess || err != "" {
 			t.Fatal(err)
 		}
 		log3.Close()
@@ -216,7 +216,7 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if !strings.Contains(err, "version") {
@@ -235,7 +235,7 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -272,7 +272,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -343,7 +343,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -400,7 +400,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LOAD_SUCCESS {
+	if log.Load(kTestFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -509,7 +509,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log2 := NewBuildLog()
 		defer log2.Close()
-		if log2.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		if log2.Load(kTestFilename, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -535,7 +535,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log3 := NewBuildLog()
 		defer log3.Close()
-		if log3.Load(kTestFilename, &err) != LOAD_SUCCESS {
+		if log3.Load(kTestFilename, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "" != err {

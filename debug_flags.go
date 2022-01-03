@@ -26,7 +26,7 @@ var (
 	gExperimentalStatcache = true
 )
 
-func EXPLAIN(f string, i ...interface{}) {
+func Explain(f string, i ...interface{}) {
 	if gExplaining {
 		fmt.Fprintf(os.Stderr, "ninja explain: "+f+"\n", i...)
 	}

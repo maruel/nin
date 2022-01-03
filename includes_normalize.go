@@ -18,8 +18,6 @@ import (
 	"strings"
 )
 
-const _MAX_PATH = 259
-
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
 type IncludesNormalize struct {
@@ -163,7 +161,7 @@ func relativize(path string, startList []string, err *string) string {
 /// path |input| relative to |this->relativeTo_| and store to |result|.
 func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
 	len2 := len(input)
-	if len2 > _MAX_PATH {
+	if len2 >= maxPath {
 		*err = "path too long"
 		return false
 	}

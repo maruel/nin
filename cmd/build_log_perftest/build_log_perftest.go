@@ -23,7 +23,7 @@ import (
 	"github.com/maruel/nin"
 )
 
-const kTestFilename = "BuildLogPerfTest-tempfile"
+const testFilename = "BuildLogPerfTest-tempfile"
 
 type NoDeadPaths struct {
 }
@@ -36,7 +36,7 @@ func WriteTestData() error {
 	log := nin.NewBuildLog()
 	noDeadPaths := NoDeadPaths{}
 	err := ""
-	if !log.OpenForWrite(kTestFilename, &noDeadPaths, &err) {
+	if !log.OpenForWrite(testFilename, &noDeadPaths, &err) {
 		return errors.New(err)
 	}
 
@@ -103,7 +103,7 @@ func mainImpl() error {
 	{
 		// Read once to warm up disk cache.
 		log := nin.NewBuildLog()
-		if log.Load(kTestFilename, &err) == nin.LOAD_ERROR {
+		if log.Load(testFilename, &err) == nin.LoadError {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 	}
@@ -114,7 +114,7 @@ func mainImpl() error {
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
 		log := nin.NewBuildLog()
-		if log.Load(kTestFilename, &err) == nin.LOAD_ERROR {
+		if log.Load(testFilename, &err) == nin.LoadError {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 		delta := time.Since(start)
@@ -135,7 +135,7 @@ func mainImpl() error {
 	}
 	avg := total / time.Duration(len(times))
 	fmt.Printf("min %s  max %s  avg %s\n", min.Round(rnd), max.Round(rnd), avg.Round(rnd))
-	return os.Remove(kTestFilename)
+	return os.Remove(testFilename)
 }
 
 func main() {

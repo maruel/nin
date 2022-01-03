@@ -412,7 +412,7 @@ func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.dupeEdgeAction_ = kDupeEdgeActionError
+	parserOpts.dupeEdgeAction_ = DupeEdgeActionError
 	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
@@ -428,7 +428,7 @@ func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	p.fs_.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
 	kInput := "subninja sub.ninja\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.dupeEdgeAction_ = kDupeEdgeActionError
+	parserOpts.dupeEdgeAction_ = DupeEdgeActionError
 	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
@@ -454,7 +454,7 @@ func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "build a: phony a\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.phonyCycleAction_ = kPhonyCycleActionError
+	parserOpts.phonyCycleAction_ = PhonyCycleActionError
 	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if !parser.ParseTest(kInput, &err) {

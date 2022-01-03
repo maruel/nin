@@ -19,15 +19,15 @@ import "strconv"
 type DupeEdgeAction bool
 
 const (
-	kDupeEdgeActionWarn  DupeEdgeAction = false
-	kDupeEdgeActionError DupeEdgeAction = true
+	DupeEdgeActionWarn  DupeEdgeAction = false
+	DupeEdgeActionError DupeEdgeAction = true
 )
 
 type PhonyCycleAction bool
 
 const (
-	kPhonyCycleActionWarn  PhonyCycleAction = false
-	kPhonyCycleActionError PhonyCycleAction = true
+	PhonyCycleActionWarn  PhonyCycleAction = false
+	PhonyCycleActionError PhonyCycleAction = true
 )
 
 type ManifestParserOptions struct {
@@ -401,7 +401,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		if !m.state_.AddOut(edge, path, slashBits) {
-			if m.options_.dupeEdgeAction_ == kDupeEdgeActionError {
+			if m.options_.dupeEdgeAction_ == DupeEdgeActionError {
 				m.lexer_.Error("multiple rules generate "+path, err)
 				return false
 			}
@@ -443,7 +443,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state_.AddValidation(edge, path, slashBits)
 	}
 
-	if m.options_.phonyCycleAction_ == kPhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
+	if m.options_.phonyCycleAction_ == PhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
 		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to

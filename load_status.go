@@ -17,7 +17,7 @@ package nin
 type LoadStatus int32
 
 const (
-	LOAD_ERROR LoadStatus = iota
-	LOAD_SUCCESS
-	LOAD_NOT_FOUND
+	LoadError LoadStatus = iota
+	LoadSuccess
+	LoadNotFound
 )

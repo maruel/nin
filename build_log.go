@@ -41,8 +41,8 @@ func (l *LogEntry) Equal(r *LogEntry) bool {
 }
 
 // Serialize writes an entry into a log file as a text form.
-func (e *LogEntry) Serialize(w io.Writer) error {
-	_, err := fmt.Fprintf(w, "%d\t%d\t%d\t%s\t%x\n", e.startTime, e.endTime, e.mtime, e.output, e.commandHash)
+func (l *LogEntry) Serialize(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "%d\t%d\t%d\t%s\t%x\n", l.startTime, l.endTime, l.mtime, l.output, l.commandHash)
 	return err
 }
 
@@ -291,18 +291,18 @@ func (l *LineReader) ReadLine(lineStart *char*, lineEnd *char*) bool {
 
 // Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
-	defer METRIC_RECORD(".ninja_log load")()
+	defer MetricRecord(".ninja_log load")()
 	file, err2 := ioutil.ReadFile(path)
 	if file == nil {
 		if os.IsNotExist(err2) {
-			return LOAD_NOT_FOUND
+			return LoadNotFound
 		}
 		*err = err2.Error()
-		return LOAD_ERROR
+		return LoadError
 	}
 
 	if len(file) == 0 {
-		return LOAD_SUCCESS // file was empty
+		return LoadSuccess // file was empty
 	}
 
 	logVersion := 0
@@ -326,11 +326,11 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 				_ = os.Remove(path)
 				// Don't report this as a failure.  An empty build log will cause
 				// us to rebuild the outputs anyway.
-				return LOAD_SUCCESS
+				return LoadSuccess
 			}
 		}
-		const kFieldSeparator = byte('\t')
-		end := strings.IndexByte(line, kFieldSeparator)
+		const fieldSeparator = byte('\t')
+		end := strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
@@ -341,7 +341,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			panic(err2)
 		}
 		line = line[end+1:]
-		end = strings.IndexByte(line, kFieldSeparator)
+		end = strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
@@ -351,7 +351,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			panic(err2)
 		}
 		line = line[end+1:]
-		end = strings.IndexByte(line, kFieldSeparator)
+		end = strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
@@ -361,7 +361,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			panic(err2)
 		}
 		line = line[end+1:]
-		end = strings.IndexByte(line, kFieldSeparator)
+		end = strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
@@ -400,7 +400,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		b.needsRecompaction_ = true
 	}
 
-	return LOAD_SUCCESS
+	return LoadSuccess
 }
 
 // Lookup a previously-run command by its output path.
@@ -410,7 +410,7 @@ func (b *BuildLog) LookupByOutput(path string) *LogEntry {
 
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
-	defer METRIC_RECORD(".ninja_log recompact")()
+	defer MetricRecord(".ninja_log recompact")()
 	_ = b.Close()
 	tempPath := path + ".recompact"
 	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
@@ -459,7 +459,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 
 // Restat all outputs in the log
 func (b *BuildLog) Restat(path string, diskInterface DiskInterface, outputs []string, err *string) bool {
-	defer METRIC_RECORD(".ninja_log restat")()
+	defer MetricRecord(".ninja_log restat")()
 	_ = b.Close()
 	tempPath := path + ".restat"
 	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY, 0o666)

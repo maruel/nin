@@ -34,7 +34,7 @@ func (c *Cleaner) cleanedFilesCount() int {
 
 // @return whether the cleaner is in verbose mode.
 func (c *Cleaner) IsVerbose() bool {
-	return c.config_.verbosity != QUIET && (c.config_.verbosity == VERBOSE || c.config_.dryRun)
+	return c.config_.verbosity != Quiet && (c.config_.verbosity == Verbose || c.config_.dryRun)
 }
 
 func NewCleaner(state *State, config *BuildConfig, diskInterface DiskInterface) *Cleaner {
@@ -110,7 +110,7 @@ func (c *Cleaner) RemoveEdgeFiles(edge *Edge) {
 }
 
 func (c *Cleaner) PrintHeader() {
-	if c.config_.verbosity == QUIET {
+	if c.config_.verbosity == Quiet {
 		return
 	}
 	fmt.Printf("Cleaning...")
@@ -123,7 +123,7 @@ func (c *Cleaner) PrintHeader() {
 }
 
 func (c *Cleaner) PrintFooter() {
-	if c.config_.verbosity == QUIET {
+	if c.config_.verbosity == Quiet {
 		return
 	}
 	fmt.Printf("%d files.\n", c.cleanedFilesCount_)

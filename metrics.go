@@ -21,14 +21,14 @@ import (
 )
 
 // The Metrics module is used for the debug mode that dumps timing stats of
-// various actions.  To use, see METRIC_RECORD below.
+// various actions.  To use, see MetricRecord below.
 
 func emptyFunc() {
 }
 
-/// The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
+/// The primary interface to metrics.  Use MetricRecord("foobar") at the top
 /// of a function to get timing stats recorded for each call of the function.
-func METRIC_RECORD(name string) func() {
+func MetricRecord(name string) func() {
 	// TODO(maruel): Use runtime/trace.StartRegion() instead.
 	if gMetrics == nil {
 		return emptyFunc
@@ -61,7 +61,7 @@ func NewMetrics() *Metrics {
 	}
 }
 
-// The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
+// The primary interface to metrics.  Use MetricRecord("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.
 var gMetrics *Metrics
 

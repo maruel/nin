@@ -102,7 +102,7 @@ func (n *Node) PathDecanonicalized() string {
 
 // Return false on error.
 func (n *Node) Stat(diskInterface DiskInterface, err *string) bool {
-	defer METRIC_RECORD("node stat")()
+	defer MetricRecord("node stat")()
 	n.MTime = diskInterface.Stat(n.Path, err)
 	if n.MTime == -1 {
 		return false
@@ -240,25 +240,25 @@ func (e *Edge) EvaluateCommand(inclRspFile bool) string {
 
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
-	env := NewEdgeEnv(e, kShellEscape)
+	env := NewEdgeEnv(e, ShellEscape)
 	return env.LookupVariable(key)
 }
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
+	env := NewEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("depfile")
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
+	env := NewEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("dyndep")
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	env := NewEdgeEnv(e, kDoNotEscape)
+	env := NewEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("rspfile")
 }
 
@@ -389,8 +389,8 @@ func (e *EdgeSet) recreate() {
 type EscapeKind bool
 
 const (
-	kShellEscape EscapeKind = false
-	kDoNotEscape EscapeKind = true
+	ShellEscape EscapeKind = false
+	DoNotEscape EscapeKind = true
 )
 
 // An Env for an Edge, providing $in and $out.
@@ -458,7 +458,7 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	first := false
 	for i, x := range span {
 		path := x.PathDecanonicalized()
-		if e.escapeInOut_ == kShellEscape {
+		if e.escapeInOut_ == ShellEscape {
 			if runtime.GOOS == "windows" {
 				path = GetWin32EscapedString(path)
 			} else {
@@ -589,7 +589,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
-			EXPLAIN("%s has no in-edge and is missing", node.Path)
+			Explain("%s has no in-edge and is missing", node.Path)
 		}
 		node.Dirty = node.Exists != ExistenceStatusExists
 		return true
@@ -658,7 +658,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 				return false
 			}
 			// Failed to load dependency info: rebuild to regenerate it.
-			// LoadDeps() did EXPLAIN() already, no need to do it here.
+			// LoadDeps() did Explain() already, no need to do it here.
 			dirty = true
 			edge.DepsMissing = true
 		}
@@ -690,7 +690,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
 			if i.Dirty {
-				EXPLAIN("%s is dirty", i.Path)
+				Explain("%s is dirty", i.Path)
 				dirty = true
 			} else {
 				if mostRecentInput == nil || i.MTime > mostRecentInput.MTime {
@@ -801,7 +801,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
 		if len(edge.Inputs) == 0 && output.Exists != ExistenceStatusExists {
-			EXPLAIN("output %s of phony edge with no inputs doesn't exist", output.Path)
+			Explain("output %s of phony edge with no inputs doesn't exist", output.Path)
 			return true
 		}
 
@@ -819,7 +819,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 
 	// Dirty if we're missing the output.
 	if output.Exists != ExistenceStatusExists {
-		EXPLAIN("output %s doesn't exist", output.Path)
+		Explain("output %s doesn't exist", output.Path)
 		return true
 	}
 
@@ -844,7 +844,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 			if usedRestat {
 				s = "restat of "
 			}
-			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, mostRecentInput.Path, outputMtime, mostRecentInput.MTime)
+			Explain("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, mostRecentInput.Path, outputMtime, mostRecentInput.MTime)
 			return true
 		}
 	}
@@ -859,7 +859,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 				// May also be dirty due to the command changing since the last build.
 				// But if this is a generator rule, the command changing does not make us
 				// dirty.
-				EXPLAIN("command line changed for %s", output.Path)
+				Explain("command line changed for %s", output.Path)
 				return true
 			}
 			if mostRecentInput != nil && entry.mtime < mostRecentInput.MTime {
@@ -867,12 +867,12 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 				// mtime of the most recent input.  This can occur even when the mtime
 				// on disk is newer if a previous run wrote to the output file but
 				// exited with an error or was interrupted.
-				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, mostRecentInput.Path, entry.mtime, mostRecentInput.MTime)
+				Explain("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, mostRecentInput.Path, entry.mtime, mostRecentInput.MTime)
 				return true
 			}
 		}
 		if entry == nil && !generator {
-			EXPLAIN("command line not found in log for %s", output.Path)
+			Explain("command line not found in log for %s", output.Path)
 			return true
 		}
 	}
@@ -932,7 +932,7 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	defer METRIC_RECORD("depfile load")()
+	defer MetricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
 	switch i.diskInterface_.ReadFile(path, &content, err) {
@@ -945,7 +945,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 	// On a missing depfile: return false and empty *err.
 	if len(content) == 0 {
-		EXPLAIN("depfile '%s' is missing", path)
+		Explain("depfile '%s' is missing", path)
 		return false
 	}
 
@@ -969,7 +969,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// mark the edge as dirty.
 	firstOutput := edge.Outputs[0]
 	if primaryOut := CanonicalizePath(depfile.outs_[0]); firstOutput.Path != primaryOut {
-		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
+		Explain("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
 		return false
 	}
 
@@ -1017,13 +1017,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		deps = i.depsLog_.GetDeps(output)
 	}
 	if deps == nil {
-		EXPLAIN("deps for '%s' are missing", output.Path)
+		Explain("deps for '%s' are missing", output.Path)
 		return false
 	}
 
 	// Deps are invalid if the output is newer than the deps.
 	if output.MTime > deps.mtime {
-		EXPLAIN("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.MTime)
+		Explain("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.MTime)
 		return false
 	}
 
