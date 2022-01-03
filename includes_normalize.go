@@ -29,7 +29,7 @@ type IncludesNormalize struct {
 
 func NewIncludesNormalize(relative_to string) IncludesNormalize {
 	err := ""
-	relative_to = AbsPath(relative_to, &err)
+	relative_to = absPath(relative_to, &err)
 	if err != "" {
 		fatalf("Initializing IncludesNormalize(): %s", err)
 	}
@@ -42,7 +42,7 @@ func NewIncludesNormalize(relative_to string) IncludesNormalize {
 // Return true if paths a and b are on the same windows drive.
 // Return false if this function cannot check
 // whether or not on the same windows drive.
-func SameDriveFast(a string, b string) bool {
+func sameDriveFast(a string, b string) bool {
 	if len(a) < 3 || len(b) < 3 {
 		return false
 	}
@@ -51,7 +51,7 @@ func SameDriveFast(a string, b string) bool {
 		return false
 	}
 
-	if ToLowerASCII(a[0]) != ToLowerASCII(b[0]) {
+	if toLowerASCII(a[0]) != toLowerASCII(b[0]) {
 		return false
 	}
 
@@ -63,17 +63,17 @@ func SameDriveFast(a string, b string) bool {
 }
 
 // Return true if paths a and b are on the same Windows drive.
-func SameDrive(a string, b string, err *string) bool {
-	if SameDriveFast(a, b) {
+func sameDrive(a string, b string, err *string) bool {
+	if sameDriveFast(a, b) {
 		return true
 	}
 
 	a_absolute := ""
 	b_absolute := ""
-	if !InternalGetFullPathName(a, &a_absolute, err) {
+	if !internalGetFullPathName(a, &a_absolute, err) {
 		return false
 	}
-	if !InternalGetFullPathName(b, &b_absolute, err) {
+	if !internalGetFullPathName(b, &b_absolute, err) {
 		return false
 	}
 	return getDrive(a_absolute) == getDrive(b_absolute)
@@ -90,7 +90,7 @@ func getDrive(s string) string {
 // Check path |s| is FullPath style returned by GetFullPathName.
 // This ignores difference of path separator.
 // This is used not to call very slow GetFullPathName API.
-func IsFullPathName(s string) bool {
+func isFullPathName(s string) bool {
 	if len(s) < 3 || !islatinalpha(s[0]) || s[1] != ':' || !isPathSeparator(s[2]) {
 		return false
 	}
@@ -116,20 +116,20 @@ func IsFullPathName(s string) bool {
 }
 
 // Internal utilities made available for testing, maybe useful otherwise.
-func AbsPath(s string, err *string) string {
-	if IsFullPathName(s) {
+func absPath(s string, err *string) string {
+	if isFullPathName(s) {
 		return strings.ReplaceAll(s, "\\", "/")
 	}
 
 	result := ""
-	if !InternalGetFullPathName(s, &result, err) {
+	if !internalGetFullPathName(s, &result, err) {
 		return ""
 	}
 	return strings.ReplaceAll(result, "\\", "/")
 }
 
-func Relativize(path string, start_list []string, err *string) string {
-	abs_path := AbsPath(path, err)
+func relativize(path string, start_list []string, err *string) string {
+	abs_path := absPath(path, err)
 	if len(*err) != 0 {
 		return ""
 	}
@@ -140,7 +140,7 @@ func Relativize(path string, start_list []string, err *string) string {
 		end = end2
 	}
 	for i = 0; i < end; i++ {
-		if !EqualsCaseInsensitiveASCII(start_list[i], path_list[i]) {
+		if !equalsCaseInsensitiveASCII(start_list[i], path_list[i]) {
 			break
 		}
 	}
@@ -156,7 +156,7 @@ func Relativize(path string, start_list []string, err *string) string {
 	if len(rel_list) == 0 {
 		return "."
 	}
-	return JoinStringPiece(rel_list, '/')
+	return strings.Join(rel_list, "/")
 }
 
 /// Normalize by fixing slashes style, fixing redundant .. and . and makes the
@@ -168,18 +168,18 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
 		return false
 	}
 	cp := CanonicalizePath(input)
-	abs_input := AbsPath(cp, err)
+	abs_input := absPath(cp, err)
 	if len(*err) != 0 {
 		return false
 	}
 
-	if !SameDrive(abs_input, i.relative_to_, err) {
+	if !sameDrive(abs_input, i.relative_to_, err) {
 		if len(*err) != 0 {
 			return false
 		}
 		*result = cp
 		return true
 	}
-	*result = Relativize(abs_input, i.split_relative_to_, err)
+	*result = relativize(abs_input, i.split_relative_to_, err)
 	return len(*err) == 0
 }

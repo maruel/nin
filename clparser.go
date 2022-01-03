@@ -31,7 +31,7 @@ func NewCLParser() CLParser {
 // Parse a line of cl.exe output and extract /showIncludes info.
 // If a dependency is extracted, returns a nonempty string.
 // Exposed for testing.
-func FilterShowIncludes(line string, deps_prefix string) string {
+func filterShowIncludes(line string, deps_prefix string) string {
 	const kDepsPrefixEnglish = "Note: including file: "
 	if deps_prefix == "" {
 		deps_prefix = kDepsPrefixEnglish
@@ -44,7 +44,7 @@ func FilterShowIncludes(line string, deps_prefix string) string {
 
 // Return true if a mentioned include file is a system path.
 // Filtering these out reduces dependency information considerably.
-func IsSystemInclude(path string) bool {
+func isSystemInclude(path string) bool {
 	// TODO(maruel): The C++ code does it only for ASCII.
 	path = strings.ToLower(path)
 	// TODO: this is a heuristic, perhaps there's a better way?
@@ -55,7 +55,7 @@ func IsSystemInclude(path string) bool {
 // it's printing an input filename.  This is a heuristic but it appears
 // to be the best we can do.
 // Exposed for testing.
-func FilterInputFilename(line string) bool {
+func filterInputFilename(line string) bool {
 	// TODO(maruel): The C++ code does it only for ASCII.
 	line = strings.ToLower(line)
 	// TODO: other extensions, like .asm?
@@ -83,17 +83,17 @@ func (c *CLParser) Parse(output, deps_prefix string, filtered_output *string, er
 		}
 		line := output[start:end]
 
-		include := FilterShowIncludes(line, deps_prefix)
+		include := filterShowIncludes(line, deps_prefix)
 		if len(include) != 0 {
 			seen_show_includes = true
 			normalized := ""
 			if !normalizer.Normalize(include, &normalized, err) {
 				return false
 			}
-			if !IsSystemInclude(normalized) {
+			if !isSystemInclude(normalized) {
 				c.includes_[normalized] = struct{}{}
 			}
-		} else if !seen_show_includes && FilterInputFilename(line) {
+		} else if !seen_show_includes && filterInputFilename(line) {
 			// Drop it.
 			// TODO: if we support compiling multiple output files in a single
 			// cl.exe invocation, we should stash the filename.

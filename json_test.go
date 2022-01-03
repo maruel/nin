@@ -40,7 +40,7 @@ func TestJSONTest_RegularAscii(t *testing.T) {
 	}
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			got := EncodeJSONString(l.in)
+			got := encodeJSONString(l.in)
 			if diff := cmp.Diff(l.want, got); diff != "" {
 				t.Fatalf("+want, -got: %s", diff)
 			}

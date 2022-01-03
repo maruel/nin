@@ -14,24 +14,14 @@
 
 package nin
 
-import "strings"
-
-func ToLowerASCII(c byte) byte {
+func toLowerASCII(c byte) byte {
 	if c >= 'A' && c <= 'Z' {
 		return c + ('a' - 'A')
 	}
 	return c
 }
 
-func SplitStringPiece(input string, sep byte) []string {
-	return strings.Split(input, string(sep))
-}
-
-func JoinStringPiece(list []string, sep byte) string {
-	return strings.Join(list, string(sep))
-}
-
-func EqualsCaseInsensitiveASCII(a, b string) bool {
+func equalsCaseInsensitiveASCII(a, b string) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -41,7 +31,7 @@ func EqualsCaseInsensitiveASCII(a, b string) bool {
 	// TODO(maruel): Benchmark if it is a performance optimization or useless.
 	_ = b[len(a)-1]
 	for i := range a {
-		if ToLowerASCII(a[i]) != ToLowerASCII(b[i]) {
+		if toLowerASCII(a[i]) != toLowerASCII(b[i]) {
 			return false
 		}
 	}

@@ -103,9 +103,10 @@ func (d *DepsLog) deps() []*Deps {
 
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.
-var DepsLogFileSignature = []byte("# ninjadeps\n")
-
-const DepsLogCurrentVersion = uint32(4)
+const (
+	DepsLogFileSignature  = "# ninjadeps\n"
+	DepsLogCurrentVersion = uint32(4)
+)
 
 // Record size is currently limited to less than the full 32 bit, due to
 // internal buffers having to have this size.
@@ -135,14 +136,14 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 
 	// Assign ids to all nodes that are missing one.
 	if node.ID < 0 {
-		if !d.RecordId(node) {
+		if !d.RecordID(node) {
 			return false
 		}
 		made_change = true
 	}
 	for i := 0; i < node_count; i++ {
 		if nodes[i].ID < 0 {
-			if !d.RecordId(nodes[i]) {
+			if !d.RecordID(nodes[i]) {
 				return false
 			}
 			made_change = true
@@ -251,7 +252,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	// But the v1 format could sometimes (rarely) end up with invalid data, so
 	// don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
 	// and there was no release with it, so pretend that it never happened.)
-	if !valid_header || !bytes.Equal(buf[:len(DepsLogFileSignature)], DepsLogFileSignature) || version != DepsLogCurrentVersion {
+	if !valid_header || unsafeString(buf[:len(DepsLogFileSignature)]) != DepsLogFileSignature || version != DepsLogCurrentVersion {
 		if version == 1 {
 			*err = "deps log version change; rebuilding"
 		} else {
@@ -525,7 +526,7 @@ func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
 }
 
 // Write a node name record, assigning it an id.
-func (d *DepsLog) RecordId(node *Node) bool {
+func (d *DepsLog) RecordID(node *Node) bool {
 	path_size := len(node.Path)
 	padding := (4 - path_size%4) % 4 // Pad path to 4 byte boundary.
 
@@ -601,7 +602,7 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	}
 
 	if offset == 0 {
-		if _, err := d.buf.Write(DepsLogFileSignature); err != nil {
+		if _, err := d.buf.WriteString(DepsLogFileSignature); err != nil {
 			// TODO(maruel): Return the real error.
 			return false
 		}

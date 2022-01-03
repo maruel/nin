@@ -18,7 +18,7 @@ import (
 	"os"
 )
 
-func EncodeJSONString(in string) string {
+func encodeJSONString(in string) string {
 	hex_digits := "0123456789abcdef"
 	out := ""
 	//out.reserve(in.length() * 1.2)
@@ -52,8 +52,8 @@ func EncodeJSONString(in string) string {
 }
 
 // Print a string in JSON format to stdout without enclosing quotes
-func PrintJSONString(in string) {
+func printJSONString(in string) {
 	//b, _ := json.Marshal(in)
-	b := EncodeJSONString(in)
+	b := encodeJSONString(in)
 	_, _ = os.Stdout.WriteString(b)
 }

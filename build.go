@@ -1034,7 +1034,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 			// ~0 is assuming that with MSVC-parsed headers, it's ok to always make
 			// all backslashes (as some of the slashes will certainly be backslashes
 			// anyway). This could be fixed if necessary with some additional
-			// complexity in IncludesNormalize::Relativize.
+			// complexity in IncludesNormalize.relativize.
 			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
 		}
 	} else if deps_type == "gcc" {

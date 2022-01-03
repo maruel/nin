@@ -360,7 +360,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 }
 
 func toolBrowse(n *ninjaMain, opts *options, args []string) int {
-	RunBrowsePython(&n.state_, n.ninja_command_, opts.input_file, args)
+	runBrowsePython(&n.state_, n.ninja_command_, opts.input_file, args)
 	return 0
 }
 
@@ -725,13 +725,13 @@ func evaluateCommandWithRspfile(edge *Edge, mode evaluateCommandMode) string {
 
 func printCompdb(directory string, edge *Edge, eval_mode evaluateCommandMode) {
 	fmt.Printf("\n  {\n    \"directory\": \"")
-	PrintJSONString(directory)
+	printJSONString(directory)
 	fmt.Printf("\",\n    \"command\": \"")
-	PrintJSONString(evaluateCommandWithRspfile(edge, eval_mode))
+	printJSONString(evaluateCommandWithRspfile(edge, eval_mode))
 	fmt.Printf("\",\n    \"file\": \"")
-	PrintJSONString(edge.Inputs[0].Path)
+	printJSONString(edge.Inputs[0].Path)
 	fmt.Printf("\",\n    \"output\": \"")
-	PrintJSONString(edge.Outputs[0].Path)
+	printJSONString(edge.Outputs[0].Path)
 	fmt.Printf("\"\n  }")
 }
 

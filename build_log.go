@@ -40,15 +40,18 @@ func (l *LogEntry) Equal(r *LogEntry) bool {
 		l.mtime == r.mtime
 }
 
+// Serialize writes an entry into a log file as a text form.
+func (e *LogEntry) Serialize(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "%d\t%d\t%d\t%s\t%x\n", e.start_time, e.end_time, e.mtime, e.output, e.command_hash)
+	return err
+}
+
 //type Entries ExternalStringHashMap<LogEntry*>::Type
 type Entries map[string]*LogEntry
 
 func (b *BuildLog) entries() Entries {
 	return b.entries_
 }
-
-// On AIX, inttypes.h gets indirectly included by build_log.h.
-// It's easiest just to ask for the printf format macros right away.
 
 // Implementation details:
 // Each run's log appends to the log file.
@@ -57,9 +60,11 @@ func (b *BuildLog) entries() Entries {
 // Once the number of redundant entries exceeds a threshold, we write
 // out a new file and replace the existing one with it.
 
-const BuildLogFileSignature = "# ninja log v%d\n"
-const BuildLogOldestSupportedVersion = 4
-const BuildLogCurrentVersion = 5
+const (
+	BuildLogFileSignature          = "# ninja log v%d\n"
+	BuildLogOldestSupportedVersion = 4
+	BuildLogCurrentVersion         = 5
+)
 
 // 64bit MurmurHash2, by Austin Appleby
 func MurmurHash64A(data []byte) uint64 {
@@ -177,7 +182,7 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime T
 			return false
 		}
 		if b.log_file_ != nil {
-			if err2 := WriteEntry(b.log_file_, log_entry); err2 != nil {
+			if err2 := log_entry.Serialize(b.log_file_); err2 != nil {
 				return false
 			}
 			/* TODO(maruel): Too expensive.
@@ -403,12 +408,6 @@ func (b *BuildLog) LookupByOutput(path string) *LogEntry {
 	return b.entries_[path]
 }
 
-// Serialize an entry into a log file.
-func WriteEntry(f io.Writer, entry *LogEntry) error {
-	_, err := fmt.Fprintf(f, "%d\t%d\t%d\t%s\t%x\n", entry.start_time, entry.end_time, entry.mtime, entry.output, entry.command_hash)
-	return err
-}
-
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	defer METRIC_RECORD(".ninja_log recompact")()
@@ -434,7 +433,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 			continue
 		}
 
-		if err2 := WriteEntry(f, entry); err2 != nil {
+		if err2 := entry.Serialize(f); err2 != nil {
 			*err = err2.Error()
 			_ = f.Close()
 			return false
@@ -491,7 +490,7 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, outputs []s
 			i.mtime = mtime
 		}
 
-		if err2 := WriteEntry(f, i); err2 != nil {
+		if err2 := i.Serialize(f); err2 != nil {
 			*err = err2.Error()
 			_ = f.Close()
 			return false

@@ -20,7 +20,8 @@ import (
 	"strings"
 )
 
-const NINJA_PYTHON = "abc.py"
+// TODO(maruel): Rewrite as a native Go server anyway, no need to depend on
+// python.
 const kBrowsePy = "abc"
 
 // Run in "browse" mode, which execs a Python webserver.
@@ -28,11 +29,11 @@ const kBrowsePy = "abc"
 // \a args are the number of arguments to be passed to the Python script.
 // \a argv are arguments to be passed to the Python script.
 // This function does not return if it runs successfully.
-func RunBrowsePython(state *State, ninja_command string, input_file string, args []string) {
+func runBrowsePython(state *State, ninja_command string, input_file string, args []string) {
 	// The original C++ code exec() python as the parent, which is super weird.
 	// We cannot do this easily so do it the normal way for now.
 
-	cmd := exec.Command(NINJA_PYTHON, "-", "--ninja-command", ninja_command, "-f", "input_file")
+	cmd := exec.Command("python3", "-", "--ninja-command", ninja_command, "-f", "input_file")
 	cmd.Args = append(cmd.Args, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

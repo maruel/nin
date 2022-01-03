@@ -69,7 +69,7 @@ func TestIncludesNormalize_WithRelative(t *testing.T) {
 	if "c" != NormalizeRelativeAndCheckNoError(t, "a/b/c", "a/b") {
 		t.Fatal("expected equal")
 	}
-	if "a" != NormalizeAndCheckNoError(t, AbsPath("a", &err)) {
+	if "a" != NormalizeAndCheckNoError(t, absPath("a", &err)) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {

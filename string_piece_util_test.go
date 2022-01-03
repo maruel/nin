@@ -20,74 +20,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestStringPieceUtilTest_SplitStringPiece(t *testing.T) {
-	data := []struct {
-		in   string
-		want []string
-	}{
-		{
-			"a:b:c",
-			[]string{"a", "b", "c"},
-		},
-		{
-			"",
-			[]string{""},
-		},
-		{
-			"a",
-			[]string{"a"},
-		},
-		{
-			":",
-			[]string{"", ""},
-		},
-		{
-			":a:b:c:",
-			[]string{"", "a", "b", "c", ""},
-		},
-	}
-	for _, l := range data {
-		got := SplitStringPiece(l.in, ':')
-		if diff := cmp.Diff(l.want, got); diff != "" {
-			t.Fatalf("mismatch (-want +got):\n%s", diff)
-		}
-	}
-}
-
-func TestStringPieceUtilTest_JoinStringPiece(t *testing.T) {
-	data := []struct {
-		in   []string
-		want string
-	}{
-		{
-			[]string{"a", "b", "c"},
-			"a:b:c",
-		},
-		{
-			[]string{""},
-			"",
-		},
-		{
-			[]string{},
-			"",
-		},
-		{
-			[]string{"a"},
-			"a",
-		},
-		{
-			[]string{"", "a", "b", "c", ""},
-			":a:b:c:",
-		},
-	}
-	for _, l := range data {
-		got := JoinStringPiece(l.in, ':')
-		if diff := cmp.Diff(l.want, got); diff != "" {
-			t.Fatalf("mismatch (-want +got):\n%s", diff)
-		}
-	}
-}
-
 func TestStringPieceUtilTest_ToLowerASCII(t *testing.T) {
 	data := []struct {
 		in   byte
@@ -101,7 +33,7 @@ func TestStringPieceUtilTest_ToLowerASCII(t *testing.T) {
 		{'1', '1'},
 	}
 	for _, l := range data {
-		got := ToLowerASCII(l.in)
+		got := toLowerASCII(l.in)
 		if diff := cmp.Diff(l.want, got); diff != "" {
 			t.Fatalf("mismatch (-want +got):\n%s", diff)
 		}
@@ -151,7 +83,7 @@ func TestStringPieceUtilTest_EqualsCaseInsensitiveASCII(t *testing.T) {
 		},
 	}
 	for _, l := range data {
-		got := EqualsCaseInsensitiveASCII(l.lhs, l.rhs)
+		got := equalsCaseInsensitiveASCII(l.lhs, l.rhs)
 		if diff := cmp.Diff(l.want, got); diff != "" {
 			t.Fatalf("mismatch (-want +got):\n%s", diff)
 		}

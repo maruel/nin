@@ -21,39 +21,39 @@ import (
 )
 
 func TestCLParserTest_ShowIncludes(t *testing.T) {
-	if "" != FilterShowIncludes("", "") {
+	if "" != filterShowIncludes("", "") {
 		t.Fatal("expected equal")
 	}
 
-	if "" != FilterShowIncludes("Sample compiler output", "") {
+	if "" != filterShowIncludes("Sample compiler output", "") {
 		t.Fatal("expected equal")
 	}
-	if "c:\\Some Files\\foobar.h" != FilterShowIncludes("Note: including file: c:\\Some Files\\foobar.h", "") {
+	if "c:\\Some Files\\foobar.h" != filterShowIncludes("Note: including file: c:\\Some Files\\foobar.h", "") {
 		t.Fatal("expected equal")
 	}
-	if "c:\\initspaces.h" != FilterShowIncludes("Note: including file:    c:\\initspaces.h", "") {
+	if "c:\\initspaces.h" != filterShowIncludes("Note: including file:    c:\\initspaces.h", "") {
 		t.Fatal("expected equal")
 	}
-	if "c:\\initspaces.h" != FilterShowIncludes("Non-default prefix: inc file:    c:\\initspaces.h", "Non-default prefix: inc file:") {
+	if "c:\\initspaces.h" != filterShowIncludes("Non-default prefix: inc file:    c:\\initspaces.h", "Non-default prefix: inc file:") {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestCLParserTest_FilterInputFilename(t *testing.T) {
-	if !FilterInputFilename("foobar.cc") {
+	if !filterInputFilename("foobar.cc") {
 		t.Fatal("expected true")
 	}
-	if !FilterInputFilename("foo bar.cc") {
+	if !filterInputFilename("foo bar.cc") {
 		t.Fatal("expected true")
 	}
-	if !FilterInputFilename("baz.c") {
+	if !filterInputFilename("baz.c") {
 		t.Fatal("expected true")
 	}
-	if !FilterInputFilename("FOOBAR.CC") {
+	if !filterInputFilename("FOOBAR.CC") {
 		t.Fatal("expected true")
 	}
 
-	if FilterInputFilename("src\\cl_helper.cc(166) : fatal error C1075: end of file found ...") {
+	if filterInputFilename("src\\cl_helper.cc(166) : fatal error C1075: end of file found ...") {
 		t.Fatal("expected false")
 	}
 }
