@@ -1293,7 +1293,6 @@ func TestParserTest_DyndepRuleInput(t *testing.T) {
 
 func writeFakeManifests(t testing.TB, dir string) {
 	if _, err := os.Stat(filepath.Join(dir, "build.ninja")); err == nil {
-		t.Logf("Creating manifest data... [SKIP]")
 		return
 	}
 	t.Logf("Creating manifest data...")
