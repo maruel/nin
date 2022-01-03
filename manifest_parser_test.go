@@ -61,13 +61,13 @@ func TestParserTest_Rules(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	rule := p.state.bindings_.GetRules()["cat"]
-	if got := rule.name(); got != "cat" {
+	if got := rule.Name; got != "cat" {
 		t.Fatal(got)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$in][ > ][$out]"
-	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$in][ ][>][ ][$out]" {
+	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$in][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
 }
@@ -86,7 +86,7 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	rule := p.state.bindings_.GetRules()["cat"]
-	if "cat" != rule.name() {
+	if "cat" != rule.Name {
 		t.Fatal("expected equal")
 	}
 	edge := p.state.GetNode("result", 0).InEdge
@@ -117,19 +117,19 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	rule := p.state.bindings_.GetRules()["cat_rsp"]
-	if "cat_rsp" != rule.name() {
+	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$rspfile][ > ][$out]"
-	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$rspfile][ ][>][ ][$out]" {
+	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$rspfile][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
-	if "[$rspfile]" != rule.GetBinding("rspfile").Serialize() {
+	if "[$rspfile]" != rule.Bindings["rspfile"].Serialize() {
 		t.Fatal("expected equal")
 	}
-	if "[$in]" != rule.GetBinding("rspfile_content").Serialize() {
+	if "[$in]" != rule.Bindings["rspfile_content"].Serialize() {
 		t.Fatal("expected equal")
 	}
 }
@@ -142,13 +142,13 @@ func TestParserTest_InNewline(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	rule := p.state.bindings_.GetRules()["cat_rsp"]
-	if "cat_rsp" != rule.name() {
+	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$in_newline][ > ][$out]"
-	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$in_newline][ ][>][ ][$out]" {
+	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$in_newline][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
 
@@ -202,13 +202,13 @@ func TestParserTest_Continuation(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	rule := p.state.bindings_.GetRules()["link"]
-	if "link" != rule.name() {
+	if "link" != rule.Name {
 		t.Fatal("expected equal")
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[foo bar baz]"
-	if got := rule.GetBinding("command").Serialize(); got != "[foo][ ][bar][ ][baz]" {
+	if got := rule.Bindings["command"].Serialize(); got != "[foo][ ][bar][ ][baz]" {
 		t.Fatal(got)
 	}
 }

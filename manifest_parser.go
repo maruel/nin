@@ -184,7 +184,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		}
 
 		if IsReservedBinding(key) {
-			rule.AddBinding(key, &value)
+			rule.Bindings[key] = &value
 		} else {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.
@@ -192,13 +192,13 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		}
 	}
 
-	b1, ok1 := rule.bindings_["rspfile"]
-	b2, ok2 := rule.bindings_["rspfile_content"]
+	b1, ok1 := rule.Bindings["rspfile"]
+	b2, ok2 := rule.Bindings["rspfile_content"]
 	if ok1 != ok2 || (ok1 && (len(b1.Parsed) == 0) != (len(b2.Parsed) == 0)) {
 		return m.lexer_.Error("rspfile and rspfile_content need to be both specified", err)
 	}
 
-	b, ok := rule.bindings_["command"]
+	b, ok := rule.Bindings["command"]
 	if !ok || len(b.Parsed) == 0 {
 		return m.lexer_.Error("expected 'command =' line", err)
 	}

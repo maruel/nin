@@ -70,9 +70,9 @@ func (g *GraphViz) AddTarget(node *Node) {
 		// Can draw simply.
 		// Note extra space before label text -- this is cosmetic and feels
 		// like a graphviz bug.
-		fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.Inputs[0], edge.Outputs[0], edge.Rule.name())
+		fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [label=\" %s\"]\n", edge.Inputs[0], edge.Outputs[0], edge.Rule.Name)
 	} else {
-		fmt.Fprintf(g.out, "\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.Rule.name())
+		fmt.Fprintf(g.out, "\"%p\" [label=\"%s\", shape=ellipse]\n", edge, edge.Rule.Name)
 		for _, out := range edge.Outputs {
 			fmt.Fprintf(g.out, "\"%p\" -> \"%p\"\n", edge, out)
 		}

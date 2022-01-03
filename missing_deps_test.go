@@ -80,8 +80,8 @@ func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 func (m *MissingDependencyScannerTest) CreateInitialState() {
 	depsType := &EvalString{}
 	depsType.AddText("gcc")
-	m.compileRule_.AddBinding("deps", depsType)
-	m.generatorRule_.AddBinding("deps", depsType)
+	m.compileRule_.Bindings["deps"] = depsType
+	m.generatorRule_.Bindings["deps"] = depsType
 	headerEdge := m.state_.AddEdge(m.generatorRule_)
 	m.state_.AddOut(headerEdge, "generated_header", 0)
 	compileEdge := m.state_.AddEdge(m.compileRule_)

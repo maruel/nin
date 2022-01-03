@@ -24,24 +24,17 @@ type Env interface {
 	LookupVariable(v string) string
 }
 
-type TokenType bool
-
-const (
-	RAW     TokenType = false
-	SPECIAL TokenType = true
-)
-
 type TokenListItem struct {
-	first  string
-	second TokenType
+	Value     string
+	IsSpecial bool
 }
 
 func (t *TokenListItem) String() string {
-	out := fmt.Sprintf("%q:", t.first)
-	if t.second == RAW {
-		out += "RAW"
+	out := fmt.Sprintf("%q:", t.Value)
+	if t.IsSpecial {
+		out += "raw"
 	} else {
-		out += "SPECIAL"
+		out += "special"
 	}
 	return out
 }
@@ -78,12 +71,12 @@ func (e *EvalString) Evaluate(env Env) string {
 	}
 	total := 0
 	for i, p := range e.Parsed {
-		if p.second == RAW {
-			x := p.first
+		if !p.IsSpecial {
+			x := p.Value
 			s[i] = x
 			total += len(x)
 		} else {
-			x := env.LookupVariable(p.first)
+			x := env.LookupVariable(p.Value)
 			s[i] = x
 			total += len(x)
 		}
@@ -99,11 +92,11 @@ func (e *EvalString) Evaluate(env Env) string {
 }
 
 func (e *EvalString) AddText(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, RAW})
+	e.Parsed = append(e.Parsed, TokenListItem{text, false})
 }
 
 func (e *EvalString) AddSpecial(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, SPECIAL})
+	e.Parsed = append(e.Parsed, TokenListItem{text, true})
 }
 
 // Construct a human-readable representation of the parsed state,
@@ -112,10 +105,10 @@ func (e *EvalString) Serialize() string {
 	result := ""
 	for _, i := range e.Parsed {
 		result += "["
-		if i.second == SPECIAL {
+		if i.IsSpecial {
 			result += "$"
 		}
-		result += i.first
+		result += i.Value
 		result += "]"
 	}
 	return result
@@ -125,11 +118,11 @@ func (e *EvalString) Serialize() string {
 func (e *EvalString) Unparse() string {
 	result := ""
 	for _, i := range e.Parsed {
-		special := (i.second == SPECIAL)
+		special := i.IsSpecial
 		if special {
 			result += "${"
 		}
-		result += i.first
+		result += i.Value
 		if special {
 			result += "}"
 		}
@@ -138,8 +131,6 @@ func (e *EvalString) Unparse() string {
 }
 
 //
-
-type Bindings map[string]*EvalString
 
 func IsReservedBinding(v string) bool {
 	return v == "command" ||
@@ -157,25 +148,21 @@ func IsReservedBinding(v string) bool {
 
 // An invocable build command and associated metadata (description, etc.).
 type Rule struct {
-	name_     string
-	bindings_ Bindings
+	Name     string
+	Bindings map[string]*EvalString
 }
 
 func NewRule(name string) *Rule {
 	return &Rule{
-		name_:     name,
-		bindings_: make(Bindings),
+		Name:     name,
+		Bindings: map[string]*EvalString{},
 	}
 }
 
-func (r *Rule) name() string {
-	return r.name_
-}
-
 func (r *Rule) String() string {
-	out := "Rule:" + r.name_ + "{"
-	names := make([]string, 0, len(r.bindings_))
-	for n := range r.bindings_ {
+	out := "Rule:" + r.Name + "{"
+	names := make([]string, 0, len(r.Bindings))
+	for n := range r.Bindings {
 		names = append(names, n)
 	}
 	sort.Strings(names)
@@ -183,19 +170,10 @@ func (r *Rule) String() string {
 		if i != 0 {
 			out += ","
 		}
-		out += n + ":" + r.bindings_[n].String()
+		out += n + ":" + r.Bindings[n].String()
 	}
 	out += "}"
 	return out
-}
-
-func (r *Rule) AddBinding(key string, val *EvalString) {
-	r.bindings_[key] = val
-}
-
-func (r *Rule) GetBinding(key string) *EvalString {
-	//log.Printf("Rule.GetBinding(%s): %#v", key, r.bindings_[key])
-	return r.bindings_[key]
 }
 
 //
@@ -258,10 +236,10 @@ func (b *BindingEnv) AddBinding(key string, val string) {
 }
 
 func (b *BindingEnv) AddRule(rule *Rule) {
-	if b.LookupRuleCurrentScope(rule.name_) != nil {
+	if b.LookupRuleCurrentScope(rule.Name) != nil {
 		panic("oops")
 	}
-	b.rules_[rule.name_] = rule
+	b.rules_[rule.Name] = rule
 }
 
 func (b *BindingEnv) LookupRuleCurrentScope(ruleName string) *Rule {

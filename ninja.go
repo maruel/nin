@@ -323,7 +323,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 					warningf("%s\n", err)
 				}
 			}
-			fmt.Printf("  input: %s\n", edge.Rule.name())
+			fmt.Printf("  input: %s\n", edge.Rule.Name)
 			for in := 0; in < len(edge.Inputs); in++ {
 				label := ""
 				if edge.isImplicit(in) {
@@ -381,7 +381,7 @@ func toolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 		}
 		target := n.Path
 		if n.InEdge != nil {
-			fmt.Printf("%s: %s\n", target, n.InEdge.Rule.name())
+			fmt.Printf("%s: %s\n", target, n.InEdge.Rule.Name)
 			if depth > 1 || depth <= 0 {
 				toolTargetsListNodes(n.InEdge.Inputs, depth-1, indent+1)
 			}
@@ -408,7 +408,7 @@ func toolTargetsListRule(state *State, ruleName string) int {
 
 	// Gather the outputs.
 	for _, e := range state.edges_ {
-		if e.Rule.name() == ruleName {
+		if e.Rule.Name == ruleName {
 			for _, outNode := range e.Outputs {
 				rules[outNode.Path] = struct{}{}
 			}
@@ -430,7 +430,7 @@ func toolTargetsListRule(state *State, ruleName string) int {
 func toolTargetsList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, outNode := range e.Outputs {
-			fmt.Printf("%s: %s\n", outNode.Path, e.Rule.name())
+			fmt.Printf("%s: %s\n", outNode.Path, e.Rule.Name)
 		}
 	}
 	return 0
@@ -565,7 +565,7 @@ func toolRules(n *ninjaMain, opts *options, args []string) int {
 		fmt.Printf("%s", name)
 		if printDescription {
 			rule := rules[name]
-			description := rule.GetBinding("description")
+			description := rule.Bindings["description"]
 			if description != nil {
 				fmt.Printf(": %s", description.Unparse())
 			}
@@ -767,7 +767,7 @@ func toolCompilationDatabase(n *ninjaMain, opts *options, args []string) int {
 			first = false
 		} else {
 			for i := 0; i != len(args); i++ {
-				if e.Rule.name() == args[i] {
+				if e.Rule.Name == args[i] {
 					if !first {
 						fmt.Printf(",")
 					}

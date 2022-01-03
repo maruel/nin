@@ -28,7 +28,7 @@ import (
 // the total scheduled weight diminishes enough (i.e. when a scheduled edge
 // completes).
 type Pool struct {
-	name_ string
+	Name string
 
 	// |currentUse_| is the total of the weights of the edges which are
 	// currently scheduled in the Plan (i.e. the edges in Plan::ready_).
@@ -40,7 +40,7 @@ type Pool struct {
 
 func NewPool(name string, depth int) *Pool {
 	return &Pool{
-		name_:    name,
+		Name:     name,
 		depth_:   depth,
 		delayed_: NewEdgeSet(),
 	}
@@ -52,9 +52,6 @@ func (p *Pool) isValid() bool {
 }
 func (p *Pool) depth() int {
 	return p.depth_
-}
-func (p *Pool) name() string {
-	return p.name_
 }
 func (p *Pool) currentUse() int {
 	return p.currentUse_
@@ -109,7 +106,7 @@ func (p *Pool) RetrieveReadyEdges(readyQueue *EdgeSet) {
 
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
-	fmt.Printf("%s (%d/%d) ->\n", p.name_, p.currentUse_, p.depth_)
+	fmt.Printf("%s (%d/%d) ->\n", p.Name, p.currentUse_, p.depth_)
 	// TODO(maruel): Use inner knowledge
 	p.delayed_.recreate()
 	for _, it := range p.delayed_.sorted {
@@ -161,10 +158,10 @@ func NewState() State {
 }
 
 func (s *State) AddPool(pool *Pool) {
-	if s.LookupPool(pool.name()) != nil {
-		panic(pool.name())
+	if s.LookupPool(pool.Name) != nil {
+		panic(pool.Name)
 	}
-	s.pools_[pool.name()] = pool
+	s.pools_[pool.Name] = pool
 }
 
 func (s *State) LookupPool(poolName string) *Pool {
@@ -311,7 +308,7 @@ func (s *State) Dump() {
 	if len(s.pools_) != 0 {
 		fmt.Printf("resource_pools:\n")
 		for _, p := range s.pools_ {
-			if p.name() != "" {
+			if p.Name != "" {
 				p.Dump()
 			}
 		}

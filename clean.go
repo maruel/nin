@@ -272,7 +272,7 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 	}
 
 	for _, e := range c.state_.edges_ {
-		if e.Rule.name() == rule.name() {
+		if e.Rule.Name == rule.Name {
 			for _, outNode := range e.Outputs {
 				c.Remove(outNode.Path)
 				c.RemoveEdgeFiles(e)

@@ -825,13 +825,13 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 		f.t.Fatalf("running same edge twice")
 	}
 	f.commandsRan_ = append(f.commandsRan_, cmd)
-	if edge.Rule.name() == "cat" || edge.Rule.name() == "cat_rsp" || edge.Rule.name() == "cat_rsp_out" || edge.Rule.name() == "cc" || edge.Rule.name() == "cp_multi_msvc" || edge.Rule.name() == "cp_multi_gcc" || edge.Rule.name() == "touch" || edge.Rule.name() == "touch-interrupt" || edge.Rule.name() == "touch-fail-tick2" {
+	if edge.Rule.Name == "cat" || edge.Rule.Name == "cat_rsp" || edge.Rule.Name == "cat_rsp_out" || edge.Rule.Name == "cc" || edge.Rule.Name == "cp_multi_msvc" || edge.Rule.Name == "cp_multi_gcc" || edge.Rule.Name == "touch" || edge.Rule.Name == "touch-interrupt" || edge.Rule.Name == "touch-fail-tick2" {
 		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
-	} else if edge.Rule.name() == "true" || edge.Rule.name() == "fail" || edge.Rule.name() == "interrupt" || edge.Rule.name() == "console" {
+	} else if edge.Rule.Name == "true" || edge.Rule.Name == "fail" || edge.Rule.Name == "interrupt" || edge.Rule.Name == "console" {
 		// Don't do anything.
-	} else if edge.Rule.name() == "cp" {
+	} else if edge.Rule.Name == "cp" {
 		if len(edge.Inputs) == 0 {
 			f.t.Fatal("oops")
 		}
@@ -843,21 +843,21 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 		if f.fs_.ReadFile(edge.Inputs[0].Path, &content, &err) == Okay {
 			f.fs_.WriteFile(edge.Outputs[0].Path, content)
 		}
-	} else if edge.Rule.name() == "touch-implicit-dep-out" {
+	} else if edge.Rule.Name == "touch-implicit-dep-out" {
 		dep := edge.GetBinding("test_dependency")
 		f.fs_.Create(dep, "")
 		f.fs_.Tick()
 		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
-	} else if edge.Rule.name() == "touch-out-implicit-dep" {
+	} else if edge.Rule.Name == "touch-out-implicit-dep" {
 		dep := edge.GetBinding("test_dependency")
 		for _, out := range edge.Outputs {
 			f.fs_.Create(out.Path, "")
 		}
 		f.fs_.Tick()
 		f.fs_.Create(dep, "")
-	} else if edge.Rule.name() == "generate-depfile" {
+	} else if edge.Rule.Name == "generate-depfile" {
 		dep := edge.GetBinding("test_dependency")
 		depfile := edge.GetUnescapedDepfile()
 		contents := ""
@@ -893,12 +893,12 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 	edge := f.activeEdges_[edgeIter]
 	result.Edge = edge
 
-	if edge.Rule.name() == "interrupt" || edge.Rule.name() == "touch-interrupt" {
+	if edge.Rule.Name == "interrupt" || edge.Rule.Name == "touch-interrupt" {
 		result.ExitCode = ExitInterrupted
 		return true
 	}
 
-	if edge.Rule.name() == "console" {
+	if edge.Rule.Name == "console" {
 		if edge.Pool == ConsolePool {
 			result.ExitCode = ExitSuccess
 		} else {
@@ -909,14 +909,14 @@ func (f *FakeCommandRunner) WaitForCommand(result *Result) bool {
 		return true
 	}
 
-	if edge.Rule.name() == "cp_multi_msvc" {
+	if edge.Rule.Name == "cp_multi_msvc" {
 		prefix := edge.GetBinding("msvc_deps_prefix")
 		for _, in := range edge.Inputs {
 			result.Output += prefix + in.Path + "\n"
 		}
 	}
 
-	if edge.Rule.name() == "fail" || (edge.Rule.name() == "touch-fail-tick2" && f.fs_.now_ == 2) {
+	if edge.Rule.Name == "fail" || (edge.Rule.Name == "touch-fail-tick2" && f.fs_.now_ == 2) {
 		result.ExitCode = ExitFailure
 	} else {
 		result.ExitCode = ExitSuccess

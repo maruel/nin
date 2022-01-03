@@ -269,7 +269,7 @@ func (e *Edge) Dump(prefix string) {
 			fmt.Printf("%s ", i.Path)
 		}
 	}
-	fmt.Printf("--%s-> ", e.Rule.name())
+	fmt.Printf("--%s-> ", e.Rule.Name)
 	for _, i := range e.Outputs {
 		fmt.Printf("%s ", i.Path)
 	}
@@ -280,8 +280,8 @@ func (e *Edge) Dump(prefix string) {
 		}
 	}
 	if e.Pool != nil {
-		if e.Pool.name() != "" {
-			fmt.Printf("(in pool '%s')", e.Pool.name())
+		if e.Pool.Name != "" {
+			fmt.Printf("(in pool '%s')", e.Pool.Name)
 		}
 	} else {
 		fmt.Printf("(null pool?)")
@@ -439,7 +439,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 	}
 
 	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge_.Rule.GetBinding(var2)
+	eval := e.edge_.Rule.Bindings[var2]
 	if e.recursive_ && eval != nil {
 		e.lookups_ = append(e.lookups_, var2)
 	}

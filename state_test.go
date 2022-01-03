@@ -31,7 +31,7 @@ func TestState_Basic(t *testing.T) {
 	}
 
 	rule := NewRule("cat")
-	rule.AddBinding("command", &command)
+	rule.Bindings["command"] = &command
 	state.bindings_.AddRule(rule)
 
 	edge := state.AddEdge(rule)
