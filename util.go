@@ -313,28 +313,44 @@ func stringNeedsWin32Escaping(input string) bool {
 	return false
 }
 
-// Escapes the item for bash.
-func getShellEscapedString(input string) string {
+// getShellEscapedStringLen calculates the length of the escaped string.
+func getShellEscapedStringLen(input string) int {
 	if !stringNeedsShellEscaping(input) {
-		return input
+		return len(input)
 	}
 
-	const quote = byte('\'')
 	// Do one pass to calculate the ending size.
 	l := len(input) + 2
 	for i := 0; i != len(input); i++ {
-		if input[i] == quote {
+		if input[i] == '\'' {
+			l += 3
+		}
+	}
+	return l
+}
+
+// Escapes the item for bash.
+func appendShellEscapedString(out []byte, input string) int {
+	if !stringNeedsShellEscaping(input) {
+		copy(out, input)
+		return len(input)
+	}
+
+	// Do one pass to calculate the ending size.
+	l := len(input) + 2
+	for i := 0; i != len(input); i++ {
+		if input[i] == '\'' {
 			l += 3
 		}
 	}
 
-	out := make([]byte, l)
-	out[0] = quote
+	out[0] = '\''
+	_ = out[l]
 	offset := 1
-	for i := 0; i < len(input); i++ {
+	for i := 0; i < len(input) && i < l; i++ {
 		c := input[i]
 		out[offset] = c
-		if c == quote {
+		if c == '\'' {
 			offset++
 			out[offset] = '\\'
 			offset++
@@ -344,8 +360,8 @@ func getShellEscapedString(input string) string {
 		}
 		offset++
 	}
-	out[offset] = quote
-	return unsafeString(out)
+	out[offset] = '\''
+	return offset + 1
 }
 
 // Escapes the item for Windows's CommandLineToArgvW().

@@ -456,25 +456,24 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
 func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
-	var z [64]string
-	var s []string
-	if l := len(span); l <= cap(z) {
-		s = z[:l]
-	} else {
-		s = make([]string, l)
-	}
+	// It is "anti-optimized" for Windows.
 	total := 0
 	first := false
-	for i, x := range span {
-		path := x.PathDecanonicalized()
-		if e.escapeInOut == ShellEscape {
-			if runtime.GOOS == "windows" {
+	for _, n := range span {
+		l := 0
+		if runtime.GOOS == "windows" {
+			path := n.PathDecanonicalized()
+			if e.escapeInOut == ShellEscape {
 				path = getWin32EscapedString(path)
+			}
+			l = len(path)
+		} else {
+			if e.escapeInOut == ShellEscape {
+				l = getShellEscapedStringLen(n.Path)
 			} else {
-				path = getShellEscapedString(path)
+				l = len(n.Path)
 			}
 		}
-		l := len(path)
 		if !first {
 			if l != 0 {
 				first = true
@@ -483,19 +482,31 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 			// For the separator.
 			total++
 		}
-		s[i] = path
 		total += l
 	}
 
 	out := make([]byte, total)
 	offset := 0
-	for _, x := range s {
+	for _, n := range span {
 		if offset != 0 {
 			out[offset] = sep
 			offset++
 		}
-		copy(out[offset:], x)
-		offset += len(x)
+		if runtime.GOOS == "windows" {
+			path := n.PathDecanonicalized()
+			if e.escapeInOut == ShellEscape {
+				path = getWin32EscapedString(path)
+			}
+			copy(out[offset:], path)
+			offset += len(path)
+		} else {
+			if e.escapeInOut == ShellEscape {
+				offset += appendShellEscapedString(out[offset:], n.Path)
+			} else {
+				copy(out[offset:], n.Path)
+				offset += len(n.Path)
+			}
+		}
 	}
 	return unsafeString(out)
 }
