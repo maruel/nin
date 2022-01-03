@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 )
 
@@ -220,47 +221,51 @@ func (d *DepsLog) Close() error {
 	return err
 }
 
+// Load loads a .ninja_deps to accelerate incremental build.
+//
+// Note: For version differences, this should migrate to the new format.
+// But the v1 format could sometimes (rarely) end up with invalid data, so
+// don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
+// and there was no release with it, so pretend that it never happened.)
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	defer MetricRecord(".ninja_deps load")()
-	buf := [maxRecordSize + 1]byte{}
-	f, err2 := os.Open(path)
-	if f == nil {
+	data, err2 := ioutil.ReadFile(path)
+	if err2 != nil {
 		if os.IsNotExist(err2) {
 			return LoadNotFound
 		}
 		*err = err2.Error()
 		return LoadError
 	}
-
-	// TODO(maruel): Read the file all at once then use a buffer.
-	validHeader := true
+	// Read the file all at once then use a buffer.
+	validHeader := false
 	version := uint32(0)
-	if _, err := f.Read(buf[:len(DepsLogFileSignature)]); err != nil {
-		validHeader = false
-	} else if err := binary.Read(f, binary.LittleEndian, &version); err != nil {
-		validHeader = false
+	if len(data) >= len(DepsLogFileSignature)+4 && unsafeString(data[:len(DepsLogFileSignature)]) == DepsLogFileSignature {
+		version = binary.LittleEndian.Uint32(data[len(DepsLogFileSignature):])
+		validHeader = version == DepsLogCurrentVersion
 	}
-	// Note: For version differences, this should migrate to the new format.
-	// But the v1 format could sometimes (rarely) end up with invalid data, so
-	// don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
-	// and there was no release with it, so pretend that it never happened.)
-	if !validHeader || unsafeString(buf[:len(DepsLogFileSignature)]) != DepsLogFileSignature || version != DepsLogCurrentVersion {
+	if !validHeader {
 		if version == 1 {
 			*err = "deps log version change; rebuilding"
 		} else {
-			l := bytes.IndexByte(buf[:], 0)
-			if l == 0 {
+			l := bytes.IndexByte(data[:], 0)
+			if l <= 0 {
 				*err = "bad deps log signature or version; starting over"
 			} else {
-				*err = fmt.Sprintf("bad deps log signature %q or version %d; starting over", buf[:l], version)
+				*err = fmt.Sprintf("bad deps log signature %q or version %d; starting over", data[:l], version)
 			}
 		}
-		_ = f.Close()
 		_ = os.Remove(path)
 		// Don't report this as a failure.  An empty deps log will cause
 		// us to rebuild the outputs anyway.
 		return LoadSuccess
 	}
+
+	offset := len(DepsLogFileSignature) + 4
+	// TODO(maruel): Use binary.LittleEndian.Uint32() directly instead of using a
+	// io.Reader.
+	f := bytes.NewReader(data[offset:])
+	buf := [maxRecordSize + 1]byte{}
 	readFailed := false
 	uniqueDepRecordCount := 0
 	totalDepRecordCount := 0
@@ -288,7 +293,8 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 
 		if isDeps {
 			if size%4 != 0 || size < 12 {
-				panic("M-A")
+				// TODO(maruel): Make it a real error.
+				break
 			}
 			// TODO(maruel): Not super efficient but looking for correctness now.
 			// Optimize later.
@@ -306,6 +312,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 			var mtime TimeStamp
 			if err2 := binary.Read(r, binary.LittleEndian, &mtime); err2 != nil {
+				// TODO(maruel): Make it a real error.
 				panic(err2)
 			}
 			depsCount := int(size)/4 - 3
@@ -383,18 +390,17 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			*err = "premature end of file"
 		}
 
-		if err := f.Truncate(0); err != nil {
-			_ = f.Close()
+		// TODO(maruel): Not exactly right.
+		offset, _ := f.Seek(0, io.SeekCurrent)
+		if err := os.Truncate(path, offset); err != nil {
 			return LoadError
 		}
-		_ = f.Close()
 
 		// The truncate succeeded; we'll just report the load error as a
 		// warning because the build can proceed.
 		*err += "; recovering"
 		return LoadSuccess
 	}
-	_ = f.Close()
 
 	// Rebuild the log if there are too many dead records.
 	const minCompactionEntryCount = 1000
