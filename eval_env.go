@@ -65,7 +65,7 @@ func (e *EvalString) Evaluate(env Env) string {
 	if l := len(e.Parsed); l <= cap(z) {
 		s = z[:l]
 	} else {
-		s = make([]string, len(e.Parsed))
+		s = make([]string, l)
 	}
 	total := 0
 	for i, p := range e.Parsed {

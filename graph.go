@@ -453,7 +453,13 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
 func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
-	s := make([]string, len(span))
+	var z [64]string
+	var s []string
+	if l := len(span); l <= cap(z) {
+		s = z[:l]
+	} else {
+		s = make([]string, l)
+	}
 	total := 0
 	first := false
 	for i, x := range span {
