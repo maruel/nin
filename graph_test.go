@@ -364,8 +364,8 @@ func TestGraphTest_RuleVariablesInScope(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state_, "rule r\n  depfile = x\n  command = depfile is $depfile\nbuild out: r in\n", ManifestParserOptions{})
 	edge := g.GetNode("out").InEdge
-	if "depfile is x" != edge.EvaluateCommand(false) {
-		t.Fatal("expected equal")
+	if got := edge.EvaluateCommand(false); got != "depfile is x" {
+		t.Fatal(got)
 	}
 }
 

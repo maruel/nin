@@ -68,9 +68,14 @@ func (e *EvalString) String() string {
 // @return The evaluated string with variable expanded using value found in
 //         environment @a env.
 func (e *EvalString) Evaluate(env Env) string {
-	// TODO(maruel): We could remove this allocation most of the time by
-	// defaulting to a 16 items array on the stack.
-	s := make([]string, len(e.Parsed))
+	// Warning: this function is recursive.
+	var z [64]string
+	var s []string
+	if l := len(e.Parsed); l <= cap(z) {
+		s = z[:l]
+	} else {
+		s = make([]string, len(e.Parsed))
+	}
 	total := 0
 	for i, p := range e.Parsed {
 		if p.second == RAW {
