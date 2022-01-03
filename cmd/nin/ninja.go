@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"runtime/pprof"
 	"runtime/trace"
 	"sort"
@@ -1310,7 +1309,7 @@ func Main() int {
 	// TODO(maruel): Handle os.Interrupt and cancel the context cleanly.
 
 	// Disable GC (TODO: unless running a stateful server).
-	debug.SetGCPercent(-1)
+	//debug.SetGCPercent(-1)
 
 	if opts.cpuprofile != "" {
 		f, err := os.Create(opts.cpuprofile)
