@@ -64,8 +64,11 @@ func TestParserTest_Rules(t *testing.T) {
 	if got := rule.name(); got != "cat" {
 		t.Fatal(got)
 	}
-	if "[cat ][$in][ > ][$out]" != rule.GetBinding("command").Serialize() {
-		t.Fatal("expected equal")
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[cat ][$in][ > ][$out]"
+	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$in][ ][>][ ][$out]" {
+		t.Fatal(got)
 	}
 }
 
@@ -117,8 +120,11 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 	if "cat_rsp" != rule.name() {
 		t.Fatal("expected equal")
 	}
-	if "[cat ][$rspfile][ > ][$out]" != rule.GetBinding("command").Serialize() {
-		t.Fatal("expected equal")
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[cat ][$rspfile][ > ][$out]"
+	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$rspfile][ ][>][ ][$out]" {
+		t.Fatal(got)
 	}
 	if "[$rspfile]" != rule.GetBinding("rspfile").Serialize() {
 		t.Fatal("expected equal")
@@ -139,8 +145,11 @@ func TestParserTest_InNewline(t *testing.T) {
 	if "cat_rsp" != rule.name() {
 		t.Fatal("expected equal")
 	}
-	if "[cat ][$in_newline][ > ][$out]" != rule.GetBinding("command").Serialize() {
-		t.Fatal("expected equal")
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[cat ][$in_newline][ > ][$out]"
+	if got := rule.GetBinding("command").Serialize(); got != "[cat][ ][$in_newline][ ][>][ ][$out]" {
+		t.Fatal(got)
 	}
 
 	edge := p.state.edges_[0]
@@ -196,8 +205,11 @@ func TestParserTest_Continuation(t *testing.T) {
 	if "link" != rule.name() {
 		t.Fatal("expected equal")
 	}
-	if "[foo bar baz]" != rule.GetBinding("command").Serialize() {
-		t.Fatal("expected equal")
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[foo bar baz]"
+	if got := rule.GetBinding("command").Serialize(); got != "[foo][ ][bar][ ][baz]" {
+		t.Fatal(got)
 	}
 }
 

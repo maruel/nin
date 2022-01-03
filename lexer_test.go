@@ -26,7 +26,10 @@ func TestLexer_ReadVarValue(t *testing.T) {
 	if err != "" {
 		t.Fatal(err)
 	}
-	if got := eval.Serialize(); got != "[plain text ][$var][ ][$VaR][ ][$x]" {
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[plain text ][$var][ ][$VaR][ ][$x]"
+	if got := eval.Serialize(); got != "[plain][ ][text][ ][$var][ ][$VaR][ ][$x]" {
 		t.Fatal(got)
 	}
 }
@@ -41,7 +44,10 @@ func TestLexer_ReadEvalStringEscapes(t *testing.T) {
 	if err != "" {
 		t.Fatal(err)
 	}
-	if got := eval.Serialize(); got != "[ $ab c: cde]" {
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[ $ab c: cde]"
+	if got := eval.Serialize(); got != "[ ][$][ab][ ][c][:][ ][cde]" {
 		t.Fatal(got)
 	}
 }
@@ -94,7 +100,10 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 	if err != "" {
 		t.Fatal(err)
 	}
-	if got := eval.Serialize(); got != "[$bar][.dots ][$bar.dots]" {
+	// The C++ version of EvalString concatenates text to reduce the array slice.
+	// This is slower in Go in practice.
+	// Original: "[$bar][.dots ][$bar.dots]"
+	if got := eval.Serialize(); got != "[$bar][.dots][ ][$bar.dots]" {
 		t.Fatal(got)
 	}
 }
