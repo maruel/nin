@@ -28,7 +28,7 @@ func testCommand() string {
 	return "ls /"
 }
 
-func NewSubprocessSetTest(t *testing.T) SubprocessSet {
+func NewSubprocessSetTest(t *testing.T) *SubprocessSet {
 	s := NewSubprocessSet()
 	t.Cleanup(s.Clear)
 	return s
@@ -276,7 +276,7 @@ func TestSubprocessTest_SetWithSingle(t *testing.T) {
 }
 
 func TestSubprocessTest_SetWithMulti(t *testing.T) {
-	processes := [3]Subprocess{}
+	processes := [3]*Subprocess{}
 	commands := []string{testCommand()}
 	if runtime.GOOS == "windows" {
 		commands = append(commands, "cmd /c echo hi", "cmd /c time /t")
@@ -343,7 +343,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 	cmd := "/bin/echo"
 
 	subprocs_ := NewSubprocessSetTest(t)
-	var procs []Subprocess
+	var procs []*Subprocess
 	for i := 0; i < numProcs; i++ {
 		subproc := subprocs_.Add(cmd, false)
 		if nil == subproc {

@@ -17,6 +17,7 @@ package nin
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -27,44 +28,31 @@ import (
 // The Go runtime already handles poll under the hood so this abstraction layer
 // has to be replaced; unless we realize that the Go runtime is too slow.
 
-type Subprocess interface {
-	// Query if the process is done.
-	Done() bool
-	// Only to be called after the process is done.
-	Finish() ExitStatus
-	GetOutput() string
-}
-
-type SubprocessSet interface {
-	Clear()
-	Running() int
-	Finished() int
-	Add(command string, useConsole bool) Subprocess
-	NextFinished() Subprocess
-	DoWork() bool
-}
-
-// SubprocessGeneric is the dumbest implementation, just to get going.
-type SubprocessGeneric struct {
+// Subprocess is the dumbest implementation, just to get going.
+type Subprocess struct {
 	done     int32
 	exitCode int32
 	buf      string
 }
 
-// Done is only used in tests.
-func (s *SubprocessGeneric) Done() bool {
+// Done queries if the process is done.
+//
+// Only used in tests.
+func (s *Subprocess) Done() bool {
 	return atomic.LoadInt32(&s.done) != 0
 }
 
-func (s *SubprocessGeneric) Finish() ExitStatus {
+// Finish returns the exit code. Must only to be called after the process is
+// done.
+func (s *Subprocess) Finish() ExitStatus {
 	return ExitStatus(s.exitCode)
 }
 
-func (s *SubprocessGeneric) GetOutput() string {
+func (s *Subprocess) GetOutput() string {
 	return s.buf
 }
 
-func (s *SubprocessGeneric) run(ctx context.Context, c string, useConsole bool) {
+func (s *Subprocess) run(ctx context.Context, c string, useConsole bool) {
 	ex := ""
 	var args []string
 	if runtime.GOOS == "windows" {
@@ -92,10 +80,17 @@ func (s *SubprocessGeneric) run(ctx context.Context, c string, useConsole bool) 
 	} else {
 		cmd = exec.CommandContext(ctx, ex, args...)
 	}
+	// TODO(maruel): The C++ code is fairly involved in its way to setup the
+	// process, the code here is fairly naive.
+	// TODO(maruel): When useConsole is false, it should be in a new process
+	// group on posix.
 	buf := bytes.Buffer{}
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	s.osSpecific(cmd, c)
+	if useConsole {
+		cmd.Stdin = os.Stdin
+	}
+	s.osSpecific(cmd, c, useConsole)
 	_ = cmd.Run()
 	// Skip a memory copy.
 	s.buf = unsafeString(buf.Bytes())
@@ -104,48 +99,54 @@ func (s *SubprocessGeneric) run(ctx context.Context, c string, useConsole bool) 
 	s.exitCode = int32(cmd.ProcessState.ExitCode())
 }
 
-type SubprocessSetGeneric struct {
+type SubprocessSet struct {
 	ctx       context.Context
 	cancel    func()
 	wg        sync.WaitGroup
-	procDone  chan *SubprocessGeneric
+	procDone  chan *Subprocess
 	mu        sync.Mutex
-	running_  []*SubprocessGeneric
-	finished_ []*SubprocessGeneric
+	running_  []*Subprocess
+	finished_ []*Subprocess
 }
 
-func NewSubprocessSet() *SubprocessSetGeneric {
+func NewSubprocessSet() *SubprocessSet {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &SubprocessSetGeneric{
+	return &SubprocessSet{
 		ctx:      ctx,
 		cancel:   cancel,
-		procDone: make(chan *SubprocessGeneric),
+		procDone: make(chan *Subprocess),
 	}
 }
 
-func (s *SubprocessSetGeneric) Clear() {
+// Clear interrupts all the children processes.
+//
+// TODO(maruel): Use a context instead.
+func (s *SubprocessSet) Clear() {
 	s.cancel()
 	s.wg.Wait()
 	// TODO(maruel): This is still broken, since the goroutines are stuck on
 	// s.procDone <- subproc.
 }
 
-func (s *SubprocessSetGeneric) Running() int {
+// Running returns the number of running processes.
+func (s *SubprocessSet) Running() int {
 	s.mu.Lock()
 	r := len(s.running_)
 	s.mu.Unlock()
 	return r
 }
 
-func (s *SubprocessSetGeneric) Finished() int {
+// Finished returns the number of processes to parse their output.
+func (s *SubprocessSet) Finished() int {
 	s.mu.Lock()
 	f := len(s.finished_)
 	s.mu.Unlock()
 	return f
 }
 
-func (s *SubprocessSetGeneric) Add(c string, useConsole bool) Subprocess {
-	subproc := &SubprocessGeneric{}
+// Add starts a new child process.
+func (s *SubprocessSet) Add(c string, useConsole bool) *Subprocess {
+	subproc := &Subprocess{}
 	s.wg.Add(1)
 	go s.enqueue(subproc, c, useConsole)
 	s.mu.Lock()
@@ -154,7 +155,7 @@ func (s *SubprocessSetGeneric) Add(c string, useConsole bool) Subprocess {
 	return subproc
 }
 
-func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, useConsole bool) {
+func (s *SubprocessSet) enqueue(subproc *Subprocess, c string, useConsole bool) {
 	subproc.run(s.ctx, c, useConsole)
 	// Do it before sending the channel because procDone is a blocking channel
 	// and the caller relies on Running() == 0 && Finished() == 0. Otherwise
@@ -163,9 +164,10 @@ func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, use
 	s.procDone <- subproc
 }
 
-func (s *SubprocessSetGeneric) NextFinished() Subprocess {
+// NextFinished returns the next finished child process.
+func (s *SubprocessSet) NextFinished() *Subprocess {
 	s.mu.Lock()
-	var subproc Subprocess
+	var subproc *Subprocess
 	if len(s.finished_) != 0 {
 		// LIFO queue.
 		subproc = s.finished_[len(s.finished_)-1]
@@ -182,12 +184,12 @@ func (s *SubprocessSetGeneric) NextFinished() Subprocess {
 //  - A pipe got data, returns false
 //
 // In Go, the later can't happen.
-func (s *SubprocessSetGeneric) DoWork() bool {
+func (s *SubprocessSet) DoWork() bool {
 	o := false
 	for {
 		select {
 		case p := <-s.procDone:
-			// TODO(maruel): Do a perf compare with a map[*SubprocessGeneric]struct{}.
+			// TODO(maruel): Do a perf compare with a map[*Subprocess]struct{}.
 			s.mu.Lock()
 			i := 0
 			for i = range s.running_ {

@@ -130,15 +130,15 @@ func (d *DryRunCommandRunner) Abort() {
 
 type RealCommandRunner struct {
 	config_        *BuildConfig
-	subprocs_      SubprocessSet
-	subprocToEdge_ map[Subprocess]*Edge
+	subprocs_      *SubprocessSet
+	subprocToEdge_ map[*Subprocess]*Edge
 }
 
 func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
 	return &RealCommandRunner{
 		config_:        config,
 		subprocs_:      NewSubprocessSet(),
-		subprocToEdge_: map[Subprocess]*Edge{},
+		subprocToEdge_: map[*Subprocess]*Edge{},
 	}
 }
 
@@ -172,7 +172,7 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 }
 
 func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-	var subproc Subprocess
+	var subproc *Subprocess
 	for {
 		subproc = r.subprocs_.NextFinished()
 		if subproc != nil {
