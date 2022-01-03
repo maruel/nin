@@ -46,9 +46,6 @@ func (l *LogEntry) Serialize(w io.Writer) error {
 	return err
 }
 
-//type Entries ExternalStringHashMap<LogEntry*>::Type
-type Entries map[string]*LogEntry
-
 // Implementation details:
 // Each run's log appends to the log file.
 // To load, we run through all log entries in series, throwing away
@@ -128,14 +125,17 @@ type BuildLogUser interface {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-	entries           Entries
+	entries           map[string]*LogEntry
 	logFile           *os.File
 	logFilePath       string
 	needsRecompaction bool
 }
 
+// Note: the C++ version uses ExternalStringHashMap<LogEntry*> for
+// BuildLog.entries.
+
 func NewBuildLog() BuildLog {
-	return BuildLog{entries: Entries{}}
+	return BuildLog{entries: map[string]*LogEntry{}}
 }
 
 // Prepares writing to the log file without actually opening it - that will

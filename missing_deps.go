@@ -34,10 +34,8 @@ type MissingDependencyScanner struct {
 	generatorRules      map[*Rule]struct{}
 	missingDepPathCount int
 
-	adjacencyMap AdjacencyMap
+	adjacencyMap map[*Edge]map[*Edge]bool
 }
-type InnerAdjacencyMap map[*Edge]bool
-type AdjacencyMap map[*Edge]InnerAdjacencyMap
 
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
 	return len(m.nodesMissingDeps) != 0
@@ -79,7 +77,7 @@ func NewMissingDependencyScanner(delegate MissingDependencyScannerDelegate, deps
 		nodesMissingDeps: map[*Node]struct{}{},
 		generatedNodes:   map[*Node]struct{}{},
 		generatorRules:   map[*Rule]struct{}{},
-		adjacencyMap:     AdjacencyMap{},
+		adjacencyMap:     map[*Edge]map[*Edge]bool{},
 	}
 }
 
@@ -190,7 +188,7 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
 			return innerIt
 		}
 	} else {
-		it = InnerAdjacencyMap{}
+		it = map[*Edge]bool{}
 		m.adjacencyMap[from] = it
 	}
 	found := false

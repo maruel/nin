@@ -164,16 +164,6 @@ func TokenName(t Token) string {
 	return "" // not reached
 }
 
-// Return a human-readable token hint, used in error messages.
-func TokenErrorHint(expected Token) string {
-	switch expected {
-	case COLON:
-		return " ($ also escapes ':')"
-	default:
-		return ""
-	}
-}
-
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
 func (l *Lexer) DescribeLastError() string {

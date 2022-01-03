@@ -152,7 +152,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 // Clean the files produced by previous builds that are no longer in the
 // manifest.
 // @return non-zero if an error occurs.
-func (c *Cleaner) CleanDead(entries Entries) int {
+func (c *Cleaner) CleanDead(entries map[string]*LogEntry) int {
 	c.Reset()
 	c.PrintHeader()
 	for k := range entries {

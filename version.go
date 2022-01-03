@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -55,14 +56,15 @@ func keepNumbers(s string) string {
 	return s
 }
 
-// Check whether a version is compatible with the current Ninja version,
-// aborting if not.
-func CheckNinjaVersion(version string) {
+// checkNinjaVersion checks whether a version is compatible with the current
+// Ninja version, returns an error if not.
+func checkNinjaVersion(version string) error {
 	binMajor, binMinor := ParseVersion(NinjaVersion)
 	fileMajor, fileMinor := ParseVersion(version)
 	if binMajor > fileMajor {
 		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", NinjaVersion, version)
 	} else if (binMajor == fileMajor && binMinor < fileMinor) || binMajor < fileMajor {
-		log.Fatalf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", NinjaVersion, version)
+		return fmt.Errorf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", NinjaVersion, version)
 	}
+	return nil
 }

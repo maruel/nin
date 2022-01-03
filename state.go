@@ -19,7 +19,8 @@ import (
 	"sort"
 )
 
-// A pool for delayed edges.
+// Pool is a pool for delayed edges.
+//
 // Pools are scoped to a State. Edges within a State will share Pools. A Pool
 // will keep a count of the total 'weight' of the currently scheduled edges. If
 // a Plan attempts to schedule an Edge which would cause the total weight to
@@ -35,8 +36,11 @@ type Pool struct {
 	currentUse int
 	depth      int
 
-	delayed *DelayedEdges
+	delayed *EdgeSet
 }
+
+// Note about Pool.delayed: The C++ code checks for Edge.weight() before
+// checking for the id. In practice weight is hardcoded to 1!
 
 func NewPool(name string, depth int) *Pool {
 	return &Pool{
@@ -116,10 +120,6 @@ var (
 )
 
 //
-
-// The C++ code checks for Edge.weight() before checking for the id. In
-// practice weight is hardcoded to 1.
-type DelayedEdges = EdgeSet
 
 // Global state (file status) for a single run.
 type State struct {

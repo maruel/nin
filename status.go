@@ -294,12 +294,7 @@ func (s *StatusPrinter) PrintStatus(edge *Edge, timeMillis int32) {
 	}
 
 	toPrint = s.FormatProgressStatus(s.progressStatusFormat, timeMillis) + toPrint
-
-	l := FULL
-	if forceFullCommand {
-		l = ELIDE
-	}
-	s.printer.Print(toPrint, l)
+	s.printer.Print(toPrint, !forceFullCommand)
 }
 
 func (s *StatusPrinter) Warning(msg string, i ...interface{}) {

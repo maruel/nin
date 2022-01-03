@@ -52,12 +52,17 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
 func (p *Parser) ExpectToken(expected Token, err *string) bool {
-	token := p.lexer.ReadToken()
-	if token != expected {
-		message := "expected " + TokenName(expected)
-		message += string(", got ") + TokenName(token)
-		message += TokenErrorHint(expected)
-		return p.lexer.Error(message, err)
+	if token := p.lexer.ReadToken(); token != expected {
+		msg := "expected " + TokenName(expected) + ", got " + TokenName(token) + tokenErrorHint(expected)
+		return p.lexer.Error(msg, err)
 	}
 	return true
+}
+
+// tokenErrorHint returns a human-readable token hint, used in error messages.
+func tokenErrorHint(expected Token) string {
+	if expected == COLON {
+		return " ($ also escapes ':')"
+	}
+	return ""
 }

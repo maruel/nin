@@ -39,7 +39,7 @@ type LinePrinter struct {
 	lineBuffer string
 
 	// Buffered line type while console is locked.
-	lineType LineType
+	elide bool
 
 	// Buffered console output while console is locked.
 	outputBuffer string
@@ -53,13 +53,6 @@ func (l *LinePrinter) isSmartTerminal() bool {
 func (l *LinePrinter) setSmartTerminal(smart bool) {
 	l.smartTerminal = smart
 }
-
-type LineType bool
-
-const (
-	FULL  LineType = false
-	ELIDE LineType = true
-)
 
 func NewLinePrinter() LinePrinter {
 	l := LinePrinter{
@@ -102,10 +95,10 @@ func NewLinePrinter() LinePrinter {
 
 // Overprints the current line. If type is ELIDE, elides toPrint to fit on
 // one line.
-func (l *LinePrinter) Print(toPrint string, t LineType) {
+func (l *LinePrinter) Print(toPrint string, elide bool) {
 	if l.consoleLocked {
 		l.lineBuffer = toPrint
-		l.lineType = t
+		l.elide = elide
 		return
 	}
 
@@ -115,7 +108,7 @@ func (l *LinePrinter) Print(toPrint string, t LineType) {
 		// pausing the executable when the "Pause" key or Ctrl-S is pressed.
 	}
 
-	if l.smartTerminal && t == ELIDE {
+	if l.smartTerminal && elide {
 		l.haveBlankLine = false
 		if runtime.GOOS == "windows" {
 			panic("TODO")
@@ -211,7 +204,7 @@ func (l *LinePrinter) SetConsoleLocked(locked bool) {
 	if !locked {
 		l.PrintOnNewLine(l.outputBuffer)
 		if len(l.lineBuffer) != 0 {
-			l.Print(l.lineBuffer, l.lineType)
+			l.Print(l.lineBuffer, l.elide)
 		}
 		l.outputBuffer = ""
 		l.lineBuffer = ""

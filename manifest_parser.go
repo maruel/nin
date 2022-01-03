@@ -93,7 +93,10 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 				// Check ninjaRequiredVersion immediately so we can exit
 				// before encountering any syntactic surprises.
 				if name == "ninja_required_version" {
-					CheckNinjaVersion(value)
+					if err2 := checkNinjaVersion(value); err2 != nil {
+						*err = err2.Error()
+						return false
+					}
 				}
 				m.env.Bindings[name] = value
 			}

@@ -68,10 +68,10 @@ type DiskInterface interface {
 	RemoveFile(path string) int
 }
 
-type DirCache map[string]TimeStamp
-type Cache map[string]DirCache
+type dirCache map[string]TimeStamp
+type cache map[string]dirCache
 
-func DirName(path string) string {
+func dirName(path string) string {
 	return filepath.Dir(path)
 	/*
 		pathSeparators := "\\/"
@@ -88,14 +88,6 @@ func DirName(path string) string {
 	*/
 }
 
-func MakeDir(path string) int {
-	//return Mkdir(path)
-	if err := os.Mkdir(path, 0o777); err != nil {
-		return 1
-	}
-	return 0
-}
-
 /*
 func TimeStampFromFileTime(filetime *FILETIME) TimeStamp {
 	// FILETIME is in 100-nanosecond increments since the Windows epoch.
@@ -107,7 +99,7 @@ func TimeStampFromFileTime(filetime *FILETIME) TimeStamp {
 }
 */
 
-func StatSingleFile(path string) (TimeStamp, error) {
+func statSingleFile(path string) (TimeStamp, error) {
 	s, err := os.Stat(path)
 	if err != nil {
 		// See TestDiskInterfaceTest_StatMissingFile for rationale for ENOTDIR
@@ -130,7 +122,7 @@ func IsWindows7OrLater() bool {
 }
 */
 
-func StatAllFilesInDir(dir string, stamps map[string]TimeStamp) error {
+func statAllFilesInDir(dir string, stamps map[string]TimeStamp) error {
 	/*
 		// FindExInfoBasic is 30% faster than FindExInfoStandard.
 		//canUseBasicInfo := IsWindows7OrLater()
@@ -187,7 +179,7 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp) error {
 // Create all the parent directories for path; like mkdir -p
 // `basename path`.
 func MakeDirs(d DiskInterface, path string) bool {
-	dir := DirName(path)
+	dir := dirName(path)
 	if dir == path || dir == "." || dir == "" {
 		return true // Reached root; assume it's there.
 	}
@@ -216,7 +208,7 @@ type RealDiskInterface struct {
 
 	// TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
 	// works out, come up with a better data structure.
-	cache Cache
+	cache cache
 }
 
 func NewRealDiskInterface() RealDiskInterface {
@@ -234,17 +226,17 @@ func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
 			return -1, fmt.Errorf("Stat(%s): Filename longer than %d characters", path, maxPath)
 		}
 		if !r.useCache {
-			return StatSingleFile(path)
+			return statSingleFile(path)
 		}
 
-		dir := DirName(path)
+		dir := dirName(path)
 		o := 0
 		if dir != "" {
 			o = len(dir) + 1
 		}
 		base := path[o:]
 		if base == ".." {
-			// StatAllFilesInDir does not report any information for base = "..".
+			// statAllFilesInDir does not report any information for base = "..".
 			base = "."
 			dir = path
 		}
@@ -254,20 +246,20 @@ func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
 
 		ci, ok := r.cache[dir]
 		if !ok {
-			ci = DirCache{}
+			ci = dirCache{}
 			r.cache[dir] = ci
 			s := "."
 			if dir != "" {
 				s = dir
 			}
-			if err := StatAllFilesInDir(s, ci); err != nil {
+			if err := statAllFilesInDir(s, ci); err != nil {
 				delete(r.cache, dir)
 				return -1, err
 			}
 		}
 		return ci[base], nil
 	}
-	return StatSingleFile(path)
+	return statSingleFile(path)
 }
 
 func (r *RealDiskInterface) WriteFile(path string, contents string) bool {
@@ -373,7 +365,7 @@ func (r *RealDiskInterface) AllowStatCache(allow bool) {
 		if !r.useCache {
 			r.cache = nil
 		} else if r.cache == nil {
-			r.cache = Cache{}
+			r.cache = cache{}
 		}
 	}
 }
