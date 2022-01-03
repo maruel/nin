@@ -88,11 +88,11 @@ func NewNode(path string, slashBits uint64) *Node {
 }
 
 // Return false on error.
-func (n *Node) StatIfNecessary(disk_interface DiskInterface, err *string) bool {
+func (n *Node) StatIfNecessary(diskInterface DiskInterface, err *string) bool {
 	if n.Exists != ExistenceStatusUnknown {
 		return true
 	}
-	return n.Stat(disk_interface, err)
+	return n.Stat(diskInterface, err)
 }
 
 // Get |Path| but use SlashBits to convert back to original slash styles.
@@ -101,9 +101,9 @@ func (n *Node) PathDecanonicalized() string {
 }
 
 // Return false on error.
-func (n *Node) Stat(disk_interface DiskInterface, err *string) bool {
+func (n *Node) Stat(diskInterface DiskInterface, err *string) bool {
 	defer METRIC_RECORD("node stat")()
-	n.MTime = disk_interface.Stat(n.Path, err)
+	n.MTime = diskInterface.Stat(n.Path, err)
 	if n.MTime == -1 {
 		return false
 	}
@@ -214,25 +214,25 @@ func NewEdge() *Edge {
 func (e *Edge) weight() int {
 	return 1
 }
-func (e *Edge) is_implicit(index int) bool {
-	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.is_order_only(index)
+func (e *Edge) isImplicit(index int) bool {
+	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.isOrderOnly(index)
 }
-func (e *Edge) is_order_only(index int) bool {
+func (e *Edge) isOrderOnly(index int) bool {
 	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)
 }
-func (e *Edge) is_implicit_out(index int) bool {
+func (e *Edge) isImplicitOut(index int) bool {
 	return index >= len(e.Outputs)-int(e.ImplicitOuts)
 }
 
 // Expand all variables in a command and return it as a string.
-// If incl_rsp_file is enabled, the string will also contain the
+// If inclRspFile is enabled, the string will also contain the
 // full contents of a response file (if applicable)
-func (e *Edge) EvaluateCommand(incl_rsp_file bool) string {
+func (e *Edge) EvaluateCommand(inclRspFile bool) string {
 	command := e.GetBinding("command")
-	if incl_rsp_file {
-		rspfile_content := e.GetBinding("rspfile_content")
-		if rspfile_content != "" {
-			command += ";rspfile=" + rspfile_content
+	if inclRspFile {
+		rspfileContent := e.GetBinding("rspfile_content")
+		if rspfileContent != "" {
+			command += ";rspfile=" + rspfileContent
 		}
 	}
 	return command
@@ -289,7 +289,7 @@ func (e *Edge) Dump(prefix string) {
 	fmt.Printf("] 0x%p\n", e)
 }
 
-func (e *Edge) maybe_phonycycle_diagnostic() bool {
+func (e *Edge) maybePhonycycleDiagnostic() bool {
 	// CMake 2.8.12.x and 3.0.x produced self-referencing phony rules
 	// of the form "build a: phony ... a ...".   Restrict our
 	// "phonycycle" diagnostic option to the form it used.
@@ -395,30 +395,30 @@ const (
 
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
-	lookups_       []string
-	edge_          *Edge
-	escape_in_out_ EscapeKind
-	recursive_     bool
+	lookups_     []string
+	edge_        *Edge
+	escapeInOut_ EscapeKind
+	recursive_   bool
 }
 
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	return EdgeEnv{
-		edge_:          edge,
-		escape_in_out_: escape,
+		edge_:        edge,
+		escapeInOut_: escape,
 	}
 }
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
-		explicit_deps_count := len(e.edge_.Inputs) - int(e.edge_.ImplicitDeps) - int(e.edge_.OrderOnlyDeps)
+		explicitDepsCount := len(e.edge_.Inputs) - int(e.edge_.ImplicitDeps) - int(e.edge_.OrderOnlyDeps)
 		s := byte('\n')
 		if var2 == "in" {
 			s = ' '
 		}
-		return e.MakePathList(e.edge_.Inputs[:explicit_deps_count], s)
+		return e.MakePathList(e.edge_.Inputs[:explicitDepsCount], s)
 	} else if var2 == "out" {
-		explicit_outs_count := len(e.edge_.Outputs) - int(e.edge_.ImplicitOuts)
-		return e.MakePathList(e.edge_.Outputs[:explicit_outs_count], ' ')
+		explicitOutsCount := len(e.edge_.Outputs) - int(e.edge_.ImplicitOuts)
+		return e.MakePathList(e.edge_.Outputs[:explicitOutsCount], ' ')
 	}
 
 	if e.recursive_ {
@@ -458,7 +458,7 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	first := false
 	for i, x := range span {
 		path := x.PathDecanonicalized()
-		if e.escape_in_out_ == kShellEscape {
+		if e.escapeInOut_ == kShellEscape {
 			if runtime.GOOS == "windows" {
 				path = GetWin32EscapedString(path)
 			} else {
@@ -515,32 +515,32 @@ func PathDecanonicalized(path string, slashBits uint64) string {
 //
 
 // DependencyScan manages the process of scanning the files in a graph
-// and updating the dirty/outputs_ready state of all the nodes and edges.
+// and updating the dirty/outputsReady state of all the nodes and edges.
 type DependencyScan struct {
-	build_log_      *BuildLog
-	disk_interface_ DiskInterface
-	dep_loader_     ImplicitDepLoader
-	dyndep_loader_  DyndepLoader
+	buildLog_      *BuildLog
+	diskInterface_ DiskInterface
+	depLoader_     ImplicitDepLoader
+	dyndepLoader_  DyndepLoader
 }
 
-func NewDependencyScan(state *State, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) DependencyScan {
+func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
-		build_log_:      build_log,
-		disk_interface_: disk_interface,
-		dep_loader_:     NewImplicitDepLoader(state, deps_log, disk_interface, depfile_parser_options),
-		dyndep_loader_:  NewDyndepLoader(state, disk_interface),
+		buildLog_:      buildLog,
+		diskInterface_: diskInterface,
+		depLoader_:     NewImplicitDepLoader(state, depsLog, diskInterface, depfileParserOptions),
+		dyndepLoader_:  NewDyndepLoader(state, diskInterface),
 	}
 }
 
-func (d *DependencyScan) build_log() *BuildLog {
-	return d.build_log_
+func (d *DependencyScan) buildLog() *BuildLog {
+	return d.buildLog_
 }
-func (d *DependencyScan) set_build_log(log *BuildLog) {
-	d.build_log_ = log
+func (d *DependencyScan) setBuildLog(log *BuildLog) {
+	d.buildLog_ = log
 }
 
-func (d *DependencyScan) deps_log() *DepsLog {
-	return d.dep_loader_.deps_log()
+func (d *DependencyScan) depsLog() *DepsLog {
+	return d.depLoader_.depsLog()
 }
 
 // Update the |dirty_| state of the given node by transitively inspecting their
@@ -550,9 +550,9 @@ func (d *DependencyScan) deps_log() *DepsLog {
 // state accordingly.
 // Appends any validation nodes found to the nodes parameter.
 // Returns false on failure.
-func (d *DependencyScan) RecomputeDirty(initial_node *Node, validation_nodes *[]*Node, err *string) bool {
-	var stack, new_validation_nodes []*Node
-	nodes := []*Node{initial_node} // dequeue
+func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*Node, err *string) bool {
+	var stack, newValidationNodes []*Node
+	nodes := []*Node{initialNode} // dequeue
 
 	// RecomputeNodeDirty might return new validation nodes that need to be
 	// checked for dirty state, keep a queue of nodes to visit.
@@ -561,23 +561,23 @@ func (d *DependencyScan) RecomputeDirty(initial_node *Node, validation_nodes *[]
 		nodes = nodes[1:]
 
 		stack = stack[:0]
-		new_validation_nodes = new_validation_nodes[:0]
+		newValidationNodes = newValidationNodes[:0]
 
-		if !d.RecomputeNodeDirty(node, &stack, &new_validation_nodes, err) {
+		if !d.RecomputeNodeDirty(node, &stack, &newValidationNodes, err) {
 			return false
 		}
-		nodes = append(nodes, new_validation_nodes...)
-		if len(new_validation_nodes) != 0 {
-			if validation_nodes == nil {
+		nodes = append(nodes, newValidationNodes...)
+		if len(newValidationNodes) != 0 {
+			if validationNodes == nil {
 				panic("validations require RecomputeDirty to be called with validation_nodes")
 			}
-			*validation_nodes = append(*validation_nodes, new_validation_nodes...)
+			*validationNodes = append(*validationNodes, newValidationNodes...)
 		}
 	}
 	return true
 }
 
-func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validation_nodes *[]*Node, err *string) bool {
+func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validationNodes *[]*Node, err *string) bool {
 	edge := node.InEdge
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
@@ -585,7 +585,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
-		if !node.StatIfNecessary(d.disk_interface_, err) {
+		if !node.StatIfNecessary(d.diskInterface_, err) {
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
@@ -630,7 +630,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
 		if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
-			if !d.RecomputeNodeDirty(edge.Dyndep, stack, validation_nodes, err) {
+			if !d.RecomputeNodeDirty(edge.Dyndep, stack, validationNodes, err) {
 				return false
 			}
 
@@ -645,7 +645,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
-		if !o.StatIfNecessary(d.disk_interface_, err) {
+		if !o.StatIfNecessary(d.diskInterface_, err) {
 			return false
 		}
 	}
@@ -653,7 +653,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.  Load discovered deps.
 		edge.DepsLoaded = true
-		if !d.dep_loader_.LoadDeps(edge, err) {
+		if !d.depLoader_.LoadDeps(edge, err) {
 			if len(*err) != 0 {
 				return false
 			}
@@ -669,32 +669,32 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// cycle detector if the validation node depends on this node.
 	// RecomputeDirty will add the validation nodes to the initial nodes
 	// and recurse into them.
-	*validation_nodes = append(*validation_nodes, edge.Validations...)
+	*validationNodes = append(*validationNodes, edge.Validations...)
 
 	// Visit all inputs; we're dirty if any of the inputs are dirty.
-	var most_recent_input *Node
+	var mostRecentInput *Node
 	for j, i := range edge.Inputs {
 		// Visit this input.
-		if !d.RecomputeNodeDirty(i, stack, validation_nodes, err) {
+		if !d.RecomputeNodeDirty(i, stack, validationNodes, err) {
 			return false
 		}
 
 		// If an input is not ready, neither are our outputs.
-		if in_edge := i.InEdge; in_edge != nil {
-			if !in_edge.OutputsReady {
+		if inEdge := i.InEdge; inEdge != nil {
+			if !inEdge.OutputsReady {
 				edge.OutputsReady = false
 			}
 		}
 
-		if !edge.is_order_only(j) {
+		if !edge.isOrderOnly(j) {
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
 			if i.Dirty {
 				EXPLAIN("%s is dirty", i.Path)
 				dirty = true
 			} else {
-				if most_recent_input == nil || i.MTime > most_recent_input.MTime {
-					most_recent_input = i
+				if mostRecentInput == nil || i.MTime > mostRecentInput.MTime {
+					mostRecentInput = i
 				}
 			}
 		}
@@ -703,7 +703,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// We may also be dirty due to output state: missing outputs, out of
 	// date outputs, etc.  Visit all outputs and determine whether they're dirty.
 	if !dirty {
-		if !d.RecomputeOutputsDirty(edge, most_recent_input, &dirty, err) {
+		if !d.RecomputeOutputsDirty(edge, mostRecentInput, &dirty, err) {
 			return false
 		}
 	}
@@ -773,7 +773,7 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 	}
 	*err += stack[start].Path
 
-	if (start+1) == len(stack) && edge.maybe_phonycycle_diagnostic() {
+	if (start+1) == len(stack) && edge.maybePhonycycleDiagnostic() {
 		// The manifest parser would have filtered out the self-referencing
 		// input if it were not configured to allow the error.
 		*err += " [-w phonycycle=err]"
@@ -783,11 +783,11 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
 // Returns false on failure.
-func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *Node, outputs_dirty *bool, err *string) bool {
-	command := edge.EvaluateCommand(true) // incl_rsp_file=
+func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, mostRecentInput *Node, outputsDirty *bool, err *string) bool {
+	command := edge.EvaluateCommand(true) // inclRspFile=
 	for _, o := range edge.Outputs {
-		if d.RecomputeOutputDirty(edge, most_recent_input, command, o) {
-			*outputs_dirty = true
+		if d.RecomputeOutputDirty(edge, mostRecentInput, command, o) {
+			*outputsDirty = true
 			return true
 		}
 	}
@@ -796,7 +796,7 @@ func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, most_recent_input *No
 
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
-func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Node, command string, output *Node) bool {
+func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node, command string, output *Node) bool {
 	if edge.Rule == PhonyRule {
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
@@ -807,8 +807,8 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 
 		// Update the mtime with the newest input. Dependents can thus call mtime()
 		// on the fake node and get the latest mtime of the dependencies
-		if most_recent_input != nil {
-			output.UpdatePhonyMtime(most_recent_input.MTime)
+		if mostRecentInput != nil {
+			output.UpdatePhonyMtime(mostRecentInput.MTime)
 		}
 
 		// Phony edges are clean, nothing to do
@@ -824,50 +824,50 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 	}
 
 	// Dirty if the output is older than the input.
-	if most_recent_input != nil && output.MTime < most_recent_input.MTime {
-		output_mtime := output.MTime
+	if mostRecentInput != nil && output.MTime < mostRecentInput.MTime {
+		outputMtime := output.MTime
 
 		// If this is a restat rule, we may have cleaned the output with a restat
 		// rule in a previous run and stored the most recent input mtime in the
 		// build log.  Use that mtime instead, so that the file will only be
 		// considered dirty if an input was modified since the previous run.
-		used_restat := false
-		if edge.GetBinding("restat") != "" && d.build_log() != nil {
-			if entry = d.build_log().LookupByOutput(output.Path); entry != nil {
-				output_mtime = entry.mtime
-				used_restat = true
+		usedRestat := false
+		if edge.GetBinding("restat") != "" && d.buildLog() != nil {
+			if entry = d.buildLog().LookupByOutput(output.Path); entry != nil {
+				outputMtime = entry.mtime
+				usedRestat = true
 			}
 		}
 
-		if output_mtime < most_recent_input.MTime {
+		if outputMtime < mostRecentInput.MTime {
 			s := ""
-			if used_restat {
+			if usedRestat {
 				s = "restat of "
 			}
-			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, most_recent_input.Path, output_mtime, most_recent_input.MTime)
+			EXPLAIN("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, mostRecentInput.Path, outputMtime, mostRecentInput.MTime)
 			return true
 		}
 	}
 
-	if d.build_log() != nil {
+	if d.buildLog() != nil {
 		generator := edge.GetBinding("generator") != ""
 		if entry == nil {
-			entry = d.build_log().LookupByOutput(output.Path)
+			entry = d.buildLog().LookupByOutput(output.Path)
 		}
 		if entry != nil {
-			if !generator && HashCommand(command) != entry.command_hash {
+			if !generator && HashCommand(command) != entry.commandHash {
 				// May also be dirty due to the command changing since the last build.
 				// But if this is a generator rule, the command changing does not make us
 				// dirty.
 				EXPLAIN("command line changed for %s", output.Path)
 				return true
 			}
-			if most_recent_input != nil && entry.mtime < most_recent_input.MTime {
+			if mostRecentInput != nil && entry.mtime < mostRecentInput.MTime {
 				// May also be dirty due to the mtime in the log being older than the
 				// mtime of the most recent input.  This can occur even when the mtime
 				// on disk is newer if a previous run wrote to the output file but
 				// exited with an error or was interrupted.
-				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, most_recent_input.Path, entry.mtime, most_recent_input.MTime)
+				EXPLAIN("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, mostRecentInput.Path, entry.mtime, mostRecentInput.MTime)
 				return true
 			}
 		}
@@ -884,7 +884,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, most_recent_input *Nod
 //
 // The 'DyndepFile' object stores the information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
-	return d.dyndep_loader_.LoadDyndeps(node, ddf, err)
+	return d.dyndepLoader_.LoadDyndeps(node, ddf, err)
 }
 
 //
@@ -892,31 +892,31 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
-	state_                  *State
-	disk_interface_         DiskInterface
-	deps_log_               *DepsLog
-	depfile_parser_options_ *DepfileParserOptions
+	state_                *State
+	diskInterface_        DiskInterface
+	depsLog_              *DepsLog
+	depfileParserOptions_ *DepfileParserOptions
 }
 
-func NewImplicitDepLoader(state *State, deps_log *DepsLog, disk_interface DiskInterface, depfile_parser_options *DepfileParserOptions) ImplicitDepLoader {
+func NewImplicitDepLoader(state *State, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
-		state_:                  state,
-		disk_interface_:         disk_interface,
-		deps_log_:               deps_log,
-		depfile_parser_options_: depfile_parser_options,
+		state_:                state,
+		diskInterface_:        diskInterface,
+		depsLog_:              depsLog,
+		depfileParserOptions_: depfileParserOptions,
 	}
 }
 
-func (i *ImplicitDepLoader) deps_log() *DepsLog {
-	return i.deps_log_
+func (i *ImplicitDepLoader) depsLog() *DepsLog {
+	return i.depsLog_
 }
 
 // Load implicit dependencies for \a edge.
 // @return false on error (without filling \a err if info is just missing
 //                          or out of date).
 func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
-	deps_type := edge.GetBinding("deps")
-	if len(deps_type) != 0 {
+	depsType := edge.GetBinding("deps")
+	if len(depsType) != 0 {
 		return i.LoadDepsFromLog(edge, err)
 	}
 
@@ -935,7 +935,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	defer METRIC_RECORD("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
-	switch i.disk_interface_.ReadFile(path, &content, err) {
+	switch i.diskInterface_.ReadFile(path, &content, err) {
 	case Okay:
 	case NotFound:
 		*err = ""
@@ -950,13 +950,13 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 
 	x := DepfileParserOptions{}
-	if i.depfile_parser_options_ != nil {
-		x = *i.depfile_parser_options_
+	if i.depfileParserOptions_ != nil {
+		x = *i.depfileParserOptions_
 	}
 	depfile := NewDepfileParser(x)
-	depfile_err := ""
-	if !depfile.Parse([]byte(content), &depfile_err) {
-		*err = path + ": " + depfile_err
+	depfileErr := ""
+	if !depfile.Parse([]byte(content), &depfileErr) {
+		*err = path + ": " + depfileErr
 		return false
 	}
 
@@ -967,9 +967,9 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 
 	// Check that this depfile matches the edge's output, if not return false to
 	// mark the edge as dirty.
-	first_output := edge.Outputs[0]
-	if primaryOut := CanonicalizePath(depfile.outs_[0]); first_output.Path != primaryOut {
-		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, first_output.Path, primaryOut)
+	firstOutput := edge.Outputs[0]
+	if primaryOut := CanonicalizePath(depfile.outs_[0]); firstOutput.Path != primaryOut {
+		EXPLAIN("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
 		return false
 	}
 
@@ -992,17 +992,17 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 
 // Process loaded implicit dependencies for \a edge and update the graph
 // @return false on error (without filling \a err if info is just missing)
-func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string, err *string) bool {
+func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
 	// Preallocate space in edge.Inputs to be filled in below.
-	implicit_dep := i.PreallocateSpace(edge, len(depfile_ins))
+	implicitDep := i.PreallocateSpace(edge, len(depfileIns))
 
 	// Add all its in-edges.
-	for _, j := range depfile_ins {
+	for _, j := range depfileIns {
 		node := i.state_.GetNode(CanonicalizePathBits(j))
-		edge.Inputs[implicit_dep] = node
+		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
-		implicit_dep++
+		implicitDep++
 	}
 	return true
 }
@@ -1013,8 +1013,8 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	// NOTE: deps are only supported for single-target edges.
 	output := edge.Outputs[0]
 	var deps *Deps
-	if i.deps_log_ != nil {
-		deps = i.deps_log_.GetDeps(output)
+	if i.depsLog_ != nil {
+		deps = i.depsLog_.GetDeps(output)
 	}
 	if deps == nil {
 		EXPLAIN("deps for '%s' are missing", output.Path)
@@ -1027,13 +1027,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		return false
 	}
 
-	implicit_dep := i.PreallocateSpace(edge, deps.node_count)
-	for j := 0; j < deps.node_count; j++ {
+	implicitDep := i.PreallocateSpace(edge, deps.nodeCount)
+	for j := 0; j < deps.nodeCount; j++ {
 		node := deps.nodes[j]
-		edge.Inputs[implicit_dep] = node
+		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
-		implicit_dep++
+		implicitDep++
 	}
 	return true
 }
@@ -1058,16 +1058,16 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 		return
 	}
 
-	phony_edge := i.state_.AddEdge(PhonyRule)
-	phony_edge.GeneratedByDepLoader = true
-	node.InEdge = phony_edge
-	phony_edge.Outputs = append(phony_edge.Outputs, node)
+	phonyEdge := i.state_.AddEdge(PhonyRule)
+	phonyEdge.GeneratedByDepLoader = true
+	node.InEdge = phonyEdge
+	phonyEdge.Outputs = append(phonyEdge.Outputs, node)
 
-	// RecomputeDirty might not be called for phony_edge if a previous call
+	// RecomputeDirty might not be called for phonyEdge if a previous call
 	// to RecomputeDirty had caused the file to be stat'ed.  Because previous
 	// invocations of RecomputeDirty would have seen this node without an
 	// input edge (and therefore ready), we have to set OutputsReady to true
 	// to avoid a potential stuck build.  If we do call RecomputeDirty for
 	// this node, it will simply set OutputsReady to the correct value.
-	phony_edge.OutputsReady = true
+	phonyEdge.OutputsReady = true
 }

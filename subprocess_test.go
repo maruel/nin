@@ -238,7 +238,7 @@ func TestSubprocessTest_Console(t *testing.T) {
 		}
 	*/
 	subprocs_ := NewSubprocessSetTest(t)
-	// use_console = true
+	// useConsole = true
 	subproc := subprocs_.Add("test -t 0 -a -t 1 -a -t 2", true)
 	if nil == subproc {
 		t.Fatal("expected different")

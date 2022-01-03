@@ -20,43 +20,43 @@ func MSVCHelperUsage() {
 	fmt.Printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
 }
 
-func PushPathIntoEnvironment(env_block string) {
+func PushPathIntoEnvironment(envBlock string) {
 	panic("TODO")
 	/*
-		as_str := env_block
-		for as_str[0] {
-			if _strnicmp(as_str, "path=", 5) == 0 {
-				_putenv(as_str)
+		asStr := envBlock
+		for asStr[0] {
+			if Strnicmp(asStr, "path=", 5) == 0 {
+				Putenv(asStr)
 				return
 			} else {
-				as_str = &as_str[strlen(as_str)+1]
+				asStr = &asStr[strlen(asStr)+1]
 			}
 		}
 	*/
 }
 
-func WriteDepFileOrDie(object_path string, parse *CLParser) {
+func WriteDepFileOrDie(objectPath string, parse *CLParser) {
 	panic("TODO")
 	/*
-		depfile_path := object_path + ".d"
-		depfile, err := os.OpenFile(depfile_path, os.O_WRONLY, 0o666)
+		depfilePath := objectPath + ".d"
+		depfile, err := os.OpenFile(depfilePath, os.O_WRONLY, 0o666)
 		if depfile == nil {
-			os.Remove(object_path)
-			Fatal("opening %s: %s", depfile_path, err)
+			os.Remove(objectPath)
+			Fatal("opening %s: %s", depfilePath, err)
 		}
-		if _, err := fmt.Fprintf(depfile, "%s: ", object_path); err != nil {
-			os.Remove(object_path)
+		if _, err := fmt.Fprintf(depfile, "%s: ", objectPath); err != nil {
+			os.Remove(objectPath)
 			depfile.Close()
-			os.Remove(depfile_path)
-			Fatal("writing %s", depfile_path)
+			os.Remove(depfilePath)
+			Fatal("writing %s", depfilePath)
 		}
 		headers := parse.includes_
 		for i := range headers {
 			if _, err := fmt.Fprintf(depfile, "%s\n", EscapeForDepfile(i)); err != nil {
-				os.Remove(object_path)
+				os.Remove(objectPath)
 				depfile.Close()
-				os.Remove(depfile_path)
-				Fatal("writing %s", depfile_path)
+				os.Remove(depfilePath)
+				Fatal("writing %s", depfilePath)
 			}
 		}
 		depfile.Close()
@@ -66,21 +66,21 @@ func WriteDepFileOrDie(object_path string, parse *CLParser) {
 func MSVCHelperMain(arg []string) int {
 	panic("TODO")
 	/*
-		output_filename := nil
+		outputFilename := nil
 		envfile := nil
 
-		//kLongOptions := {{ "help", no_argument, nil, 'h' }, { nil, 0, nil, 0 }}
-		deps_prefix := ""
-		for opt := getopt_long(argc, argv, "e:o:p:h", kLongOptions, nil); opt != -1; {
+		//kLongOptions := {{ "help", noArgument, nil, 'h' }, { nil, 0, nil, 0 }}
+		depsPrefix := ""
+		for opt := getoptLong(argc, argv, "e:o:p:h", kLongOptions, nil); opt != -1; {
 			switch opt {
 			case 'e':
 				envfile = optarg
 				break
 			case 'o':
-				output_filename = optarg
+				outputFilename = optarg
 				break
 			case 'p':
-				deps_prefix = optarg
+				depsPrefix = optarg
 				break
 			case 'h':
 			default:
@@ -110,28 +110,28 @@ func MSVCHelperMain(arg []string) int {
 			cl.SetEnvBlock(env)
 		}
 		output := ""
-		exit_code := cl.Run(command, &output)
+		exitCode := cl.Run(command, &output)
 
-		if output_filename {
+		if outputFilename {
 			parser := NewCLParser()
 			err := ""
-			if !parser.Parse(output, deps_prefix, &output, &err) {
+			if !parser.Parse(output, depsPrefix, &output, &err) {
 				Fatal("%s\n", err)
 			}
-			WriteDepFileOrDie(output_filename, parser)
+			WriteDepFileOrDie(outputFilename, parser)
 		}
 
 		if len(output) == 0 {
-			return exit_code
+			return exitCode
 		}
 
 		// CLWrapper's output already as \r\n line endings, make sure the C runtime
 		// doesn't expand this to \r\r\n.
-		_setmode(_fileno(stdout), _O_BINARY)
+		Setmode(Fileno(stdout), _O_BINARY)
 		// Avoid printf and C strings, since the actual output might contain null
 		// bytes like UTF-16 does (yuck).
 		os.Stdout.Write(output)
 
-		return exit_code
+		return exitCode
 	*/
 }

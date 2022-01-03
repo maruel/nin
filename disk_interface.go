@@ -77,19 +77,19 @@ func DirName(path string) string {
 		kPathSeparators := "\\/"
 		kEnd := kPathSeparators + len(kPathSeparators) - 1
 
-		slash_pos := path.find_last_of(kPathSeparators)
-		if slash_pos == -1 {
+		slashPos := path.findLastOf(kPathSeparators)
+		if slashPos == -1 {
 			return "" // Nothing to do.
 		}
-		for slash_pos > 0 && find(kPathSeparators, kEnd, path[slash_pos-1]) != kEnd {
-			slash_pos--
+		for slashPos > 0 && find(kPathSeparators, kEnd, path[slashPos-1]) != kEnd {
+			slashPos--
 		}
-		return path[0:slash_pos]
+		return path[0:slashPos]
 	*/
 }
 
 func MakeDir(path string) int {
-	//return _mkdir(path)
+	//return Mkdir(path)
 	if err := os.Mkdir(path, 0o777); err != nil {
 		return 1
 	}
@@ -111,8 +111,8 @@ func StatSingleFile(path string, err *string) TimeStamp {
 	/*
 		var attrs WIN32_FILE_ATTRIBUTE_DATA
 		if !GetFileAttributesExA(path, GetFileExInfoStandard, &attrs) {
-			win_err := GetLastError()
-			if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+			winErr := GetLastError()
+			if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
 				return 0
 			}
 			*err = "GetFileAttributesEx(" + path + "): " + GetLastErrorString()
@@ -137,18 +137,18 @@ func StatSingleFile(path string, err *string) TimeStamp {
 
 /*
 func IsWindows7OrLater() bool {
-	version_info := OSVERSIONINFOEX{sizeof(OSVERSIONINFOEX), 6, 1, 0, 0, {0}, 0, 0, 0, 0, 0}
+	versionInfo := OSVERSIONINFOEX{sizeof(OSVERSIONINFOEX), 6, 1, 0, 0, {0}, 0, 0, 0, 0, 0}
 	comparison := 0
 	VER_SET_CONDITION(comparison, VER_MAJORVERSION, VER_GREATER_EQUAL)
 	VER_SET_CONDITION(comparison, VER_MINORVERSION, VER_GREATER_EQUAL)
-	return VerifyVersionInfo(&version_info, VER_MAJORVERSION|VER_MINORVERSION, comparison)
+	return VerifyVersionInfo(&versionInfo, VER_MAJORVERSION|VER_MINORVERSION, comparison)
 }
 */
 
 func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) bool {
 	/*
 		// FindExInfoBasic is 30% faster than FindExInfoStandard.
-		//can_use_basic_info := IsWindows7OrLater()
+		//canUseBasicInfo := IsWindows7OrLater()
 		// This is not in earlier SDKs.
 		//FINDEX_INFO_LEVELS
 		kFindExInfoBasic := 1
@@ -156,11 +156,11 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 		level := kFindExInfoBasic
 		// FindExInfoStandard
 		var ffd WIN32_FIND_DATAA
-		find_handle := FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)
+		findHandle := FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)
 
-		if find_handle == INVALID_HANDLE_VALUE {
-			win_err := GetLastError()
-			if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+		if findHandle == INVALID_HANDLE_VALUE {
+			winErr := GetLastError()
+			if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
 				return true
 			}
 			*err = "FindFirstFileExA(" + dir + "): " + GetLastErrorString()
@@ -175,11 +175,11 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 			}
 			lowername = strings.ToLower(lowername)
 			stamps[lowername] = TimeStampFromFileTime(ffd.ftLastWriteTime)
-			if !FindNextFileA(find_handle, &ffd) {
+			if !FindNextFileA(findHandle, &ffd) {
 				break
 			}
 		}
-		FindClose(find_handle)
+		FindClose(findHandle)
 		return true
 	*/
 	f, err2 := os.Open(dir)
@@ -231,7 +231,7 @@ func MakeDirs(d DiskInterface, path string) bool {
 // Implementation of DiskInterface that actually hits the disk.
 type RealDiskInterface struct {
 	// Whether stat information can be cached.
-	use_cache_ bool
+	useCache_ bool
 
 	// TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
 	// works out, come up with a better data structure.
@@ -252,7 +252,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, MAX_PATH)
 			return -1
 		}
-		if !r.use_cache_ {
+		if !r.useCache_ {
 			return StatSingleFile(path, err)
 		}
 
@@ -344,8 +344,8 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 	/*
 		attributes := GetFileAttributes(path)
 		if attributes == INVALID_FILE_ATTRIBUTES {
-			win_err := GetLastError()
-			if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+			winErr := GetLastError()
+			if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
 				return 1
 			}
 		} else if (attributes & FILE_ATTRIBUTE_READONLY) != 0 {
@@ -362,8 +362,8 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 			// This fixes the behavior of ninja -t clean in some cases
 			// https://github.com/ninja-build/ninja/issues/828
 			if !RemoveDirectory(path) {
-				win_err := GetLastError()
-				if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+				winErr := GetLastError()
+				if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
 					return 1
 				}
 				// Report remove(), not RemoveDirectory(), for cross-platform consistency.
@@ -372,8 +372,8 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 			}
 		} else {
 			if !DeleteFile(path) {
-				win_err := GetLastError()
-				if win_err == ERROR_FILE_NOT_FOUND || win_err == ERROR_PATH_NOT_FOUND {
+				winErr := GetLastError()
+				if winErr == ERROR_FILE_NOT_FOUND || winErr == ERROR_PATH_NOT_FOUND {
 					return 1
 				}
 				// Report as remove(), not DeleteFile(), for cross-platform consistency.
@@ -388,8 +388,8 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 // Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
 	if runtime.GOOS == "windows" {
-		r.use_cache_ = allow
-		if !r.use_cache_ {
+		r.useCache_ = allow
+		if !r.useCache_ {
 			r.cache_ = nil
 		} else if r.cache_ == nil {
 			r.cache_ = Cache{}

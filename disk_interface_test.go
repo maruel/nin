@@ -71,11 +71,11 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 	disk_ := DiskInterfaceTest(t)
 	err := ""
 
-	bad_path := strings.Repeat("x", 512)
+	badPath := strings.Repeat("x", 512)
 	if runtime.GOOS == "windows" {
-		bad_path = "cc:\\foo"
+		badPath = "cc:\\foo"
 	}
-	if got := disk_.Stat(bad_path, &err); got != -1 {
+	if got := disk_.Stat(badPath, &err); got != -1 {
 		t.Fatal(got)
 	}
 	if "" == err {
@@ -173,7 +173,7 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 	}
 
 	disk_.AllowStatCache(false)
-	parent_stat_uncached := disk_.Stat("..", &err)
+	parentStatUncached := disk_.Stat("..", &err)
 	disk_.AllowStatCache(true)
 
 	if got := disk_.Stat("FIle1", &err); got <= 1 {
@@ -239,7 +239,7 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("..", &err) != parent_stat_uncached {
+	if disk_.Stat("..", &err) != parentStatUncached {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
@@ -253,15 +253,15 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 	}
 
 	// Test error cases.
-	bad_path := "cc:\\foo"
-	if -1 != disk_.Stat(bad_path, &err) {
+	badPath := "cc:\\foo"
+	if -1 != disk_.Stat(badPath, &err) {
 		t.Fatal("expected equal")
 	}
 	if "" == err {
 		t.Fatal("expected error")
 	}
 	err = ""
-	if -1 != disk_.Stat(bad_path, &err) {
+	if -1 != disk_.Stat(badPath, &err) {
 		t.Fatal("expected equal")
 	}
 	if "" == err {

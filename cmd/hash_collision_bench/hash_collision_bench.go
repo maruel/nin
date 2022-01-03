@@ -58,16 +58,16 @@ func main() {
 		return hashes[i].hash < hashes[j].hash
 	})
 
-	collision_count := 0
+	collisionCount := 0
 	for i := 1; i < N; i++ {
 		if hashes[i-1].hash == hashes[i].hash {
 			lhs := commands[hashes[i-1].i]
 			rhs := commands[hashes[i].i]
 			if lhs != rhs {
 				fmt.Printf("collision!\n  string 1: '%s'\n  string 2: '%s'\n", lhs, rhs)
-				collision_count++
+				collisionCount++
 			}
 		}
 	}
-	fmt.Printf("\n\n%d collisions after %d runs\n", collision_count, N)
+	fmt.Printf("\n\n%d collisions after %d runs\n", collisionCount, N)
 }

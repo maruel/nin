@@ -24,67 +24,67 @@ func EscapeForDepfile(path string) string {
 func (c *CLWrapper) Run(command string, output *string) int {
 	panic("TODO")
 	/*
-		  SECURITY_ATTRIBUTES security_attributes = {}
-		  security_attributes.nLength = sizeof(SECURITY_ATTRIBUTES)
-		  security_attributes.bInheritHandle = TRUE
+		  SECURITY_ATTRIBUTES securityAttributes = {}
+		  securityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES)
+		  securityAttributes.bInheritHandle = TRUE
 
 		  // Must be inheritable so subprocesses can dup to children.
 		  HANDLE nul =
-		      CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, &security_attributes, OPEN_EXISTING, 0, nil)
+		      CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, &securityAttributes, OPEN_EXISTING, 0, nil)
 		  if nul == INVALID_HANDLE_VALUE {
 		    Fatal("couldn't open nul")
 		  }
 
-		  HANDLE stdout_read, stdout_write
-		  if !CreatePipe(&stdout_read, &stdout_write, &security_attributes, 0) {
+		  HANDLE stdoutRead, stdoutWrite
+		  if !CreatePipe(&stdoutRead, &stdoutWrite, &securityAttributes, 0) {
 		    Win32Fatal("CreatePipe")
 		  }
 
-		  if !SetHandleInformation(stdout_read, HANDLE_FLAG_INHERIT, 0) {
+		  if !SetHandleInformation(stdoutRead, HANDLE_FLAG_INHERIT, 0) {
 		    Win32Fatal("SetHandleInformation")
 		  }
 
-		  PROCESS_INFORMATION process_info = {}
-		  STARTUPINFOA startup_info = {}
-		  startup_info.cb = sizeof(STARTUPINFOA)
-		  startup_info.hStdInput = nul
-		  startup_info.hStdError = ::GetStdHandle(STD_ERROR_HANDLE)
-		  startup_info.hStdOutput = stdout_write
-		  startup_info.dwFlags |= STARTF_USESTDHANDLES
+		  PROCESS_INFORMATION processInfo = {}
+		  STARTUPINFOA startupInfo = {}
+		  startupInfo.cb = sizeof(STARTUPINFOA)
+		  startupInfo.hStdInput = nul
+		  startupInfo.hStdError = ::GetStdHandle(STD_ERROR_HANDLE)
+		  startupInfo.hStdOutput = stdoutWrite
+		  startupInfo.dwFlags |= STARTF_USESTDHANDLES
 
 			// inherit handles = TRUE
-		  if !CreateProcessA(nil, (char*)command, nil, nil,  TRUE, 0, c.env_block_, nil, &startup_info, &process_info) {
+		  if !CreateProcessA(nil, (char*)command, nil, nil,  TRUE, 0, c.envBlock_, nil, &startupInfo, &processInfo) {
 		    Win32Fatal("CreateProcess")
 		  }
 
-		  if !CloseHandle(nul) || !CloseHandle(stdout_write) {
+		  if !CloseHandle(nul) || !CloseHandle(stdoutWrite) {
 		    Win32Fatal("CloseHandle")
 		  }
 
 		  // Read all output of the subprocess.
-		  read_len := 1
-		  for read_len {
+		  readLen := 1
+		  for readLen {
 		    char buf[64 << 10]
-		    read_len = 0
-		    if !::ReadFile(stdout_read, buf, sizeof(buf), &read_len, nil) && GetLastError() != ERROR_BROKEN_PIPE {
+		    readLen = 0
+		    if !::ReadFile(stdoutRead, buf, sizeof(buf), &readLen, nil) && GetLastError() != ERROR_BROKEN_PIPE {
 		      Win32Fatal("ReadFile")
 		    }
-		    output.append(buf, read_len)
+		    output.append(buf, readLen)
 		  }
 
 		  // Wait for it to exit and grab its exit code.
-		  if WaitForSingleObject(process_info.hProcess, INFINITE) == WAIT_FAILED {
+		  if WaitForSingleObject(processInfo.hProcess, INFINITE) == WAIT_FAILED {
 		    Win32Fatal("WaitForSingleObject")
 		  }
-		  exit_code := 0
-		  if !GetExitCodeProcess(process_info.hProcess, &exit_code) {
+		  exitCode := 0
+		  if !GetExitCodeProcess(processInfo.hProcess, &exitCode) {
 		    Win32Fatal("GetExitCodeProcess")
 		  }
 
-		  if !CloseHandle(stdout_read) || !CloseHandle(process_info.hProcess) || !CloseHandle(process_info.hThread) {
+		  if !CloseHandle(stdoutRead) || !CloseHandle(processInfo.hProcess) || !CloseHandle(processInfo.hThread) {
 		    Win32Fatal("CloseHandle")
 		  }
 
-		  return exit_code
+		  return exitCode
 	*/
 }

@@ -20,14 +20,14 @@ import (
 )
 
 var (
-	g_explaining             = false
-	g_keep_depfile           = false
-	g_keep_rsp               = false
-	g_experimental_statcache = true
+	gExplaining            = false
+	gKeepDepfile           = false
+	gKeepRsp               = false
+	gExperimentalStatcache = true
 )
 
 func EXPLAIN(f string, i ...interface{}) {
-	if g_explaining {
+	if gExplaining {
 		fmt.Fprintf(os.Stderr, "ninja explain: "+f+"\n", i...)
 	}
 }

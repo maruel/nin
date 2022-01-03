@@ -17,47 +17,47 @@ package nin
 import "fmt"
 
 type Cleaner struct {
-	state_               *State
-	config_              *BuildConfig
-	dyndep_loader_       DyndepLoader
-	removed_             map[string]struct{}
-	cleaned_             map[*Node]struct{}
-	cleaned_files_count_ int
-	disk_interface_      DiskInterface
-	status_              int
+	state_             *State
+	config_            *BuildConfig
+	dyndepLoader_      DyndepLoader
+	removed_           map[string]struct{}
+	cleaned_           map[*Node]struct{}
+	cleanedFilesCount_ int
+	diskInterface_     DiskInterface
+	status_            int
 }
 
 // @return the number of file cleaned.
-func (c *Cleaner) cleaned_files_count() int {
-	return c.cleaned_files_count_
+func (c *Cleaner) cleanedFilesCount() int {
+	return c.cleanedFilesCount_
 }
 
 // @return whether the cleaner is in verbose mode.
 func (c *Cleaner) IsVerbose() bool {
-	return c.config_.verbosity != QUIET && (c.config_.verbosity == VERBOSE || c.config_.dry_run)
+	return c.config_.verbosity != QUIET && (c.config_.verbosity == VERBOSE || c.config_.dryRun)
 }
 
-func NewCleaner(state *State, config *BuildConfig, disk_interface DiskInterface) *Cleaner {
+func NewCleaner(state *State, config *BuildConfig, diskInterface DiskInterface) *Cleaner {
 	return &Cleaner{
-		state_:          state,
-		config_:         config,
-		dyndep_loader_:  NewDyndepLoader(state, disk_interface),
-		removed_:        map[string]struct{}{},
-		cleaned_:        map[*Node]struct{}{},
-		disk_interface_: disk_interface,
+		state_:         state,
+		config_:        config,
+		dyndepLoader_:  NewDyndepLoader(state, diskInterface),
+		removed_:       map[string]struct{}{},
+		cleaned_:       map[*Node]struct{}{},
+		diskInterface_: diskInterface,
 	}
 }
 
 // Remove the file @a path.
 // @return whether the file has been removed.
 func (c *Cleaner) RemoveFile(path string) int {
-	return c.disk_interface_.RemoveFile(path)
+	return c.diskInterface_.RemoveFile(path)
 }
 
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
 	err := ""
-	mtime := c.disk_interface_.Stat(path, &err)
+	mtime := c.diskInterface_.Stat(path, &err)
 	if mtime == -1 {
 		errorf("%s", err)
 	}
@@ -65,7 +65,7 @@ func (c *Cleaner) FileExists(path string) bool {
 }
 
 func (c *Cleaner) Report(path string) {
-	c.cleaned_files_count_++
+	c.cleanedFilesCount_++
 	if c.IsVerbose() {
 		fmt.Printf("Remove %s\n", path)
 	}
@@ -75,7 +75,7 @@ func (c *Cleaner) Report(path string) {
 func (c *Cleaner) Remove(path string) {
 	if !c.IsAlreadyRemoved(path) {
 		c.removed_[path] = struct{}{}
-		if c.config_.dry_run {
+		if c.config_.dryRun {
 			if c.FileExists(path) {
 				c.Report(path)
 			}
@@ -126,7 +126,7 @@ func (c *Cleaner) PrintFooter() {
 	if c.config_.verbosity == QUIET {
 		return
 	}
-	fmt.Printf("%d files.\n", c.cleaned_files_count_)
+	fmt.Printf("%d files.\n", c.cleanedFilesCount_)
 }
 
 // Clean all built files, except for files created by generator rules.
@@ -145,8 +145,8 @@ func (c *Cleaner) CleanAll(generator bool) int {
 		if !generator && e.GetBinding("generator") != "" {
 			continue
 		}
-		for _, out_node := range e.Outputs {
-			c.Remove(out_node.Path)
+		for _, outNode := range e.Outputs {
+			c.Remove(outNode.Path)
 		}
 
 		c.RemoveEdgeFiles(e)
@@ -244,21 +244,21 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for _, target_name := range targets {
-		if target_name == "" {
+	for _, targetName := range targets {
+		if targetName == "" {
 			errorf("failed to canonicalize '': empty path")
 			c.status_ = 1
 			continue
 		}
-		target_name = CanonicalizePath(target_name)
-		target := c.state_.LookupNode(target_name)
+		targetName = CanonicalizePath(targetName)
+		target := c.state_.LookupNode(targetName)
 		if target != nil {
 			if c.IsVerbose() {
-				fmt.Printf("Target %s\n", target_name)
+				fmt.Printf("Target %s\n", targetName)
 			}
 			c.DoCleanTarget(target)
 		} else {
-			errorf("unknown target '%s'", target_name)
+			errorf("unknown target '%s'", targetName)
 			c.status_ = 1
 		}
 	}
@@ -273,8 +273,8 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 
 	for _, e := range c.state_.edges_ {
 		if e.Rule.name() == rule.name() {
-			for _, out_node := range e.Outputs {
-				c.Remove(out_node.Path)
+			for _, outNode := range e.Outputs {
+				c.Remove(outNode.Path)
 				c.RemoveEdgeFiles(e)
 			}
 		}
@@ -325,15 +325,15 @@ func (c *Cleaner) CleanRules(rules []string) int {
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for _, rule_name := range rules {
-		rule := c.state_.bindings_.LookupRule(rule_name)
+	for _, ruleName := range rules {
+		rule := c.state_.bindings_.LookupRule(ruleName)
 		if rule != nil {
 			if c.IsVerbose() {
-				fmt.Printf("Rule %s\n", rule_name)
+				fmt.Printf("Rule %s\n", ruleName)
 			}
 			c.DoCleanRule(rule)
 		} else {
-			errorf("unknown rule '%s'", rule_name)
+			errorf("unknown rule '%s'", ruleName)
 			c.status_ = 1
 		}
 	}
@@ -343,7 +343,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 
 func (c *Cleaner) Reset() {
 	c.status_ = 0
-	c.cleaned_files_count_ = 0
+	c.cleanedFilesCount_ = 0
 	c.removed_ = map[string]struct{}{}
 	c.cleaned_ = map[*Node]struct{}{}
 }
@@ -356,7 +356,7 @@ func (c *Cleaner) LoadDyndeps() {
 			// Capture and ignore errors loading the dyndep file.
 			// We clean as much of the graph as we know.
 			err := ""
-			c.dyndep_loader_.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
+			c.dyndepLoader_.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
 		}
 	}
 }

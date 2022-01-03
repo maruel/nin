@@ -16,8 +16,8 @@ package nin
 
 import "syscall"
 
-func internalGetFullPathName(file_name string, buffer *string, err *string) bool {
-	s, err2 := syscall.FullPath(file_name)
+func internalGetFullPathName(fileName string, buffer *string, err *string) bool {
+	s, err2 := syscall.FullPath(fileName)
 	if err2 != nil {
 		*err = err2.Error()
 		return false

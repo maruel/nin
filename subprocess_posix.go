@@ -29,10 +29,10 @@ import (
 // for reading, as well as call Finish() to reap the child once done()
 // is true.
 type SubprocessImpl struct {
-	buf_         string
-	fd_          int
-	pid_         int
-	use_console_ bool
+	buf_        string
+	fd_         int
+	pid_        int
+	useConsole_ bool
 }
 
 // SubprocessSet runs a ppoll/pselect() loop around a set of Subprocesses.
@@ -48,17 +48,17 @@ type SubprocessSetImpl struct {
 	interrupted_ int
 
 	/*
-	  struct sigaction old_int_act_
-	  struct sigaction old_term_act_
-	  struct sigaction old_hup_act_
-	  sigset_t old_mask_
+	  struct sigaction oldIntAct_
+	  struct sigaction oldTermAct_
+	  struct sigaction oldHupAct_
+	  sigsetT oldMask_
 	*/
 }
 
-func NewSubprocessOS(use_console bool) *SubprocessImpl {
+func NewSubprocessOS(useConsole bool) *SubprocessImpl {
 	return &SubprocessImpl{
 		//fd_:-1, pid_:-1,
-		use_console_: use_console,
+		useConsole_: useConsole,
 	}
 }
 
@@ -86,24 +86,24 @@ func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 			s.fd_ = r
 		  // If available, we use ppoll in DoWork(); otherwise we use pselect
 		  // and so must avoid overly-large FDs.
-		  if s.fd_ >= static_cast<int>(FD_SETSIZE) {
+		  if s.fd_ >= staticCast<int>(FD_SETSIZE) {
 		    Fatal("pipe: %s", strerror(EMFILE))
 		  }
 		  SetCloseOnExec(s.fd_)
 
-		  var action posix_spawn_file_actions_t
-		  err := posix_spawn_file_actions_init(&action)
+		  var action posixSpawnFileActionsT
+		  err := posixSpawnFileActionsInit(&action)
 		  if err != 0 {
 		    Fatal("posix_spawn_file_actions_init: %s", strerror(err))
 		  }
 
-		  err = posix_spawn_file_actions_addclose(&action, output_pipe[0])
+		  err = posixSpawnFileActionsAddclose(&action, outputPipe[0])
 		  if err != 0 {
 		    Fatal("posix_spawn_file_actions_addclose: %s", strerror(err))
 		  }
 
-		  var attr posix_spawnattr_t
-		  err = posix_spawnattr_init(&attr)
+		  var attr posixSpawnattrT
+		  err = posixSpawnattrInit(&attr)
 		  if err != 0 {
 		    Fatal("posix_spawnattr_init: %s", strerror(err))
 		  }
@@ -111,7 +111,7 @@ func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 		  flags := 0
 
 		  flags |= POSIX_SPAWN_SETSIGMASK
-		  err = posix_spawnattr_setsigmask(&attr, &set.old_mask_)
+		  err = posixSpawnattrSetsigmask(&attr, &set.oldMask_)
 		  if err != 0 {
 		    Fatal("posix_spawnattr_setsigmask: %s", strerror(err))
 		  }
@@ -119,50 +119,50 @@ func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 		  // default action in the new process image, so no explicit
 		  // POSIX_SPAWN_SETSIGDEF parameter is needed.
 
-		  if !s.use_console_ {
+		  if !s.useConsole_ {
 		    // Put the child in its own process group, so ctrl-c won't reach it.
 		    flags |= POSIX_SPAWN_SETPGROUP
-		    // No need to posix_spawnattr_setpgroup(&attr, 0), it's the default.
+		    // No need to posixSpawnattrSetpgroup(&attr, 0), it's the default.
 
 		    // Open /dev/null over stdin.
-		    err = posix_spawn_file_actions_addopen(&action, 0, "/dev/null", O_RDONLY, 0)
+		    err = posixSpawnFileActionsAddopen(&action, 0, "/dev/null", O_RDONLY, 0)
 		    if err != 0 {
 		      Fatal("posix_spawn_file_actions_addopen: %s", strerror(err))
 		    }
 
-		    err = posix_spawn_file_actions_adddup2(&action, output_pipe[1], 1)
+		    err = posixSpawnFileActionsAdddup2(&action, outputPipe[1], 1)
 		    if err != 0 {
 		      Fatal("posix_spawn_file_actions_adddup2: %s", strerror(err))
 		    }
-		    err = posix_spawn_file_actions_adddup2(&action, output_pipe[1], 2)
+		    err = posixSpawnFileActionsAdddup2(&action, outputPipe[1], 2)
 		    if err != 0 {
 		      Fatal("posix_spawn_file_actions_adddup2: %s", strerror(err))
 		    }
-		    err = posix_spawn_file_actions_addclose(&action, output_pipe[1])
+		    err = posixSpawnFileActionsAddclose(&action, outputPipe[1])
 		    if err != 0 {
 		      Fatal("posix_spawn_file_actions_addclose: %s", strerror(err))
 		    }
-		    // In the console case, output_pipe is still inherited by the child and
+		    // In the console case, outputPipe is still inherited by the child and
 		    // closed when the subprocess finishes, which then notifies ninja.
 		  }
 		  flags |= POSIX_SPAWN_USEVFORK
 
-		  err = posix_spawnattr_setflags(&attr, flags)
+		  err = posixSpawnattrSetflags(&attr, flags)
 		  if err != 0 {
 		    Fatal("posix_spawnattr_setflags: %s", strerror(err))
 		  }
 
-		  string spawned_args[] = { "/bin/sh", "-c", command, nil }
-		  err = posix_spawn(&s.pid_, "/bin/sh", &action, &attr, const_cast<char**>(spawned_args), environ)
+		  string spawnedArgs[] = { "/bin/sh", "-c", command, nil }
+		  err = posixSpawn(&s.pid_, "/bin/sh", &action, &attr, constCast<char**>(spawnedArgs), environ)
 		  if err != 0 {
 		    Fatal("posix_spawn: %s", strerror(err))
 		  }
 
-		  err = posix_spawnattr_destroy(&attr)
+		  err = posixSpawnattrDestroy(&attr)
 		  if err != 0 {
 		    Fatal("posix_spawnattr_destroy: %s", strerror(err))
 		  }
-		  err = posix_spawn_file_actions_destroy(&action)
+		  err = posixSpawnFileActionsDestroy(&action)
 		  if err != 0 {
 		    Fatal("posix_spawn_file_actions_destroy: %s", strerror(err))
 		  }
@@ -238,7 +238,7 @@ func (s *SubprocessSet) SetInterruptedFlag(signum int) {
 }
 
 func (s *SubprocessSet) HandlePendingInterruption() {
-  var pending sigset_t
+  var pending sigsetT
   sigemptyset(&pending)
   if sigpending(&pending) == -1 {
     perror("ninja: sigpending")
@@ -257,22 +257,22 @@ func (s *SubprocessSet) HandlePendingInterruption() {
 func NewSubprocessSetOS() SubprocessSet {
 	panic("TODO")
 	/*
-	  sigset_t set
+	  sigsetT set
 	  sigemptyset(&set)
 	  sigaddset(&set, SIGINT)
 	  sigaddset(&set, SIGTERM)
 	  sigaddset(&set, SIGHUP)
-	  if (sigprocmask(SIG_BLOCK, &set, &old_mask_) < 0)
+	  if (sigprocmask(SIG_BLOCK, &set, &oldMask_) < 0)
 	    Fatal("sigprocmask: %s", strerror(errno))
 
 	  struct sigaction act
 	  memset(&act, 0, sizeof(act))
-	  act.sa_handler = SetInterruptedFlag
-	  if (sigaction(SIGINT, &act, &old_int_act_) < 0)
+	  act.saHandler = SetInterruptedFlag
+	  if (sigaction(SIGINT, &act, &oldIntAct_) < 0)
 	    Fatal("sigaction: %s", strerror(errno))
-	  if (sigaction(SIGTERM, &act, &old_term_act_) < 0)
+	  if (sigaction(SIGTERM, &act, &oldTermAct_) < 0)
 	    Fatal("sigaction: %s", strerror(errno))
-	  if (sigaction(SIGHUP, &act, &old_hup_act_) < 0)
+	  if (sigaction(SIGHUP, &act, &oldHupAct_) < 0)
 	    Fatal("sigaction: %s", strerror(errno))
 	*/
 }
@@ -281,19 +281,19 @@ func (s *SubprocessSetImpl) Close() error {
 	s.Clear()
 	panic("TODO")
 	/*
-	   if (sigaction(SIGINT, &old_int_act_, 0) < 0)
+	   if (sigaction(SIGINT, &oldIntAct_, 0) < 0)
 	     Fatal("sigaction: %s", strerror(errno))
-	   if (sigaction(SIGTERM, &old_term_act_, 0) < 0)
+	   if (sigaction(SIGTERM, &oldTermAct_, 0) < 0)
 	     Fatal("sigaction: %s", strerror(errno))
-	   if (sigaction(SIGHUP, &old_hup_act_, 0) < 0)
+	   if (sigaction(SIGHUP, &oldHupAct_, 0) < 0)
 	     Fatal("sigaction: %s", strerror(errno))
-	   if (sigprocmask(SIG_SETMASK, &old_mask_, 0) < 0)
+	   if (sigprocmask(SIG_SETMASK, &oldMask_, 0) < 0)
 	     Fatal("sigprocmask: %s", strerror(errno))
 	*/
 }
 
-func (s *SubprocessSetImpl) Add(command string, use_console bool) Subprocess {
-	subprocess := NewSubprocessOS(use_console)
+func (s *SubprocessSetImpl) Add(command string, useConsole bool) Subprocess {
+	subprocess := NewSubprocessOS(useConsole)
 	if !subprocess.Start(s, command) {
 		_ = subprocess.Close()
 		return nil
@@ -316,7 +316,7 @@ func (s *SubprocessSetImpl) DoWork() bool {
 		}
 
 		s.interrupted_ = 0
-		ret := syscall.Poll(&fds[0], len(fds), nil, &s.old_mask_)
+		ret := syscall.Poll(&fds[0], len(fds), nil, &s.oldMask_)
 		if ret == -1 {
 			if errno != EINTR {
 				perror("ninja: ppoll")
@@ -330,18 +330,18 @@ func (s *SubprocessSetImpl) DoWork() bool {
 			return true
 		}
 
-		cur_nfd := 0
+		curNfd := 0
 		for x := 0; x < len(s.running_); x++ {
 			i := s.running_[x]
 			fd := i.fd_
 			if fd < 0 {
 				continue
 			}
-			if fd != fds[cur_nfd].fd {
+			if fd != fds[curNfd].fd {
 				panic("oops")
 			}
-			n := cur_nfd
-			cur_nfd++
+			n := curNfd
+			curNfd++
 			if fds[n].revents {
 				i.OnPipeReady()
 				if i.Done() {
@@ -374,7 +374,7 @@ func (s *SubprocessSetImpl) Clear() {
 		for _, i := range s.running_ {
 			// Since the foreground process is in our process group, it will receive
 			// the interruption signal (i.e. SIGINT or SIGTERM) at the same time as us.
-			if !i.use_console_ {
+			if !i.useConsole_ {
 				os.Kill(-i.pid_, s.interrupted_)
 			}
 		}

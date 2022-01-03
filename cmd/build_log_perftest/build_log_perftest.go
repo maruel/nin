@@ -34,9 +34,9 @@ func (n *NoDeadPaths) IsPathDead(string) bool {
 
 func WriteTestData() error {
 	log := nin.NewBuildLog()
-	no_dead_paths := NoDeadPaths{}
+	noDeadPaths := NoDeadPaths{}
 	err := ""
-	if !log.OpenForWrite(kTestFilename, &no_dead_paths, &err) {
+	if !log.OpenForWrite(kTestFilename, &noDeadPaths, &err) {
 		return errors.New(err)
 	}
 
@@ -63,32 +63,32 @@ func WriteTestData() error {
 
 	// ManifestParser is the only object allowed to create Rules.
 	kRuleSize := 4000
-	long_rule_command := "gcc "
-	for i := 0; len(long_rule_command) < kRuleSize; i++ {
-		long_rule_command += fmt.Sprintf("-I../../and/arbitrary/but/fairly/long/path/suffixed/%d ", i)
+	longRuleCommand := "gcc "
+	for i := 0; len(longRuleCommand) < kRuleSize; i++ {
+		longRuleCommand += fmt.Sprintf("-I../../and/arbitrary/but/fairly/long/path/suffixed/%d ", i)
 	}
-	long_rule_command += "$in -o $out\n"
+	longRuleCommand += "$in -o $out\n"
 
 	state := nin.NewState()
 	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{})
-	if !parser.ParseTest("rule cxx\n  command = "+long_rule_command, &err) {
+	if !parser.ParseTest("rule cxx\n  command = "+longRuleCommand, &err) {
 		return errors.New(err)
 	}
 
 	// Create build edges. Using ManifestParser is as fast as using the State api
 	// for edge creation, so just use that.
 	kNumCommands := int32(30000)
-	build_rules := ""
+	buildRules := ""
 	for i := int32(0); i < kNumCommands; i++ {
-		build_rules += fmt.Sprintf("build input%d.o: cxx input%d.cc\n", i, i)
+		buildRules += fmt.Sprintf("build input%d.o: cxx input%d.cc\n", i, i)
 	}
 
-	if !parser.ParseTest(build_rules, &err) {
+	if !parser.ParseTest(buildRules, &err) {
 		return errors.New(err)
 	}
 
 	for i := int32(0); i < kNumCommands; i++ {
-		log.RecordCommand(state.Edges()[i] /*start_time=*/, 100*i /*end_time=*/, 100*i+1 /*mtime=*/, 0)
+		log.RecordCommand(state.Edges()[i] /*startTime=*/, 100*i /*endTime=*/, 100*i+1 /*mtime=*/, 0)
 	}
 
 	return nil

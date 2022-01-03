@@ -39,7 +39,7 @@ type SubprocessSet interface {
 	Clear()
 	Running() int
 	Finished() int
-	Add(command string, use_console bool) Subprocess
+	Add(command string, useConsole bool) Subprocess
 	NextFinished() Subprocess
 	DoWork() bool
 }
@@ -64,7 +64,7 @@ func (s *SubprocessGeneric) GetOutput() string {
 	return s.buf
 }
 
-func (s *SubprocessGeneric) run(ctx context.Context, c string, use_console bool) {
+func (s *SubprocessGeneric) run(ctx context.Context, c string, useConsole bool) {
 	ex := ""
 	var args []string
 	if runtime.GOOS == "windows" {
@@ -87,7 +87,7 @@ func (s *SubprocessGeneric) run(ctx context.Context, c string, use_console bool)
 	}
 	// Ignore the parsed arguments on Windows and feedback the original string.
 	var cmd *exec.Cmd
-	if use_console {
+	if useConsole {
 		cmd = exec.Command(ex, args...)
 	} else {
 		cmd = exec.CommandContext(ctx, ex, args...)
@@ -144,18 +144,18 @@ func (s *SubprocessSetGeneric) Finished() int {
 	return f
 }
 
-func (s *SubprocessSetGeneric) Add(c string, use_console bool) Subprocess {
+func (s *SubprocessSetGeneric) Add(c string, useConsole bool) Subprocess {
 	subproc := &SubprocessGeneric{}
 	s.wg.Add(1)
-	go s.enqueue(subproc, c, use_console)
+	go s.enqueue(subproc, c, useConsole)
 	s.mu.Lock()
 	s.running_ = append(s.running_, subproc)
 	s.mu.Unlock()
 	return subproc
 }
 
-func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, use_console bool) {
-	subproc.run(s.ctx, c, use_console)
+func (s *SubprocessSetGeneric) enqueue(subproc *SubprocessGeneric, c string, useConsole bool) {
+	subproc.run(s.ctx, c, useConsole)
 	// Do it before sending the channel because procDone is a blocking channel
 	// and the caller relies on Running() == 0 && Finished() == 0. Otherwise
 	// Clear() would hang.

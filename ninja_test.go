@@ -75,9 +75,9 @@ func VerifyGraph(t *testing.T, state *State) {
 		if len(e.Outputs) == 0 {
 			t.Fatal("all edges need at least one output")
 		}
-		for _, in_node := range e.Inputs {
+		for _, inNode := range e.Inputs {
 			found := false
-			for _, oe := range in_node.OutEdges {
+			for _, oe := range inNode.OutEdges {
 				if oe == e {
 					found = true
 				}
@@ -86,24 +86,24 @@ func VerifyGraph(t *testing.T, state *State) {
 				t.Fatal("each edge's inputs must have the edge as out-edge")
 			}
 		}
-		for _, out_node := range e.Outputs {
-			if out_node.InEdge != e {
+		for _, outNode := range e.Outputs {
+			if outNode.InEdge != e {
 				t.Fatal("each edge's output must have the edge as in-edge")
 			}
 		}
 	}
 
 	// The union of all in- and out-edges of each nodes should be exactly edges_.
-	node_edge_set := map[*Edge]struct{}{}
+	nodeEdgeSet := map[*Edge]struct{}{}
 	for _, n := range state.paths_ {
 		if n.InEdge != nil {
-			node_edge_set[n.InEdge] = struct{}{}
+			nodeEdgeSet[n.InEdge] = struct{}{}
 		}
 		for _, oe := range n.OutEdges {
-			node_edge_set[oe] = struct{}{}
+			nodeEdgeSet[oe] = struct{}{}
 		}
 	}
-	if len(state.edges_) != len(node_edge_set) {
+	if len(state.edges_) != len(nodeEdgeSet) {
 		t.Fatal("the union of all in- and out-edges must match State.edges_")
 	}
 }
@@ -114,11 +114,11 @@ func VerifyGraph(t *testing.T, state *State) {
 type VirtualFileSystem struct {
 	// In the C++ code, it's an ordered set. The only test cases that depends on
 	// this is TestBuildTest_MakeDirs.
-	directories_made_ map[string]struct{}
-	files_read_       []string
-	files_            FileMap
-	files_removed_    map[string]struct{}
-	files_created_    map[string]struct{}
+	directoriesMade_ map[string]struct{}
+	filesRead_       []string
+	files_           FileMap
+	filesRemoved_    map[string]struct{}
+	filesCreated_    map[string]struct{}
 
 	// A simple fake timestamp for file operations.
 	now_ TimeStamp
@@ -126,19 +126,19 @@ type VirtualFileSystem struct {
 
 // An entry for a single in-memory file.
 type Entry struct {
-	mtime      TimeStamp
-	stat_error string // If mtime is -1.
-	contents   string
+	mtime     TimeStamp
+	statError string // If mtime is -1.
+	contents  string
 }
 type FileMap map[string]Entry
 
 func NewVirtualFileSystem() VirtualFileSystem {
 	return VirtualFileSystem{
-		directories_made_: map[string]struct{}{},
-		files_:            FileMap{},
-		files_removed_:    map[string]struct{}{},
-		files_created_:    map[string]struct{}{},
-		now_:              1,
+		directoriesMade_: map[string]struct{}{},
+		files_:           FileMap{},
+		filesRemoved_:    map[string]struct{}{},
+		filesCreated_:    map[string]struct{}{},
+		now_:             1,
 	}
 }
 
@@ -155,14 +155,14 @@ func (v *VirtualFileSystem) Create(path string, contents string) {
 	f.mtime = v.now_
 	f.contents = contents
 	v.files_[path] = f
-	v.files_created_[path] = struct{}{}
+	v.filesCreated_[path] = struct{}{}
 }
 
 // DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
 	i, ok := v.files_[path]
 	if ok {
-		*err = i.stat_error
+		*err = i.statError
 		return i.mtime
 	}
 	return 0
@@ -174,12 +174,12 @@ func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
 }
 
 func (v *VirtualFileSystem) MakeDir(path string) bool {
-	v.directories_made_[path] = struct{}{}
+	v.directoriesMade_[path] = struct{}{}
 	return true // success
 }
 
 func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) DiskStatus {
-	v.files_read_ = append(v.files_read_, path)
+	v.filesRead_ = append(v.filesRead_, path)
 	i, ok := v.files_[path]
 	if ok {
 		if len(i.contents) == 0 {
@@ -194,12 +194,12 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {
-	if _, ok := v.directories_made_[path]; ok {
+	if _, ok := v.directoriesMade_[path]; ok {
 		return -1
 	}
 	if _, ok := v.files_[path]; ok {
 		delete(v.files_, path)
-		v.files_removed_[path] = struct{}{}
+		v.filesRemoved_[path] = struct{}{}
 		return 0
 	}
 	return 1
@@ -211,8 +211,8 @@ func CreateTempDirAndEnter(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	temp_dir := t.TempDir()
-	if err := os.Chdir(temp_dir); err != nil {
+	tempDir := t.TempDir()
+	if err := os.Chdir(tempDir); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -220,5 +220,5 @@ func CreateTempDirAndEnter(t *testing.T) string {
 			t.Error(err)
 		}
 	})
-	return temp_dir
+	return tempDir
 }

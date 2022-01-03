@@ -24,9 +24,9 @@ func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
 
 func TestMSVCHelperTest_EnvBlock(t *testing.T) {
 	t.Skip("TODO")
-	env_block := "foo=bar\x00"
+	envBlock := "foo=bar\x00"
 	var cl CLWrapper
-	cl.SetEnvBlock(env_block)
+	cl.SetEnvBlock(envBlock)
 	output := ""
 	cl.Run("cmd /c \"echo foo is %foo%", &output)
 	if output != "foo is bar\r\n" {

@@ -30,10 +30,10 @@ import (
 type Pool struct {
 	name_ string
 
-	// |current_use_| is the total of the weights of the edges which are
+	// |currentUse_| is the total of the weights of the edges which are
 	// currently scheduled in the Plan (i.e. the edges in Plan::ready_).
-	current_use_ int
-	depth_       int
+	currentUse_ int
+	depth_      int
 
 	delayed_ *DelayedEdges
 }
@@ -47,7 +47,7 @@ func NewPool(name string, depth int) *Pool {
 }
 
 // A depth of 0 is infinite
-func (p *Pool) is_valid() bool {
+func (p *Pool) isValid() bool {
 	return p.depth_ >= 0
 }
 func (p *Pool) depth() int {
@@ -56,8 +56,8 @@ func (p *Pool) depth() int {
 func (p *Pool) name() string {
 	return p.name_
 }
-func (p *Pool) current_use() int {
-	return p.current_use_
+func (p *Pool) currentUse() int {
+	return p.currentUse_
 }
 
 // true if the Pool might delay this edge
@@ -69,7 +69,7 @@ func (p *Pool) ShouldDelayEdge() bool {
 // Pool will count this edge as using resources from this pool.
 func (p *Pool) EdgeScheduled(edge *Edge) {
 	if p.depth_ != 0 {
-		p.current_use_ += edge.weight()
+		p.currentUse_ += edge.weight()
 	}
 }
 
@@ -77,7 +77,7 @@ func (p *Pool) EdgeScheduled(edge *Edge) {
 // relinquish its resources back to the pool
 func (p *Pool) EdgeFinished(edge *Edge) {
 	if p.depth_ != 0 {
-		p.current_use_ -= edge.weight()
+		p.currentUse_ -= edge.weight()
 	}
 }
 
@@ -89,27 +89,27 @@ func (p *Pool) DelayEdge(edge *Edge) {
 	p.delayed_.Add(edge)
 }
 
-// Pool will add zero or more edges to the ready_queue
-func (p *Pool) RetrieveReadyEdges(ready_queue *EdgeSet) {
+// Pool will add zero or more edges to the readyQueue
+func (p *Pool) RetrieveReadyEdges(readyQueue *EdgeSet) {
 	// TODO(maruel): Redo without using the internals.
 	p.delayed_.recreate()
 	for len(p.delayed_.sorted) != 0 {
 		// Do a peek first, then pop.
 		edge := p.delayed_.sorted[len(p.delayed_.sorted)-1]
-		if p.current_use_+edge.weight() > p.depth_ {
+		if p.currentUse_+edge.weight() > p.depth_ {
 			break
 		}
 		if ed := p.delayed_.Pop(); ed != edge {
 			panic("M-A")
 		}
-		ready_queue.Add(edge)
+		readyQueue.Add(edge)
 		p.EdgeScheduled(edge)
 	}
 }
 
 // Dump the Pool and its edges (useful for debugging).
 func (p *Pool) Dump() {
-	fmt.Printf("%s (%d/%d) ->\n", p.name_, p.current_use_, p.depth_)
+	fmt.Printf("%s (%d/%d) ->\n", p.name_, p.currentUse_, p.depth_)
 	// TODO(maruel): Use inner knowledge
 	p.delayed_.recreate()
 	for _, it := range p.delayed_.sorted {
@@ -167,8 +167,8 @@ func (s *State) AddPool(pool *Pool) {
 	s.pools_[pool.name()] = pool
 }
 
-func (s *State) LookupPool(pool_name string) *Pool {
-	return s.pools_[pool_name]
+func (s *State) LookupPool(poolName string) *Pool {
+	return s.pools_[poolName]
 }
 
 func (s *State) AddEdge(rule *Rule) *Edge {
@@ -204,12 +204,12 @@ func (s *State) SpellcheckNode(path string) *Node {
 	kAllowReplacements := true
 	kMaxValidEditDistance := 3
 
-	min_distance := kMaxValidEditDistance + 1
+	minDistance := kMaxValidEditDistance + 1
 	var result *Node
 	for p, node := range s.paths_ {
 		distance := EditDistance(p, path, kAllowReplacements, kMaxValidEditDistance)
-		if distance < min_distance && node != nil {
-			min_distance = distance
+		if distance < minDistance && node != nil {
+			minDistance = distance
 			result = node
 		}
 	}
@@ -251,21 +251,21 @@ func (s *State) AddDefault(path string, err *string) bool {
 // @return the root node(s) of the graph. (Root nodes have no output edges).
 // @param error where to write the error message if somethings went wrong.
 func (s *State) RootNodes(err *string) []*Node {
-	var root_nodes []*Node
+	var rootNodes []*Node
 	// Search for nodes with no output.
 	for _, e := range s.edges_ {
 		for _, out := range e.Outputs {
 			if len(out.OutEdges) == 0 {
-				root_nodes = append(root_nodes, out)
+				rootNodes = append(rootNodes, out)
 			}
 		}
 	}
 
-	if len(s.edges_) != 0 && len(root_nodes) == 0 {
+	if len(s.edges_) != 0 && len(rootNodes) == 0 {
 		*err = "could not determine root nodes of build graph"
 	}
 
-	return root_nodes
+	return rootNodes
 }
 
 func (s *State) DefaultNodes(err *string) []*Node {

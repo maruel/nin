@@ -411,9 +411,9 @@ func TestParserTest_NoDeadPointerFromDuplicateEdge(t *testing.T) {
 func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
-	var parser_opts ManifestParserOptions
-	parser_opts.dupe_edge_action_ = kDupeEdgeActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parser_opts)
+	var parserOpts ManifestParserOptions
+	parserOpts.dupeEdgeAction_ = kDupeEdgeActionError
+	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
 		t.Fatal("expected false")
@@ -427,9 +427,9 @@ func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs_.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
 	kInput := "subninja sub.ninja\n"
-	var parser_opts ManifestParserOptions
-	parser_opts.dupe_edge_action_ = kDupeEdgeActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parser_opts)
+	var parserOpts ManifestParserOptions
+	parserOpts.dupeEdgeAction_ = kDupeEdgeActionError
+	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
 		t.Fatal("expected false")
@@ -453,9 +453,9 @@ func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
 func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "build a: phony a\n"
-	var parser_opts ManifestParserOptions
-	parser_opts.phony_cycle_action_ = kPhonyCycleActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parser_opts)
+	var parserOpts ManifestParserOptions
+	parserOpts.phonyCycleAction_ = kPhonyCycleActionError
+	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
 	err := ""
 	if !parser.ParseTest(kInput, &err) {
 		t.Fatal("expected true")
@@ -481,8 +481,8 @@ func TestParserTest_ReservedWords(t *testing.T) {
 
 func TestParserTest_Errors(t *testing.T) {
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("subn", &err) {
 			t.Fatal("expected false")
@@ -493,8 +493,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("foobar", &err) {
 			t.Fatal("expected false")
@@ -505,8 +505,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x 3", &err) {
 			t.Fatal("expected false")
@@ -517,8 +517,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x = 3", &err) {
 			t.Fatal("expected false")
@@ -529,8 +529,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x = 3\ny 2", &err) {
 			t.Fatal("expected false")
@@ -541,8 +541,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x = $", &err) {
 			t.Fatal("expected false")
@@ -553,8 +553,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x = $\n $[\n", &err) {
 			t.Fatal("expected false")
@@ -565,8 +565,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("x = a$\n b$\n $\n", &err) {
 			t.Fatal("expected false")
@@ -577,8 +577,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("build\n", &err) {
 			t.Fatal("expected false")
@@ -589,8 +589,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("build x: y z\n", &err) {
 			t.Fatal("expected false")
@@ -601,8 +601,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("build x:: y z\n", &err) {
 			t.Fatal("expected false")
@@ -613,8 +613,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = cat ok\nbuild x: cat $\n :\n", &err) {
 			t.Fatal("expected false")
@@ -625,8 +625,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n", &err) {
 			t.Fatal("expected false")
@@ -637,8 +637,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = echo\nrule cat\n  command = echo\n", &err) {
 			t.Fatal("expected false")
@@ -649,8 +649,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = echo\n  rspfile = cat.rsp\n", &err) {
 			t.Fatal("expected false")
@@ -661,8 +661,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = ${fafsd\nfoo = bar\n", &err) {
 			t.Fatal("expected false")
@@ -673,8 +673,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = cat\nbuild $.: cat foo\n", &err) {
 			t.Fatal("expected false")
@@ -685,8 +685,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cat\n  command = cat\nbuild $: cat foo\n", &err) {
 			t.Fatal("expected false")
@@ -697,8 +697,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule %foo\n", &err) {
 			t.Fatal("expected false")
@@ -709,8 +709,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cc\n  command = foo\n  othervar = bar\n", &err) {
 			t.Fatal("expected false")
@@ -721,8 +721,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cc\n  command = foo\nbuild $.: cc bar.cc\n", &err) {
 			t.Fatal("expected false")
@@ -733,8 +733,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cc\n  command = foo\n  && bar", &err) {
 			t.Fatal("expected false")
@@ -745,8 +745,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule cc\n  command = foo\nbuild $: cc bar.cc\n", &err) {
 			t.Fatal("expected false")
@@ -757,8 +757,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("default\n", &err) {
 			t.Fatal("expected false")
@@ -769,8 +769,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("default nonexistent\n", &err) {
 			t.Fatal("expected false")
@@ -781,8 +781,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule r\n  command = r\nbuild b: r\ndefault b:\n", &err) {
 			t.Fatal("expected false")
@@ -793,8 +793,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("default $a\n", &err) {
 			t.Fatal("expected false")
@@ -805,8 +805,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("rule r\n  command = r\nbuild $a: r $c\n", &err) {
 			t.Fatal("expected false")
@@ -819,8 +819,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		// the indented blank line must terminate the rule
 		// this also verifies that "unexpected (token)" errors are correct
@@ -833,8 +833,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("pool\n", &err) {
 			t.Fatal("expected false")
@@ -845,8 +845,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("pool foo\n", &err) {
 			t.Fatal("expected false")
@@ -857,8 +857,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("pool foo\n  depth = 4\npool foo\n", &err) {
 			t.Fatal("expected false")
@@ -869,8 +869,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("pool foo\n  depth = -1\n", &err) {
 			t.Fatal("expected false")
@@ -881,8 +881,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		if parser.ParseTest("pool foo\n  bar = 1\n", &err) {
 			t.Fatal("expected false")
@@ -893,8 +893,8 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 
 	{
-		local_state := NewState()
-		parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+		localState := NewState()
+		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 		err := ""
 		// Pool names are dereferenced at edge parsing time.
 		if parser.ParseTest("rule run\n  command = echo\n  pool = unnamed_pool\nbuild out: run in\n", &err) {
@@ -908,8 +908,8 @@ func TestParserTest_Errors(t *testing.T) {
 
 func TestParserTest_MissingInput(t *testing.T) {
 	p := NewParserTest(t)
-	local_state := NewState()
-	parser := NewManifestParser(&local_state, &p.fs_, ManifestParserOptions{})
+	localState := NewState()
+	parser := NewManifestParser(&localState, &p.fs_, ManifestParserOptions{})
 	err := ""
 	if parser.Load("build.ninja", &err, nil) {
 		t.Fatal("expected false")
@@ -920,8 +920,8 @@ func TestParserTest_MissingInput(t *testing.T) {
 }
 
 func TestParserTest_MultipleOutputs(t *testing.T) {
-	local_state := NewState()
-	parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+	localState := NewState()
+	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 	err := ""
 	if !parser.ParseTest("rule cc\n  command = foo\n  depfile = bar\nbuild a.o b.o: cc c.cc\n", &err) {
 		t.Fatal("expected true")
@@ -932,8 +932,8 @@ func TestParserTest_MultipleOutputs(t *testing.T) {
 }
 
 func TestParserTest_MultipleOutputsWithDeps(t *testing.T) {
-	local_state := NewState()
-	parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+	localState := NewState()
+	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 	err := ""
 	if !parser.ParseTest("rule cc\n  command = foo\n  deps = gcc\nbuild a.o b.o: cc c.cc\n", &err) {
 		t.Fatal("expected true")
@@ -947,11 +947,11 @@ func TestParserTest_SubNinja(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs_.Create("test.ninja", "var2 = inner\nbuild $builddir/inner: varref\n")
 	p.AssertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\nbuild $builddir/outer: varref\nsubninja test.ninja\nbuild $builddir/outer2: varref\n")
-	if 1 != len(p.fs_.files_read_) {
+	if 1 != len(p.fs_.filesRead_) {
 		t.Fatal("expected equal")
 	}
 
-	if "test.ninja" != p.fs_.files_read_[0] {
+	if "test.ninja" != p.fs_.filesRead_[0] {
 		t.Fatal("expected equal")
 	}
 	if p.state.LookupNode("some_dir/outer") == nil {
@@ -1016,10 +1016,10 @@ func TestParserTest_Include(t *testing.T) {
 	p.fs_.Create("include.ninja", "var2 = inner\n")
 	p.AssertParse("var2 = outer\ninclude include.ninja\n")
 
-	if 1 != len(p.fs_.files_read_) {
+	if 1 != len(p.fs_.filesRead_) {
 		t.Fatal("expected equal")
 	}
-	if "include.ninja" != p.fs_.files_read_[0] {
+	if "include.ninja" != p.fs_.filesRead_[0] {
 		t.Fatal("expected equal")
 	}
 	if "inner" != p.state.bindings_.LookupVariable("var2") {
@@ -1045,7 +1045,7 @@ func TestParserTest_Implicit(t *testing.T) {
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar | baz\n")
 
 	edge := p.state.LookupNode("foo").InEdge
-	if !edge.is_implicit(1) {
+	if !edge.isImplicit(1) {
 		t.Fatal("expected true")
 	}
 }
@@ -1055,7 +1055,7 @@ func TestParserTest_OrderOnly(t *testing.T) {
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar || baz\n")
 
 	edge := p.state.LookupNode("foo").InEdge
-	if !edge.is_order_only(1) {
+	if !edge.isOrderOnly(1) {
 		t.Fatal("expected true")
 	}
 }
@@ -1081,7 +1081,7 @@ func TestParserTest_ImplicitOutput(t *testing.T) {
 	if len(edge.Outputs) != 2 {
 		t.Fatal("expected equal")
 	}
-	if !edge.is_implicit_out(1) {
+	if !edge.isImplicitOut(1) {
 		t.Fatal("expected true")
 	}
 }
@@ -1094,7 +1094,7 @@ func TestParserTest_ImplicitOutputEmpty(t *testing.T) {
 	if len(edge.Outputs) != 1 {
 		t.Fatal("expected equal")
 	}
-	if edge.is_implicit_out(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
 }
@@ -1107,13 +1107,13 @@ func TestParserTest_ImplicitOutputDupe(t *testing.T) {
 	if len(edge.Outputs) != 3 {
 		t.Fatal("expected equal")
 	}
-	if edge.is_implicit_out(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
-	if edge.is_implicit_out(1) {
+	if edge.isImplicitOut(1) {
 		t.Fatal("expected false")
 	}
-	if !edge.is_implicit_out(2) {
+	if !edge.isImplicitOut(2) {
 		t.Fatal("expected true")
 	}
 }
@@ -1126,7 +1126,7 @@ func TestParserTest_ImplicitOutputDupes(t *testing.T) {
 	if len(edge.Outputs) != 1 {
 		t.Fatal("expected equal")
 	}
-	if edge.is_implicit_out(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
 }
@@ -1195,8 +1195,8 @@ func TestParserTest_UTF8(t *testing.T) {
 }
 
 func TestParserTest_CRLF(t *testing.T) {
-	local_state := NewState()
-	parser := NewManifestParser(&local_state, nil, ManifestParserOptions{})
+	localState := NewState()
+	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
 	err := ""
 
 	if !parser.ParseTest("# comment with crlf\r\n", &err) {
@@ -1319,13 +1319,13 @@ func BenchmarkLoadManifest(b *testing.B) {
 		}
 	})
 	errX := ""
-	disk_interface := NewRealDiskInterface()
-	optimization_guard := 0
+	diskInterface := NewRealDiskInterface()
+	optimizationGuard := 0
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state := NewState()
-		parser := NewManifestParser(&state, &disk_interface, ManifestParserOptions{})
+		parser := NewManifestParser(&state, &diskInterface, ManifestParserOptions{})
 		if !parser.Load("build.ninja", &errX, nil) {
 			b.Fatal("Failed to read test data: ", errX)
 		}
@@ -1333,7 +1333,7 @@ func BenchmarkLoadManifest(b *testing.B) {
 		// commands required for the requested targets. So include command
 		// evaluation in the perftest by default.
 		for _, e := range state.Edges() {
-			optimization_guard += len(e.EvaluateCommand(false))
+			optimizationGuard += len(e.EvaluateCommand(false))
 		}
 	}
 }

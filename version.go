@@ -56,11 +56,11 @@ func keepNumbers(s string) string {
 // Check whether a version is compatible with the current Ninja version,
 // aborting if not.
 func CheckNinjaVersion(version string) {
-	bin_major, bin_minor := ParseVersion(kNinjaVersion)
-	file_major, file_minor := ParseVersion(version)
-	if bin_major > file_major {
+	binMajor, binMinor := ParseVersion(kNinjaVersion)
+	fileMajor, fileMinor := ParseVersion(version)
+	if binMajor > fileMajor {
 		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", kNinjaVersion, version)
-	} else if (bin_major == file_major && bin_minor < file_minor) || bin_major < file_major {
+	} else if (binMajor == fileMajor && binMinor < fileMinor) || binMajor < fileMajor {
 		log.Fatalf("ninja version (%s) incompatible with build file ninja_required_version version (%s).", kNinjaVersion, version)
 	}
 }

@@ -29,28 +29,28 @@ func TestEditDistanceTest_TestEmpty(t *testing.T) {
 }
 
 func TestEditDistanceTest_TestMaxDistance(t *testing.T) {
-	allow_replacements := true
-	for max_distance := 1; max_distance < 7; max_distance++ {
-		if max_distance+1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allow_replacements, max_distance) {
+	allowReplacements := true
+	for maxDistance := 1; maxDistance < 7; maxDistance++ {
+		if maxDistance+1 != EditDistance("abcdefghijklmnop", "ponmlkjihgfedcba", allowReplacements, maxDistance) {
 			t.Fatal("expected equal")
 		}
 	}
 }
 
 func TestEditDistanceTest_TestAllowReplacements(t *testing.T) {
-	allow_replacements := true
-	if 1 != EditDistance("ninja", "njnja", allow_replacements, 0) {
+	allowReplacements := true
+	if 1 != EditDistance("ninja", "njnja", allowReplacements, 0) {
 		t.Fatal("expected equal")
 	}
-	if 1 != EditDistance("njnja", "ninja", allow_replacements, 0) {
+	if 1 != EditDistance("njnja", "ninja", allowReplacements, 0) {
 		t.Fatal("expected equal")
 	}
 
-	allow_replacements = false
-	if 2 != EditDistance("ninja", "njnja", allow_replacements, 0) {
+	allowReplacements = false
+	if 2 != EditDistance("ninja", "njnja", allowReplacements, 0) {
 		t.Fatal("expected equal")
 	}
-	if 2 != EditDistance("njnja", "ninja", allow_replacements, 0) {
+	if 2 != EditDistance("njnja", "ninja", allowReplacements, 0) {
 		t.Fatal("expected equal")
 	}
 }

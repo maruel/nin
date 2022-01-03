@@ -63,21 +63,21 @@ type Result struct {
 
 // Options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
-	verbosity        Verbosity
-	dry_run          bool
-	parallelism      int
-	failures_allowed int
+	verbosity       Verbosity
+	dryRun          bool
+	parallelism     int
+	failuresAllowed int
 	// The maximum load average we must not exceed. A negative or zero value
 	// means that we do not have any limit.
-	max_load_average       float64
-	depfile_parser_options DepfileParserOptions
+	maxLoadAverage       float64
+	depfileParserOptions DepfileParserOptions
 }
 
 func NewBuildConfig() BuildConfig {
 	return BuildConfig{
-		verbosity:        NORMAL,
-		parallelism:      1,
-		failures_allowed: 1,
+		verbosity:       NORMAL,
+		parallelism:     1,
+		failuresAllowed: 1,
 	}
 }
 
@@ -129,22 +129,22 @@ func (d *DryRunCommandRunner) Abort() {
 }
 
 type RealCommandRunner struct {
-	config_          *BuildConfig
-	subprocs_        SubprocessSet
-	subproc_to_edge_ map[Subprocess]*Edge
+	config_        *BuildConfig
+	subprocs_      SubprocessSet
+	subprocToEdge_ map[Subprocess]*Edge
 }
 
 func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
 	return &RealCommandRunner{
-		config_:          config,
-		subprocs_:        NewSubprocessSet(),
-		subproc_to_edge_: map[Subprocess]*Edge{},
+		config_:        config,
+		subprocs_:      NewSubprocessSet(),
+		subprocToEdge_: map[Subprocess]*Edge{},
 	}
 }
 
 func (r *RealCommandRunner) GetActiveEdges() []*Edge {
 	var edges []*Edge
-	for _, e := range r.subproc_to_edge_ {
+	for _, e := range r.subprocToEdge_ {
 		edges = append(edges, e)
 	}
 	return edges
@@ -155,9 +155,9 @@ func (r *RealCommandRunner) Abort() {
 }
 
 func (r *RealCommandRunner) CanRunMore() bool {
-	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
-	more := subproc_number < r.config_.parallelism
-	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || getLoadAverage() < r.config_.max_load_average
+	subprocNumber := r.subprocs_.Running() + r.subprocs_.Finished()
+	more := subprocNumber < r.config_.parallelism
+	load := r.subprocs_.Running() == 0 || r.config_.maxLoadAverage <= 0. || getLoadAverage() < r.config_.maxLoadAverage
 	return more && load
 }
 
@@ -167,7 +167,7 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 	if subproc == nil {
 		return false
 	}
-	r.subproc_to_edge_[subproc] = edge
+	r.subprocToEdge_[subproc] = edge
 	return true
 }
 
@@ -186,9 +186,9 @@ func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
 	result.ExitCode = subproc.Finish()
 	result.Output = subproc.GetOutput()
 
-	e := r.subproc_to_edge_[subproc]
+	e := r.subprocToEdge_[subproc]
 	result.Edge = e
-	delete(r.subproc_to_edge_, subproc)
+	delete(r.subprocToEdge_, subproc)
 	return true
 }
 
@@ -208,15 +208,15 @@ type Plan struct {
 	builder_ *Builder
 
 	// Total number of edges that have commands (not phony).
-	command_edges_ int
+	commandEdges_ int
 
 	// Total remaining number of wanted edges.
-	wanted_edges_ int
+	wantedEdges_ int
 }
 
 // Returns true if there's more work to be done.
-func (p *Plan) more_to_do() bool {
-	return p.wanted_edges_ > 0 && p.command_edges_ > 0
+func (p *Plan) moreToDo() bool {
+	return p.wantedEdges_ > 0 && p.commandEdges_ > 0
 }
 
 func NewPlan(builder *Builder) Plan {
@@ -229,8 +229,8 @@ func NewPlan(builder *Builder) Plan {
 
 // Reset state.  Clears want and ready sets.
 func (p *Plan) Reset() {
-	p.command_edges_ = 0
-	p.wanted_edges_ = 0
+	p.commandEdges_ = 0
+	p.wantedEdges_ = 0
 	p.want_ = map[*Edge]Want{}
 	p.ready_ = NewEdgeSet()
 }
@@ -242,7 +242,7 @@ func (p *Plan) AddTarget(target *Node, err *string) bool {
 	return p.AddSubTarget(target, nil, err, nil)
 }
 
-func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_walk map[*Edge]struct{}) bool {
+func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk map[*Edge]struct{}) bool {
 	edge := node.InEdge
 	if edge == nil { // Leaf node.
 		if node.Dirty {
@@ -264,7 +264,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 	want, ok := p.want_[edge]
 	if !ok {
 		p.want_[edge] = kWantNothing
-	} else if len(dyndep_walk) != 0 && want == kWantToFinish {
+	} else if len(dyndepWalk) != 0 && want == kWantToFinish {
 		return false // Don't need to do anything with already-scheduled edge.
 	}
 
@@ -274,13 +274,13 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 		want = kWantToStart
 		p.want_[edge] = want
 		p.EdgeWanted(edge)
-		if len(dyndep_walk) == 0 && edge.AllInputsReady() {
+		if len(dyndepWalk) == 0 && edge.AllInputsReady() {
 			p.ScheduleWork(edge, want)
 		}
 	}
 
-	if len(dyndep_walk) != 0 {
-		dyndep_walk[edge] = struct{}{}
+	if len(dyndepWalk) != 0 {
+		dyndepWalk[edge] = struct{}{}
 	}
 
 	if ok {
@@ -288,7 +288,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 	}
 
 	for _, i := range edge.Inputs {
-		if !p.AddSubTarget(i, node, err, dyndep_walk) && *err != "" {
+		if !p.AddSubTarget(i, node, err, dyndepWalk) && *err != "" {
 			return false
 		}
 	}
@@ -296,9 +296,9 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndep_wal
 }
 
 func (p *Plan) EdgeWanted(edge *Edge) {
-	p.wanted_edges_++
+	p.wantedEdges_++
 	if edge.Rule != PhonyRule {
-		p.command_edges_++
+		p.commandEdges_++
 	}
 }
 
@@ -343,10 +343,10 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	if !ok {
 		panic("M-A")
 	}
-	directly_wanted := want != kWantNothing
+	directlyWanted := want != kWantNothing
 
 	// See if this job frees up any delayed jobs.
-	if directly_wanted {
+	if directlyWanted {
 		edge.Pool.EdgeFinished(edge)
 	}
 	edge.Pool.RetrieveReadyEdges(p.ready_)
@@ -356,8 +356,8 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 		return true
 	}
 
-	if directly_wanted {
-		p.wanted_edges_--
+	if directlyWanted {
+		p.wantedEdges_--
 	}
 	delete(p.want_, edge)
 	edge.OutputsReady = true
@@ -444,22 +444,22 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			}
 		}
 		if !found {
-			// Recompute most_recent_input.
-			most_recent_input := -1
+			// Recompute mostRecentInput.
+			mostRecentInput := -1
 			for i := 0; i != end; i++ {
-				if most_recent_input == -1 || oe.Inputs[i].MTime > oe.Inputs[most_recent_input].MTime {
-					most_recent_input = i
+				if mostRecentInput == -1 || oe.Inputs[i].MTime > oe.Inputs[mostRecentInput].MTime {
+					mostRecentInput = i
 				}
 			}
 
 			// Now, this edge is dirty if any of the outputs are dirty.
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
-			outputs_dirty := false
-			if !scan.RecomputeOutputsDirty(oe, oe.Inputs[most_recent_input], &outputs_dirty, err) {
+			outputsDirty := false
+			if !scan.RecomputeOutputsDirty(oe, oe.Inputs[mostRecentInput], &outputsDirty, err) {
 				return false
 			}
-			if !outputs_dirty {
+			if !outputsDirty {
 				for _, o := range oe.Outputs {
 					if !p.CleanNode(scan, o, err) {
 						return false
@@ -467,9 +467,9 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 				}
 
 				p.want_[oe] = kWantNothing
-				p.wanted_edges_--
+				p.wantedEdges_--
 				if oe.Rule != PhonyRule {
-					p.command_edges_--
+					p.commandEdges_--
 				}
 			}
 		}
@@ -486,13 +486,13 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		return false
 	}
 
-	// We loaded dyndep information for those out_edges of the dyndep node that
+	// We loaded dyndep information for those outEdges of the dyndep node that
 	// specify the node in a dyndep binding, but they may not be in the plan.
 	// Starting with those already in the plan, walk newly-reachable portion
 	// of the graph through the dyndep-discovered dependencies.
 
 	// Find edges in the the build plan for which we have new dyndep info.
-	var dyndep_roots []*Edge
+	var dyndepRoots []*Edge
 	for edge := range ddf {
 		// If the edge outputs are ready we do not need to consider it here.
 		if edge.OutputsReady {
@@ -506,14 +506,14 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		}
 
 		// This edge is already in the plan so queue it for the walk.
-		dyndep_roots = append(dyndep_roots, edge)
+		dyndepRoots = append(dyndepRoots, edge)
 	}
 
 	// Walk dyndep-discovered portion of the graph to add it to the build plan.
-	dyndep_walk := map[*Edge]struct{}{}
-	for _, oe := range dyndep_roots {
-		for _, i := range ddf[oe].implicit_inputs_ {
-			if !p.AddSubTarget(i, oe.Outputs[0], err, dyndep_walk) && *err != "" {
+	dyndepWalk := map[*Edge]struct{}{}
+	for _, oe := range dyndepRoots {
+		for _, i := range ddf[oe].implicitInputs_ {
+			if !p.AddSubTarget(i, oe.Outputs[0], err, dyndepWalk) && *err != "" {
 				return false
 			}
 		}
@@ -525,11 +525,11 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		if _, ok := p.want_[oe]; !ok {
 			continue
 		}
-		dyndep_walk[oe] = struct{}{}
+		dyndepWalk[oe] = struct{}{}
 	}
 
 	// See if any encountered edges are now ready.
-	for wi := range dyndep_walk {
+	for wi := range dyndepWalk {
 		want, ok := p.want_[wi]
 		if !ok {
 			continue
@@ -551,16 +551,16 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 	// have become wanted.
 	for n := range dependents {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
-		var validation_nodes []*Node
-		if !scan.RecomputeDirty(n, &validation_nodes, err) {
+		var validationNodes []*Node
+		if !scan.RecomputeDirty(n, &validationNodes, err) {
 			return false
 		}
 
 		// Add any validation nodes found during RecomputeDirty as new top level
 		// targets.
-		for _, v := range validation_nodes {
-			if in_edge := v.InEdge; in_edge != nil {
-				if !in_edge.OutputsReady && !p.AddTarget(v, err) {
+		for _, v := range validationNodes {
+			if inEdge := v.InEdge; inEdge != nil {
+				if !inEdge.OutputsReady && !p.AddTarget(v, err) {
 					return false
 				}
 			}
@@ -576,11 +576,11 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		if edge == nil || edge.OutputsReady {
 			panic("M-A")
 		}
-		want_e, ok := p.want_[edge]
+		wantE, ok := p.want_[edge]
 		if !ok {
 			panic("M-A")
 		}
-		if want_e == kWantNothing {
+		if wantE == kWantNothing {
 			p.want_[edge] = kWantToStart
 			p.EdgeWanted(edge)
 		}
@@ -631,38 +631,38 @@ func (p *Plan) Dump() {
 
 // Builder wraps the build process: starting commands, updating status.
 type Builder struct {
-	state_          *State
-	config_         *BuildConfig
-	plan_           Plan
-	command_runner_ CommandRunner
-	status_         Status
+	state_         *State
+	config_        *BuildConfig
+	plan_          Plan
+	commandRunner_ CommandRunner
+	status_        Status
 
 	// Map of running edge to time the edge started running.
-	running_edges_ RunningEdgeMap
+	runningEdges_ RunningEdgeMap
 
 	// Time the build started.
-	start_time_millis_ int64
+	startTimeMillis_ int64
 
-	disk_interface_ DiskInterface
-	scan_           DependencyScan
+	diskInterface_ DiskInterface
+	scan_          DependencyScan
 }
 
 // Used for tests.
 func (b *Builder) SetBuildLog(log *BuildLog) {
-	b.scan_.set_build_log(log)
+	b.scan_.setBuildLog(log)
 }
 
-func NewBuilder(state *State, config *BuildConfig, build_log *BuildLog, deps_log *DepsLog, disk_interface DiskInterface, status Status, start_time_millis int64) *Builder {
+func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *DepsLog, diskInterface DiskInterface, status Status, startTimeMillis int64) *Builder {
 	b := &Builder{
-		state_:             state,
-		config_:            config,
-		status_:            status,
-		running_edges_:     RunningEdgeMap{},
-		start_time_millis_: start_time_millis,
-		disk_interface_:    disk_interface,
+		state_:           state,
+		config_:          config,
+		status_:          status,
+		runningEdges_:    RunningEdgeMap{},
+		startTimeMillis_: startTimeMillis,
+		diskInterface_:   diskInterface,
 	}
 	b.plan_ = NewPlan(b)
-	b.scan_ = NewDependencyScan(state, build_log, deps_log, disk_interface, &b.config_.depfile_parser_options)
+	b.scan_ = NewDependencyScan(state, buildLog, depsLog, diskInterface, &b.config_.depfileParserOptions)
 	return b
 }
 
@@ -673,11 +673,11 @@ func (b *Builder) Destructor() {
 
 // Clean up after interrupted commands by deleting output files.
 func (b *Builder) Cleanup() {
-	if b.command_runner_ != nil {
-		active_edges := b.command_runner_.GetActiveEdges()
-		b.command_runner_.Abort()
+	if b.commandRunner_ != nil {
+		activeEdges := b.commandRunner_.GetActiveEdges()
+		b.commandRunner_.Abort()
 
-		for _, e := range active_edges {
+		for _, e := range activeEdges {
 			depfile := e.GetUnescapedDepfile()
 			for _, o := range e.Outputs {
 				// Only delete this output if it was actually modified.  This is
@@ -688,16 +688,16 @@ func (b *Builder) Cleanup() {
 				// mentioned in a depfile, and the command touches its depfile
 				// but is interrupted before it touches its output file.)
 				err := ""
-				new_mtime := b.disk_interface_.Stat(o.Path, &err)
-				if new_mtime == -1 { // Log and ignore Stat() errors.
+				newMtime := b.diskInterface_.Stat(o.Path, &err)
+				if newMtime == -1 { // Log and ignore Stat() errors.
 					b.status_.Error("%s", err)
 				}
-				if depfile != "" || o.MTime != new_mtime {
-					b.disk_interface_.RemoveFile(o.Path)
+				if depfile != "" || o.MTime != newMtime {
+					b.diskInterface_.RemoveFile(o.Path)
 				}
 			}
 			if len(depfile) != 0 {
-				b.disk_interface_.RemoveFile(depfile)
+				b.diskInterface_.RemoveFile(depfile)
 			}
 		}
 	}
@@ -720,13 +720,13 @@ func (b *Builder) AddTargetName(name string, err *string) *Node {
 // Add a target to the build, scanning dependencies.
 // @return false on error.
 func (b *Builder) AddTarget(target *Node, err *string) bool {
-	var validation_nodes []*Node
-	if !b.scan_.RecomputeDirty(target, &validation_nodes, err) {
+	var validationNodes []*Node
+	if !b.scan_.RecomputeDirty(target, &validationNodes, err) {
 		return false
 	}
 
-	in_edge := target.InEdge
-	if in_edge == nil || !in_edge.OutputsReady {
+	inEdge := target.InEdge
+	if inEdge == nil || !inEdge.OutputsReady {
 		if !b.plan_.AddTarget(target, err) {
 			return false
 		}
@@ -734,9 +734,9 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 
 	// Also add any validation nodes found during RecomputeDirty as top level
 	// targets.
-	for _, n := range validation_nodes {
-		if validation_in_edge := n.InEdge; validation_in_edge != nil {
-			if !validation_in_edge.OutputsReady && !b.plan_.AddTarget(n, err) {
+	for _, n := range validationNodes {
+		if validationInEdge := n.InEdge; validationInEdge != nil {
+			if !validationInEdge.OutputsReady && !b.plan_.AddTarget(n, err) {
 				return false
 			}
 		}
@@ -747,7 +747,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 
 // Returns true if the build targets are already up to date.
 func (b *Builder) AlreadyUpToDate() bool {
-	return !b.plan_.more_to_do()
+	return !b.plan_.moreToDo()
 }
 
 // Run the build.  Returns false on error.
@@ -757,16 +757,16 @@ func (b *Builder) Build(err *string) bool {
 		panic("M-A")
 	}
 
-	b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
-	pending_commands := 0
-	failures_allowed := b.config_.failures_allowed
+	b.status_.PlanHasTotalEdges(b.plan_.commandEdges_)
+	pendingCommands := 0
+	failuresAllowed := b.config_.failuresAllowed
 
 	// Set up the command runner if we haven't done so already.
-	if b.command_runner_ == nil {
-		if b.config_.dry_run {
-			b.command_runner_ = &DryRunCommandRunner{}
+	if b.commandRunner_ == nil {
+		if b.config_.dryRun {
+			b.commandRunner_ = &DryRunCommandRunner{}
 		} else {
-			b.command_runner_ = NewRealCommandRunner(b.config_)
+			b.commandRunner_ = NewRealCommandRunner(b.config_)
 		}
 	}
 
@@ -778,12 +778,12 @@ func (b *Builder) Build(err *string) bool {
 	// First, we attempt to start as many commands as allowed by the
 	// command runner.
 	// Second, we attempt to wait for / reap the next finished command.
-	for b.plan_.more_to_do() {
+	for b.plan_.moreToDo() {
 		// See if we can start any more commands.
-		if failures_allowed != 0 && b.command_runner_.CanRunMore() {
+		if failuresAllowed != 0 && b.commandRunner_.CanRunMore() {
 			if edge := b.plan_.FindWork(); edge != nil {
 				if edge.GetBinding("generator") != "" {
-					_ = b.scan_.build_log().Close()
+					_ = b.scan_.buildLog().Close()
 				}
 
 				if !b.StartEdge(edge, err) {
@@ -799,7 +799,7 @@ func (b *Builder) Build(err *string) bool {
 						return false
 					}
 				} else {
-					pending_commands++
+					pendingCommands++
 				}
 
 				// We made some progress; go back to the main loop.
@@ -808,16 +808,16 @@ func (b *Builder) Build(err *string) bool {
 		}
 
 		// See if we can reap any finished commands.
-		if pending_commands != 0 {
+		if pendingCommands != 0 {
 			var result Result
-			if !b.command_runner_.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
+			if !b.commandRunner_.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
 				b.Cleanup()
 				b.status_.BuildFinished()
 				*err = "interrupted by user"
 				return false
 			}
 
-			pending_commands--
+			pendingCommands--
 			if !b.FinishCommand(&result, err) {
 				b.Cleanup()
 				b.status_.BuildFinished()
@@ -825,8 +825,8 @@ func (b *Builder) Build(err *string) bool {
 			}
 
 			if result.ExitCode != ExitSuccess {
-				if failures_allowed != 0 {
-					failures_allowed--
+				if failuresAllowed != 0 {
+					failuresAllowed--
 				}
 			}
 
@@ -836,13 +836,13 @@ func (b *Builder) Build(err *string) bool {
 
 		// If we get here, we cannot make any more progress.
 		b.status_.BuildFinished()
-		if failures_allowed == 0 {
-			if b.config_.failures_allowed > 1 {
+		if failuresAllowed == 0 {
+			if b.config_.failuresAllowed > 1 {
 				*err = "subcommands failed"
 			} else {
 				*err = "subcommand failed"
 			}
-		} else if failures_allowed < b.config_.failures_allowed {
+		} else if failuresAllowed < b.config_.failuresAllowed {
 			*err = "cannot make progress due to previous errors"
 		} else {
 			*err = "stuck [this is a bug]"
@@ -859,15 +859,15 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	if edge.Rule == PhonyRule {
 		return true
 	}
-	start_time_millis := int32(time.Now().UnixMilli() - b.start_time_millis_)
-	b.running_edges_[edge] = start_time_millis
+	startTimeMillis := int32(time.Now().UnixMilli() - b.startTimeMillis_)
+	b.runningEdges_[edge] = startTimeMillis
 
-	b.status_.BuildEdgeStarted(edge, start_time_millis)
+	b.status_.BuildEdgeStarted(edge, startTimeMillis)
 
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
 	for _, o := range edge.Outputs {
-		if !MakeDirs(b.disk_interface_, o.Path) {
+		if !MakeDirs(b.diskInterface_, o.Path) {
 			*err = fmt.Sprintf("Can't make dir %q", o.Path)
 			return false
 		}
@@ -878,14 +878,14 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	rspfile := edge.GetUnescapedRspfile()
 	if len(rspfile) != 0 {
 		content := edge.GetBinding("rspfile_content")
-		if !b.disk_interface_.WriteFile(rspfile, content) {
+		if !b.diskInterface_.WriteFile(rspfile, content) {
 			*err = fmt.Sprintf("Can't write file %q", rspfile)
 			return false
 		}
 	}
 
 	// start command computing and run it
-	if !b.command_runner_.StartCommand(edge) {
+	if !b.commandRunner_.StartCommand(edge) {
 		*err = "command '" + edge.EvaluateCommand(len(rspfile) != 0) + "' failed."
 		return false
 	}
@@ -903,86 +903,86 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	// to filter /showIncludes output, even on compile failure) and
 	// extraction itself can fail, which makes the command fail from a
 	// build perspective.
-	var deps_nodes []*Node
-	deps_type := edge.GetBinding("deps")
-	deps_prefix := edge.GetBinding("msvc_deps_prefix")
-	if deps_type != "" {
-		extract_err := ""
-		if !b.ExtractDeps(result, deps_type, deps_prefix, &deps_nodes, &extract_err) && result.ExitCode == ExitSuccess {
+	var depsNodes []*Node
+	depsType := edge.GetBinding("deps")
+	depsPrefix := edge.GetBinding("msvc_deps_prefix")
+	if depsType != "" {
+		extractErr := ""
+		if !b.ExtractDeps(result, depsType, depsPrefix, &depsNodes, &extractErr) && result.ExitCode == ExitSuccess {
 			if result.Output != "" {
 				result.Output += "\n"
 			}
-			result.Output += extract_err
+			result.Output += extractErr
 			result.ExitCode = ExitFailure
 		}
 	}
 
-	var start_time_millis, end_time_millis int32
-	start_time_millis = b.running_edges_[edge]
-	end_time_millis = int32(time.Now().UnixMilli() - b.start_time_millis_)
-	delete(b.running_edges_, edge)
+	var startTimeMillis, endTimeMillis int32
+	startTimeMillis = b.runningEdges_[edge]
+	endTimeMillis = int32(time.Now().UnixMilli() - b.startTimeMillis_)
+	delete(b.runningEdges_, edge)
 
-	b.status_.BuildEdgeFinished(edge, end_time_millis, result.ExitCode == ExitSuccess, result.Output)
+	b.status_.BuildEdgeFinished(edge, endTimeMillis, result.ExitCode == ExitSuccess, result.Output)
 
 	// The rest of this function only applies to successful commands.
 	if result.ExitCode != ExitSuccess {
 		return b.plan_.EdgeFinished(edge, kEdgeFailed, err)
 	}
 	// Restat the edge outputs
-	output_mtime := TimeStamp(0)
+	outputMtime := TimeStamp(0)
 	restat := edge.GetBinding("restat") != ""
-	if !b.config_.dry_run {
-		node_cleaned := false
+	if !b.config_.dryRun {
+		nodeCleaned := false
 
 		for _, o := range edge.Outputs {
-			new_mtime := b.disk_interface_.Stat(o.Path, err)
-			if new_mtime == -1 {
+			newMtime := b.diskInterface_.Stat(o.Path, err)
+			if newMtime == -1 {
 				return false
 			}
-			if new_mtime > output_mtime {
-				output_mtime = new_mtime
+			if newMtime > outputMtime {
+				outputMtime = newMtime
 			}
-			if o.MTime == new_mtime && restat {
+			if o.MTime == newMtime && restat {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).
 				if !b.plan_.CleanNode(&b.scan_, o, err) {
 					return false
 				}
-				node_cleaned = true
+				nodeCleaned = true
 			}
 		}
 
-		if node_cleaned {
-			restat_mtime := TimeStamp(0)
+		if nodeCleaned {
+			restatMtime := TimeStamp(0)
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
 			for _, i := range edge.Inputs[:len(edge.Inputs)-int(edge.OrderOnlyDeps)] {
-				input_mtime := b.disk_interface_.Stat(i.Path, err)
-				if input_mtime == -1 {
+				inputMtime := b.diskInterface_.Stat(i.Path, err)
+				if inputMtime == -1 {
 					return false
 				}
-				if input_mtime > restat_mtime {
-					restat_mtime = input_mtime
+				if inputMtime > restatMtime {
+					restatMtime = inputMtime
 				}
 			}
 
 			depfile := edge.GetUnescapedDepfile()
-			if restat_mtime != 0 && deps_type == "" && depfile != "" {
-				depfile_mtime := b.disk_interface_.Stat(depfile, err)
-				if depfile_mtime == -1 {
+			if restatMtime != 0 && depsType == "" && depfile != "" {
+				depfileMtime := b.diskInterface_.Stat(depfile, err)
+				if depfileMtime == -1 {
 					return false
 				}
-				if depfile_mtime > restat_mtime {
-					restat_mtime = depfile_mtime
+				if depfileMtime > restatMtime {
+					restatMtime = depfileMtime
 				}
 			}
 
 			// The total number of edges in the plan may have changed as a result
 			// of a restat.
-			b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
+			b.status_.PlanHasTotalEdges(b.plan_.commandEdges_)
 
-			output_mtime = restat_mtime
+			outputMtime = restatMtime
 		}
 	}
 
@@ -992,27 +992,27 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 
 	// Delete any left over response file.
 	rspfile := edge.GetUnescapedRspfile()
-	if rspfile != "" && !g_keep_rsp {
-		b.disk_interface_.RemoveFile(rspfile)
+	if rspfile != "" && !gKeepRsp {
+		b.diskInterface_.RemoveFile(rspfile)
 	}
 
-	if b.scan_.build_log() != nil {
-		if !b.scan_.build_log().RecordCommand(edge, start_time_millis, end_time_millis, output_mtime) {
+	if b.scan_.buildLog() != nil {
+		if !b.scan_.buildLog().RecordCommand(edge, startTimeMillis, endTimeMillis, outputMtime) {
 			*err = "Error writing to build log: " // + err
 			return false
 		}
 	}
 
-	if deps_type != "" && !b.config_.dry_run {
+	if depsType != "" && !b.config_.dryRun {
 		if len(edge.Outputs) == 0 {
 			panic("should have been rejected by parser")
 		}
 		for _, o := range edge.Outputs {
-			deps_mtime := b.disk_interface_.Stat(o.Path, err)
-			if deps_mtime == -1 {
+			depsMtime := b.diskInterface_.Stat(o.Path, err)
+			if depsMtime == -1 {
 				return false
 			}
-			if !b.scan_.deps_log().RecordDeps(o, deps_mtime, deps_nodes) {
+			if !b.scan_.depsLog().RecordDeps(o, depsMtime, depsNodes) {
 				*err = "Error writing to deps log: " // + err
 				return false
 			}
@@ -1022,11 +1022,11 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	return true
 }
 
-func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix string, deps_nodes *[]*Node, err *string) bool {
-	if deps_type == "msvc" {
+func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string, depsNodes *[]*Node, err *string) bool {
+	if depsType == "msvc" {
 		parser := NewCLParser()
 		output := ""
-		if !parser.Parse(result.Output, deps_prefix, &output, err) {
+		if !parser.Parse(result.Output, depsPrefix, &output, err) {
 			return false
 		}
 		result.Output = output
@@ -1035,9 +1035,9 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 			// all backslashes (as some of the slashes will certainly be backslashes
 			// anyway). This could be fixed if necessary with some additional
 			// complexity in IncludesNormalize.relativize.
-			*deps_nodes = append(*deps_nodes, b.state_.GetNode(i, 0xFFFFFFFF))
+			*depsNodes = append(*depsNodes, b.state_.GetNode(i, 0xFFFFFFFF))
 		}
-	} else if deps_type == "gcc" {
+	} else if depsType == "gcc" {
 		depfile := result.Edge.GetUnescapedDepfile()
 		if len(depfile) == 0 {
 			*err = "edge with deps=gcc but no depfile makes no sense"
@@ -1046,7 +1046,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 
 		// Read depfile content.  Treat a missing depfile as empty.
 		content := ""
-		switch b.disk_interface_.ReadFile(depfile, &content, err) {
+		switch b.diskInterface_.ReadFile(depfile, &content, err) {
 		case Okay:
 		case NotFound:
 			err = nil
@@ -1057,26 +1057,26 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 			return true
 		}
 
-		deps := NewDepfileParser(b.config_.depfile_parser_options)
+		deps := NewDepfileParser(b.config_.depfileParserOptions)
 		// TODO(maruel): Memory copy.
 		if !deps.Parse([]byte(content), err) {
 			return false
 		}
 
 		// XXX check depfile matches expected output.
-		//deps_nodes.reserve(deps.ins_.size())
+		//depsNodes.reserve(deps.ins_.size())
 		for _, i := range deps.ins_ {
-			*deps_nodes = append(*deps_nodes, b.state_.GetNode(CanonicalizePathBits(i)))
+			*depsNodes = append(*depsNodes, b.state_.GetNode(CanonicalizePathBits(i)))
 		}
 
-		if !g_keep_depfile {
-			if b.disk_interface_.RemoveFile(depfile) < 0 {
+		if !gKeepDepfile {
+			if b.diskInterface_.RemoveFile(depfile) < 0 {
 				*err = "deleting depfile: TODO\n"
 				return false
 			}
 		}
 	} else {
-		fatalf("unknown deps type '%s'", deps_type)
+		fatalf("unknown deps type '%s'", depsType)
 	}
 	return true
 }
@@ -1097,7 +1097,7 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 	}
 
 	// New command edges may have been added to the plan.
-	b.status_.PlanHasTotalEdges(b.plan_.command_edges_)
+	b.status_.PlanHasTotalEdges(b.plan_.commandEdges_)
 
 	return true
 }

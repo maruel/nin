@@ -16,7 +16,7 @@ package nin
 
 // Wraps a synchronous execution of a CL subprocess.
 type CLWrapper struct {
-	env_block_ string
+	envBlock_ string
 }
 
 func NewCLWrapper() CLWrapper {
@@ -25,6 +25,6 @@ func NewCLWrapper() CLWrapper {
 
 // Set the environment block (as suitable for CreateProcess) to be used
 // by Run().
-func (c *CLWrapper) SetEnvBlock(env_block string) {
-	c.env_block_ = env_block
+func (c *CLWrapper) SetEnvBlock(envBlock string) {
+	c.envBlock_ = envBlock
 }

@@ -259,17 +259,17 @@ func (b *BindingEnv) AddRule(rule *Rule) {
 	b.rules_[rule.name_] = rule
 }
 
-func (b *BindingEnv) LookupRuleCurrentScope(rule_name string) *Rule {
-	return b.rules_[rule_name]
+func (b *BindingEnv) LookupRuleCurrentScope(ruleName string) *Rule {
+	return b.rules_[ruleName]
 }
 
-func (b *BindingEnv) LookupRule(rule_name string) *Rule {
-	i := b.rules_[rule_name]
+func (b *BindingEnv) LookupRule(ruleName string) *Rule {
+	i := b.rules_[ruleName]
 	if i != nil {
 		return i
 	}
 	if b.parent_ != nil {
-		return b.parent_.LookupRule(rule_name)
+		return b.parent_.LookupRule(ruleName)
 	}
 	return nil
 }

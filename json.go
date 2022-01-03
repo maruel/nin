@@ -19,7 +19,7 @@ import (
 )
 
 func encodeJSONString(in string) string {
-	hex_digits := "0123456789abcdef"
+	hexDigits := "0123456789abcdef"
 	out := ""
 	//out.reserve(in.length() * 1.2)
 	for _, c := range in {
@@ -41,8 +41,8 @@ func encodeJSONString(in string) string {
 		default:
 			if 0x0 <= c && c < 0x20 {
 				out += "\\u00"
-				out += hex_digits[c>>4 : (c>>4)+1]
-				out += hex_digits[c&0xf : (c&0xf)+1]
+				out += hexDigits[c>>4 : (c>>4)+1]
+				out += hexDigits[c&0xf : (c&0xf)+1]
 			} else {
 				out += string(c)
 			}

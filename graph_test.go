@@ -278,12 +278,12 @@ func TestGraphTest_RootNodes(t *testing.T) {
 	g.AssertParse(&g.state_, "build out1: cat in1\nbuild mid1: cat in1\nbuild out2: cat mid1\nbuild out3 out4: cat mid1\n", ManifestParserOptions{})
 
 	err := ""
-	root_nodes := g.state_.RootNodes(&err)
-	if 4 != len(root_nodes) {
+	rootNodes := g.state_.RootNodes(&err)
+	if 4 != len(rootNodes) {
 		t.Fatal("expected equal")
 	}
-	for i := 0; i < len(root_nodes); i++ {
-		name := root_nodes[i].Path
+	for i := 0; i < len(rootNodes); i++ {
+		name := rootNodes[i].Path
 		if "out" != name[0:3] {
 			t.Fatal("expected equal")
 		}
@@ -409,19 +409,19 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 0 != plan_.command_edges_ {
+	if 0 != plan_.commandEdges_ {
 		t.Fatal("expected equal")
 	}
-	if plan_.more_to_do() {
+	if plan_.moreToDo() {
 		t.Fatal("expected false")
 	}
 }
 
 func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
 	g := NewGraphTest(t)
-	var parser_opts ManifestParserOptions
-	parser_opts.phony_cycle_action_ = kPhonyCycleActionError
-	g.AssertParse(&g.state_, "build a: phony a\n", parser_opts)
+	var parserOpts ManifestParserOptions
+	parserOpts.phonyCycleAction_ = kPhonyCycleActionError
+	g.AssertParse(&g.state_, "build a: phony a\n", parserOpts)
 
 	err := ""
 	if g.scan_.RecomputeDirty(g.GetNode("a"), nil, &err) {
@@ -581,32 +581,32 @@ func TestGraphTest_Decanonicalize(t *testing.T) {
 	g.AssertParse(&g.state_, "build out\\out1: cat src\\in1\nbuild out\\out2/out3\\out4: cat mid1\nbuild out3 out4\\foo: cat mid1\n", ManifestParserOptions{})
 
 	err := ""
-	root_nodes := g.state_.RootNodes(&err)
-	if 4 != len(root_nodes) {
+	rootNodes := g.state_.RootNodes(&err)
+	if 4 != len(rootNodes) {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[0].Path != "out/out1" {
+	if rootNodes[0].Path != "out/out1" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[1].Path != "out/out2/out3/out4" {
+	if rootNodes[1].Path != "out/out2/out3/out4" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[2].Path != "out3" {
+	if rootNodes[2].Path != "out3" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[3].Path != "out4/foo" {
+	if rootNodes[3].Path != "out4/foo" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[0].PathDecanonicalized() != "out\\out1" {
+	if rootNodes[0].PathDecanonicalized() != "out\\out1" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[1].PathDecanonicalized() != "out\\out2/out3\\out4" {
+	if rootNodes[1].PathDecanonicalized() != "out\\out2/out3\\out4" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[2].PathDecanonicalized() != "out3" {
+	if rootNodes[2].PathDecanonicalized() != "out3" {
 		t.Fatal("expected equal")
 	}
-	if root_nodes[3].PathDecanonicalized() != "out4\\foo" {
+	if rootNodes[3].PathDecanonicalized() != "out4\\foo" {
 		t.Fatal("expected equal")
 	}
 }
@@ -1136,16 +1136,16 @@ func TestGraphTest_Validation(t *testing.T) {
 
 	g.fs_.Create("in", "")
 	err := ""
-	var validation_nodes []*Node
-	if !g.scan_.RecomputeDirty(g.GetNode("out"), &validation_nodes, &err) {
+	var validationNodes []*Node
+	if !g.scan_.RecomputeDirty(g.GetNode("out"), &validationNodes, &err) {
 		t.Fatal("expected success")
 	}
 	if err != "" {
 		t.Fatal(err)
 	}
 
-	if len(validation_nodes) != 1 || validation_nodes[0].Path != "validate" {
-		t.Fatal(validation_nodes)
+	if len(validationNodes) != 1 || validationNodes[0].Path != "validate" {
+		t.Fatal(validationNodes)
 	}
 
 	if !g.GetNode("out").Dirty {

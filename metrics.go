@@ -30,10 +30,10 @@ func emptyFunc() {
 /// of a function to get timing stats recorded for each call of the function.
 func METRIC_RECORD(name string) func() {
 	// TODO(maruel): Use runtime/trace.StartRegion() instead.
-	if g_metrics == nil {
+	if gMetrics == nil {
 		return emptyFunc
 	}
-	m := g_metrics.GetMetric(name)
+	m := gMetrics.GetMetric(name)
 	start := time.Now()
 	return func() {
 		m.count++
@@ -63,7 +63,7 @@ func NewMetrics() *Metrics {
 
 // The primary interface to metrics.  Use METRIC_RECORD("foobar") at the top
 // of a function to get timing stats recorded for each call of the function.
-var g_metrics *Metrics
+var gMetrics *Metrics
 
 func (m *Metrics) GetMetric(name string) *Metric {
 	if m.metrics_ == nil {

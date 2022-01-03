@@ -25,15 +25,15 @@ import (
 const kBrowsePy = "abc"
 
 // Run in "browse" mode, which execs a Python webserver.
-// \a ninja_command is the command used to invoke ninja.
+// \a ninjaCommand is the command used to invoke ninja.
 // \a args are the number of arguments to be passed to the Python script.
 // \a argv are arguments to be passed to the Python script.
 // This function does not return if it runs successfully.
-func runBrowsePython(state *State, ninja_command string, input_file string, args []string) {
+func runBrowsePython(state *State, ninjaCommand string, inputFile string, args []string) {
 	// The original C++ code exec() python as the parent, which is super weird.
 	// We cannot do this easily so do it the normal way for now.
 
-	cmd := exec.Command("python3", "-", "--ninja-command", ninja_command, "-f", "input_file")
+	cmd := exec.Command("python3", "-", "--ninja-command", ninjaCommand, "-f", "input_file")
 	cmd.Args = append(cmd.Args, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

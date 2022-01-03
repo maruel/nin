@@ -14,12 +14,12 @@
 
 package nin
 
-func EditDistance(s1, s2 string, allow_replacements bool, max_edit_distance int) int {
+func EditDistance(s1, s2 string, allowReplacements bool, maxEditDistance int) int {
 	// The algorithm implemented below is the "classic"
 	// dynamic-programming algorithm for computing the Levenshtein
 	// distance, which is described here:
 	//
-	//   http://en.wikipedia.org/wiki/Levenshtein_distance
+	//   http://en.wikipedia.org/wiki/LevenshteinDistance
 	//
 	// Although the algorithm is typically described using an m x n
 	// array, only one row plus one element are used at a time, so this
@@ -37,12 +37,12 @@ func EditDistance(s1, s2 string, allow_replacements bool, max_edit_distance int)
 
 	for y := 1; y <= m; y++ {
 		row[0] = y
-		best_this_row := row[0]
+		bestThisRow := row[0]
 
 		previous := y - 1
 		for x := 1; x <= n; x++ {
-			old_row := row[x]
-			if allow_replacements {
+			oldRow := row[x]
+			if allowReplacements {
 				v := 0
 				if s1[y-1] != s2[x-1] {
 					v = 1
@@ -55,12 +55,12 @@ func EditDistance(s1, s2 string, allow_replacements bool, max_edit_distance int)
 					row[x] = min(row[x-1], row[x]) + 1
 				}
 			}
-			previous = old_row
-			best_this_row = min(best_this_row, row[x])
+			previous = oldRow
+			bestThisRow = min(bestThisRow, row[x])
 		}
 
-		if max_edit_distance != 0 && best_this_row > max_edit_distance {
-			return max_edit_distance + 1
+		if maxEditDistance != 0 && bestThisRow > maxEditDistance {
+			return maxEditDistance + 1
 		}
 	}
 

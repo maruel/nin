@@ -23,28 +23,28 @@ import (
 
 // Runs the process of creating GraphViz .dot file output.
 type GraphViz struct {
-	out            io.Writer
-	dyndep_loader_ DyndepLoader
-	visited_nodes_ map[*Node]struct{}
-	visited_edges_ map[*Edge]struct{}
+	out           io.Writer
+	dyndepLoader_ DyndepLoader
+	visitedNodes_ map[*Node]struct{}
+	visitedEdges_ map[*Edge]struct{}
 }
 
-func NewGraphViz(state *State, disk_interface DiskInterface) GraphViz {
+func NewGraphViz(state *State, diskInterface DiskInterface) GraphViz {
 	return GraphViz{
-		out:            os.Stdout,
-		dyndep_loader_: NewDyndepLoader(state, disk_interface),
-		visited_nodes_: map[*Node]struct{}{},
-		visited_edges_: map[*Edge]struct{}{},
+		out:           os.Stdout,
+		dyndepLoader_: NewDyndepLoader(state, diskInterface),
+		visitedNodes_: map[*Node]struct{}{},
+		visitedEdges_: map[*Edge]struct{}{},
 	}
 }
 
 func (g *GraphViz) AddTarget(node *Node) {
-	if _, ok := g.visited_nodes_[node]; ok {
+	if _, ok := g.visitedNodes_[node]; ok {
 		return
 	}
 
 	fmt.Fprintf(g.out, "\"%p\" [label=\"%s\"]\n", node, strings.ReplaceAll(node.Path, "\\", "/"))
-	g.visited_nodes_[node] = struct{}{}
+	g.visitedNodes_[node] = struct{}{}
 
 	edge := node.InEdge
 
@@ -54,14 +54,14 @@ func (g *GraphViz) AddTarget(node *Node) {
 		return
 	}
 
-	if _, ok := g.visited_edges_[edge]; ok {
+	if _, ok := g.visitedEdges_[edge]; ok {
 		return
 	}
-	g.visited_edges_[edge] = struct{}{}
+	g.visitedEdges_[edge] = struct{}{}
 
 	if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
 		err := ""
-		if !g.dyndep_loader_.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
+		if !g.dyndepLoader_.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
 			warningf("%s\n", err)
 		}
 	}
@@ -77,11 +77,11 @@ func (g *GraphViz) AddTarget(node *Node) {
 			fmt.Fprintf(g.out, "\"%p\" -> \"%p\"\n", edge, out)
 		}
 		for i, in := range edge.Inputs {
-			order_only := ""
-			if edge.is_order_only(i) {
-				order_only = " style=dotted"
+			orderOnly := ""
+			if edge.isOrderOnly(i) {
+				orderOnly = " style=dotted"
 			}
-			fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [arrowhead=none%s]\n", in, edge, order_only)
+			fmt.Fprintf(g.out, "\"%p\" -> \"%p\" [arrowhead=none%s]\n", in, edge, orderOnly)
 		}
 	}
 

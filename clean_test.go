@@ -47,16 +47,16 @@ func TestCleanTest_CleanAll(t *testing.T) {
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 4 != cleaner.cleaned_files_count() {
+	if 4 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 4 != len(c.fs_.files_removed_) {
+	if 4 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -74,15 +74,15 @@ func TestCleanTest_CleanAll(t *testing.T) {
 	if 0 != c.fs_.Stat("out2", &err) {
 		t.Fatal("expected equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -95,19 +95,19 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 	c.fs_.Create("in2", "")
 	c.fs_.Create("out2", "")
 
-	c.config_.dry_run = true
+	c.config_.dryRun = true
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 4 != cleaner.cleaned_files_count() {
+	if 4 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -125,15 +125,15 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 	if 0 >= c.fs_.Stat("out2", &err) {
 		t.Fatal("expected less or equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 4 != cleaner.cleaned_files_count() {
+	if 4 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -148,16 +148,16 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -175,15 +175,15 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 	if 0 >= c.fs_.Stat("out2", &err) {
 		t.Fatal("expected less or equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -196,19 +196,19 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	c.fs_.Create("in2", "")
 	c.fs_.Create("out2", "")
 
-	c.config_.dry_run = true
+	c.config_.dryRun = true
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -226,15 +226,15 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	if 0 >= c.fs_.Stat("out2", &err) {
 		t.Fatal("expected less or equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -249,16 +249,16 @@ func TestCleanTest_CleanRule(t *testing.T) {
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanRuleName("cat_e") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -276,15 +276,15 @@ func TestCleanTest_CleanRule(t *testing.T) {
 	if 0 >= c.fs_.Stat("out2", &err) {
 		t.Fatal("expected less or equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanRuleName("cat_e") {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -297,19 +297,19 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 	c.fs_.Create("in2", "")
 	c.fs_.Create("out2", "")
 
-	c.config_.dry_run = true
+	c.config_.dryRun = true
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanRuleName("cat_e") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -327,15 +327,15 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 	if 0 >= c.fs_.Stat("out2", &err) {
 		t.Fatal("expected less or equal")
 	}
-	c.fs_.files_removed_ = nil
+	c.fs_.filesRemoved_ = nil
 
 	if 0 != cleaner.CleanRuleName("cat_e") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -350,10 +350,10 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 1 != cleaner.cleaned_files_count() {
+	if 1 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(c.fs_.files_removed_) {
+	if 1 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -363,10 +363,10 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
 	if 0 != cleaner.CleanAll(true) {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -381,10 +381,10 @@ func TestCleanTest_CleanDepFile(t *testing.T) {
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -399,10 +399,10 @@ func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -417,10 +417,10 @@ func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
 	if 0 != cleaner.CleanRuleName("cc") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -437,16 +437,16 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -469,16 +469,16 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
 
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 1 != cleaner.cleaned_files_count() {
+	if 1 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(c.fs_.files_removed_) {
+	if 1 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -501,10 +501,10 @@ func TestCleanTest_CleanRspFile(t *testing.T) {
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(c.fs_.files_removed_) {
+	if 2 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 }
@@ -520,29 +520,29 @@ func TestCleanTest_CleanRsp(t *testing.T) {
 	c.fs_.Create("out2", "")
 
 	cleaner := NewCleaner(&c.state_, &c.config_, &c.fs_)
-	if 0 != cleaner.cleaned_files_count() {
+	if 0 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanTarget("in2") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.CleanRuleName("cat_rsp") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 
-	if 6 != len(c.fs_.files_removed_) {
+	if 6 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -592,7 +592,7 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 >= c.fs_.Stat("phony", &err) {
@@ -606,7 +606,7 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 	if 0 != cleaner.CleanTarget("phony") {
 		t.Fatal("expected equal")
 	}
-	if 2 != cleaner.cleaned_files_count() {
+	if 2 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
 	if 0 >= c.fs_.Stat("phony", &err) {
@@ -626,10 +626,10 @@ func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
 	if 0 != cleaner.CleanAll(false) {
 		t.Fatal("expected equal")
 	}
-	if 4 != cleaner.cleaned_files_count() {
+	if 4 != cleaner.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 4 != len(c.fs_.files_removed_) {
+	if 4 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 
@@ -706,10 +706,10 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 0 != cleaner1.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner1.cleaned_files_count() {
-		t.Fatal(cleaner1.cleaned_files_count())
+	if 0 != cleaner1.cleanedFilesCount() {
+		t.Fatal(cleaner1.cleanedFilesCount())
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -727,10 +727,10 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 0 != cleaner2.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 1 != cleaner2.cleaned_files_count() {
+	if 1 != cleaner2.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.files_removed_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.filesRemoved_); diff != "" {
 		t.Fatal(diff)
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -747,13 +747,13 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if 0 != cleaner2.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner2.cleaned_files_count() {
+	if 0 != cleaner2.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(c.fs_.files_removed_) {
+	if 1 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
-	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.files_removed_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"out1": {}}, c.fs_.filesRemoved_); diff != "" {
 		t.Fatal(diff)
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -815,10 +815,10 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != cleaner1.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner1.cleaned_files_count() {
+	if 0 != cleaner1.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -836,10 +836,10 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != cleaner2.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner2.cleaned_files_count() {
+	if 0 != cleaner2.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 	if 0 == c.fs_.Stat("in", &err) {
@@ -856,10 +856,10 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if 0 != cleaner2.CleanDead(log2.entries()) {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner2.cleaned_files_count() {
+	if 0 != cleaner2.cleanedFilesCount() {
 		t.Fatal("expected equal")
 	}
-	if 0 != len(c.fs_.files_removed_) {
+	if 0 != len(c.fs_.filesRemoved_) {
 		t.Fatal("expected equal")
 	}
 	if 0 == c.fs_.Stat("in", &err) {

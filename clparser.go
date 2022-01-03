@@ -31,13 +31,13 @@ func NewCLParser() CLParser {
 // Parse a line of cl.exe output and extract /showIncludes info.
 // If a dependency is extracted, returns a nonempty string.
 // Exposed for testing.
-func filterShowIncludes(line string, deps_prefix string) string {
+func filterShowIncludes(line string, depsPrefix string) string {
 	const kDepsPrefixEnglish = "Note: including file: "
-	if deps_prefix == "" {
-		deps_prefix = kDepsPrefixEnglish
+	if depsPrefix == "" {
+		depsPrefix = kDepsPrefixEnglish
 	}
-	if strings.HasPrefix(line, deps_prefix) {
-		return strings.TrimLeft(line[len(deps_prefix):], " ")
+	if strings.HasPrefix(line, depsPrefix) {
+		return strings.TrimLeft(line[len(depsPrefix):], " ")
 	}
 	return ""
 }
@@ -65,14 +65,14 @@ func filterInputFilename(line string) bool {
 		strings.HasSuffix(line, ".cpp")
 }
 
-// Parse the full output of cl, filling filtered_output with the text that
+// Parse the full output of cl, filling filteredOutput with the text that
 // should be printed (if any). Returns true on success, or false with err
-// filled. output must not be the same object as filtered_object.
-func (c *CLParser) Parse(output, deps_prefix string, filtered_output *string, err *string) bool {
+// filled. output must not be the same object as filteredObject.
+func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err *string) bool {
 	defer METRIC_RECORD("CLParser::Parse")()
 	// Loop over all lines in the output to process them.
 	start := 0
-	seen_show_includes := false
+	seenShowIncludes := false
 	normalizer := NewIncludesNormalize(".")
 	for start < len(output) {
 		end := strings.IndexAny(output[start:], "\r\n")
@@ -83,9 +83,9 @@ func (c *CLParser) Parse(output, deps_prefix string, filtered_output *string, er
 		}
 		line := output[start:end]
 
-		include := filterShowIncludes(line, deps_prefix)
+		include := filterShowIncludes(line, depsPrefix)
 		if len(include) != 0 {
-			seen_show_includes = true
+			seenShowIncludes = true
 			normalized := ""
 			if !normalizer.Normalize(include, &normalized, err) {
 				return false
@@ -93,13 +93,13 @@ func (c *CLParser) Parse(output, deps_prefix string, filtered_output *string, er
 			if !isSystemInclude(normalized) {
 				c.includes_[normalized] = struct{}{}
 			}
-		} else if !seen_show_includes && filterInputFilename(line) {
+		} else if !seenShowIncludes && filterInputFilename(line) {
 			// Drop it.
 			// TODO: if we support compiling multiple output files in a single
 			// cl.exe invocation, we should stash the filename.
 		} else {
-			*filtered_output += line
-			*filtered_output += "\n"
+			*filteredOutput += line
+			*filteredOutput += "\n"
 		}
 
 		if end < len(output) && output[end] == '\r' {

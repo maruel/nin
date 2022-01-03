@@ -54,18 +54,18 @@ func MurmurHash2(key []byte, len2 uint32) uint32 {
 template<>
 type hash struct {
 
-  size_t operator()(string key) const {
+  sizeT operator()(string key) const {
     return MurmurHash2(key.str_, key.len_)
   }
 
-type argument_type string
-type result_type uint
+type argumentType string
+type resultType uint
 
-using stdext::hash_map
-using stdext::hash_compare
+using stdext::hashMap
+using stdext::hashCompare
 
 type StringPieceCmp struct {
-  size_t operator()(const string& key) const {
+  sizeT operator()(const string& key) const {
     return MurmurHash2(key.str_, key.len_)
   }
   bool operator()(const string& a, const string& b) const {
@@ -80,13 +80,13 @@ type StringPieceCmp struct {
   }
 }
 
-// A template for hash_maps keyed by a StringPiece whose string is
+// A template for hashMaps keyed by a StringPiece whose string is
 // owned externally (typically by the values).  Use like:
 // ExternalStringHash<Foo*>::Type foos; to make foos into a hash
 // mapping StringPiece => Foo*.
 template<typename V>
 type ExternalStringHashMap struct {
 }
-type Type unordered_map<string, V>
-type Type hash_map<string, V, StringPieceCmp>
+type Type unorderedMap<string, V>
+type Type hashMap<string, V, StringPieceCmp>
 */

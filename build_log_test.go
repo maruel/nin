@@ -80,7 +80,7 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	if *e1 != *e2 {
 		t.Fatal("expected true")
 	}
-	if 15 != e1.start_time {
+	if 15 != e1.startTime {
 		t.Fatal("expected equal")
 	}
 	if "out" != e1.output {
@@ -153,7 +153,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 	if e == nil {
 		t.Fatal("expected true")
 	}
-	b.AssertHash("command def", e.command_hash)
+	b.AssertHash("command def", e.commandHash)
 }
 
 func TestBuildLogTest_Truncate(t *testing.T) {
@@ -246,16 +246,16 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 	if e == nil {
 		t.Fatal("expected true")
 	}
-	if 123 != e.start_time {
+	if 123 != e.startTime {
 		t.Fatal("expected equal")
 	}
-	if 456 != e.end_time {
+	if 456 != e.endTime {
 		t.Fatal("expected equal")
 	}
 	if 456 != e.mtime {
 		t.Fatal("expected equal")
 	}
-	b.AssertHash("command", e.command_hash)
+	b.AssertHash("command", e.commandHash)
 }
 
 func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
@@ -283,31 +283,31 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 	if e == nil {
 		t.Fatal("expected true")
 	}
-	if 123 != e.start_time {
+	if 123 != e.startTime {
 		t.Fatal("expected equal")
 	}
-	if 456 != e.end_time {
+	if 456 != e.endTime {
 		t.Fatal("expected equal")
 	}
 	if 456 != e.mtime {
 		t.Fatal("expected equal")
 	}
-	b.AssertHash("command", e.command_hash)
+	b.AssertHash("command", e.commandHash)
 
 	e = log.LookupByOutput("out2")
 	if e == nil {
 		t.Fatal("expected true")
 	}
-	if 456 != e.start_time {
+	if 456 != e.startTime {
 		t.Fatal("expected equal")
 	}
-	if 789 != e.end_time {
+	if 789 != e.endTime {
 		t.Fatal("expected equal")
 	}
 	if 789 != e.mtime {
 		t.Fatal("expected equal")
 	}
-	b.AssertHash("command2", e.command_hash)
+	b.AssertHash("command2", e.commandHash)
 }
 
 type TestDiskInterface struct {
@@ -418,16 +418,16 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 	if e == nil {
 		t.Fatal("expected true")
 	}
-	if 456 != e.start_time {
+	if 456 != e.startTime {
 		t.Fatal("expected equal")
 	}
-	if 789 != e.end_time {
+	if 789 != e.endTime {
 		t.Fatal("expected equal")
 	}
 	if 789 != e.mtime {
 		t.Fatal("expected equal")
 	}
-	b.AssertHash("command2", e.command_hash)
+	b.AssertHash("command2", e.commandHash)
 }
 
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
@@ -455,16 +455,16 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 	if "out.d" != e2.output {
 		t.Fatal("expected equal")
 	}
-	if 21 != e1.start_time {
+	if 21 != e1.startTime {
 		t.Fatal("expected equal")
 	}
-	if 21 != e2.start_time {
+	if 21 != e2.startTime {
 		t.Fatal("expected equal")
 	}
-	if 22 != e2.end_time {
+	if 22 != e2.endTime {
 		t.Fatal("expected equal")
 	}
-	if 22 != e2.end_time {
+	if 22 != e2.endTime {
 		t.Fatal("expected equal")
 	}
 }

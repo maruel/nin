@@ -116,9 +116,9 @@ func TestCanonicalizePathBits_SlashTracking(t *testing.T) {
 		t.Skip("windows only")
 	}
 	type row struct {
-		in        string
-		want      string
-		want_bits uint64
+		in       string
+		want     string
+		wantBits uint64
 	}
 	data := []row{
 		{"", "", 0},
@@ -146,8 +146,8 @@ func TestCanonicalizePathBits_SlashTracking(t *testing.T) {
 			if l.want != got {
 				t.Fatalf("want: %q, got: %q", l.want, got)
 			}
-			if slashBits != l.want_bits {
-				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
+			if slashBits != l.wantBits {
+				t.Fatalf("want: %d, got: %d", l.wantBits, slashBits)
 			}
 			got2 := CanonicalizePath(l.in)
 			if got != got2 {
@@ -172,7 +172,7 @@ func TestCanonicalizePath_TooManyComponents(t *testing.T) {
 	type row struct {
 		in string
 		//want      string
-		want_bits uint64
+		wantBits uint64
 	}
 	data := []row{
 		// 64 is OK.
@@ -217,8 +217,8 @@ func TestCanonicalizePath_TooManyComponents(t *testing.T) {
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			got, slashBits := CanonicalizePathBits(l.in)
-			if slashBits != l.want_bits {
-				t.Fatalf("want: %d, got: %d", l.want_bits, slashBits)
+			if slashBits != l.wantBits {
+				t.Fatalf("want: %d, got: %d", l.wantBits, slashBits)
 			}
 			got2 := CanonicalizePath(l.in)
 			if got != got2 {
@@ -319,7 +319,7 @@ func TestElideMiddle_ElideInTheMiddle(t *testing.T) {
 
 var dummyBenchmarkValue = ""
 
-// The C++ version is canon_perftest. It runs 2000000 iterations.
+// The C++ version is canonPerftest. It runs 2000000 iterations.
 //
 // On my workstation:
 //

@@ -28,8 +28,8 @@ func TestMain(m *testing.M) {
 		log.SetOutput(ioutil.Discard)
 	}
 	if testing.Verbose() {
-		g_metrics = &Metrics{}
-		defer g_metrics.Report()
+		gMetrics = &Metrics{}
+		defer gMetrics.Report()
 	}
 	m.Run()
 }

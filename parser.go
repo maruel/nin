@@ -21,16 +21,16 @@ type Parse interface {
 // Base class for parsers.
 type Parser struct {
 	Parse
-	state_       *State
-	file_reader_ FileReader
-	lexer_       Lexer
+	state_      *State
+	fileReader_ FileReader
+	lexer_      Lexer
 }
 
-func NewParser(state *State, file_reader FileReader, p Parse) Parser {
+func NewParser(state *State, fileReader FileReader, p Parse) Parser {
 	return Parser{
-		Parse:        p,
-		state_:       state,
-		file_reader_: file_reader,
+		Parse:       p,
+		state_:      state,
+		fileReader_: fileReader,
 	}
 }
 
@@ -38,9 +38,9 @@ func NewParser(state *State, file_reader FileReader, p Parse) Parser {
 func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 	defer METRIC_RECORD(".ninja parse")()
 	contents := ""
-	read_err := ""
-	if p.file_reader_.ReadFile(filename, &contents, &read_err) != Okay {
-		*err = "loading '" + filename + "': " + read_err
+	readErr := ""
+	if p.fileReader_.ReadFile(filename, &contents, &readErr) != Okay {
+		*err = "loading '" + filename + "': " + readErr
 		if parent != nil {
 			parent.Error(string(*err), err)
 		}

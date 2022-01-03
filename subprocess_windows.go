@@ -30,10 +30,10 @@ type SubprocessImpl struct {
 		child_          HANDLE
 		pipe_           HANDLE
 		overlapped_     OVERLAPPED
-		overlapped_buf_ [4 << 10]byte
-		is_reading_     bool
+		overlappedBuf_ [4 << 10]byte
+		isReading_     bool
 	*/
-	use_console_ bool
+	useConsole_ bool
 }
 
 // SubprocessSet runs a ppoll/pselect() loop around a set of Subprocesses.
@@ -53,16 +53,16 @@ type SubprocessSetImpl struct {
 
 	//static bool IsInterrupted() { return interrupted_ != 0; }
 	/*
-	  struct sigaction old_int_act_
-	  struct sigaction old_term_act_
-	  struct sigaction old_hup_act_
-	  sigset_t old_mask_
+	  struct sigaction oldIntAct_
+	  struct sigaction oldTermAct_
+	  struct sigaction oldHupAct_
+	  sigsetT oldMask_
 	*/
 }
 
-func NewSubprocessOS(use_console bool) *SubprocessImpl {
+func NewSubprocessOS(useConsole bool) *SubprocessImpl {
 	return &SubprocessImpl{
-		use_console_: use_console,
+		useConsole_: useConsole,
 	}
 }
 
@@ -85,10 +85,10 @@ type HANDLE uintptr
 func (s *SubprocessImpl) SetupPipe(ioport HANDLE) HANDLE {
 	panic("TODO")
 	/*
-	  char pipe_name[100]
-	  snprintf(pipe_name, sizeof(pipe_name), "\\\\.\\pipe\\ninja_pid%lu_sp%p", GetCurrentProcessId(), this)
+	  char pipeName[100]
+	  snprintf(pipeName, sizeof(pipeName), "\\\\.\\pipe\\ninja_pid%lu_sp%p", GetCurrentProcessId(), this)
 
-	  s.pipe_ = ::CreateNamedPipeA(pipe_name, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, 0, 0, INFINITE, nil)
+	  s.pipe_ = ::CreateNamedPipeA(pipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, 0, 0, INFINITE, nil)
 	  if s.pipe_ == INVALID_HANDLE_VALUE {
 	    Win32Fatal("CreateNamedPipe")
 	  }
@@ -103,62 +103,62 @@ func (s *SubprocessImpl) SetupPipe(ioport HANDLE) HANDLE {
 	  }
 
 	  // Get the write end of the pipe as a handle inheritable across processes.
-	  HANDLE output_write_handle =
-	      CreateFileA(pipe_name, GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, nil)
-	  var output_write_child HANDLE
-	  if !DuplicateHandle(GetCurrentProcess(), output_write_handle, GetCurrentProcess(), &output_write_child, 0, TRUE, DUPLICATE_SAME_ACCESS) {
+	  HANDLE outputWriteHandle =
+	      CreateFileA(pipeName, GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, nil)
+	  var outputWriteChild HANDLE
+	  if !DuplicateHandle(GetCurrentProcess(), outputWriteHandle, GetCurrentProcess(), &outputWriteChild, 0, TRUE, DUPLICATE_SAME_ACCESS) {
 	    Win32Fatal("DuplicateHandle")
 	  }
-	  CloseHandle(output_write_handle)
+	  CloseHandle(outputWriteHandle)
 
-	  return output_write_child
+	  return outputWriteChild
 	*/
 }
 
 func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 	panic("TODO")
 	/*
-		  child_pipe := SetupPipe(set.ioport_)
+		  childPipe := SetupPipe(set.ioport_)
 
-		  var security_attributes SECURITY_ATTRIBUTES
-		  memset(&security_attributes, 0, sizeof(SECURITY_ATTRIBUTES))
-		  security_attributes.nLength = sizeof(SECURITY_ATTRIBUTES)
-		  security_attributes.bInheritHandle = TRUE
+		  var securityAttributes SECURITY_ATTRIBUTES
+		  memset(&securityAttributes, 0, sizeof(SECURITY_ATTRIBUTES))
+		  securityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES)
+		  securityAttributes.bInheritHandle = TRUE
 		  // Must be inheritable so subprocesses can dup to children.
 		  HANDLE nul =
-		      CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, &security_attributes, OPEN_EXISTING, 0, nil)
+		      CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, &securityAttributes, OPEN_EXISTING, 0, nil)
 		  if nul == INVALID_HANDLE_VALUE {
 		    Fatal("couldn't open nul")
 		  }
 
-		  var startup_info STARTUPINFOA
-		  memset(&startup_info, 0, sizeof(startup_info))
-		  startup_info.cb = sizeof(STARTUPINFO)
-		  if !s.use_console_ {
-		    startup_info.dwFlags = STARTF_USESTDHANDLES
-		    startup_info.hStdInput = nul
-		    startup_info.hStdOutput = child_pipe
-		    startup_info.hStdError = child_pipe
+		  var startupInfo STARTUPINFOA
+		  memset(&startupInfo, 0, sizeof(startupInfo))
+		  startupInfo.cb = sizeof(STARTUPINFO)
+		  if !s.useConsole_ {
+		    startupInfo.dwFlags = STARTF_USESTDHANDLES
+		    startupInfo.hStdInput = nul
+		    startupInfo.hStdOutput = childPipe
+		    startupInfo.hStdError = childPipe
 		  }
-		  // In the console case, child_pipe is still inherited by the child and closed
+		  // In the console case, childPipe is still inherited by the child and closed
 		  // when the subprocess finishes, which then notifies ninja.
 
-		  var process_info PROCESS_INFORMATION
-		  memset(&process_info, 0, sizeof(process_info))
+		  var processInfo PROCESS_INFORMATION
+		  memset(&processInfo, 0, sizeof(processInfo))
 
 		  // Ninja handles ctrl-c, except for subprocesses in console pools.
-		  DWORD process_flags = s.use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP
+		  DWORD processFlags = s.useConsole_ ? 0 : CREATE_NEW_PROCESS_GROUP
 
 		  // Do not prepend 'cmd /c' on Windows, this breaks command
 		  // lines greater than 8,191 chars.
-			// inherit_handles = TRUE
-		  if !CreateProcessA(nil, (char*)command, nil, nil, TRUE, process_flags, nil, nil, &startup_info, &process_info) {
+			// inheritHandles = TRUE
+		  if !CreateProcessA(nil, (char*)command, nil, nil, TRUE, processFlags, nil, nil, &startupInfo, &processInfo) {
 		    error := GetLastError()
 		    if error == ERROR_FILE_NOT_FOUND {
 		      // File (program) not found error is treated as a normal build
 		      // action failure.
-		      if child_pipe {
-		        CloseHandle(child_pipe)
+		      if childPipe {
+		        CloseHandle(childPipe)
 		      }
 		      CloseHandle(s.pipe_)
 		      CloseHandle(nul)
@@ -184,13 +184,13 @@ func (s *SubprocessImpl) Start(set *SubprocessSetImpl, command string) bool {
 		  }
 
 		  // Close pipe channel only used by the child.
-		  if child_pipe {
-		    CloseHandle(child_pipe)
+		  if childPipe {
+		    CloseHandle(childPipe)
 		  }
 		  CloseHandle(nul)
 
-		  CloseHandle(process_info.hThread)
-		  s.child_ = process_info.hProcess
+		  CloseHandle(processInfo.hThread)
+		  s.child_ = processInfo.hProcess
 
 		  return true
 	*/
@@ -209,13 +209,13 @@ func (s *SubprocessImpl) OnPipeReady() {
 	    Win32Fatal("GetOverlappedResult")
 	  }
 
-	  if s.is_reading_ && bytes {
-	    s.buf_.append(s.overlapped_buf_, bytes)
+	  if s.isReading_ && bytes {
+	    s.buf_.append(s.overlappedBuf_, bytes)
 	  }
 
 	  memset(&s.overlapped_, 0, sizeof(s.overlapped_))
-	  s.is_reading_ = true
-	  if !::ReadFile(s.pipe_, s.overlapped_buf_, sizeof(s.overlapped_buf_), &bytes, &s.overlapped_) {
+	  s.isReading_ = true
+	  if !::ReadFile(s.pipe_, s.overlappedBuf_, sizeof(s.overlappedBuf_), &bytes, &s.overlapped_) {
 	    if GetLastError() == ERROR_BROKEN_PIPE {
 	      CloseHandle(s.pipe_)
 	      s.pipe_ = nil
@@ -241,14 +241,14 @@ func (s *SubprocessImpl) Finish() ExitStatus {
 	  // TODO: add error handling for all of these.
 	  WaitForSingleObject(s.child_, INFINITE)
 
-	  exit_code := 0
-	  GetExitCodeProcess(s.child_, &exit_code)
+	  exitCode := 0
+	  GetExitCodeProcess(s.child_, &exitCode)
 
 	  CloseHandle(s.child_)
 	  s.child_ = nil
 
-	  return exit_code == 0              ? ExitSuccess :
-	         exit_code == CONTROL_C_EXIT ? ExitInterrupted :
+	  return exitCode == 0              ? ExitSuccess :
+	         exitCode == CONTROL_C_EXIT ? ExitInterrupted :
 	                                       ExitFailure
 	*/
 }
@@ -297,8 +297,8 @@ func (s *SubprocessSetImpl) NotifyInterrupted(dwCtrlType DWORD) BOOL WINAPI {
 }
 */
 
-func (s *SubprocessSetImpl) Add(command string, use_console bool) Subprocess {
-	subprocess := NewSubprocessOS(use_console)
+func (s *SubprocessSetImpl) Add(command string, useConsole bool) Subprocess {
+	subprocess := NewSubprocessOS(useConsole)
 	if !subprocess.Start(s, command) {
 		_ = subprocess.Close()
 		return nil
@@ -317,11 +317,11 @@ func (s *SubprocessSetImpl) Add(command string, use_console bool) Subprocess {
 func (s *SubprocessSetImpl) DoWork() bool {
 	panic("TODO")
 	/*
-	  var bytes_read DWORD
+	  var bytesRead DWORD
 	  var subproc *Subprocess
 	  var overlapped *OVERLAPPED
 
-	  if !GetQueuedCompletionStatus(s.ioport_, &bytes_read, (PULONG_PTR)&subproc, &overlapped, INFINITE) {
+	  if !GetQueuedCompletionStatus(s.ioport_, &bytesRead, (PULONG_PTR)&subproc, &overlapped, INFINITE) {
 	    if GetLastError() != ERROR_BROKEN_PIPE {
 	      Win32Fatal("GetQueuedCompletionStatus")
 	    }
@@ -362,7 +362,7 @@ func (s *SubprocessSetImpl) Clear() {
 		for _, i := range s.running_ {
 			// Since the foreground process is in our process group, it will receive a
 			// CTRL_C_EVENT or CTRL_BREAK_EVENT at the same time as us.
-			if i.child_ != nil && !i.use_console_ {
+			if i.child_ != nil && !i.useConsole_ {
 				if !GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, GetProcessId((*i).child_)) {
 					Win32Fatal("GenerateConsoleCtrlEvent")
 				}

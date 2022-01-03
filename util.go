@@ -96,7 +96,7 @@ func CanonicalizePath(path string) string {
 	}
 
 	var components [60]int
-	for component_count := 0; src < l; {
+	for componentCount := 0; src < l; {
 		if p[src] == '.' {
 			// It is fine to read one byte past because p is l+1 in
 			// length. It will be a 0 zero if so.
@@ -112,10 +112,10 @@ func CanonicalizePath(path string) string {
 				c := p[src+2]
 				if src+2 == l || (c == '/' || c == '\\') {
 					// '..' component.  Back up if possible.
-					if component_count > 0 {
-						dst = components[component_count-1]
+					if componentCount > 0 {
+						dst = components[componentCount-1]
 						src += 3
-						component_count--
+						componentCount--
 					} else {
 						p[dst] = p[src]
 						p[dst+1] = p[src+1]
@@ -133,11 +133,11 @@ func CanonicalizePath(path string) string {
 			continue
 		}
 
-		if component_count == len(components) {
+		if componentCount == len(components) {
 			fatalf("path has too many components : %s", path)
 		}
-		components[component_count] = dst
-		component_count++
+		components[componentCount] = dst
+		componentCount++
 
 		for src != l {
 			c := p[src]
@@ -207,7 +207,7 @@ func CanonicalizePathBits(path string) (string, uint64) {
 	}
 
 	var components [60]int
-	for component_count := 0; src < l; {
+	for componentCount := 0; src < l; {
 		if p[src] == '.' {
 			// It is fine to read one byte past because p is l+1 in
 			// length. It will be a 0 zero if so.
@@ -223,10 +223,10 @@ func CanonicalizePathBits(path string) (string, uint64) {
 				c := p[src+2]
 				if src+2 == l || (c == '/' || c == '\\') {
 					// '..' component.  Back up if possible.
-					if component_count > 0 {
-						dst = components[component_count-1]
+					if componentCount > 0 {
+						dst = components[componentCount-1]
 						src += 3
-						component_count--
+						componentCount--
 					} else {
 						p[dst] = p[src]
 						p[dst+1] = p[src+1]
@@ -244,11 +244,11 @@ func CanonicalizePathBits(path string) (string, uint64) {
 			continue
 		}
 
-		if component_count == len(components) {
+		if componentCount == len(components) {
 			fatalf("path has too many components : %s", path)
 		}
-		components[component_count] = dst
-		component_count++
+		components[componentCount] = dst
+		componentCount++
 
 		for src != l {
 			c := p[src]
@@ -272,15 +272,15 @@ func CanonicalizePathBits(path string) (string, uint64) {
 	p = p[:dst-1]
 	bits := uint64(0)
 	if runtime.GOOS == "windows" {
-		bits_mask := uint64(1)
+		bitsMask := uint64(1)
 		for i, c := range p {
 			switch c {
 			case '\\':
-				bits |= bits_mask
+				bits |= bitsMask
 				p[i] = '/'
 				fallthrough
 			case '/':
-				bits_mask <<= 1
+				bitsMask <<= 1
 			}
 		}
 	}
@@ -358,25 +358,25 @@ func GetWin32EscapedString(input string) string {
 	kBackslash := '\\'
 
 	result := string(kQuote)
-	consecutive_backslash_count := 0
-	span_begin := 0
+	consecutiveBackslashCount := 0
+	spanBegin := 0
 	for it, c := range input {
 		switch c {
 		case kBackslash:
-			consecutive_backslash_count++
+			consecutiveBackslashCount++
 		case kQuote:
-			result += input[span_begin:it]
-			for j := 0; j < consecutive_backslash_count+1; j++ {
+			result += input[spanBegin:it]
+			for j := 0; j < consecutiveBackslashCount+1; j++ {
 				result += string(kBackslash)
 			}
-			span_begin = it
-			consecutive_backslash_count = 0
+			spanBegin = it
+			consecutiveBackslashCount = 0
 		default:
-			consecutive_backslash_count = 0
+			consecutiveBackslashCount = 0
 		}
 	}
-	result += input[span_begin:]
-	for j := 0; j < consecutive_backslash_count; j++ {
+	result += input[spanBegin:]
+	for j := 0; j < consecutiveBackslashCount; j++ {
 		result += string(kBackslash)
 	}
 	result += string(kQuote)
@@ -421,12 +421,12 @@ func SpellcheckString(text string, words ...string) string {
 	kAllowReplacements := true
 	kMaxValidEditDistance := 3
 
-	min_distance := kMaxValidEditDistance + 1
+	minDistance := kMaxValidEditDistance + 1
 	result := ""
 	for _, i := range words {
 		distance := EditDistance(i, text, kAllowReplacements, kMaxValidEditDistance)
-		if distance < min_distance {
-			min_distance = distance
+		if distance < minDistance {
+			minDistance = distance
 			result = i
 		}
 	}
@@ -438,10 +438,10 @@ func SpellcheckString(text string, words ...string) string {
 func GetLastErrorString() string {
   err := GetLastError()
 
-  var msg_buf *char
-  FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nil, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&msg_buf, 0, nil)
-  msg := msg_buf
-  LocalFree(msg_buf)
+  var msgBuf *char
+  FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nil, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&msgBuf, 0, nil)
+  msg := msgBuf
+  LocalFree(msgBuf)
   return msg
 }
 
@@ -493,45 +493,45 @@ func StripAnsiEscapeCodes(in string) string {
 }
 
 /*
-func calculateProcessorLoad(idle_ticks, total_ticks uint64) float64 {
-  static uint64_t previous_idle_ticks = 0
-  static uint64_t previous_total_ticks = 0
-  static double previous_load = -0.0
+func calculateProcessorLoad(idleTicks, totalTicks uint64) float64 {
+  static uint64T previousIdleTicks = 0
+  static uint64T previousTotalTicks = 0
+  static double previousLoad = -0.0
 
-  uint64_t idle_ticks_since_last_time = idle_ticks - previous_idle_ticks
-  uint64_t total_ticks_since_last_time = total_ticks - previous_total_ticks
+  uint64T idleTicksSinceLastTime = idleTicks - previousIdleTicks
+  uint64T totalTicksSinceLastTime = totalTicks - previousTotalTicks
 
-  bool first_call = (previous_total_ticks == 0)
-  bool ticks_not_updated_since_last_call = (total_ticks_since_last_time == 0)
+  bool firstCall = (previousTotalTicks == 0)
+  bool ticksNotUpdatedSinceLastCall = (totalTicksSinceLastTime == 0)
 
   double load
-  if (first_call || ticks_not_updated_since_last_call) {
-    load = previous_load
+  if (firstCall || ticksNotUpdatedSinceLastCall) {
+    load = previousLoad
   } else {
     // Calculate load.
-    double idle_to_total_ratio =
-        ((double)idle_ticks_since_last_time) / total_ticks_since_last_time
-    double load_since_last_call = 1.0 - idle_to_total_ratio
+    double idleToTotalRatio =
+        ((double)idleTicksSinceLastTime) / totalTicksSinceLastTime
+    double loadSinceLastCall = 1.0 - idleToTotalRatio
 
     // Filter/smooth result when possible.
-    if(previous_load > 0) {
-      load = 0.9 * previous_load + 0.1 * load_since_last_call
+    if(previousLoad > 0) {
+      load = 0.9 * previousLoad + 0.1 * loadSinceLastCall
     } else {
-      load = load_since_last_call
+      load = loadSinceLastCall
     }
   }
 
-  previous_load = load
-  previous_total_ticks = total_ticks
-  previous_idle_ticks = idle_ticks
+  previousLoad = load
+  previousTotalTicks = totalTicks
+  previousIdleTicks = idleTicks
 
   return load
 }
 
-uint64_t FileTimeToTickCount(const FILETIME & ft)
+uint64T FileTimeToTickCount(const FILETIME & ft)
 {
-  uint64_t high = (((uint64_t)(ft.dwHighDateTime)) << 32)
-  uint64_t low  = ft.dwLowDateTime
+  uint64T high = (((uint64T)(ft.dwHighDateTime)) << 32)
+  uint64T low  = ft.dwLowDateTime
   return (high | low)
 }
 */
@@ -540,26 +540,26 @@ uint64_t FileTimeToTickCount(const FILETIME & ft)
 // on error.
 func getLoadAverage() float64 {
 	/*
-	  FILETIME idle_time, kernel_time, user_time
-	  BOOL get_system_time_succeeded =
-	      GetSystemTimes(&idle_time, &kernel_time, &user_time)
+	  FILETIME idleTime, kernelTime, userTime
+	  BOOL getSystemTimeSucceeded =
+	      GetSystemTimes(&idleTime, &kernelTime, &userTime)
 
-	  posix_compatible_load := 0.
-	  if get_system_time_succeeded {
-	    idle_ticks := FileTimeToTickCount(idle_time)
+	  posixCompatibleLoad := 0.
+	  if getSystemTimeSucceeded {
+	    idleTicks := FileTimeToTickCount(idleTime)
 
-	    // kernel_time from GetSystemTimes already includes idle_time.
-	    uint64_t total_ticks =
-	        FileTimeToTickCount(kernel_time) + FileTimeToTickCount(user_time)
+	    // kernelTime from GetSystemTimes already includes idleTime.
+	    uint64T totalTicks =
+	        FileTimeToTickCount(kernelTime) + FileTimeToTickCount(userTime)
 
-	    processor_load := calculateProcessorLoad(idle_ticks, total_ticks)
-	    posix_compatible_load = processor_load * GetProcessorCount()
+	    processorLoad := calculateProcessorLoad(idleTicks, totalTicks)
+	    posixCompatibleLoad = processorLoad * GetProcessorCount()
 
 	  } else {
-	    posix_compatible_load = -0.0
+	    posixCompatibleLoad = -0.0
 	  }
 
-	  return posix_compatible_load
+	  return posixCompatibleLoad
 	*/
 	return 0
 }
@@ -574,13 +574,13 @@ func getLoadAverage() float64 {
 // @return the load average of the machine. A negative value is returned
 // on error.
 func getLoadAverage() float64 {
-  var cpu_stats perfstat_cpu_total_t
-  if perfstat_cpu_total(nil, &cpu_stats, sizeof(cpu_stats), 1) < 0 {
+  var cpuStats perfstatCpuTotalT
+  if perfstatCpuTotal(nil, &cpuStats, sizeof(cpuStats), 1) < 0 {
     return -0.0f
   }
 
   // Calculation taken from comment in libperfstats.h
-  return double(cpu_stats.loadavg[0]) / double(1 << SBITS)
+  return double(cpuStats.loadavg[0]) / double(1 << SBITS)
 }
 
 // @return the load average of the machine. A negative value is returned
@@ -616,8 +616,8 @@ func ElideMiddle(str string, width int) string {
 	kMargin := 3 // Space for "...".
 	result := str
 	if len(result) > width {
-		elide_size := (width - kMargin) / 2
-		result = result[0:elide_size] + "..." + result[len(result)-elide_size:]
+		elideSize := (width - kMargin) / 2
+		result = result[0:elideSize] + "..." + result[len(result)-elideSize:]
 	}
 	return result
 }

@@ -244,7 +244,7 @@ func TestDepfileParserTest_EscapedTargetColon(t *testing.T) {
 }
 
 func TestDepfileParserTest_SpecialChars(t *testing.T) {
-	// See filenames like istreambuf.iterator_op!= in
+	// See filenames like istreambuf.iteratorOp!= in
 	// https://github.com/google/libcxx/tree/master/test/iterators/stream.iterators/istreambuf.iterator/
 	err := ""
 	p := DepfileParser{}

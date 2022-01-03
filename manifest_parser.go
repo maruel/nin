@@ -31,8 +31,8 @@ const (
 )
 
 type ManifestParserOptions struct {
-	dupe_edge_action_   DupeEdgeAction
-	phony_cycle_action_ PhonyCycleAction
+	dupeEdgeAction_   DupeEdgeAction
+	phonyCycleAction_ PhonyCycleAction
 }
 
 // Parses .ninja files.
@@ -49,12 +49,12 @@ func (m *ManifestParser) ParseTest(input string, err *string) bool {
 	return m.Parse("input", input+"\x00", err)
 }
 
-func NewManifestParser(state *State, file_reader FileReader, options ManifestParserOptions) *ManifestParser {
+func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
 	m := &ManifestParser{
 		options_: options,
 		env_:     state.bindings_,
 	}
-	m.Parser = NewParser(state, file_reader, m)
+	m.Parser = NewParser(state, fileReader, m)
 	return m
 }
 
@@ -85,12 +85,12 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 			{
 				m.lexer_.UnreadToken()
 				name := ""
-				var let_value EvalString
-				if !m.ParseLet(&name, &let_value, err) {
+				var letValue EvalString
+				if !m.ParseLet(&name, &letValue, err) {
 					return false
 				}
-				value := let_value.Evaluate(m.env_)
-				// Check ninja_required_version immediately so we can exit
+				value := letValue.Evaluate(m.env_)
+				// Check ninjaRequiredVersion immediately so we can exit
 				// before encountering any syntactic surprises.
 				if name == "ninja_required_version" {
 					CheckNinjaVersion(value)
@@ -141,9 +141,9 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 		}
 
 		if key == "depth" {
-			depth_string := value.Evaluate(m.env_)
+			depthString := value.Evaluate(m.env_)
 			var err2 error
-			depth, err2 = strconv.Atoi(depth_string)
+			depth, err2 = strconv.Atoi(depthString)
 			if depth < 0 || err2 != nil {
 				return m.lexer_.Error("invalid pool depth", err)
 			}
@@ -233,9 +233,9 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 		if len(path) == 0 {
 			return m.lexer_.Error("empty path", err)
 		}
-		default_err := ""
-		if !m.state_.AddDefault(CanonicalizePath(path), &default_err) {
-			return m.lexer_.Error(default_err, err)
+		defaultErr := ""
+		if !m.state_.AddDefault(CanonicalizePath(path), &defaultErr) {
+			return m.lexer_.Error(defaultErr, err)
 		}
 
 		eval.Parsed = nil
@@ -269,7 +269,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	// Add all implicit outs, counting how many as we go.
-	implicit_outs := 0
+	implicitOuts := 0
 	if m.lexer_.PeekToken(PIPE) {
 		for {
 			var out EvalString
@@ -280,7 +280,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				break
 			}
 			outs = append(outs, out)
-			implicit_outs++
+			implicitOuts++
 		}
 	}
 
@@ -292,14 +292,14 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		return false
 	}
 
-	rule_name := ""
-	if !m.lexer_.ReadIdent(&rule_name) {
+	ruleName := ""
+	if !m.lexer_.ReadIdent(&ruleName) {
 		return m.lexer_.Error("expected build command name", err)
 	}
 
-	rule := m.env_.LookupRule(rule_name)
+	rule := m.env_.LookupRule(ruleName)
 	if rule == nil {
-		return m.lexer_.Error("unknown build rule '"+rule_name+"'", err)
+		return m.lexer_.Error("unknown build rule '"+ruleName+"'", err)
 	}
 
 	for {
@@ -331,7 +331,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	// Add all order-only deps, counting how many as we go.
-	order_only := 0
+	orderOnly := 0
 	if m.lexer_.PeekToken(PIPE2) {
 		for {
 			var in EvalString
@@ -342,7 +342,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				break
 			}
 			ins = append(ins, in)
-			order_only++
+			orderOnly++
 		}
 	}
 
@@ -365,12 +365,12 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	// Bindings on edges are rare, so allocate per-edge envs only when needed.
-	has_indent_token := m.lexer_.PeekToken(INDENT)
+	hasIndentToken := m.lexer_.PeekToken(INDENT)
 	env := m.env_
-	if has_indent_token {
+	if hasIndentToken {
 		env = NewBindingEnv(m.env_)
 	}
-	for has_indent_token {
+	for hasIndentToken {
 		key := ""
 		var val EvalString
 		if !m.ParseLet(&key, &val, err) {
@@ -378,17 +378,17 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		}
 
 		env.AddBinding(key, val.Evaluate(m.env_))
-		has_indent_token = m.lexer_.PeekToken(INDENT)
+		hasIndentToken = m.lexer_.PeekToken(INDENT)
 	}
 
 	edge := m.state_.AddEdge(rule)
 	edge.Env = env
 
-	pool_name := edge.GetBinding("pool")
-	if pool_name != "" {
-		pool := m.state_.LookupPool(pool_name)
+	poolName := edge.GetBinding("pool")
+	if poolName != "" {
+		pool := m.state_.LookupPool(poolName)
 		if pool == nil {
-			return m.lexer_.Error("unknown pool name '"+pool_name+"'", err)
+			return m.lexer_.Error("unknown pool name '"+poolName+"'", err)
 		}
 		edge.Pool = pool
 	}
@@ -401,15 +401,15 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		if !m.state_.AddOut(edge, path, slashBits) {
-			if m.options_.dupe_edge_action_ == kDupeEdgeActionError {
+			if m.options_.dupeEdgeAction_ == kDupeEdgeActionError {
 				m.lexer_.Error("multiple rules generate "+path, err)
 				return false
 			}
 			if !m.quiet_ {
 				warningf("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
 			}
-			if len(outs)-i <= implicit_outs {
-				implicit_outs--
+			if len(outs)-i <= implicitOuts {
+				implicitOuts--
 			}
 		}
 	}
@@ -419,7 +419,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state_.edges_ = m.state_.edges_[:len(m.state_.edges_)-1]
 		return true
 	}
-	edge.ImplicitOuts = int32(implicit_outs)
+	edge.ImplicitOuts = int32(implicitOuts)
 
 	// TODO: edge.inputs_.reserve(ins.size())
 	for _, i := range ins {
@@ -431,7 +431,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state_.AddIn(edge, path, slashBits)
 	}
 	edge.ImplicitDeps = int32(implicit)
-	edge.OrderOnlyDeps = int32(order_only)
+	edge.OrderOnlyDeps = int32(orderOnly)
 
 	//edge.validations_.reserve(validations.size());
 	for _, v := range validations {
@@ -443,7 +443,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state_.AddValidation(edge, path, slashBits)
 	}
 
-	if m.options_.phony_cycle_action_ == kPhonyCycleActionWarn && edge.maybe_phonycycle_diagnostic() {
+	if m.options_.phonyCycleAction_ == kPhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
 		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to
@@ -484,7 +484,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 }
 
 // Parse either a 'subninja' or 'include' line.
-func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
+func (m *ManifestParser) ParseFileInclude(newScope bool, err *string) bool {
 	var eval EvalString
 	if !m.lexer_.ReadPath(&eval, err) {
 		return false
@@ -493,8 +493,8 @@ func (m *ManifestParser) ParseFileInclude(new_scope bool, err *string) bool {
 
 	// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
 	// not create lock contention.
-	subparser := NewManifestParser(m.state_, m.file_reader_, m.options_)
-	if new_scope {
+	subparser := NewManifestParser(m.state_, m.fileReader_, m.options_)
+	if newScope {
 		subparser.env_ = NewBindingEnv(m.env_)
 	} else {
 		subparser.env_ = m.env_

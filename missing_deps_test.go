@@ -25,34 +25,34 @@ type MissingDependencyTestDelegate struct {
 func (m *MissingDependencyTestDelegate) OnMissingDep(node *Node, path string, generator *Rule) {}
 
 type MissingDependencyScannerTest struct {
-	t               *testing.T
-	delegate_       MissingDependencyTestDelegate
-	generator_rule_ *Rule
-	compile_rule_   *Rule
-	deps_log_       DepsLog
-	state_          State
-	filesystem_     VirtualFileSystem
-	scanner_        MissingDependencyScanner
+	t              *testing.T
+	delegate_      MissingDependencyTestDelegate
+	generatorRule_ *Rule
+	compileRule_   *Rule
+	depsLog_       DepsLog
+	state_         State
+	filesystem_    VirtualFileSystem
+	scanner_       MissingDependencyScanner
 }
 
 func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest {
 	m := &MissingDependencyScannerTest{
-		t:               t,
-		generator_rule_: NewRule("generator_rule"),
-		compile_rule_:   NewRule("compile_rule"),
-		deps_log_:       NewDepsLog(),
-		state_:          NewState(),
-		filesystem_:     NewVirtualFileSystem(),
+		t:              t,
+		generatorRule_: NewRule("generator_rule"),
+		compileRule_:   NewRule("compile_rule"),
+		depsLog_:       NewDepsLog(),
+		state_:         NewState(),
+		filesystem_:    NewVirtualFileSystem(),
 	}
-	m.scanner_ = NewMissingDependencyScanner(&m.delegate_, &m.deps_log_, &m.state_, &m.filesystem_)
+	m.scanner_ = NewMissingDependencyScanner(&m.delegate_, &m.depsLog_, &m.state_, &m.filesystem_)
 	err := ""
 	kTestDepsLogFilename := filepath.Join(t.TempDir(), "MissingDepTest-tempdepslog")
-	m.deps_log_.OpenForWrite(kTestDepsLogFilename, &err)
+	m.depsLog_.OpenForWrite(kTestDepsLogFilename, &err)
 	if err != "" {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = m.deps_log_.Close()
+		_ = m.depsLog_.Close()
 	})
 	return m
 }
@@ -62,8 +62,8 @@ func (m *MissingDependencyScannerTest) scanner() *MissingDependencyScanner {
 }
 
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
-	node_deps := []*Node{m.state_.LookupNode(to)}
-	m.deps_log_.RecordDeps(m.state_.LookupNode(from), 0, node_deps)
+	nodeDeps := []*Node{m.state_.LookupNode(to)}
+	m.depsLog_.RecordDeps(m.state_.LookupNode(from), 0, nodeDeps)
 }
 
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
@@ -78,32 +78,32 @@ func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 }
 
 func (m *MissingDependencyScannerTest) CreateInitialState() {
-	deps_type := &EvalString{}
-	deps_type.AddText("gcc")
-	m.compile_rule_.AddBinding("deps", deps_type)
-	m.generator_rule_.AddBinding("deps", deps_type)
-	header_edge := m.state_.AddEdge(m.generator_rule_)
-	m.state_.AddOut(header_edge, "generated_header", 0)
-	compile_edge := m.state_.AddEdge(m.compile_rule_)
-	m.state_.AddOut(compile_edge, "compiled_object", 0)
+	depsType := &EvalString{}
+	depsType.AddText("gcc")
+	m.compileRule_.AddBinding("deps", depsType)
+	m.generatorRule_.AddBinding("deps", depsType)
+	headerEdge := m.state_.AddEdge(m.generatorRule_)
+	m.state_.AddOut(headerEdge, "generated_header", 0)
+	compileEdge := m.state_.AddEdge(m.compileRule_)
+	m.state_.AddOut(compileEdge, "compiled_object", 0)
 }
 
 func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
-	from_node := m.state_.LookupNode(from)
-	from_edge := from_node.InEdge
-	m.state_.AddIn(from_edge, to, 0)
+	fromNode := m.state_.LookupNode(from)
+	fromEdge := fromNode.InEdge
+	m.state_.AddIn(fromEdge, to, 0)
 }
 
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
-	flaky_node := m.state_.LookupNode(flaky)
-	if 1 != countNodes(m.scanner().nodes_missing_deps_, flaky_node) {
+	flakyNode := m.state_.LookupNode(flaky)
+	if 1 != countNodes(m.scanner().nodesMissingDeps_, flakyNode) {
 		m.t.Fatal("expected equal")
 	}
-	generated_node := m.state_.LookupNode(generated)
-	if 1 != countNodes(m.scanner().generated_nodes_, generated_node) {
+	generatedNode := m.state_.LookupNode(generated)
+	if 1 != countNodes(m.scanner().generatedNodes_, generatedNode) {
 		m.t.Fatal("expected equal")
 	}
-	if 1 != countRules(m.scanner().generator_rules_, rule) {
+	if 1 != countRules(m.scanner().generatorRules_, rule) {
 		m.t.Fatal("expected equal")
 	}
 }
@@ -148,19 +148,19 @@ func TestMissingDependencyScannerTest_NoMissingDep(t *testing.T) {
 func TestMissingDependencyScannerTest_MissingDepPresent(t *testing.T) {
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
-	// compiled_object uses generated_header, without a proper dependency
+	// compiledObject uses generatedHeader, without a proper dependency
 	m.RecordDepsLogDep("compiled_object", "generated_header")
 	m.ProcessAllNodes()
 	if !m.scanner().HadMissingDeps() {
 		t.Fatal("expected true")
 	}
-	if 1 != len(m.scanner().nodes_missing_deps_) {
+	if 1 != len(m.scanner().nodesMissingDeps_) {
 		t.Fatal("expected equal")
 	}
-	if 1 != m.scanner().missing_dep_path_count_ {
+	if 1 != m.scanner().missingDepPathCount_ {
 		t.Fatal("expected equal")
 	}
-	m.AssertMissingDependencyBetween("compiled_object", "generated_header", m.generator_rule_)
+	m.AssertMissingDependencyBetween("compiled_object", "generated_header", m.generatorRule_)
 }
 
 func TestMissingDependencyScannerTest_MissingDepFixedDirect(t *testing.T) {
@@ -179,8 +179,8 @@ func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	// Adding an indirect dependency also fixes the issue
-	intermediate_edge := m.state_.AddEdge(m.generator_rule_)
-	m.state_.AddOut(intermediate_edge, "intermediate", 0)
+	intermediateEdge := m.state_.AddEdge(m.generatorRule_)
+	m.state_.AddOut(intermediateEdge, "intermediate", 0)
 	m.CreateGraphDependencyBetween("compiled_object", "intermediate")
 	m.CreateGraphDependencyBetween("intermediate", "generated_header")
 	m.RecordDepsLogDep("compiled_object", "generated_header")
@@ -201,14 +201,14 @@ func TestMissingDependencyScannerTest_CyclicMissingDep(t *testing.T) {
 	if !m.scanner().HadMissingDeps() {
 		t.Fatal("expected true")
 	}
-	if 2 != len(m.scanner().nodes_missing_deps_) {
+	if 2 != len(m.scanner().nodesMissingDeps_) {
 		t.Fatal("expected equal")
 	}
-	if 2 != m.scanner().missing_dep_path_count_ {
+	if 2 != m.scanner().missingDepPathCount_ {
 		t.Fatal("expected equal")
 	}
-	m.AssertMissingDependencyBetween("compiled_object", "generated_header", m.generator_rule_)
-	m.AssertMissingDependencyBetween("generated_header", "compiled_object", m.compile_rule_)
+	m.AssertMissingDependencyBetween("compiled_object", "generated_header", m.generatorRule_)
+	m.AssertMissingDependencyBetween("generated_header", "compiled_object", m.compileRule_)
 }
 
 func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {

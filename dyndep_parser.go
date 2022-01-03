@@ -17,8 +17,8 @@ package nin
 // Parses dyndep files.
 type DyndepParser struct {
 	Parser
-	dyndep_file_ DyndepFile
-	env_         *BindingEnv
+	dyndepFile_ DyndepFile
+	env_        *BindingEnv
 }
 
 // Parse a text string of input.  Used by tests.
@@ -26,11 +26,11 @@ func (d *DyndepParser) ParseTest(input string, err *string) bool {
 	return d.Parse("input", input+"\x00", err)
 }
 
-func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFile) *DyndepParser {
+func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile) *DyndepParser {
 	d := &DyndepParser{
-		dyndep_file_: dyndep_file,
+		dyndepFile_: dyndepFile,
 	}
-	d.Parser = NewParser(state, file_reader, d)
+	d.Parser = NewParser(state, fileReader, d)
 	return d
 }
 
@@ -38,7 +38,7 @@ func NewDyndepParser(state *State, file_reader FileReader, dyndep_file DyndepFil
 func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 	d.lexer_.Start(filename, input)
 
-	// Require a supported ninja_dyndep_version value immediately so
+	// Require a supported ninjaDyndepVersion value immediately so
 	// we can exit before encountering any syntactic surprises.
 	haveDyndepVersion := false
 
@@ -77,14 +77,14 @@ func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
 
 func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
 	name := ""
-	let_value := EvalString{}
-	if !d.ParseLet(&name, &let_value, err) {
+	letValue := EvalString{}
+	if !d.ParseLet(&name, &letValue, err) {
 		return false
 	}
 	if name != "ninja_dyndep_version" {
 		return d.lexer_.Error("expected 'ninja_dyndep_version = ...'", err)
 	}
-	version := let_value.Evaluate(d.env_)
+	version := letValue.Evaluate(d.env_)
 	major, minor := ParseVersion(version)
 	if major != 1 || minor != 0 {
 		return d.lexer_.Error("unsupported 'ninja_dyndep_version = "+version+"'", err)
@@ -128,9 +128,9 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 			return d.lexer_.Error("no build statement exists for '"+path+"'", err)
 		}
 		edge := node.InEdge
-		_, ok := d.dyndep_file_[edge]
+		_, ok := d.dyndepFile_[edge]
 		dyndeps = NewDyndeps()
-		d.dyndep_file_[edge] = dyndeps
+		d.dyndepFile_[edge] = dyndeps
 		if ok {
 			return d.lexer_.Error("multiple statements for '"+path+"'", err)
 		}
@@ -166,8 +166,8 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		return false
 	}
 
-	rule_name := ""
-	if !d.lexer_.ReadIdent(&rule_name) || rule_name != "dyndep" {
+	ruleName := ""
+	if !d.lexer_.ReadIdent(&ruleName) || ruleName != "dyndep" {
 		return d.lexer_.Error("expected build command name 'dyndep'", err)
 	}
 
@@ -219,24 +219,24 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 		dyndeps.restat_ = value != ""
 	}
 
-	dyndeps.implicit_inputs_ = make([]*Node, 0, len(ins))
+	dyndeps.implicitInputs_ = make([]*Node, 0, len(ins))
 	for _, i := range ins {
 		path := i.Evaluate(d.env_)
 		if len(path) == 0 {
 			return d.lexer_.Error("empty path", err)
 		}
 		n := d.state_.GetNode(CanonicalizePathBits(path))
-		dyndeps.implicit_inputs_ = append(dyndeps.implicit_inputs_, n)
+		dyndeps.implicitInputs_ = append(dyndeps.implicitInputs_, n)
 	}
 
-	dyndeps.implicit_outputs_ = make([]*Node, 0, len(outs))
+	dyndeps.implicitOutputs_ = make([]*Node, 0, len(outs))
 	for _, i := range outs {
 		path := i.Evaluate(d.env_)
 		if len(path) == 0 {
 			return d.lexer_.Error("empty path", err)
 		}
 		n := d.state_.GetNode(CanonicalizePathBits(path))
-		dyndeps.implicit_outputs_ = append(dyndeps.implicit_outputs_, n)
+		dyndeps.implicitOutputs_ = append(dyndeps.implicitOutputs_, n)
 	}
 	return true
 }

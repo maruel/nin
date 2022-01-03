@@ -26,23 +26,23 @@ import (
 )
 
 type LogEntry struct {
-	output       string
-	command_hash uint64
-	start_time   int32
-	end_time     int32
-	mtime        TimeStamp
+	output      string
+	commandHash uint64
+	startTime   int32
+	endTime     int32
+	mtime       TimeStamp
 }
 
 // Used by tests.
 func (l *LogEntry) Equal(r *LogEntry) bool {
-	return l.output == r.output && l.command_hash == r.command_hash &&
-		l.start_time == r.start_time && l.end_time == r.end_time &&
+	return l.output == r.output && l.commandHash == r.commandHash &&
+		l.startTime == r.startTime && l.endTime == r.endTime &&
 		l.mtime == r.mtime
 }
 
 // Serialize writes an entry into a log file as a text form.
 func (e *LogEntry) Serialize(w io.Writer) error {
-	_, err := fmt.Fprintf(w, "%d\t%d\t%d\t%s\t%x\n", e.start_time, e.end_time, e.mtime, e.output, e.command_hash)
+	_, err := fmt.Fprintf(w, "%d\t%d\t%d\t%s\t%x\n", e.startTime, e.endTime, e.mtime, e.output, e.commandHash)
 	return err
 }
 
@@ -132,10 +132,10 @@ type BuildLogUser interface {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-	entries_            Entries
-	log_file_           *os.File
-	log_file_path_      string
-	needs_recompaction_ bool
+	entries_           Entries
+	logFile_           *os.File
+	logFilePath_       string
+	needsRecompaction_ bool
 }
 
 func NewBuildLog() BuildLog {
@@ -145,48 +145,48 @@ func NewBuildLog() BuildLog {
 // Prepares writing to the log file without actually opening it - that will
 // happen when/if it's needed
 func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) bool {
-	if b.needs_recompaction_ {
+	if b.needsRecompaction_ {
 		if !b.Recompact(path, user, err) {
 			return false
 		}
 	}
 
-	if b.log_file_ != nil {
+	if b.logFile_ != nil {
 		panic("oops")
 	}
-	b.log_file_path_ = path
+	b.logFilePath_ = path
 	// we don't actually open the file right now, but will
 	// do so on the first write attempt
 	return true
 }
 
-func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime TimeStamp) bool {
+func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime TimeStamp) bool {
 	command := edge.EvaluateCommand(true)
-	command_hash := HashCommand(command)
+	commandHash := HashCommand(command)
 	for _, out := range edge.Outputs {
 		path := out.Path
 		i, ok := b.entries_[path]
-		var log_entry *LogEntry
+		var logEntry *LogEntry
 		if ok {
-			log_entry = i
+			logEntry = i
 		} else {
-			log_entry = &LogEntry{output: path}
-			b.entries_[log_entry.output] = log_entry
+			logEntry = &LogEntry{output: path}
+			b.entries_[logEntry.output] = logEntry
 		}
-		log_entry.command_hash = command_hash
-		log_entry.start_time = start_time
-		log_entry.end_time = end_time
-		log_entry.mtime = mtime
+		logEntry.commandHash = commandHash
+		logEntry.startTime = startTime
+		logEntry.endTime = endTime
+		logEntry.mtime = mtime
 
 		if !b.OpenForWriteIfNeeded() {
 			return false
 		}
-		if b.log_file_ != nil {
-			if err2 := log_entry.Serialize(b.log_file_); err2 != nil {
+		if b.logFile_ != nil {
+			if err2 := logEntry.Serialize(b.logFile_); err2 != nil {
 				return false
 			}
 			/* TODO(maruel): Too expensive.
-			if err := b.log_file_Sync(); err != nil {
+			if err := b.logFile_Sync(); err != nil {
 				return false
 			}
 			*/
@@ -197,35 +197,35 @@ func (b *BuildLog) RecordCommand(edge *Edge, start_time, end_time int32, mtime T
 
 func (b *BuildLog) Close() error {
 	b.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
-	if b.log_file_ != nil {
-		_ = b.log_file_.Close()
+	if b.logFile_ != nil {
+		_ = b.logFile_.Close()
 	}
-	b.log_file_ = nil
+	b.logFile_ = nil
 	return nil
 }
 
-// Should be called before using log_file_. When false is returned, errno
+// Should be called before using logFile_. When false is returned, errno
 // will be set.
 func (b *BuildLog) OpenForWriteIfNeeded() bool {
-	if b.log_file_ != nil || b.log_file_path_ == "" {
+	if b.logFile_ != nil || b.logFilePath_ == "" {
 		return true
 	}
-	b.log_file_, _ = os.OpenFile(b.log_file_path_, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o0666)
-	if b.log_file_ == nil {
+	b.logFile_, _ = os.OpenFile(b.logFilePath_, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o0666)
+	if b.logFile_ == nil {
 		return false
 	}
-	/*if setvbuf(b.log_file_, nil, _IOLBF, BUFSIZ) != 0 {
+	/*if setvbuf(b.logFile_, nil, _IOLBF, BUFSIZ) != 0 {
 		return false
 	}
-	SetCloseOnExec(fileno(b.log_file_))
+	SetCloseOnExec(fileno(b.logFile_))
 	*/
 
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
-	p, _ := b.log_file_.Seek(0, os.SEEK_END)
+	p, _ := b.logFile_.Seek(0, os.SEEK_END)
 
 	if p == 0 {
-		if _, err := fmt.Fprintf(b.log_file_, BuildLogFileSignature, BuildLogCurrentVersion); err != nil {
+		if _, err := fmt.Fprintf(b.logFile_, BuildLogFileSignature, BuildLogCurrentVersion); err != nil {
 			return false
 		}
 	}
@@ -237,54 +237,54 @@ type LineReader struct {
 
   file_ *FILE
   char buf_[256 << 10]
-  buf_end_ *char  // Points one past the last valid byte in |buf_|.
+  bufEnd_ *char  // Points one past the last valid byte in |buf_|.
 
-  line_start_ *char
-  // Points at the next \n in buf_ after line_start, or NULL.
-  line_end_ *char
+  lineStart_ *char
+  // Points at the next \n in buf_ after lineStart, or NULL.
+  lineEnd_ *char
 }
 func NewLineReader(file *FILE) LineReader {
 	return LineReader{
 		file_: file,
-		buf_end_: buf_,
-		line_start_: buf_,
-		line_end_: nil,
+		bufEnd_: buf_,
+		lineStart_: buf_,
+		lineEnd_: nil,
 	}
 	{ memset(buf_, 0, sizeof(buf_)); }
 }
 // Reads a \n-terminated line from the file passed to the constructor.
-// On return, *line_start points to the beginning of the next line, and
-// *line_end points to the \n at the end of the line. If no newline is seen
-// in a fixed buffer size, *line_end is set to NULL. Returns false on EOF.
-func (l *LineReader) ReadLine(line_start *char*, line_end *char*) bool {
-  if l.line_start_ >= l.buf_end_ || !l.line_end_ {
+// On return, *lineStart points to the beginning of the next line, and
+// *lineEnd points to the \n at the end of the line. If no newline is seen
+// in a fixed buffer size, *lineEnd is set to NULL. Returns false on EOF.
+func (l *LineReader) ReadLine(lineStart *char*, lineEnd *char*) bool {
+  if l.lineStart_ >= l.bufEnd_ || !l.lineEnd_ {
     // Buffer empty, refill.
-    size_read := fread(l.buf_, 1, sizeof(l.buf_), l.file_)
-    if !size_read {
+    sizeRead := fread(l.buf_, 1, sizeof(l.buf_), l.file_)
+    if !sizeRead {
       return false
     }
-    l.line_start_ = l.buf_
-    l.buf_end_ = l.buf_ + size_read
+    l.lineStart_ = l.buf_
+    l.bufEnd_ = l.buf_ + sizeRead
   } else {
     // Advance to next line in buffer.
-    l.line_start_ = l.line_end_ + 1
+    l.lineStart_ = l.lineEnd_ + 1
   }
 
-  l.line_end_ = (char*)memchr(l.line_start_, '\n', l.buf_end_ - l.line_start_)
-  if !l.line_end_ {
+  l.lineEnd_ = (char*)memchr(l.lineStart_, '\n', l.bufEnd_ - l.lineStart_)
+  if !l.lineEnd_ {
     // No newline. Move rest of data to start of buffer, fill rest.
-    size_t already_consumed = l.line_start_ - l.buf_
-    size_t size_rest = (l.buf_end_ - l.buf_) - already_consumed
-    memmove(l.buf_, l.line_start_, size_rest)
+    sizeT alreadyConsumed = l.lineStart_ - l.buf_
+    sizeT sizeRest = (l.bufEnd_ - l.buf_) - alreadyConsumed
+    memmove(l.buf_, l.lineStart_, sizeRest)
 
-    size_t read = fread(l.buf_ + size_rest, 1, sizeof(l.buf_) - size_rest, l.file_)
-    l.buf_end_ = l.buf_ + size_rest + read
-    l.line_start_ = l.buf_
-    l.line_end_ = (char*)memchr(l.line_start_, '\n', l.buf_end_ - l.line_start_)
+    sizeT read = fread(l.buf_ + sizeRest, 1, sizeof(l.buf_) - sizeRest, l.file_)
+    l.bufEnd_ = l.buf_ + sizeRest + read
+    l.lineStart_ = l.buf_
+    l.lineEnd_ = (char*)memchr(l.lineStart_, '\n', l.bufEnd_ - l.lineStart_)
   }
 
-  *line_start = l.line_start_
-  *line_end = l.line_end_
+  *lineStart = l.lineStart_
+  *lineEnd = l.lineEnd_
   return true
 }
 */
@@ -305,9 +305,9 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		return LOAD_SUCCESS // file was empty
 	}
 
-	log_version := 0
-	unique_entry_count := 0
-	total_entry_count := 0
+	logVersion := 0
+	uniqueEntryCount := 0
+	totalEntryCount := 0
 
 	// TODO(maruel): The LineReader implementation above is significantly faster
 	// because it modifies the data in-place.
@@ -318,10 +318,10 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			break
 		}
 		line = line[:len(line)-1]
-		if log_version == 0 {
-			_, _ = fmt.Sscanf(line, BuildLogFileSignature, &log_version)
+		if logVersion == 0 {
+			_, _ = fmt.Sscanf(line, BuildLogFileSignature, &logVersion)
 
-			if log_version < BuildLogOldestSupportedVersion {
+			if logVersion < BuildLogOldestSupportedVersion {
 				*err = "build log version invalid, perhaps due to being too old; starting over"
 				_ = os.Remove(path)
 				// Don't report this as a failure.  An empty build log will cause
@@ -335,7 +335,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			continue
 		}
 
-		start_time, err2 := strconv.ParseInt(line[:end], 10, 32)
+		startTime, err2 := strconv.ParseInt(line[:end], 10, 32)
 		if err2 != nil {
 			// TODO(maruel): Error handling.
 			panic(err2)
@@ -345,7 +345,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		if end == -1 {
 			continue
 		}
-		end_time, err2 := strconv.ParseInt(line[:end], 10, 32)
+		endTime, err2 := strconv.ParseInt(line[:end], 10, 32)
 		if err2 != nil {
 			// TODO(maruel): Error handling.
 			panic(err2)
@@ -355,7 +355,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		if end == -1 {
 			continue
 		}
-		restat_mtime, err2 := strconv.ParseInt(line[:end], 10, 64)
+		restatMtime, err2 := strconv.ParseInt(line[:end], 10, 64)
 		if err2 != nil {
 			// TODO(maruel): Error handling.
 			panic(err2)
@@ -374,18 +374,18 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		} else {
 			entry = &LogEntry{output: output}
 			b.entries_[entry.output] = entry
-			unique_entry_count++
+			uniqueEntryCount++
 		}
-		total_entry_count++
+		totalEntryCount++
 
 		// TODO(maruel): Check overflows.
-		entry.start_time = int32(start_time)
-		entry.end_time = int32(end_time)
-		entry.mtime = TimeStamp(restat_mtime)
-		if log_version >= 5 {
-			entry.command_hash, _ = strconv.ParseUint(line, 16, 64)
+		entry.startTime = int32(startTime)
+		entry.endTime = int32(endTime)
+		entry.mtime = TimeStamp(restatMtime)
+		if logVersion >= 5 {
+			entry.commandHash, _ = strconv.ParseUint(line, 16, 64)
 		} else {
-			entry.command_hash = HashCommand(line)
+			entry.commandHash = HashCommand(line)
 		}
 	}
 
@@ -394,10 +394,10 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	// - if it's getting large
 	kMinCompactionEntryCount := 100
 	kCompactionRatio := 3
-	if log_version < BuildLogCurrentVersion {
-		b.needs_recompaction_ = true
-	} else if total_entry_count > kMinCompactionEntryCount && total_entry_count > unique_entry_count*kCompactionRatio {
-		b.needs_recompaction_ = true
+	if logVersion < BuildLogCurrentVersion {
+		b.needsRecompaction_ = true
+	} else if totalEntryCount > kMinCompactionEntryCount && totalEntryCount > uniqueEntryCount*kCompactionRatio {
+		b.needsRecompaction_ = true
 	}
 
 	return LOAD_SUCCESS
@@ -412,8 +412,8 @@ func (b *BuildLog) LookupByOutput(path string) *LogEntry {
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	defer METRIC_RECORD(".ninja_log recompact")()
 	_ = b.Close()
-	temp_path := path + ".recompact"
-	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
+	tempPath := path + ".recompact"
+	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
 	if f == nil {
 		*err = err2.Error()
 		return false
@@ -425,11 +425,11 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 		return false
 	}
 
-	var dead_outputs []string
+	var deadOutputs []string
 	// TODO(maruel): Save in order?
 	for name, entry := range b.entries_ {
 		if user.IsPathDead(name) {
-			dead_outputs = append(dead_outputs, name)
+			deadOutputs = append(deadOutputs, name)
 			continue
 		}
 
@@ -440,7 +440,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 		}
 	}
 
-	for _, name := range dead_outputs {
+	for _, name := range deadOutputs {
 		delete(b.entries_, name)
 	}
 
@@ -450,7 +450,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 		return false
 	}
 
-	if err2 := os.Rename(temp_path, path); err2 != nil {
+	if err2 := os.Rename(tempPath, path); err2 != nil {
 		*err = err2.Error()
 		return false
 	}
@@ -458,11 +458,11 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 }
 
 // Restat all outputs in the log
-func (b *BuildLog) Restat(path string, disk_interface DiskInterface, outputs []string, err *string) bool {
+func (b *BuildLog) Restat(path string, diskInterface DiskInterface, outputs []string, err *string) bool {
 	defer METRIC_RECORD(".ninja_log restat")()
 	_ = b.Close()
-	temp_path := path + ".restat"
-	f, err2 := os.OpenFile(temp_path, os.O_CREATE|os.O_WRONLY, 0o666)
+	tempPath := path + ".restat"
+	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY, 0o666)
 	if f == nil {
 		*err = err2.Error()
 		return false
@@ -482,7 +482,7 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, outputs []s
 			}
 		}
 		if !skip {
-			mtime := disk_interface.Stat(i.output, err)
+			mtime := diskInterface.Stat(i.output, err)
 			if mtime == -1 {
 				_ = f.Close()
 				return false
@@ -503,7 +503,7 @@ func (b *BuildLog) Restat(path string, disk_interface DiskInterface, outputs []s
 		return false
 	}
 
-	if err2 := os.Rename(temp_path, path); err2 != nil {
+	if err2 := os.Rename(tempPath, path); err2 != nil {
 		*err = err2.Error()
 		return false
 	}

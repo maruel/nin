@@ -48,10 +48,10 @@ type Lexer struct {
 	input_    string
 	// In the original C++ code, these two are char pointers and are used to do
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
-	// indexes. ofs_ starts at 0. last_token_ is initially -1 to mark that it is
+	// indexes. ofs_ starts at 0. lastToken_ is initially -1 to mark that it is
 	// not yet set.
-	ofs_        int
-	last_token_ int
+	ofs_       int
+	lastToken_ int
 }
 
 // Read a path (complete with $escapes).
@@ -71,16 +71,16 @@ func (l *Lexer) ReadVarValue(value *EvalString, err *string) bool {
 func (l *Lexer) Error(message string, err *string) bool {
 	// Compute line/column.
 	line := 1
-	line_start := 0
-	for p := 0; p < l.last_token_; p++ {
+	lineStart := 0
+	for p := 0; p < l.lastToken_; p++ {
 		if l.input_[p] == '\n' {
 			line++
-			line_start = p + 1
+			lineStart = p + 1
 		}
 	}
 	col := 0
-	if l.last_token_ != -1 {
-		col = l.last_token_ - line_start
+	if l.lastToken_ != -1 {
+		col = l.lastToken_ - lineStart
 	}
 
 	*err = fmt.Sprintf("%s:%d: ", l.filename_, line)
@@ -91,12 +91,12 @@ func (l *Lexer) Error(message string, err *string) bool {
 		truncated := true
 		length := 0
 		for ; length < kTruncateColumn; length++ {
-			if l.input_[line_start+length] == 0 || l.input_[line_start+length] == '\n' {
+			if l.input_[lineStart+length] == 0 || l.input_[lineStart+length] == '\n' {
 				truncated = false
 				break
 			}
 		}
-		*err += l.input_[line_start : line_start+length]
+		*err += l.input_[lineStart : lineStart+length]
 		if truncated {
 			*err += "..."
 		}
@@ -122,7 +122,7 @@ func (l *Lexer) Start(filename, input string) {
 	}
 	l.input_ = input
 	l.ofs_ = 0
-	l.last_token_ = -1
+	l.lastToken_ = -1
 }
 
 // Return a human-readable form of a token, used in error messages.
@@ -177,8 +177,8 @@ func TokenErrorHint(expected Token) string {
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
 func (l *Lexer) DescribeLastError() string {
-	if l.last_token_ != -1 {
-		switch l.input_[l.last_token_] {
+	if l.lastToken_ != -1 {
+		switch l.input_[l.lastToken_] {
 		case '\t':
 			return "tabs are not allowed, use spaces"
 		}
@@ -188,7 +188,7 @@ func (l *Lexer) DescribeLastError() string {
 
 // Rewind to the last read Token.
 func (l *Lexer) UnreadToken() {
-	l.ofs_ = l.last_token_
+	l.ofs_ = l.lastToken_
 }
 
 func (l *Lexer) ReadToken() Token {
@@ -210,7 +210,7 @@ func (l *Lexer) ReadToken() Token {
 				re2c:define:YYRESTORE = "p = q";
 
 		    nul = "\000";
-		    simple_varname = [a-zA-Z0-9_-]+;
+		    simpleVarname = [a-zA-Z0-9_-]+;
 		    varname = [a-zA-Z0-9_.-]+;
 
 		    [ ]*"#"[^\000\n]*"\n" { continue; }
@@ -234,7 +234,7 @@ func (l *Lexer) ReadToken() Token {
 		*/
 	}
 
-	l.last_token_ = start
+	l.lastToken_ = start
 	l.ofs_ = p
 	if token != NEWLINE && token != TEOF {
 		l.eatWhitespace()
@@ -281,12 +281,12 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		    break
 		  }
 		  [^] {
-		    l.last_token_ = start
+		    l.lastToken_ = start
 		    return false
 		  }
 		*/
 	}
-	l.last_token_ = start
+	l.lastToken_ = start
 	l.ofs_ = p
 	l.eatWhitespace()
 	return true
@@ -340,7 +340,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 				eval.AddSpecial(l.input_[start + 2: p - 1])
 		    continue
 		  }
-		  "$"simple_varname {
+		  "$"simpleVarname {
 				eval.AddSpecial(l.input_[start + 1: p])
 		    continue
 		  }
@@ -349,20 +349,20 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "$". {
-		    l.last_token_ = start
+		    l.lastToken_ = start
 		    return l.Error("bad $-escape (literal $ must be written as $$)", err)
 		  }
 		  nul {
-		    l.last_token_ = start
+		    l.lastToken_ = start
 		    return l.Error("unexpected EOF", err)
 		  }
 		  [^] {
-		    l.last_token_ = start
+		    l.lastToken_ = start
 		    return l.Error(l.DescribeLastError(), err)
 		  }
 		*/
 	}
-	l.last_token_ = start
+	l.lastToken_ = start
 	l.ofs_ = p
 	if path {
 		l.eatWhitespace()

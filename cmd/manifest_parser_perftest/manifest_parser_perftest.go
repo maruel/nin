@@ -42,11 +42,11 @@ func WriteFakeManifests(dir string) error {
 	return nil
 }
 
-func LoadManifests(measure_command_evaluation bool) int {
+func LoadManifests(measureCommandEvaluation bool) int {
 	err := ""
-	disk_interface := nin.NewRealDiskInterface()
+	diskInterface := nin.NewRealDiskInterface()
 	state := nin.NewState()
-	parser := nin.NewManifestParser(&state, &disk_interface, nin.ManifestParserOptions{})
+	parser := nin.NewManifestParser(&state, &diskInterface, nin.ManifestParserOptions{})
 	if !parser.Load("build.ninja", &err, nil) {
 		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)
 		os.Exit(1)
@@ -54,13 +54,13 @@ func LoadManifests(measure_command_evaluation bool) int {
 	// Doing an empty build involves reading the manifest and evaluating all
 	// commands required for the requested targets. So include command
 	// evaluation in the perftest by default.
-	optimization_guard := 0
-	if measure_command_evaluation {
+	optimizationGuard := 0
+	if measureCommandEvaluation {
 		for _, e := range state.Edges() {
-			optimization_guard += len(e.EvaluateCommand(false))
+			optimizationGuard += len(e.EvaluateCommand(false))
 		}
 	}
-	return optimization_guard
+	return optimizationGuard
 }
 
 func mainImpl() error {
@@ -90,9 +90,9 @@ func mainImpl() error {
 	var times []time.Duration
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
-		optimization_guard := LoadManifests(!*f)
+		optimizationGuard := LoadManifests(!*f)
 		delta := time.Since(start)
-		fmt.Printf("%s (hash: %x)\n", delta.Round(rnd), optimization_guard)
+		fmt.Printf("%s (hash: %x)\n", delta.Round(rnd), optimizationGuard)
 		times = append(times, delta)
 	}
 

@@ -23,19 +23,19 @@ const _MAX_PATH = 259
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
 type IncludesNormalize struct {
-	relative_to_       string
-	split_relative_to_ []string
+	relativeTo_      string
+	splitRelativeTo_ []string
 }
 
-func NewIncludesNormalize(relative_to string) IncludesNormalize {
+func NewIncludesNormalize(relativeTo string) IncludesNormalize {
 	err := ""
-	relative_to = absPath(relative_to, &err)
+	relativeTo = absPath(relativeTo, &err)
 	if err != "" {
 		fatalf("Initializing IncludesNormalize(): %s", err)
 	}
 	return IncludesNormalize{
-		relative_to_:       relative_to,
-		split_relative_to_: strings.Split(relative_to, "/"),
+		relativeTo_:      relativeTo,
+		splitRelativeTo_: strings.Split(relativeTo, "/"),
 	}
 }
 
@@ -68,15 +68,15 @@ func sameDrive(a string, b string, err *string) bool {
 		return true
 	}
 
-	a_absolute := ""
-	b_absolute := ""
-	if !internalGetFullPathName(a, &a_absolute, err) {
+	aAbsolute := ""
+	bAbsolute := ""
+	if !internalGetFullPathName(a, &aAbsolute, err) {
 		return false
 	}
-	if !internalGetFullPathName(b, &b_absolute, err) {
+	if !internalGetFullPathName(b, &bAbsolute, err) {
 		return false
 	}
-	return getDrive(a_absolute) == getDrive(b_absolute)
+	return getDrive(aAbsolute) == getDrive(bAbsolute)
 }
 
 func getDrive(s string) string {
@@ -128,39 +128,39 @@ func absPath(s string, err *string) string {
 	return strings.ReplaceAll(result, "\\", "/")
 }
 
-func relativize(path string, start_list []string, err *string) string {
-	abs_path := absPath(path, err)
+func relativize(path string, startList []string, err *string) string {
+	absPath := absPath(path, err)
 	if len(*err) != 0 {
 		return ""
 	}
-	path_list := strings.Split(abs_path, "/")
+	pathList := strings.Split(absPath, "/")
 	i := 0
-	end := len(start_list)
-	if end2 := len(path_list); end2 < end {
+	end := len(startList)
+	if end2 := len(pathList); end2 < end {
 		end = end2
 	}
 	for i = 0; i < end; i++ {
-		if !equalsCaseInsensitiveASCII(start_list[i], path_list[i]) {
+		if !equalsCaseInsensitiveASCII(startList[i], pathList[i]) {
 			break
 		}
 	}
 
-	var rel_list []string
-	//rel_list.reserve(len(start_list) - i + len(path_list) - i)
-	for j := 0; j < len(start_list)-i; j++ {
-		rel_list = append(rel_list, "..")
+	var relList []string
+	//relList.reserve(len(startList) - i + len(pathList) - i)
+	for j := 0; j < len(startList)-i; j++ {
+		relList = append(relList, "..")
 	}
-	for j := i; j < len(path_list); j++ {
-		rel_list = append(rel_list, path_list[j])
+	for j := i; j < len(pathList); j++ {
+		relList = append(relList, pathList[j])
 	}
-	if len(rel_list) == 0 {
+	if len(relList) == 0 {
 		return "."
 	}
-	return strings.Join(rel_list, "/")
+	return strings.Join(relList, "/")
 }
 
 /// Normalize by fixing slashes style, fixing redundant .. and . and makes the
-/// path |input| relative to |this->relative_to_| and store to |result|.
+/// path |input| relative to |this->relativeTo_| and store to |result|.
 func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
 	len2 := len(input)
 	if len2 > _MAX_PATH {
@@ -168,18 +168,18 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
 		return false
 	}
 	cp := CanonicalizePath(input)
-	abs_input := absPath(cp, err)
+	absInput := absPath(cp, err)
 	if len(*err) != 0 {
 		return false
 	}
 
-	if !sameDrive(abs_input, i.relative_to_, err) {
+	if !sameDrive(absInput, i.relativeTo_, err) {
 		if len(*err) != 0 {
 			return false
 		}
 		*result = cp
 		return true
 	}
-	*result = relativize(abs_input, i.split_relative_to_, err)
+	*result = relativize(absInput, i.splitRelativeTo_, err)
 	return len(*err) == 0
 }

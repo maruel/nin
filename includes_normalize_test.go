@@ -34,10 +34,10 @@ func NormalizeAndCheckNoError(t *testing.T, input string) string {
 	return NormalizeRelativeAndCheckNoError(t, input, ".")
 }
 
-func NormalizeRelativeAndCheckNoError(t *testing.T, input, relative_to string) string {
+func NormalizeRelativeAndCheckNoError(t *testing.T, input, relativeTo string) string {
 	result := ""
 	err := ""
-	normalizer := NewIncludesNormalize(relative_to)
+	normalizer := NewIncludesNormalize(relativeTo)
 	if !normalizer.Normalize(input, &result, &err) {
 		t.Fatal(err)
 	}
@@ -150,18 +150,18 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 	t.Skip("TODO")
 	/*
 	  char kExactlyMaxPath[_MAX_PATH + 1]
-	  if _getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
+	  if Getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
 
-	  cwd_len := len(kExactlyMaxPath)
-	  ASSERT_LE(cwd_len + 3 + 1, _MAX_PATH)
-	  kExactlyMaxPath[cwd_len] = '\\'
-	  kExactlyMaxPath[cwd_len + 1] = 'a'
-	  kExactlyMaxPath[cwd_len + 2] = '\\'
+	  cwdLen := len(kExactlyMaxPath)
+	  ASSERT_LE(cwdLen + 3 + 1, _MAX_PATH)
+	  kExactlyMaxPath[cwdLen] = '\\'
+	  kExactlyMaxPath[cwdLen + 1] = 'a'
+	  kExactlyMaxPath[cwdLen + 2] = '\\'
 
-	  kExactlyMaxPath[cwd_len + 3] = 'a'
+	  kExactlyMaxPath[cwdLen + 3] = 'a'
 
-	  for int i = cwd_len + 4; i < _MAX_PATH; i++ {
-	    if i > cwd_len + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
+	  for int i = cwdLen + 4; i < _MAX_PATH; i++ {
+	    if i > cwdLen + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
 	      kExactlyMaxPath[i] = '\\'
 	    } else {
 	      kExactlyMaxPath[i] = 'a'
@@ -171,10 +171,10 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 	  kExactlyMaxPath[_MAX_PATH] = '\0'
 	  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
 
-	  string forward_slashes(kExactlyMaxPath)
-	  replace(forward_slashes.begin(), forward_slashes.end(), '\\', '/')
+	  string forwardSlashes(kExactlyMaxPath)
+	  replace(forwardSlashes.begin(), forwardSlashes.end(), '\\', '/')
 	  // Make sure a path that's exactly _MAX_PATH long is canonicalized.
-	  if forward_slashes.substr(cwd_len + 1) != NormalizeAndCheckNoError(t,kExactlyMaxPath) { t.Fatal("expected equal") }
+	  if forwardSlashes.substr(cwdLen + 1) != NormalizeAndCheckNoError(t,kExactlyMaxPath) { t.Fatal("expected equal") }
 	*/
 }
 

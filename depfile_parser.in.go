@@ -57,17 +57,17 @@ func NewDepfileParser(options DepfileParserOptions) DepfileParser {
 func (d *DepfileParser) Parse(content []byte, err *string) bool {
 	// in: current parser input point.
 	// end: end of input.
-	// parsing_targets: whether we are parsing targets or dependencies.
+	// parsingTargets: whether we are parsing targets or dependencies.
 	in := 0
 	end := len(content)
 	if end > 0 && content[len(content)-1] != 0 {
 		content = append(content, 0)
 	}
-	have_target := false
-	parsing_targets := true
-	poisoned_input := false
+	haveTarget := false
+	parsingTargets := true
+	poisonedInput := false
 	for in < end {
-		have_newline := false
+		haveNewline := false
 		// out: current output point (typically same as in, but can fall behind
 		// as we de-escape backslashes).
 		out := in
@@ -152,7 +152,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				}
 				out += l
 				if content[in - 1] == '\n' {
-					have_newline = true
+					haveNewline = true
 				}
 				break
 			}
@@ -196,7 +196,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			}
 			newline {
 				// A newline ends the current file name and the current rule.
-				have_newline = true
+				haveNewline = true
 				break
 			}
 			[^] {
@@ -208,11 +208,11 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		l := out - filename
-		is_dependency := !parsing_targets
+		isDependency := !parsingTargets
 		if l > 0 && content[filename+l-1] == ':' {
 			l-- // Strip off trailing colon, if any.
-			parsing_targets = false
-			have_target = true
+			parsingTargets = false
+			haveTarget = true
 		}
 
 		if l > 0 {
@@ -227,8 +227,8 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 				}
 			}
 			if pos == -1 {
-				if is_dependency {
-					if poisoned_input {
+				if isDependency {
+					if poisonedInput {
 						*err = "inputs may not also have inputs"
 						return false
 					}
@@ -247,19 +247,19 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 						d.outs_ = append(d.outs_, piece)
 					}
 				}
-			} else if !is_dependency {
+			} else if !isDependency {
 				// We've passed an input on the left side; reject new inputs.
-				poisoned_input = true
+				poisonedInput = true
 			}
 		}
 
-		if have_newline {
+		if haveNewline {
 			// A newline ends a rule so the next filename will be a new target.
-			parsing_targets = true
-			poisoned_input = false
+			parsingTargets = true
+			poisonedInput = false
 		}
 	}
-	if !have_target {
+	if !haveTarget {
 		*err = "expected ':' in depfile"
 		return false
 	}
