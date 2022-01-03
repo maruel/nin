@@ -68,7 +68,7 @@ type Node struct {
 	Exists ExistenceStatus
 
 	// Dirty is true when the underlying file is out-of-date.
-	// But note that Edge::outputs_ready_ is also used in judging which
+	// But note that Edge.OutputsReady is also used in judging which
 	// edges to build.
 	Dirty bool
 
@@ -182,7 +182,7 @@ type Edge struct {
 	//                   and changes in them cause the target to rebuild;
 	// 3) order-only deps, which are needed before the target builds but which
 	//                     don't cause the target to rebuild.
-	// These are stored in inputs_ in that order, and we keep counts of
+	// These are stored in Inputs in that order, and we keep counts of
 	// #2 and #3 when we need to access the various subsets.
 	ImplicitDeps  int32
 	OrderOnlyDeps int32
@@ -190,7 +190,7 @@ type Edge struct {
 	// There are two types of outputs.
 	// 1) explicit outs, which show up as $out on the command line;
 	// 2) implicit outs, which the target generates but are not part of $out.
-	// These are stored in outputs_ in that order, and we keep a count of
+	// These are stored in Outputs in that order, and we keep a count of
 	// #2 to use when we need to access the various subsets.
 	ImplicitOuts int32
 
@@ -546,7 +546,7 @@ func (d *DependencyScan) deps_log() *DepsLog {
 // Update the |dirty_| state of the given node by transitively inspecting their
 // input edges.
 // Examine inputs, outputs, and command lines to judge whether an edge
-// needs to be re-run, and update outputs_ready_ and each outputs' |dirty_|
+// needs to be re-run, and update OutputsReady and each outputs' Dirty
 // state accordingly.
 // Appends any validation nodes found to the nodes parameter.
 // Returns false on failure.
@@ -993,7 +993,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 // Process loaded implicit dependencies for \a edge and update the graph
 // @return false on error (without filling \a err if info is just missing)
 func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfile_ins []string, err *string) bool {
-	// Preallocate space in edge->inputs_ to be filled in below.
+	// Preallocate space in edge.Inputs to be filled in below.
 	implicit_dep := i.PreallocateSpace(edge, len(depfile_ins))
 
 	// Add all its in-edges.
@@ -1066,8 +1066,8 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 	// RecomputeDirty might not be called for phony_edge if a previous call
 	// to RecomputeDirty had caused the file to be stat'ed.  Because previous
 	// invocations of RecomputeDirty would have seen this node without an
-	// input edge (and therefore ready), we have to set outputs_ready_ to true
+	// input edge (and therefore ready), we have to set OutputsReady to true
 	// to avoid a potential stuck build.  If we do call RecomputeDirty for
-	// this node, it will simply set outputs_ready_ to the correct value.
+	// this node, it will simply set OutputsReady to the correct value.
 	phony_edge.OutputsReady = true
 }
