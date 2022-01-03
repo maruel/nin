@@ -1020,14 +1020,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	}
 
 	// Deps are invalid if the output is newer than the deps.
-	if output.MTime > deps.mtime {
-		Explain("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.mtime, output.MTime)
+	if output.MTime > deps.MTime {
+		Explain("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.MTime, output.MTime)
 		return false
 	}
 
-	implicitDep := i.PreallocateSpace(edge, deps.nodeCount)
-	for j := 0; j < deps.nodeCount; j++ {
-		node := deps.nodes[j]
+	implicitDep := i.PreallocateSpace(edge, len(deps.Nodes))
+	for _, node := range deps.Nodes {
 		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)

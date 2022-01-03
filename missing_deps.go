@@ -102,7 +102,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	if len(depsType) != 0 {
 		deps := m.depsLog.GetDeps(node)
 		if deps != nil {
-			m.ProcessNodeDeps(node, deps.nodes)
+			m.ProcessNodeDeps(node, deps.Nodes)
 		}
 	} else {
 		var parserOpts DepfileParserOptions

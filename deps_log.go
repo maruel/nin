@@ -26,16 +26,14 @@ import (
 
 // Reading (startup-time) interface.
 type Deps struct {
-	mtime     TimeStamp
-	nodeCount int
-	nodes     []*Node
+	MTime TimeStamp
+	Nodes []*Node
 }
 
 func NewDeps(mtime TimeStamp, nodeCount int) *Deps {
 	return &Deps{
-		mtime:     mtime,
-		nodeCount: nodeCount,
-		nodes:     make([]*Node, nodeCount),
+		MTime: mtime,
+		Nodes: make([]*Node, nodeCount),
 	}
 }
 
@@ -85,9 +83,9 @@ type DepsLog struct {
 	filePath          string
 
 	// Maps id -> Node.
-	nodes []*Node
-	// Maps id -> deps of that id.
-	deps []*Deps
+	Nodes []*Node
+	// Maps id -> Deps of that id.
+	Deps []*Deps
 }
 
 func NewDepsLog() DepsLog {
@@ -146,11 +144,11 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	// See if the new data is different than the existing data, if any.
 	if !madeChange {
 		deps := d.GetDeps(node)
-		if deps == nil || deps.mtime != mtime || deps.nodeCount != nodeCount {
+		if deps == nil || deps.MTime != mtime || len(deps.Nodes) != nodeCount {
 			madeChange = true
 		} else {
 			for i := 0; i < nodeCount; i++ {
-				if deps.nodes[i] != nodes[i] {
+				if deps.Nodes[i] != nodes[i] {
 					madeChange = true
 					break
 				}
@@ -196,7 +194,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	// Update in-memory representation.
 	deps := NewDeps(mtime, nodeCount)
 	for i := 0; i < nodeCount; i++ {
-		deps.nodes[i] = nodes[i]
+		deps.Nodes[i] = nodes[i]
 	}
 	d.UpdateDeps(node.ID, deps)
 
@@ -323,13 +321,13 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				if err2 := binary.Read(r, binary.LittleEndian, &v); err2 != nil {
 					panic(err2)
 				}
-				if int(v) >= len(d.nodes) {
+				if int(v) >= len(d.Nodes) {
 					panic("M-A")
 				}
-				if d.nodes[v] == nil {
+				if d.Nodes[v] == nil {
 					panic("M-A")
 				}
-				deps.nodes[i] = d.nodes[v]
+				deps.Nodes[i] = d.Nodes[v]
 			}
 
 			totalDepRecordCount++
@@ -368,7 +366,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				panic(err2)
 			}
 			expectedID := ^checksum
-			id := int32(len(d.nodes))
+			id := int32(len(d.Nodes))
 			if id != int32(expectedID) {
 				readFailed = true
 				// TODO(maruel): Make it a real error.
@@ -379,7 +377,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				panic("M-A")
 			}
 			node.ID = id
-			d.nodes = append(d.nodes, node)
+			d.Nodes = append(d.Nodes, node)
 		}
 	}
 
@@ -414,21 +412,21 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 func (d *DepsLog) GetDeps(node *Node) *Deps {
 	// Abort if the node has no id (never referenced in the deps) or if
 	// there's no deps recorded for the node.
-	if node.ID < 0 || int(node.ID) >= len(d.deps) {
+	if node.ID < 0 || int(node.ID) >= len(d.Deps) {
 		return nil
 	}
-	return d.deps[node.ID]
+	return d.Deps[node.ID]
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
-	for id := 0; id < len(d.deps); id++ {
-		deps := d.deps[id]
+	for id := 0; id < len(d.Deps); id++ {
+		deps := d.Deps[id]
 		if deps == nil {
 			continue
 		}
-		for i := 0; i < deps.nodeCount; i++ {
-			if deps.nodes[i] == node {
-				return d.nodes[id]
+		for _, n := range deps.Nodes {
+			if n == node {
+				return d.Nodes[id]
 			}
 		}
 	}
@@ -456,22 +454,22 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 
 	// Clear all known ids so that new ones can be reassigned.  The new indices
 	// will refer to the ordering in newLog, not in the current log.
-	for _, i := range d.nodes {
+	for _, i := range d.Nodes {
 		i.ID = -1
 	}
 
 	// Write out all deps again.
-	for oldID := 0; oldID < len(d.deps); oldID++ {
-		deps := d.deps[oldID]
+	for oldID := 0; oldID < len(d.Deps); oldID++ {
+		deps := d.Deps[oldID]
 		if deps == nil { // If nodes[oldID] is a leaf, it has no deps.
 			continue
 		}
 
-		if !d.IsDepsEntryLiveFor(d.nodes[oldID]) {
+		if !d.IsDepsEntryLiveFor(d.Nodes[oldID]) {
 			continue
 		}
 
-		if !newLog.RecordDeps(d.nodes[oldID], deps.mtime, deps.nodes) {
+		if !newLog.RecordDeps(d.Nodes[oldID], deps.MTime, deps.Nodes) {
 			_ = newLog.Close()
 			return false
 		}
@@ -480,8 +478,8 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 	_ = newLog.Close()
 
 	// All nodes now have ids that refer to newLog, so steal its data.
-	d.deps = newLog.deps
-	d.nodes = newLog.nodes
+	d.Deps = newLog.Deps
+	d.Nodes = newLog.Nodes
 
 	if err2 := os.Remove(path); err2 != nil {
 		*err = err2.Error()
@@ -514,11 +512,11 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
-	if n := int(outID) + 1 - len(d.deps); n > 0 {
-		d.deps = append(d.deps, make([]*Deps, n)...)
+	if n := int(outID) + 1 - len(d.Deps); n > 0 {
+		d.Deps = append(d.Deps, make([]*Deps, n)...)
 	}
-	existed := d.deps[outID] != nil
-	d.deps[outID] = deps
+	existed := d.Deps[outID] != nil
+	d.Deps[outID] = deps
 	return existed
 }
 
@@ -555,7 +553,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 			return false
 		}
 	}
-	id := int32(len(d.nodes))
+	id := int32(len(d.Nodes))
 	checksum := ^uint32(id)
 	if err := binary.Write(d.buf, binary.LittleEndian, checksum); err != nil {
 		// TODO(maruel): Make it a real error.
@@ -565,7 +563,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 		return false
 	}
 	node.ID = id
-	d.nodes = append(d.nodes, node)
+	d.Nodes = append(d.Nodes, node)
 
 	return true
 }

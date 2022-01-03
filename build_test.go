@@ -3002,19 +3002,19 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 1 != out1Deps.nodeCount {
+	if 1 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 1 != out2Deps.nodeCount {
+	if 1 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -3045,25 +3045,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 2 != out1Deps.nodeCount {
+	if 2 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out1Deps.nodes[1].Path {
+	if "in2" != out1Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 2 != out2Deps.nodeCount {
+	if 2 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out2Deps.nodes[1].Path {
+	if "in2" != out2Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -3094,25 +3094,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 2 != out1Deps.nodeCount {
+	if 2 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out1Deps.nodes[1].Path {
+	if "in2" != out1Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 2 != out2Deps.nodeCount {
+	if 2 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out2Deps.nodes[1].Path {
+	if "in2" != out2Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -3143,25 +3143,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 2 != out1Deps.nodeCount {
+	if 2 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out1Deps.nodes[1].Path {
+	if "in2" != out1Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 2 != out2Deps.nodeCount {
+	if 2 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out2Deps.nodes[1].Path {
+	if "in2" != out2Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -3192,25 +3192,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 2 != out1Deps.nodeCount {
+	if 2 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out1Deps.nodes[1].Path {
+	if "in2" != out1Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 2 != out2Deps.nodeCount {
+	if 2 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out2Deps.nodes[1].Path {
+	if "in2" != out2Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }
@@ -3243,25 +3243,25 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 
 	out1Node := b.state.Paths["out1"]
 	out1Deps := b.log.GetDeps(out1Node)
-	if 2 != out1Deps.nodeCount {
+	if 2 != len(out1Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out1Deps.nodes[0].Path {
+	if "in1" != out1Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out1Deps.nodes[1].Path {
+	if "in2" != out1Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 
 	out2Node := b.state.Paths["out2"]
 	out2Deps := b.log.GetDeps(out2Node)
-	if 2 != out2Deps.nodeCount {
+	if 2 != len(out2Deps.Nodes) {
 		t.Fatal("expected equal")
 	}
-	if "in1" != out2Deps.nodes[0].Path {
+	if "in1" != out2Deps.Nodes[0].Path {
 		t.Fatal("expected equal")
 	}
-	if "in2" != out2Deps.nodes[1].Path {
+	if "in2" != out2Deps.Nodes[1].Path {
 		t.Fatal("expected equal")
 	}
 }

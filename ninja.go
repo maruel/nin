@@ -438,7 +438,7 @@ func toolTargetsList(state *State) int {
 func toolDeps(n *ninjaMain, opts *options, args []string) int {
 	var nodes []*Node
 	if len(args) == 0 {
-		for _, ni := range n.depsLog.nodes {
+		for _, ni := range n.depsLog.Nodes {
 			if n.depsLog.IsDepsEntryLiveFor(ni) {
 				nodes = append(nodes, ni)
 			}
@@ -464,12 +464,12 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 			errorf("%s", err) // Log and ignore Stat() errors;
 		}
 		s := "VALID"
-		if mtime == 0 || mtime > deps.mtime {
+		if mtime == 0 || mtime > deps.MTime {
 			s = "STALE"
 		}
-		fmt.Printf("%s: #deps %d, deps mtime %d (%s)\n", it.Path, deps.nodeCount, deps.mtime, s)
-		for i := 0; i < deps.nodeCount; i++ {
-			fmt.Printf("    %s\n", deps.nodes[i].Path)
+		fmt.Printf("%s: #deps %d, deps mtime %d (%s)\n", it.Path, len(deps.Nodes), deps.MTime, s)
+		for _, n := range deps.Nodes {
+			fmt.Printf("    %s\n", n.Path)
 		}
 		fmt.Printf("\n")
 	}
