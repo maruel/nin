@@ -39,12 +39,10 @@ func (t *TokenListItem) String() string {
 	return out
 }
 
-type TokenList []TokenListItem
-
-// A tokenized string that contains variable references.
+// EvalString is a a tokenized string that contains variable references.
 // Can be evaluated relative to an Env.
 type EvalString struct {
-	Parsed TokenList
+	Parsed []TokenListItem
 }
 
 func (e *EvalString) String() string {
