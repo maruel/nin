@@ -317,24 +317,25 @@ type EdgeSet struct {
 	sorted []*Edge
 }
 
+// NewEdgeSet returns an initialized EdgeSet.
 func NewEdgeSet() *EdgeSet {
 	return &EdgeSet{
 		edges: make(map[*Edge]struct{}),
 	}
 }
 
+// IsEmpty return true if the set is empty.
 func (e *EdgeSet) IsEmpty() bool {
 	return len(e.edges) == 0
 }
 
+// Add the edge to the set.
 func (e *EdgeSet) Add(ed *Edge) {
-	if ed == nil {
-		panic("M-A")
-	}
 	e.edges[ed] = struct{}{}
 	e.dirty = true
 }
 
+// Pop returns the lowest ID.
 func (e *EdgeSet) Pop() *Edge {
 	e.recreate()
 	if len(e.sorted) == 0 {

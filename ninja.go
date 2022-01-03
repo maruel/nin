@@ -596,14 +596,14 @@ const (
 	pcmAll    printCommandMode = true
 )
 
-func printCommands(edge *Edge, seen *EdgeSet, mode printCommandMode) {
+func printCommands(edge *Edge, seen map[*Edge]struct{}, mode printCommandMode) {
 	if edge == nil {
 		return
 	}
-	if _, ok := seen.edges[edge]; ok {
+	if _, ok := seen[edge]; ok {
 		return
 	}
-	seen.Add(edge)
+	seen[edge] = struct{}{}
 
 	if mode == pcmAll {
 		for _, in := range edge.Inputs {
@@ -637,7 +637,7 @@ func toolCommands(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	seen := NewEdgeSet()
+	seen := map[*Edge]struct{}{}
 	for _, in := range nodes {
 		printCommands(in.InEdge, seen, mode)
 	}
