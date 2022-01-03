@@ -58,13 +58,13 @@ type Lexer struct {
 // Returns false only on error, returned path may be empty if a delimiter
 // (space, newline) is hit.
 func (l *Lexer) ReadPath(path *EvalString, err *string) bool {
-	return l.ReadEvalString(path, true, err)
+	return l.readEvalString(path, true, err)
 }
 
 // Read the value side of a var = value line (complete with $escapes).
 // Returns false only on error.
 func (l *Lexer) ReadVarValue(value *EvalString, err *string) bool {
-	return l.ReadEvalString(value, false, err)
+	return l.readEvalString(value, false, err)
 }
 
 // Construct an error message with context.
@@ -237,7 +237,7 @@ func (l *Lexer) ReadToken() Token {
 	l.last_token_ = start
 	l.ofs_ = p
 	if token != NEWLINE && token != TEOF {
-		l.EatWhitespace()
+		l.eatWhitespace()
 	}
 	return token
 }
@@ -253,7 +253,7 @@ func (l *Lexer) PeekToken(token Token) bool {
 }
 
 // Skip past whitespace (called after each read token/ident/etc.).
-func (l *Lexer) EatWhitespace() {
+func (l *Lexer) eatWhitespace() {
 	p := l.ofs_
 	q := 0
 	for {
@@ -288,12 +288,12 @@ func (l *Lexer) ReadIdent(out *string) bool {
 	}
 	l.last_token_ = start
 	l.ofs_ = p
-	l.EatWhitespace()
+	l.eatWhitespace()
 	return true
 }
 
 // Read a $-escaped string.
-func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
+func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 	p := l.ofs_
 	q := 0
 	start := 0
@@ -365,7 +365,7 @@ func (l *Lexer) ReadEvalString(eval *EvalString, path bool, err *string) bool {
 	l.last_token_ = start
 	l.ofs_ = p
 	if path {
-		l.EatWhitespace()
+		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
 	return true
