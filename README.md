@@ -3,14 +3,28 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/maruel/nin.svg)](https://pkg.go.dev/github.com/maruel/nin)
 [![codecov](https://codecov.io/gh/maruel/nin/branch/main/graph/badge.svg?token=KAO6K039PJ)](https://codecov.io/gh/maruel/nin)
 
-An experimental fork of ninja translated in Go.
+Little nin' is [ninja](https://ninja-build.org/)'s little sibling.
+
+Nin is an experimental fork of ninja translated in Go, that is music to your
+ears.
+
+## Installation
+
+Install [go1.17](https://go.dev/dl/) or later.
+
+```
+go install github.com/maruel/nin/cmd/nin@latest
+```
+
+Use `nin` where you would have used `ninja` (or create a symlink).
 
 ## Are you serious?
 
 Yeah.
 
-The reason it's possible at all is because ninja is well written and has
-a reasonable amount of unit tests.
+The reason it's possible at all is because
+[ninja](https://github.com/ninja-build/ninja) is well written and has a
+reasonable amount of unit tests.
 
 ## Why?
 
@@ -47,12 +61,18 @@ Some people did advent of code 2021, I did a brain teaser instead.
 
 ## Current state
 
-- nin is in the same ballpark (-5%) for building ninja itself.
-- Parsing build.ninja file is 40% slower so it has to be drastically optimized.
+- Manifest (build.ninja) parsing: 5% faster on average! 📉
+- Latency: nin is in the same ballpark (-5%) for building ninja itself.
+- CPU usage: about 15% higher, has to be optimized.
 - 17 test cases out of 394 (5%) have to be fixed. `git grep Skip..TODO | wc -l`
   versus `git grep "^func Test" | wc -l`.
 - Closely tracking upstream as-is.
-- Code is not Go idiomatic.
+- Code is not yet Go idiomatic.
+- Flag parsing is not 100% compatible yet.
+
+See [PERF.md](PERF.md) to learn how to measure performance yourself, since I
+know myself enough that I will forget to update the stats above and it will get
+better over time.
 
 ## ninja
 
@@ -62,9 +82,3 @@ https://ninja-build.org/
 See [the manual](https://ninja-build.org/manual.html) or
 `doc/manual.asciidoc` included in the distribution for background
 and more details.
-
-## Getting nin
-
-```
-go install github.com/maruel/nin/cmd/nin@latest
-```
