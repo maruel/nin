@@ -43,8 +43,8 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	log1 := NewBuildLog()
 	defer log1.Close()
 	err := ""
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	if !log1.OpenForWrite(kTestFilename, b, &err) {
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	if !log1.OpenForWrite(testFilename, b, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -56,7 +56,7 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
 	log2 := NewBuildLog()
 	defer log2.Close()
-	if log2.Load(kTestFilename, &err) != LoadSuccess {
+	if log2.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -96,8 +96,8 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	log := NewBuildLog()
 	defer log.Close()
 	err := ""
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	if !log.OpenForWrite(kTestFilename, b, &err) {
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	if !log.OpenForWrite(testFilename, b, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -105,7 +105,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	}
 	log.Close()
 
-	contents, err2 := ioutil.ReadFile(kTestFilename)
+	contents, err2 := ioutil.ReadFile(testFilename)
 	if err2 != nil {
 		t.Fatal(err2)
 	}
@@ -114,7 +114,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	}
 
 	// Opening the file anew shouldn't add a second version string.
-	if !log.OpenForWrite(kTestFilename, b, &err) {
+	if !log.OpenForWrite(testFilename, b, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -122,7 +122,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	}
 	log.Close()
 
-	contents, err2 = ioutil.ReadFile(kTestFilename)
+	contents, err2 = ioutil.ReadFile(testFilename)
 	if err2 != nil {
 		t.Fatal(err2)
 	}
@@ -133,16 +133,16 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 
 func TestBuildLogTest_DoubleEntry(t *testing.T) {
 	b := NewBuildLogTest(t)
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	content := "# ninja log v4\n0\t1\t2\tout\tcommand abc\n3\t4\t5\tout\tcommand def\n"
-	if err := ioutil.WriteFile(kTestFilename, []byte(content), 0o600); err != nil {
+	if err := ioutil.WriteFile(testFilename, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -159,13 +159,13 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 func TestBuildLogTest_Truncate(t *testing.T) {
 	b := NewBuildLogTest(t)
 	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 
 	{
 		log1 := NewBuildLog()
 		defer log1.Close()
 		err := ""
-		if !log1.OpenForWrite(kTestFilename, b, &err) {
+		if !log1.OpenForWrite(testFilename, b, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -178,11 +178,11 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 
 	// For all possible truncations of the input file, assert that we don't
 	// crash when parsing.
-	for size := getFileSize(t, kTestFilename); size > 0; size-- {
+	for size := getFileSize(t, testFilename); size > 0; size-- {
 		log2 := NewBuildLog()
 		defer log2.Close()
 		err := ""
-		if !log2.OpenForWrite(kTestFilename, b, &err) {
+		if !log2.OpenForWrite(testFilename, b, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -192,14 +192,14 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		log2.RecordCommand(b.state_.edges_[1], 20, 25, 0)
 		log2.Close()
 
-		if err := os.Truncate(kTestFilename, int64(size)); err != nil {
+		if err := os.Truncate(testFilename, int64(size)); err != nil {
 			t.Fatal(err)
 		}
 
 		log3 := NewBuildLog()
 		defer log3.Close()
 		err = ""
-		if log3.Load(kTestFilename, &err) != LoadSuccess || err != "" {
+		if log3.Load(testFilename, &err) != LoadSuccess || err != "" {
 			t.Fatal(err)
 		}
 		log3.Close()
@@ -207,16 +207,16 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 }
 
 func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	content := []byte("# ninja log v3\n123 456 0 out command\n")
-	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+	if err := ioutil.WriteFile(testFilename, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if !strings.Contains(err, "version") {
@@ -226,16 +226,16 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 
 func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 	b := NewBuildLogTest(t)
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	content := []byte("# ninja log v4\n123\t456\t456\tout with space\tcommand\n")
-	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+	if err := ioutil.WriteFile(testFilename, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -263,16 +263,16 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 	// Old versions of ninja accidentally wrote multiple version headers to the
 	// build log on Windows. This shouldn't crash, and the second version header
 	// should be ignored.
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	content := []byte("# ninja log v4\n123\t456\t456\tout\tcommand\n# ninja log v4\n456\t789\t789\tout2\tcommand2\n")
-	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+	if err := ioutil.WriteFile(testFilename, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -335,15 +335,15 @@ func (t *TestDiskInterface) RemoveFile(path string) int {
 }
 
 func TestBuildLogTest_Restat(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	content := []byte("# ninja log v4\n1\t2\t3\tout\tcommand\n")
-	if err := ioutil.WriteFile(kTestFilename, content, 0o600); err != nil {
+	if err := ioutil.WriteFile(testFilename, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -356,7 +356,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 
 	// TODO(maruel): The original test case is broken.
 	testDiskInterface := TestDiskInterface{t}
-	if !log.Restat(kTestFilename, &testDiskInterface, []string{"out2"}, &err) {
+	if !log.Restat(testFilename, &testDiskInterface, []string{"out2"}, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -367,7 +367,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 		t.Fatal(e.mtime)
 	} // unchanged, since the filter doesn't match
 
-	if !log.Restat(kTestFilename, &testDiskInterface, nil, &err) {
+	if !log.Restat(testFilename, &testDiskInterface, nil, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -383,8 +383,8 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 	b := NewBuildLogTest(t)
 	// Ninja's build log buffer in C++ is currently 256kB. Lines longer than that
 	// are silently ignored, but don't affect parsing of other lines.
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	f, err2 := os.OpenFile(kTestFilename, os.O_CREATE|os.O_WRONLY, 0o600)
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	f, err2 := os.OpenFile(testFilename, os.O_CREATE|os.O_WRONLY, 0o600)
 	if err2 != nil {
 		t.Fatal(err2)
 	}
@@ -400,7 +400,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(kTestFilename, &err) != LoadSuccess {
+	if log.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -484,13 +484,13 @@ func NewBuildLogRecompactTest(t *testing.T) *BuildLogRecompactTest {
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	b := NewBuildLogRecompactTest(t)
 	b.AssertParse(&b.state_, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
-	kTestFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	err := ""
 
 	{
 		log1 := NewBuildLog()
 		defer log1.Close()
-		if !log1.OpenForWrite(kTestFilename, b, &err) {
+		if !log1.OpenForWrite(testFilename, b, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -509,7 +509,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log2 := NewBuildLog()
 		defer log2.Close()
-		if log2.Load(kTestFilename, &err) != LoadSuccess {
+		if log2.Load(testFilename, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -525,7 +525,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 			t.Fatal("expected true")
 		}
 		// ...and force a recompaction.
-		if !log2.OpenForWrite(kTestFilename, b, &err) {
+		if !log2.OpenForWrite(testFilename, b, &err) {
 			t.Fatal("expected true")
 		}
 		log2.Close()
@@ -535,7 +535,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log3 := NewBuildLog()
 		defer log3.Close()
-		if log3.Load(kTestFilename, &err) != LoadSuccess {
+		if log3.Load(testFilename, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "" != err {

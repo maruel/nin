@@ -86,11 +86,11 @@ func (l *Lexer) Error(message string, err *string) bool {
 	*err = fmt.Sprintf("%s:%d: ", l.filename_, line)
 	*err += message + "\n"
 	// Add some context to the message.
-	const kTruncateColumn = 72
-	if col > 0 && col < kTruncateColumn {
+	const truncateColumn = 72
+	if col > 0 && col < truncateColumn {
 		truncated := true
 		length := 0
-		for ; length < kTruncateColumn; length++ {
+		for ; length < truncateColumn; length++ {
 			if l.input_[lineStart+length] == 0 || l.input_[lineStart+length] == '\n' {
 				truncated = false
 				break

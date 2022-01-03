@@ -74,14 +74,14 @@ type Cache map[string]DirCache
 func DirName(path string) string {
 	return filepath.Dir(path)
 	/*
-		kPathSeparators := "\\/"
-		kEnd := kPathSeparators + len(kPathSeparators) - 1
+		pathSeparators := "\\/"
+		end := pathSeparators + len(pathSeparators) - 1
 
-		slashPos := path.findLastOf(kPathSeparators)
+		slashPos := path.findLastOf(pathSeparators)
 		if slashPos == -1 {
 			return "" // Nothing to do.
 		}
-		for slashPos > 0 && find(kPathSeparators, kEnd, path[slashPos-1]) != kEnd {
+		for slashPos > 0 && find(pathSeparators, end, path[slashPos-1]) != end {
 			slashPos--
 		}
 		return path[0:slashPos]
@@ -151,9 +151,9 @@ func StatAllFilesInDir(dir string, stamps map[string]TimeStamp, err *string) boo
 		//canUseBasicInfo := IsWindows7OrLater()
 		// This is not in earlier SDKs.
 		//FINDEX_INFO_LEVELS
-		kFindExInfoBasic := 1
+		findExInfoBasic := 1
 		//FINDEX_INFO_LEVELS
-		level := kFindExInfoBasic
+		level := findExInfoBasic
 		// FindExInfoStandard
 		var ffd WIN32_FIND_DATAA
 		findHandle := FindFirstFileExA((dir + "\\*"), level, &ffd, FindExSearchNameMatch, nil, 0)

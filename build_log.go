@@ -392,11 +392,11 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	// Decide whether it's time to rebuild the log:
 	// - if we're upgrading versions
 	// - if it's getting large
-	kMinCompactionEntryCount := 100
-	kCompactionRatio := 3
+	const minCompactionEntryCount = 100
+	const compactionRatio = 3
 	if logVersion < BuildLogCurrentVersion {
 		b.needsRecompaction_ = true
-	} else if totalEntryCount > kMinCompactionEntryCount && totalEntryCount > uniqueEntryCount*kCompactionRatio {
+	} else if totalEntryCount > minCompactionEntryCount && totalEntryCount > uniqueEntryCount*compactionRatio {
 		b.needsRecompaction_ = true
 	}
 

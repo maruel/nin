@@ -297,21 +297,21 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 	} // actual value is platform-specific
 	err = ""
 
-	kTestFile := "testfile"
-	f, _ := os.OpenFile(kTestFile, os.O_CREATE|os.O_RDWR, 0o600)
+	testFile := "testfile"
+	f, _ := os.OpenFile(testFile, os.O_CREATE|os.O_RDWR, 0o600)
 	if f == nil {
 		t.Fatal("expected true")
 	}
-	kTestContent := "test content\nok"
-	fmt.Fprintf(f, "%s", kTestContent)
+	testContent := "test content\nok"
+	fmt.Fprintf(f, "%s", testContent)
 	if nil != f.Close() {
 		t.Fatal("expected equal")
 	}
 
-	if Okay != disk_.ReadFile(kTestFile, &content, &err) {
+	if Okay != disk_.ReadFile(testFile, &content, &err) {
 		t.Fatal("expected equal")
 	}
-	if content != kTestContent+"\x00" {
+	if content != testContent+"\x00" {
 		t.Fatal("expected equal")
 	}
 	if "" != err {

@@ -1303,13 +1303,13 @@ func writeFakeManifests(t testing.TB, dir string) {
 }
 
 func BenchmarkLoadManifest(b *testing.B) {
-	kManifestDir := filepath.Join("build", "manifest_perftest")
-	writeFakeManifests(b, kManifestDir)
+	manifestDir := filepath.Join("build", "manifest_perftest")
+	writeFakeManifests(b, manifestDir)
 	old, err := os.Getwd()
 	if err != nil {
 		b.Fatal(err)
 	}
-	if err := os.Chdir(kManifestDir); err != nil {
+	if err := os.Chdir(manifestDir); err != nil {
 		b.Fatal(err)
 	}
 	b.Cleanup(func() {

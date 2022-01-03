@@ -287,7 +287,7 @@ func CanonicalizePathBits(path string) (string, uint64) {
 	return unsafeString(p), bits
 }
 
-func StringNeedsShellEscaping(input string) bool {
+func stringNeedsShellEscaping(input string) bool {
 	for i := 0; i < len(input); i++ {
 		ch := input[i]
 		if 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || '0' <= ch && ch <= '9' {
@@ -302,7 +302,7 @@ func StringNeedsShellEscaping(input string) bool {
 	return false
 }
 
-func StringNeedsWin32Escaping(input string) bool {
+func stringNeedsWin32Escaping(input string) bool {
 	for i := 0; i < len(input); i++ {
 		switch input[i] {
 		case ' ', '"':
@@ -314,8 +314,8 @@ func StringNeedsWin32Escaping(input string) bool {
 }
 
 // Escapes the item for bash.
-func GetShellEscapedString(input string) string {
-	if !StringNeedsShellEscaping(input) {
+func getShellEscapedString(input string) string {
+	if !stringNeedsShellEscaping(input) {
 		return input
 	}
 
@@ -349,25 +349,22 @@ func GetShellEscapedString(input string) string {
 }
 
 // Escapes the item for Windows's CommandLineToArgvW().
-func GetWin32EscapedString(input string) string {
-	if !StringNeedsWin32Escaping(input) {
+func getWin32EscapedString(input string) string {
+	if !stringNeedsWin32Escaping(input) {
 		return input
 	}
 
-	kQuote := '"'
-	kBackslash := '\\'
-
-	result := string(kQuote)
+	result := "\""
 	consecutiveBackslashCount := 0
 	spanBegin := 0
 	for it, c := range input {
 		switch c {
-		case kBackslash:
+		case '\\':
 			consecutiveBackslashCount++
-		case kQuote:
+		case '"':
 			result += input[spanBegin:it]
 			for j := 0; j < consecutiveBackslashCount+1; j++ {
-				result += string(kBackslash)
+				result += "\\"
 			}
 			spanBegin = it
 			consecutiveBackslashCount = 0
@@ -377,9 +374,9 @@ func GetWin32EscapedString(input string) string {
 	}
 	result += input[spanBegin:]
 	for j := 0; j < consecutiveBackslashCount; j++ {
-		result += string(kBackslash)
+		result += "\\"
 	}
-	result += string(kQuote)
+	result += "\""
 	return result
 }
 
@@ -418,13 +415,12 @@ func ReadFile(path string, contents *string, err *string) int {
 // Given a misspelled string and a list of correct spellings, returns
 // the closest match or "" if there is no close enough match.
 func SpellcheckString(text string, words ...string) string {
-	kAllowReplacements := true
-	kMaxValidEditDistance := 3
+	const maxValidEditDistance = 3
 
-	minDistance := kMaxValidEditDistance + 1
+	minDistance := maxValidEditDistance + 1
 	result := ""
 	for _, i := range words {
-		distance := EditDistance(i, text, kAllowReplacements, kMaxValidEditDistance)
+		distance := EditDistance(i, text, true, maxValidEditDistance)
 		if distance < minDistance {
 			minDistance = distance
 			result = i
@@ -613,10 +609,10 @@ func ElideMiddle(str string, width int) string {
 	case 3:
 		return "..."
 	}
-	kMargin := 3 // Space for "...".
+	const margin = 3 // Space for "...".
 	result := str
 	if len(result) > width {
-		elideSize := (width - kMargin) / 2
+		elideSize := (width - margin) / 2
 		result = result[0:elideSize] + "..." + result[len(result)-elideSize:]
 	}
 	return result

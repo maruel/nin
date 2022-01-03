@@ -23,11 +23,11 @@ import (
 )
 
 func TestDepsLogTest_WriteRead(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state1 := NewState()
 	log1 := NewDepsLog()
 	err := ""
-	if !log1.OpenForWrite(kTestFilename, &err) {
+	if !log1.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -71,7 +71,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 
 	state2 := NewState()
 	log2 := NewDepsLog()
-	if log2.Load(kTestFilename, &state2, &err) != LoadSuccess {
+	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -112,13 +112,13 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 }
 
 func TestDepsLogTest_LotsOfDeps(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
-	kNumDeps := 100000 // More than 64k.
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	const numDeps = 100000 // More than 64k.
 
 	state1 := NewState()
 	log1 := NewDepsLog()
 	err := ""
-	if !log1.OpenForWrite(kTestFilename, &err) {
+	if !log1.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -127,14 +127,14 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
 	{
 		var deps []*Node
-		for i := 0; i < kNumDeps; i++ {
+		for i := 0; i < numDeps; i++ {
 			buf := fmt.Sprintf("file%d.h", i)
 			deps = append(deps, state1.GetNode(buf, 0))
 		}
 		log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps)
 
 		logDeps := log1.GetDeps(state1.GetNode("out.o", 0))
-		if kNumDeps != logDeps.nodeCount {
+		if numDeps != logDeps.nodeCount {
 			t.Fatal("expected equal")
 		}
 	}
@@ -143,7 +143,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
 	state2 := NewState()
 	log2 := NewDepsLog()
-	if log2.Load(kTestFilename, &state2, &err) != LoadSuccess {
+	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -151,7 +151,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 	}
 
 	logDeps := log2.GetDeps(state2.GetNode("out.o", 0))
-	if kNumDeps != logDeps.nodeCount {
+	if numDeps != logDeps.nodeCount {
 		t.Fatal("expected equal")
 	}
 }
@@ -166,14 +166,14 @@ func getFileSize(t *testing.T, p string) int {
 
 // Verify that adding the same deps twice doesn't grow the file.
 func TestDepsLogTest_DoubleEntry(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	// Write some deps to the file and grab its size.
 	fileSize := 0
 	{
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -186,7 +186,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
-		fileSize = getFileSize(t, kTestFilename)
+		fileSize = getFileSize(t, testFilename)
 		if fileSize <= 0 {
 			t.Fatal("expected greater")
 		}
@@ -197,11 +197,11 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -214,7 +214,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
-		fileSize_2 := getFileSize(t, kTestFilename)
+		fileSize_2 := getFileSize(t, testFilename)
 		if fileSize != fileSize_2 {
 			t.Fatal("expected equal")
 		}
@@ -223,17 +223,17 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 
 // Verify that adding the new deps works and can be compacted away.
 func TestDepsLogTest_Recompact(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
-	kManifest := "rule cc\n  command = cc\n  deps = gcc\nbuild out.o: cc\nbuild other_out.o: cc\n"
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	manifest := "rule cc\n  command = cc\n  deps = gcc\nbuild out.o: cc\nbuild other_out.o: cc\n"
 
 	// Write some deps to the file and grab its size.
 	fileSize := 0
 	{
 		state := NewState()
-		assertParse(t, kManifest, &state)
+		assertParse(t, manifest, &state)
 		log := NewDepsLog()
 		err := ""
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -252,7 +252,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 
 		log.Close()
 
-		fileSize = getFileSize(t, kTestFilename)
+		fileSize = getFileSize(t, testFilename)
 		if fileSize <= 0 {
 			t.Fatal("expected greater")
 		}
@@ -262,14 +262,14 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	fileSize_2 := 0
 	{
 		state := NewState()
-		assertParse(t, kManifest, &state)
+		assertParse(t, manifest, &state)
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -281,7 +281,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
-		fileSize_2 = getFileSize(t, kTestFilename)
+		fileSize_2 = getFileSize(t, testFilename)
 		// The file should grow to record the new deps.
 		if fileSize_2 <= fileSize {
 			t.Fatal("expected greater")
@@ -293,10 +293,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	fileSize_3 := 0
 	{
 		state := NewState()
-		assertParse(t, kManifest, &state)
+		assertParse(t, manifest, &state)
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -333,7 +333,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		if !log.Recompact(kTestFilename, &err) {
+		if !log.Recompact(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 
@@ -376,7 +376,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The file should have shrunk a bit for the smaller deps.
-		fileSize_3 = getFileSize(t, kTestFilename)
+		fileSize_3 = getFileSize(t, testFilename)
 		if fileSize_3 >= fileSize_2 {
 			t.Fatal("expected less or equal")
 		}
@@ -386,10 +386,10 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	// entries should be removed.
 	{
 		state := NewState()
-		// Intentionally not parsing kManifest here.
+		// Intentionally not parsing manifest here.
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -426,7 +426,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		if !log.Recompact(kTestFilename, &err) {
+		if !log.Recompact(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 
@@ -450,7 +450,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		}
 
 		// The file should have shrunk more.
-		fileSize_4 := getFileSize(t, kTestFilename)
+		fileSize_4 := getFileSize(t, testFilename)
 		if fileSize_4 >= fileSize_3 {
 			t.Fatal("expected less or equal")
 		}
@@ -459,7 +459,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 
 // Verify that invalid file headers cause a new build.
 func TestDepsLogTest_InvalidHeader(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	kInvalidHeaders := []string{
 		"",                              // Empty file.
 		"# ninjad",                      // Truncated first line.
@@ -468,7 +468,7 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 		"# ninjadeps\n\001\002\003\004", // Invalid version int.
 	}
 	for i := 0; i < len(kInvalidHeaders); i++ {
-		depsLog, err2 := os.OpenFile(kTestFilename, os.O_CREATE|os.O_WRONLY, 0o600)
+		depsLog, err2 := os.OpenFile(testFilename, os.O_CREATE|os.O_WRONLY, 0o600)
 		if depsLog == nil {
 			t.Fatal(err2)
 		}
@@ -482,7 +482,7 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 		err := ""
 		log := NewDepsLog()
 		state := NewState()
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -494,13 +494,13 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 
 // Simulate what happens when loading a truncated log file.
 func TestDepsLogTest_Truncated(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	// Create a file with some entries.
 	{
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -521,7 +521,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 	}
 
 	// Get the file size.
-	fileSize := getFileSize(t, kTestFilename)
+	fileSize := getFileSize(t, testFilename)
 
 	// Try reloading at truncated sizes.
 	// Track how many nodes/deps were found; they should decrease with
@@ -529,14 +529,14 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 	nodeCount := 5
 	depsCount := 2
 	for size := fileSize; size > 0; size-- {
-		if err := os.Truncate(kTestFilename, int64(size)); err != nil {
+		if err := os.Truncate(testFilename, int64(size)); err != nil {
 			t.Fatal(err)
 		}
 
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) == LoadNotFound {
+		if log.Load(testFilename, &state, &err) == LoadNotFound {
 			t.Fatal(err)
 		}
 		if len(err) != 0 {
@@ -566,13 +566,13 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 // Run the truncation-recovery logic.
 func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	t.Skip("TODO; the load is still succeeding. This is not critical for release.")
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	// Create a file with some entries.
 	{
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -594,12 +594,12 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 
 	// Shorten the file, corrupting the last record.
 	{
-		fileSize := getFileSize(t, kTestFilename)
+		fileSize := getFileSize(t, testFilename)
 		const cut = 2
-		if err := os.Truncate(kTestFilename, int64(fileSize-cut)); err != nil {
+		if err := os.Truncate(testFilename, int64(fileSize-cut)); err != nil {
 			t.Fatal(err)
 		}
-		if f2 := getFileSize(t, kTestFilename); f2 != fileSize-cut {
+		if f2 := getFileSize(t, testFilename); f2 != fileSize-cut {
 			t.Fatal(f2)
 		}
 	}
@@ -609,7 +609,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 		if "premature end of file; recovering" != err {
@@ -622,7 +622,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 			t.Fatal("expected out2.o to be stripped")
 		}
 
-		if !log.OpenForWrite(kTestFilename, &err) {
+		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -644,7 +644,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		state := NewState()
 		log := NewDepsLog()
 		err := ""
-		if log.Load(kTestFilename, &state, &err) != LoadSuccess {
+		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
 
@@ -657,11 +657,11 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 }
 
 func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state := NewState()
 	log := NewDepsLog()
 	err := ""
-	if !log.OpenForWrite(kTestFilename, &err) {
+	if !log.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {

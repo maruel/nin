@@ -69,9 +69,9 @@ func MSVCHelperMain(arg []string) int {
 		outputFilename := nil
 		envfile := nil
 
-		//kLongOptions := {{ "help", noArgument, nil, 'h' }, { nil, 0, nil, 0 }}
+		longOptions := {{ "help", noArgument, nil, 'h' }, { nil, 0, nil, 0 }}
 		depsPrefix := ""
-		for opt := getoptLong(argc, argv, "e:o:p:h", kLongOptions, nil); opt != -1; {
+		for opt := getoptLong(argc, argv, "e:o:p:h", longOptions, nil); opt != -1; {
 			switch opt {
 			case 'e':
 				envfile = optarg

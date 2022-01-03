@@ -198,13 +198,11 @@ func (s *State) LookupNode(path string) *Node {
 }
 
 func (s *State) SpellcheckNode(path string) *Node {
-	kAllowReplacements := true
-	kMaxValidEditDistance := 3
-
-	minDistance := kMaxValidEditDistance + 1
+	const maxValidEditDistance = 3
+	minDistance := maxValidEditDistance + 1
 	var result *Node
 	for p, node := range s.paths_ {
-		distance := EditDistance(p, path, kAllowReplacements, kMaxValidEditDistance)
+		distance := EditDistance(p, path, true, maxValidEditDistance)
 		if distance < minDistance && node != nil {
 			minDistance = distance
 			result = node

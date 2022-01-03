@@ -1201,7 +1201,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 	/*
 		OPT_VERSION := 1
 		OPT_QUIET := 2
-			   option kLongOptions[] = {
+			   option longOptions[] = {
 			     { "help", noArgument, nil, 'h' },
 			     { "version", noArgument, nil, OPT_VERSION },
 			     { "verbose", noArgument, nil, 'v' },
@@ -1210,7 +1210,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 			   }
 
 			   for opts.tool ==nil {
-					 opt := getoptLong(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", kLongOptions, nil))
+					 opt := getoptLong(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", longOptions, nil))
 					 if opt == -1 {
 						 continue
 					 }
@@ -1392,8 +1392,8 @@ func Main() int {
 	  }
 	*/
 	// Limit number of rebuilds, to prevent infinite loops.
-	kCycleLimit := 100
-	for cycle := 1; cycle <= kCycleLimit; cycle++ {
+	const cycleLimit = 100
+	for cycle := 1; cycle <= cycleLimit; cycle++ {
 		ninja := newNinjaMain(ninjaCommand, &config)
 
 		var parserOpts ManifestParserOptions
@@ -1447,6 +1447,6 @@ func Main() int {
 		return result
 	}
 
-	status.Error("manifest '%s' still dirty after %d tries", opts.inputFile, kCycleLimit)
+	status.Error("manifest '%s' still dirty after %d tries", opts.inputFile, cycleLimit)
 	return 1
 }

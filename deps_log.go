@@ -405,9 +405,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	_ = f.Close()
 
 	// Rebuild the log if there are too many dead records.
-	kMinCompactionEntryCount := 1000
+	const minCompactionEntryCount = 1000
 	kCompactionRatio := 3
-	if totalDepRecordCount > kMinCompactionEntryCount && totalDepRecordCount > uniqueDepRecordCount*kCompactionRatio {
+	if totalDepRecordCount > minCompactionEntryCount && totalDepRecordCount > uniqueDepRecordCount*kCompactionRatio {
 		d.needsRecompaction_ = true
 	}
 	return LoadSuccess

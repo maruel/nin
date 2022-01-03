@@ -146,35 +146,33 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 	}
 
 	// Construct max size path having cwd prefix.
-	// kExactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
+	// exactlyMaxPath = "$cwd\\a\\aaaa...aaaa\0";
 	t.Skip("TODO")
 	/*
-	  char kExactlyMaxPath[_MAX_PATH + 1]
-	  if Getcwd(kExactlyMaxPath == sizeof kExactlyMaxPath), nil { t.Fatal("expected different") }
+			cwd := os.Getwd()
+		  cwdLen := len(exactlyMaxPath)
+		  ASSERT_LE(cwdLen + 3 + 1, maxPath)
+		  exactlyMaxPath[cwdLen] = '\\'
+		  exactlyMaxPath[cwdLen + 1] = 'a'
+		  exactlyMaxPath[cwdLen + 2] = '\\'
 
-	  cwdLen := len(kExactlyMaxPath)
-	  ASSERT_LE(cwdLen + 3 + 1, _MAX_PATH)
-	  kExactlyMaxPath[cwdLen] = '\\'
-	  kExactlyMaxPath[cwdLen + 1] = 'a'
-	  kExactlyMaxPath[cwdLen + 2] = '\\'
+		  exactlyMaxPath[cwdLen + 3] = 'a'
 
-	  kExactlyMaxPath[cwdLen + 3] = 'a'
+		  for int i = cwdLen + 4; i < maxPath; i++ {
+		    if i > cwdLen + 4 && i < maxPath - 1 && i % 10 == 0 {
+		      exactlyMaxPath[i] = '\\'
+		    } else {
+		      exactlyMaxPath[i] = 'a'
+		    }
+		  }
 
-	  for int i = cwdLen + 4; i < _MAX_PATH; i++ {
-	    if i > cwdLen + 4 && i < _MAX_PATH - 1 && i % 10 == 0 {
-	      kExactlyMaxPath[i] = '\\'
-	    } else {
-	      kExactlyMaxPath[i] = 'a'
-	    }
-	  }
+		  exactlyMaxPath[maxPath] = '\0'
+		  if strlen(kExactlyMaxPath) != maxPath { t.Fatal("expected equal") }
 
-	  kExactlyMaxPath[_MAX_PATH] = '\0'
-	  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
-
-	  string forwardSlashes(kExactlyMaxPath)
-	  replace(forwardSlashes.begin(), forwardSlashes.end(), '\\', '/')
-	  // Make sure a path that's exactly _MAX_PATH long is canonicalized.
-	  if forwardSlashes.substr(cwdLen + 1) != NormalizeAndCheckNoError(t,kExactlyMaxPath) { t.Fatal("expected equal") }
+		  string forwardSlashes(kExactlyMaxPath)
+		  replace(forwardSlashes.begin(), forwardSlashes.end(), '\\', '/')
+		  // Make sure a path that's exactly maxPath long is canonicalized.
+		  if forwardSlashes.substr(cwdLen + 1) != NormalizeAndCheckNoError(t,kExactlyMaxPath) { t.Fatal("expected equal") }
 	*/
 }
 
@@ -192,21 +190,21 @@ func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
 
 	t.Skip("TODO")
 	/*
-	  // Construct max size path having cwd prefix.
-	  // kExactlyMaxPath = "aaaa\\aaaa...aaaa\0";
-	  char kExactlyMaxPath[_MAX_PATH + 1]
-	  for i := 0; i < _MAX_PATH; i++ {
-	    if i < _MAX_PATH - 1 && i % 10 == 4 {
-	      kExactlyMaxPath[i] = '\\'
-	    } else {
-	      kExactlyMaxPath[i] = 'a'
-	    }
-	  }
-	  kExactlyMaxPath[_MAX_PATH] = '\0'
-	  if strlen(kExactlyMaxPath) != _MAX_PATH { t.Fatal("expected equal") }
+		  // Construct max size path having cwd prefix.
+		  // exactlyMaxPath = "aaaa\\aaaa...aaaa\0";
+			exactlyMaxPath := [maxPath + 1]byte{}
+		  for i := 0; i < maxPath; i++ {
+		    if i < maxPath - 1 && i % 10 == 4 {
+		      exactlyMaxPath[i] = '\\'
+		    } else {
+		      exactlyMaxPath[i] = 'a'
+		    }
+		  }
+		  exactlyMaxPath[maxPath] = '\0'
+		  if strlen(kExactlyMaxPath) != maxPath { t.Fatal("expected equal") }
 
-	  // Make sure a path that's exactly _MAX_PATH long fails with a proper error.
-	  if normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.Fatal("expected false") }
-	  if !err.find("GetFullPathName") != string::npos { t.Fatal("expected true") }
+		  // Make sure a path that's exactly maxPath long fails with a proper error.
+		  if normalizer.Normalize(kExactlyMaxPath, &result, &err) { t.Fatal("expected false") }
+		  if !err.find("GetFullPathName") != string::npos { t.Fatal("expected true") }
 	*/
 }

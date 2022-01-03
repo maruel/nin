@@ -233,11 +233,11 @@ func TestCanonicalizePath_NotNullTerminated(t *testing.T) {
 }
 
 func TestPathEscaping_TortureTest(t *testing.T) {
-	got := GetWin32EscapedString("foo bar\\\"'$@d!st!c'\\path'\\")
+	got := getWin32EscapedString("foo bar\\\"'$@d!st!c'\\path'\\")
 	if diff := cmp.Diff("\"foo bar\\\\\\\"'$@d!st!c'\\path'\\\\\"", got); diff != "" {
 		t.Fatalf("+want, -got: %s", diff)
 	}
-	got = GetShellEscapedString("foo bar\"/'$@d!st!c'/path'")
+	got = getShellEscapedString("foo bar\"/'$@d!st!c'/path'")
 	if diff := cmp.Diff("'foo bar\"/'\\''$@d!st!c'\\''/path'\\'''", got); diff != "" {
 		t.Fatalf("+want, -got: %s", diff)
 	}
@@ -245,11 +245,11 @@ func TestPathEscaping_TortureTest(t *testing.T) {
 
 func TestPathEscaping_SensiblePathsAreNotNeedlesslyEscaped(t *testing.T) {
 	path := "some/sensible/path/without/crazy/characters.c++"
-	got := GetWin32EscapedString(path)
+	got := getWin32EscapedString(path)
 	if diff := cmp.Diff(path, got); diff != "" {
 		t.Fatalf("+want, -got: %s", diff)
 	}
-	got = GetShellEscapedString(path)
+	got = getShellEscapedString(path)
 	if diff := cmp.Diff(path, got); diff != "" {
 		t.Fatalf("+want, -got: %s", diff)
 	}
@@ -257,7 +257,7 @@ func TestPathEscaping_SensiblePathsAreNotNeedlesslyEscaped(t *testing.T) {
 
 func TestPathEscaping_SensibleWin32PathsAreNotNeedlesslyEscaped(t *testing.T) {
 	path := "some\\sensible\\path\\without\\crazy\\characters.c++"
-	result := GetWin32EscapedString(path)
+	result := getWin32EscapedString(path)
 	if path != result {
 		t.Fatal("expected equal")
 	}

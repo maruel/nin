@@ -2831,18 +2831,18 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 
 func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
 	b := NewBuildTest(t)
-	kTooLongToStat := strings.Repeat("i", 400)
-	b.AssertParse(&b.state_, ("build " + kTooLongToStat + ": cat in\n"), ManifestParserOptions{})
+	tooLongToStat := strings.Repeat("i", 400)
+	b.AssertParse(&b.state_, ("build " + tooLongToStat + ": cat in\n"), ManifestParserOptions{})
 	b.fs_.Create("in", "")
 
 	// This simulates a stat failure:
-	b.fs_.files_[kTooLongToStat] = Entry{
+	b.fs_.files_[tooLongToStat] = Entry{
 		mtime:     -1,
 		statError: "stat failed",
 	}
 
 	err := ""
-	if b.builder_.AddTargetName(kTooLongToStat, &err) != nil {
+	if b.builder_.AddTargetName(tooLongToStat, &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "stat failed" != err {

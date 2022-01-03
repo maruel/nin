@@ -466,9 +466,9 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 		path := x.PathDecanonicalized()
 		if e.escapeInOut_ == ShellEscape {
 			if runtime.GOOS == "windows" {
-				path = GetWin32EscapedString(path)
+				path = getWin32EscapedString(path)
 			} else {
-				path = GetShellEscapedString(path)
+				path = getShellEscapedString(path)
 			}
 		}
 		l := len(path)
