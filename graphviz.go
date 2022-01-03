@@ -29,10 +29,10 @@ type GraphViz struct {
 	visitedEdges map[*Edge]struct{}
 }
 
-func NewGraphViz(state *State, diskInterface DiskInterface) GraphViz {
+func NewGraphViz(state *State, di DiskInterface) GraphViz {
 	return GraphViz{
 		out:          os.Stdout,
-		dyndepLoader: NewDyndepLoader(state, diskInterface),
+		dyndepLoader: NewDyndepLoader(state, di),
 		visitedNodes: map[*Node]struct{}{},
 		visitedEdges: map[*Edge]struct{}{},
 	}

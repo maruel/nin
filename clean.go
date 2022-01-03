@@ -23,7 +23,7 @@ type Cleaner struct {
 	removed           map[string]struct{}
 	cleaned           map[*Node]struct{}
 	cleanedFilesCount int // Number of files cleaned.
-	diskInterface     DiskInterface
+	di                DiskInterface
 	status            int
 }
 
@@ -32,27 +32,27 @@ func (c *Cleaner) IsVerbose() bool {
 	return c.config.verbosity != Quiet && (c.config.verbosity == Verbose || c.config.dryRun)
 }
 
-func NewCleaner(state *State, config *BuildConfig, diskInterface DiskInterface) *Cleaner {
+func NewCleaner(state *State, config *BuildConfig, di DiskInterface) *Cleaner {
 	return &Cleaner{
-		state:         state,
-		config:        config,
-		dyndepLoader:  NewDyndepLoader(state, diskInterface),
-		removed:       map[string]struct{}{},
-		cleaned:       map[*Node]struct{}{},
-		diskInterface: diskInterface,
+		state:        state,
+		config:       config,
+		dyndepLoader: NewDyndepLoader(state, di),
+		removed:      map[string]struct{}{},
+		cleaned:      map[*Node]struct{}{},
+		di:           di,
 	}
 }
 
 // Remove the file @a path.
 // @return whether the file has been removed.
 func (c *Cleaner) RemoveFile(path string) int {
-	return c.diskInterface.RemoveFile(path)
+	return c.di.RemoveFile(path)
 }
 
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
 	err := ""
-	mtime := c.diskInterface.Stat(path, &err)
+	mtime := c.di.Stat(path, &err)
 	if mtime == -1 {
 		errorf("%s", err)
 	}

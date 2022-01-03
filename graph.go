@@ -88,11 +88,11 @@ func NewNode(path string, slashBits uint64) *Node {
 }
 
 // Return false on error.
-func (n *Node) StatIfNecessary(diskInterface DiskInterface, err *string) bool {
+func (n *Node) StatIfNecessary(di DiskInterface, err *string) bool {
 	if n.Exists != ExistenceStatusUnknown {
 		return true
 	}
-	return n.Stat(diskInterface, err)
+	return n.Stat(di, err)
 }
 
 // Get |Path| but use SlashBits to convert back to original slash styles.
@@ -101,9 +101,9 @@ func (n *Node) PathDecanonicalized() string {
 }
 
 // Return false on error.
-func (n *Node) Stat(diskInterface DiskInterface, err *string) bool {
+func (n *Node) Stat(di DiskInterface, err *string) bool {
 	defer MetricRecord("node stat")()
-	n.MTime = diskInterface.Stat(n.Path, err)
+	n.MTime = di.Stat(n.Path, err)
 	if n.MTime == -1 {
 		return false
 	}
@@ -523,18 +523,18 @@ func PathDecanonicalized(path string, slashBits uint64) string {
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputsReady state of all the nodes and edges.
 type DependencyScan struct {
-	buildLog      *BuildLog
-	diskInterface DiskInterface
-	depLoader     ImplicitDepLoader
-	dyndepLoader  DyndepLoader
+	buildLog     *BuildLog
+	di           DiskInterface
+	depLoader    ImplicitDepLoader
+	dyndepLoader DyndepLoader
 }
 
-func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) DependencyScan {
+func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface, depfileParserOptions *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
-		buildLog:      buildLog,
-		diskInterface: diskInterface,
-		depLoader:     NewImplicitDepLoader(state, depsLog, diskInterface, depfileParserOptions),
-		dyndepLoader:  NewDyndepLoader(state, diskInterface),
+		buildLog:     buildLog,
+		di:           di,
+		depLoader:    NewImplicitDepLoader(state, depsLog, di, depfileParserOptions),
+		dyndepLoader: NewDyndepLoader(state, di),
 	}
 }
 
@@ -584,7 +584,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
-		if !node.StatIfNecessary(d.diskInterface, err) {
+		if !node.StatIfNecessary(d.di, err) {
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
@@ -644,7 +644,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
-		if !o.StatIfNecessary(d.diskInterface, err) {
+		if !o.StatIfNecessary(d.di, err) {
 			return false
 		}
 	}
@@ -892,15 +892,15 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
 	state                *State
-	diskInterface        DiskInterface
+	di                   DiskInterface
 	depsLog              *DepsLog
 	depfileParserOptions *DepfileParserOptions
 }
 
-func NewImplicitDepLoader(state *State, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) ImplicitDepLoader {
+func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface, depfileParserOptions *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
 		state:                state,
-		diskInterface:        diskInterface,
+		di:                   di,
 		depsLog:              depsLog,
 		depfileParserOptions: depfileParserOptions,
 	}
@@ -930,7 +930,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	defer MetricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
-	switch i.diskInterface.ReadFile(path, &content, err) {
+	switch i.di.ReadFile(path, &content, err) {
 	case Okay:
 	case NotFound:
 		*err = ""

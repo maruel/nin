@@ -53,14 +53,14 @@ type DyndepFile map[*Edge]*Dyndeps
 // DyndepLoader loads dynamically discovered dependencies, as
 // referenced via the "dyndep" attribute in build files.
 type DyndepLoader struct {
-	state         *State
-	diskInterface DiskInterface
+	state *State
+	di    DiskInterface
 }
 
-func NewDyndepLoader(state *State, diskInterface DiskInterface) DyndepLoader {
+func NewDyndepLoader(state *State, di DiskInterface) DyndepLoader {
 	return DyndepLoader{
-		state:         state,
-		diskInterface: diskInterface,
+		state: state,
+		di:    di,
 	}
 }
 
@@ -154,6 +154,6 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 }
 
 func (d *DyndepLoader) LoadDyndepFile(file *Node, ddf DyndepFile, err *string) bool {
-	parser := NewDyndepParser(d.state, d.diskInterface, ddf)
+	parser := NewDyndepParser(d.state, d.di, ddf)
 	return parser.Load(file.Path, err, nil)
 }

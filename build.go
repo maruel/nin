@@ -643,8 +643,8 @@ type Builder struct {
 	// Time the build started.
 	startTimeMillis int64
 
-	diskInterface DiskInterface
-	scan          DependencyScan
+	di   DiskInterface
+	scan DependencyScan
 }
 
 // Used for tests.
@@ -652,17 +652,17 @@ func (b *Builder) SetBuildLog(log *BuildLog) {
 	b.scan.buildLog = log
 }
 
-func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *DepsLog, diskInterface DiskInterface, status Status, startTimeMillis int64) *Builder {
+func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface, status Status, startTimeMillis int64) *Builder {
 	b := &Builder{
 		state:           state,
 		config:          config,
 		status:          status,
 		runningEdges:    RunningEdgeMap{},
 		startTimeMillis: startTimeMillis,
-		diskInterface:   diskInterface,
+		di:              di,
 	}
 	b.plan = NewPlan(b)
-	b.scan = NewDependencyScan(state, buildLog, depsLog, diskInterface, &b.config.depfileParserOptions)
+	b.scan = NewDependencyScan(state, buildLog, depsLog, di, &b.config.depfileParserOptions)
 	return b
 }
 
@@ -688,16 +688,16 @@ func (b *Builder) Cleanup() {
 				// mentioned in a depfile, and the command touches its depfile
 				// but is interrupted before it touches its output file.)
 				err := ""
-				newMtime := b.diskInterface.Stat(o.Path, &err)
+				newMtime := b.di.Stat(o.Path, &err)
 				if newMtime == -1 { // Log and ignore Stat() errors.
 					b.status.Error("%s", err)
 				}
 				if depfile != "" || o.MTime != newMtime {
-					b.diskInterface.RemoveFile(o.Path)
+					b.di.RemoveFile(o.Path)
 				}
 			}
 			if len(depfile) != 0 {
-				b.diskInterface.RemoveFile(depfile)
+				b.di.RemoveFile(depfile)
 			}
 		}
 	}
@@ -867,7 +867,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
 	for _, o := range edge.Outputs {
-		if !MakeDirs(b.diskInterface, o.Path) {
+		if !MakeDirs(b.di, o.Path) {
 			*err = fmt.Sprintf("Can't make dir %q", o.Path)
 			return false
 		}
@@ -878,7 +878,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	rspfile := edge.GetUnescapedRspfile()
 	if len(rspfile) != 0 {
 		content := edge.GetBinding("rspfile_content")
-		if !b.diskInterface.WriteFile(rspfile, content) {
+		if !b.di.WriteFile(rspfile, content) {
 			*err = fmt.Sprintf("Can't write file %q", rspfile)
 			return false
 		}
@@ -935,7 +935,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		nodeCleaned := false
 
 		for _, o := range edge.Outputs {
-			newMtime := b.diskInterface.Stat(o.Path, err)
+			newMtime := b.di.Stat(o.Path, err)
 			if newMtime == -1 {
 				return false
 			}
@@ -958,7 +958,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
 			for _, i := range edge.Inputs[:len(edge.Inputs)-int(edge.OrderOnlyDeps)] {
-				inputMtime := b.diskInterface.Stat(i.Path, err)
+				inputMtime := b.di.Stat(i.Path, err)
 				if inputMtime == -1 {
 					return false
 				}
@@ -969,7 +969,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 
 			depfile := edge.GetUnescapedDepfile()
 			if restatMtime != 0 && depsType == "" && depfile != "" {
-				depfileMtime := b.diskInterface.Stat(depfile, err)
+				depfileMtime := b.di.Stat(depfile, err)
 				if depfileMtime == -1 {
 					return false
 				}
@@ -993,7 +993,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	// Delete any left over response file.
 	rspfile := edge.GetUnescapedRspfile()
 	if rspfile != "" && !gKeepRsp {
-		b.diskInterface.RemoveFile(rspfile)
+		b.di.RemoveFile(rspfile)
 	}
 
 	if b.scan.buildLog != nil {
@@ -1008,7 +1008,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 			panic("should have been rejected by parser")
 		}
 		for _, o := range edge.Outputs {
-			depsMtime := b.diskInterface.Stat(o.Path, err)
+			depsMtime := b.di.Stat(o.Path, err)
 			if depsMtime == -1 {
 				return false
 			}
@@ -1046,7 +1046,7 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 
 		// Read depfile content.  Treat a missing depfile as empty.
 		content := ""
-		switch b.diskInterface.ReadFile(depfile, &content, err) {
+		switch b.di.ReadFile(depfile, &content, err) {
 		case Okay:
 		case NotFound:
 			err = nil
@@ -1070,7 +1070,7 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 		}
 
 		if !gKeepDepfile {
-			if b.diskInterface.RemoveFile(depfile) < 0 {
+			if b.di.RemoveFile(depfile) < 0 {
 				*err = "deleting depfile: TODO\n"
 				return false
 			}

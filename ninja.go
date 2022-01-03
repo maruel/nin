@@ -66,7 +66,7 @@ type ninjaMain struct {
 	state State
 
 	// Functions for accessing the disk.
-	diskInterface RealDiskInterface
+	di RealDiskInterface
 
 	// The build directory, used for storing the build log etc.
 	buildDir string
@@ -117,7 +117,7 @@ func (n *ninjaMain) IsPathDead(s string) bool {
 	// Do keep entries around for files which still exist on disk, for
 	// generators that want to use this information.
 	err := ""
-	mtime := n.diskInterface.Stat(s, &err)
+	mtime := n.di.Stat(s, &err)
 	if mtime == -1 {
 		errorf("%s", err) // Log and ignore Stat() errors.
 	}
@@ -188,7 +188,7 @@ func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status Status
 		return false
 	}
 
-	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.diskInterface, status, n.startTimeMillis)
+	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	if !builder.AddTarget(node, err) {
 		return false
 	}
@@ -291,7 +291,7 @@ func toolGraph(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	graph := NewGraphViz(&n.state, &n.diskInterface)
+	graph := NewGraphViz(&n.state, &n.di)
 	graph.Start()
 	for _, n := range nodes {
 		graph.AddTarget(n)
@@ -306,7 +306,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	dyndepLoader := NewDyndepLoader(&n.state, &n.diskInterface)
+	dyndepLoader := NewDyndepLoader(&n.state, &n.di)
 
 	for i := 0; i < len(args); i++ {
 		err := ""
@@ -452,7 +452,7 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	diskInterface := NewRealDiskInterface()
+	di := NewRealDiskInterface()
 	for _, it := range nodes {
 		deps := n.depsLog.GetDeps(it)
 		if deps == nil {
@@ -461,7 +461,7 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 		}
 
 		err := ""
-		mtime := diskInterface.Stat(it.Path, &err)
+		mtime := di.Stat(it.Path, &err)
 		if mtime == -1 {
 			errorf("%s", err) // Log and ignore Stat() errors;
 		}
@@ -485,9 +485,9 @@ func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
 		errorf("%s", err)
 		return 1
 	}
-	diskInterface := NewRealDiskInterface()
+	di := NewRealDiskInterface()
 	printer := MissingDependencyPrinter{}
-	scanner := NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &diskInterface)
+	scanner := NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &di)
 	for _, it := range nodes {
 		scanner.ProcessNode(it)
 	}
@@ -672,7 +672,7 @@ func toolClean(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	cleaner := NewCleaner(&n.state, n.config, &n.diskInterface)
+	cleaner := NewCleaner(&n.state, n.config, &n.di)
 	if len(args) >= 1 {
 		if cleanRules {
 			return cleaner.CleanRules(args)
@@ -683,7 +683,7 @@ func toolClean(n *ninjaMain, opts *options, args []string) int {
 }
 
 func toolCleanDead(n *ninjaMain, opts *options, args []string) int {
-	cleaner := NewCleaner(&n.state, n.config, &n.diskInterface)
+	cleaner := NewCleaner(&n.state, n.config, &n.di)
 	return cleaner.CleanDead(n.buildLog.entries)
 }
 
@@ -821,7 +821,7 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 		err = ""
 	}
 
-	if !n.buildLog.Restat(logPath, &n.diskInterface, args, &err) {
+	if !n.buildLog.Restat(logPath, &n.di, args, &err) {
 		errorf("failed recompaction: %s", err)
 		return ExitFailure
 	}
@@ -1051,7 +1051,7 @@ func (n *ninjaMain) EnsureBuildDirExists() bool {
 	n.buildDir = n.state.bindings.LookupVariable("builddir")
 	if n.buildDir != "" && !n.config.dryRun {
 		// TODO(maruel): We need real error.
-		if !MakeDirs(&n.diskInterface, filepath.Join(n.buildDir, ".")) {
+		if !MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {
 			errorf("creating build directory %s", n.buildDir)
 			//return false
 		}
@@ -1069,9 +1069,9 @@ func (n *ninjaMain) RunBuild(args []string, status Status) int {
 		return 1
 	}
 
-	n.diskInterface.AllowStatCache(gExperimentalStatcache)
+	n.di.AllowStatCache(gExperimentalStatcache)
 
-	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.diskInterface, status, n.startTimeMillis)
+	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	for i := 0; i < len(targets); i++ {
 		if !builder.AddTarget(targets[i], &err) {
 			if len(err) != 0 {
@@ -1084,7 +1084,7 @@ func (n *ninjaMain) RunBuild(args []string, status Status) int {
 	}
 
 	// Make sure restat rules do not see stale timestamps.
-	n.diskInterface.AllowStatCache(false)
+	n.di.AllowStatCache(false)
 
 	if builder.AlreadyUpToDate() {
 		status.Info("no work to do.")
@@ -1403,7 +1403,7 @@ func Main() int {
 		if opts.phonyCycleShouldErr {
 			parserOpts.phonyCycleAction = PhonyCycleActionError
 		}
-		parser := NewManifestParser(&ninja.state, &ninja.diskInterface, parserOpts)
+		parser := NewManifestParser(&ninja.state, &ninja.di, parserOpts)
 		err := ""
 		if !parser.Load(opts.inputFile, &err, nil) {
 			status.Error("%s", err)

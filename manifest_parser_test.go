@@ -1318,13 +1318,13 @@ func BenchmarkLoadManifest(b *testing.B) {
 		}
 	})
 	errX := ""
-	diskInterface := NewRealDiskInterface()
+	di := NewRealDiskInterface()
 	optimizationGuard := 0
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state := NewState()
-		parser := NewManifestParser(&state, &diskInterface, ManifestParserOptions{})
+		parser := NewManifestParser(&state, &di, ManifestParserOptions{})
 		if !parser.Load("build.ninja", &errX, nil) {
 			b.Fatal("Failed to read test data: ", errX)
 		}

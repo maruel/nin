@@ -44,9 +44,9 @@ func WriteFakeManifests(dir string) error {
 
 func LoadManifests(measureCommandEvaluation bool) int {
 	err := ""
-	diskInterface := nin.NewRealDiskInterface()
+	di := nin.NewRealDiskInterface()
 	state := nin.NewState()
-	parser := nin.NewManifestParser(&state, &diskInterface, nin.ManifestParserOptions{})
+	parser := nin.NewManifestParser(&state, &di, nin.ManifestParserOptions{})
 	if !parser.Load("build.ninja", &err, nil) {
 		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)
 		os.Exit(1)
