@@ -212,7 +212,7 @@ func MakeDirs(d DiskInterface, path string) bool {
 	err := ""
 	mtime := d.Stat(dir, &err)
 	if mtime < 0 {
-		Error("%s", err)
+		errorf("%s", err)
 		return false
 	}
 	if mtime > 0 {

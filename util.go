@@ -24,9 +24,9 @@ import (
 
 // Have a generic fall-through for different versions of C/C++.
 
-// Log a fatal message and exit.
-func Fatal(msg string, s ...interface{}) {
-	fmt.Fprintf(os.Stderr, "ninja: fatal: ")
+// Log a fatalf message and exit.
+func fatalf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: fatal: ")
 	fmt.Fprintf(os.Stderr, msg, s...)
 	fmt.Fprintf(os.Stderr, "\n")
 	// On Windows, some tools may inject extra threads.
@@ -37,27 +37,27 @@ func Fatal(msg string, s ...interface{}) {
 }
 
 // Log a warning message.
-func Warning(msg string, s ...interface{}) {
-	fmt.Fprintf(os.Stderr, "ninja: warning: ")
+func warningf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: warning: ")
 	fmt.Fprintf(os.Stderr, msg, s...)
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // Log an error message.
-func Error(msg string, s ...interface{}) {
-	fmt.Fprintf(os.Stderr, "ninja: error: ")
+func errorf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: error: ")
 	fmt.Fprintf(os.Stderr, msg, s...)
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // Log an informational message.
-func Info(msg string, s ...interface{}) {
-	fmt.Fprintf(os.Stdout, "ninja: ")
+func infof(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stdout, "nin: ")
 	fmt.Fprintf(os.Stdout, msg, s...)
 	fmt.Fprintf(os.Stdout, "\n")
 }
 
-func IsPathSeparator(c byte) bool {
+func isPathSeparator(c byte) bool {
 	return c == '/' || c == '\\'
 }
 
@@ -134,7 +134,7 @@ func CanonicalizePath(path string) string {
 		}
 
 		if component_count == len(components) {
-			Fatal("path has too many components : %s", path)
+			fatalf("path has too many components : %s", path)
 		}
 		components[component_count] = dst
 		component_count++
@@ -245,7 +245,7 @@ func CanonicalizePathBits(path string) (string, uint64) {
 		}
 
 		if component_count == len(components) {
-			Fatal("path has too many components : %s", path)
+			fatalf("path has too many components : %s", path)
 		}
 		components[component_count] = dst
 		component_count++
@@ -413,18 +413,6 @@ func ReadFile(path string, contents *string, err *string) int {
   ::CloseHandle(f)
   return 0
 }
-
-// Mark a file descriptor to not be inherited on exec()s.
-func SetCloseOnExec(fd int) {
-  flags := fcntl(fd, F_GETFD)
-  if flags < 0 {
-    perror("fcntl(F_GETFD)")
-  } else {
-    if fcntl(fd, F_SETFD, flags | FD_CLOEXEC) < 0 {
-      perror("fcntl(F_SETFD)")
-    }
-  }
-}
 */
 
 // Given a misspelled string and a list of correct spellings, returns
@@ -504,39 +492,8 @@ func StripAnsiEscapeCodes(in string) string {
 	return stripped
 }
 
-// @return the number of processors on the machine.  Useful for an initial
-// guess for how many jobs to run in parallel.  @return 0 on error.
-func GetProcessorCount() int {
-	return runtime.NumCPU()
-	/*
-	   // Need to use GetLogicalProcessorInformationEx to get real core count on
-	   // machines with >64 cores. See https://stackoverflow.com/a/31209344/21475
-	   len2 := 0
-	   if !GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len2) && GetLastError() == ERROR_INSUFFICIENT_BUFFER {
-	     vector<char> buf(len2)
-	     cores := 0
-	     if GetLogicalProcessorInformationEx(RelationProcessorCore, reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data()), &len2) {
-	       for i := 0; i < len2;  {
-	         auto info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>( buf.data() + i)
-	         if info.Relationship == RelationProcessorCore && info.Processor.GroupCount == 1 {
-	           for core_mask := info.Processor.GroupMask[0].Mask; core_mask; core_mask >>= 1 {
-	             cores += (core_mask & 1)
-	           }
-	         }
-	         i += info.Size
-	       }
-	       if cores != 0 {
-	         return cores
-	       }
-	     }
-	   }
-	   return GetActiveProcessorCount(ALL_PROCESSOR_GROUPS)
-	   return sysconf(_SC_NPROCESSORS_ONLN)
-	*/
-}
-
 /*
-func CalculateProcessorLoad(idle_ticks, total_ticks uint64) float64 {
+func calculateProcessorLoad(idle_ticks, total_ticks uint64) float64 {
   static uint64_t previous_idle_ticks = 0
   static uint64_t previous_total_ticks = 0
   static double previous_load = -0.0
@@ -581,7 +538,7 @@ uint64_t FileTimeToTickCount(const FILETIME & ft)
 
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() float64 {
+func getLoadAverage() float64 {
 	/*
 	  FILETIME idle_time, kernel_time, user_time
 	  BOOL get_system_time_succeeded =
@@ -595,7 +552,7 @@ func GetLoadAverage() float64 {
 	    uint64_t total_ticks =
 	        FileTimeToTickCount(kernel_time) + FileTimeToTickCount(user_time)
 
-	    processor_load := CalculateProcessorLoad(idle_ticks, total_ticks)
+	    processor_load := calculateProcessorLoad(idle_ticks, total_ticks)
 	    posix_compatible_load = processor_load * GetProcessorCount()
 
 	  } else {
@@ -610,13 +567,13 @@ func GetLoadAverage() float64 {
 /*
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() float64 {
+func getLoadAverage() float64 {
   return -0.0f
 }
 
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() float64 {
+func getLoadAverage() float64 {
   var cpu_stats perfstat_cpu_total_t
   if perfstat_cpu_total(nil, &cpu_stats, sizeof(cpu_stats), 1) < 0 {
     return -0.0f
@@ -628,7 +585,7 @@ func GetLoadAverage() float64 {
 
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() float64 {
+func getLoadAverage() float64 {
   var si sysinfo
   if sysinfo(&si) != 0 {
     return -0.0f
@@ -638,7 +595,7 @@ func GetLoadAverage() float64 {
 
 // @return the load average of the machine. A negative value is returned
 // on error.
-func GetLoadAverage() float64 {
+func getLoadAverage() float64 {
     return -0.0f
 }
 */
@@ -664,22 +621,6 @@ func ElideMiddle(str string, width int) string {
 	}
 	return result
 }
-
-/*
-// Truncates a file to the given size.
-func Truncate(path string, size uint, err *string) bool {
-  int fh = _sopen(path, _O_RDWR | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE)
-  success := _chsize(fh, size)
-  _close(fh)
-  // Both truncate() and _chsize() return 0 on success and set errno and return
-  // -1 on failure.
-  if success < 0 {
-    *err = strerror(errno)
-    return false
-  }
-  return true
-}
-*/
 
 // unsafeString performs an unsafe conversion from a []byte to a string. The
 // returned string will share the underlying memory with the []byte which thus

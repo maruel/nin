@@ -62,7 +62,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 	if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
 		err := ""
 		if !g.dyndep_loader_.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
-			Warning("%s\n", err)
+			warningf("%s\n", err)
 		}
 	}
 

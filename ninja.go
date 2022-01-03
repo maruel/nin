@@ -32,15 +32,15 @@ import (
 )
 
 // Command-line options.
-type Options struct {
+type options struct {
 	// Build file to load.
 	input_file string
 
 	// Directory to change into before running.
 	working_dir string
 
-	// Tool to run rather than building.
-	tool *Tool
+	// tool to run rather than building.
+	tool *tool
 
 	// Whether duplicate rules for one target should warn or print an error.
 	dupe_edges_should_err bool
@@ -55,7 +55,7 @@ type Options struct {
 
 // The Ninja main() loads up a series of data structures; various tools need
 // to poke into these, so store them as fields on an object.
-type NinjaMain struct {
+type ninjaMain struct {
 	// Command line used to run Ninja.
 	ninja_command_ string
 
@@ -79,8 +79,8 @@ type NinjaMain struct {
 	start_time_millis_ int64
 }
 
-func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
-	return NinjaMain{
+func newNinjaMain(ninja_command string, config *BuildConfig) ninjaMain {
+	return ninjaMain{
 		ninja_command_:     ninja_command,
 		config_:            config,
 		state_:             NewState(),
@@ -90,7 +90,7 @@ func NewNinjaMain(ninja_command string, config *BuildConfig) NinjaMain {
 	}
 }
 
-func (n *NinjaMain) Close() error {
+func (n *ninjaMain) Close() error {
 	// TODO(maruel): Ensure the file handle is cleanly closed.
 	err1 := n.deps_log_.Close()
 	err2 := n.build_log_.Close()
@@ -100,9 +100,9 @@ func (n *NinjaMain) Close() error {
 	return err2
 }
 
-type ToolFunc func(*NinjaMain, *Options, []string) int
+type toolFunc func(*ninjaMain, *options, []string) int
 
-func (n *NinjaMain) IsPathDead(s string) bool {
+func (n *ninjaMain) IsPathDead(s string) bool {
 	nd := n.state_.LookupNode(s)
 	if nd != nil && nd.InEdge != nil {
 		return false
@@ -119,50 +119,50 @@ func (n *NinjaMain) IsPathDead(s string) bool {
 	err := ""
 	mtime := n.disk_interface_.Stat(s, &err)
 	if mtime == -1 {
-		Error("%s", err) // Log and ignore Stat() errors.
+		errorf("%s", err) // Log and ignore Stat() errors.
 	}
 	return mtime == 0
 }
 
 // Subtools, accessible via "-t foo".
-type Tool struct {
+type tool struct {
 	// Short name of the tool.
 	name string
 
 	// Description (shown in "-t list").
 	desc string
 
-	when When
+	when when
 
 	// Implementation of the tool.
-	tool ToolFunc
+	tool toolFunc
 }
 
-// When to run the tool.
-type When int32
+// when to run the tool.
+type when int32
 
 const (
 	// Run after parsing the command-line flags and potentially changing
 	// the current working directory (as early as possible).
-	RUN_AFTER_FLAGS When = iota
+	runAfterFlags when = iota
 
 	// Run after loading build.ninja.
-	RUN_AFTER_LOAD
+	runAfterLoad
 
 	// Run after loading the build/deps logs.
-	RUN_AFTER_LOGS
+	runAfterLogs
 )
 
 // Print usage information.
-func Usage() {
+func usage() {
 	fmt.Fprintf(os.Stderr, "usage: nin [options] [targets...]\n\n")
 	fmt.Fprintf(os.Stderr, "if targets are unspecified, builds the 'default' target (see manual).\n\n")
 	flag.PrintDefaults()
 }
 
 // Choose a default value for the -j (parallelism) flag.
-func GuessParallelism() int {
-	switch processors := GetProcessorCount(); processors {
+func guessParallelism() int {
+	switch processors := runtime.NumCPU(); processors {
 	case 0, 1:
 		return 2
 	case 2:
@@ -177,7 +177,7 @@ func GuessParallelism() int {
 // Rebuild the manifest, if necessary.
 // Fills in \a err on error.
 // @return true if the manifest was rebuilt.
-func (n *NinjaMain) RebuildManifest(input_file string, err *string, status Status) bool {
+func (n *ninjaMain) RebuildManifest(input_file string, err *string, status Status) bool {
 	path := input_file
 	if len(path) == 0 {
 		*err = "empty path"
@@ -215,7 +215,7 @@ func (n *NinjaMain) RebuildManifest(input_file string, err *string, status Statu
 
 // Get the Node for a given command-line path, handling features like
 // spell correction.
-func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
+func (n *ninjaMain) CollectTarget(cpath string, err *string) *Node {
 	path := cpath
 	if len(path) == 0 {
 		*err = "empty path"
@@ -244,7 +244,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 				edge := node.OutEdges[0]
 				if len(edge.Outputs) == 0 {
 					edge.Dump("")
-					Fatal("edge has no outputs")
+					fatalf("edge has no outputs")
 				}
 				node = edge.Outputs[0]
 			}
@@ -266,7 +266,7 @@ func (n *NinjaMain) CollectTarget(cpath string, err *string) *Node {
 }
 
 // CollectTarget for all command-line arguments, filling in \a targets.
-func (n *NinjaMain) CollectTargetsFromArgs(args []string, targets *[]*Node, err *string) bool {
+func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*Node, err *string) bool {
 	if len(args) == 0 {
 		*targets = n.state_.DefaultNodes(err)
 		return *err == ""
@@ -283,11 +283,11 @@ func (n *NinjaMain) CollectTargetsFromArgs(args []string, targets *[]*Node, err 
 }
 
 // The various subcommands, run via "-t XXX".
-func ToolGraph(n *NinjaMain, options *Options, args []string) int {
+func toolGraph(n *ninjaMain, opts *options, args []string) int {
 	var nodes []*Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
-		Error("%s", err)
+		errorf("%s", err)
 		return 1
 	}
 
@@ -300,9 +300,9 @@ func ToolGraph(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolQuery(n *NinjaMain, options *Options, args []string) int {
+func toolQuery(n *ninjaMain, opts *options, args []string) int {
 	if len(args) == 0 {
-		Error("expected a target to query")
+		errorf("expected a target to query")
 		return 1
 	}
 
@@ -312,7 +312,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 		err := ""
 		node := n.CollectTarget(args[i], &err)
 		if node == nil {
-			Error("%s", err)
+			errorf("%s", err)
 			return 1
 		}
 
@@ -320,7 +320,7 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 		if edge := node.InEdge; edge != nil {
 			if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
 				if !dyndep_loader.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
-					Warning("%s\n", err)
+					warningf("%s\n", err)
 				}
 			}
 			fmt.Printf("  input: %s\n", edge.Rule.name())
@@ -359,13 +359,13 @@ func ToolQuery(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolBrowse(n *NinjaMain, options *Options, args []string) int {
-	RunBrowsePython(&n.state_, n.ninja_command_, options.input_file, args)
+func toolBrowse(n *ninjaMain, opts *options, args []string) int {
+	RunBrowsePython(&n.state_, n.ninja_command_, opts.input_file, args)
 	return 0
 }
 
 /* Only defined on Windows in C++.
-func  ToolMSVC(n *NinjaMain,options *Options, args []string) int {
+func  toolMSVC(n *ninjaMain,opts *options, args []string) int {
 	// Reset getopt: push one argument onto the front of argv, reset optind.
 	//argc++
 	//argv--
@@ -374,7 +374,7 @@ func  ToolMSVC(n *NinjaMain,options *Options, args []string) int {
 }
 */
 
-func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
+func toolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 	for _, n := range nodes {
 		for i := 0; i < indent; i++ {
 			fmt.Printf("  ")
@@ -383,7 +383,7 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 		if n.InEdge != nil {
 			fmt.Printf("%s: %s\n", target, n.InEdge.Rule.name())
 			if depth > 1 || depth <= 0 {
-				ToolTargetsListNodes(n.InEdge.Inputs, depth-1, indent+1)
+				toolTargetsListNodes(n.InEdge.Inputs, depth-1, indent+1)
 			}
 		} else {
 			fmt.Printf("%s\n", target)
@@ -392,7 +392,7 @@ func ToolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 	return 0
 }
 
-func ToolTargetsSourceList(state *State) int {
+func toolTargetsSourceList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, inps := range e.Inputs {
 			if inps.InEdge == nil {
@@ -403,7 +403,7 @@ func ToolTargetsSourceList(state *State) int {
 	return 0
 }
 
-func ToolTargetsListRule(state *State, rule_name string) int {
+func toolTargetsListRule(state *State, rule_name string) int {
 	rules := map[string]struct{}{}
 
 	// Gather the outputs.
@@ -427,7 +427,7 @@ func ToolTargetsListRule(state *State, rule_name string) int {
 	return 0
 }
 
-func ToolTargetsList(state *State) int {
+func toolTargetsList(state *State) int {
 	for _, e := range state.edges_ {
 		for _, out_node := range e.Outputs {
 			fmt.Printf("%s: %s\n", out_node.Path, e.Rule.name())
@@ -436,7 +436,7 @@ func ToolTargetsList(state *State) int {
 	return 0
 }
 
-func ToolDeps(n *NinjaMain, options *Options, args []string) int {
+func toolDeps(n *ninjaMain, opts *options, args []string) int {
 	var nodes []*Node
 	if len(args) == 0 {
 		for _, ni := range n.deps_log_.nodes() {
@@ -447,7 +447,7 @@ func ToolDeps(n *NinjaMain, options *Options, args []string) int {
 	} else {
 		err := ""
 		if !n.CollectTargetsFromArgs(args, &nodes, &err) {
-			Error("%s", err)
+			errorf("%s", err)
 			return 1
 		}
 	}
@@ -463,7 +463,7 @@ func ToolDeps(n *NinjaMain, options *Options, args []string) int {
 		err := ""
 		mtime := disk_interface.Stat(it.Path, &err)
 		if mtime == -1 {
-			Error("%s", err) // Log and ignore Stat() errors;
+			errorf("%s", err) // Log and ignore Stat() errors;
 		}
 		s := "VALID"
 		if mtime == 0 || mtime > deps.mtime {
@@ -478,11 +478,11 @@ func ToolDeps(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolMissingDeps(n *NinjaMain, options *Options, args []string) int {
+func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
 	var nodes []*Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
-		Error("%s", err)
+		errorf("%s", err)
 		return 1
 	}
 	disk_interface := NewRealDiskInterface()
@@ -498,7 +498,7 @@ func ToolMissingDeps(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolTargets(n *NinjaMain, options *Options, args []string) int {
+func toolTargets(n *ninjaMain, opts *options, args []string) int {
 	depth := 1
 	if len(args) >= 1 {
 		mode := args[0]
@@ -508,9 +508,9 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 				rule = args[1]
 			}
 			if len(rule) == 0 {
-				return ToolTargetsSourceList(&n.state_)
+				return toolTargetsSourceList(&n.state_)
 			}
-			return ToolTargetsListRule(&n.state_, rule)
+			return toolTargetsListRule(&n.state_, rule)
 		}
 		if mode == "depth" {
 			if len(args) > 1 {
@@ -518,13 +518,13 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 				depth, _ = strconv.Atoi(args[1])
 			}
 		} else if mode == "all" {
-			return ToolTargetsList(&n.state_)
+			return toolTargetsList(&n.state_)
 		} else {
 			suggestion := SpellcheckString(mode, "rule", "depth", "all")
 			if suggestion != "" {
-				Error("unknown target tool mode '%s', did you mean '%s'?", mode, suggestion)
+				errorf("unknown target tool mode '%s', did you mean '%s'?", mode, suggestion)
 			} else {
-				Error("unknown target tool mode '%s'", mode)
+				errorf("unknown target tool mode '%s'", mode)
 			}
 			return 1
 		}
@@ -533,13 +533,13 @@ func ToolTargets(n *NinjaMain, options *Options, args []string) int {
 	err := ""
 	root_nodes := n.state_.RootNodes(&err)
 	if len(err) == 0 {
-		return ToolTargetsListNodes(root_nodes, depth, 0)
+		return toolTargetsListNodes(root_nodes, depth, 0)
 	}
-	Error("%s", err)
+	errorf("%s", err)
 	return 1
 }
 
-func ToolRules(n *NinjaMain, options *Options, args []string) int {
+func toolRules(n *ninjaMain, opts *options, args []string) int {
 	// HACK: parse one additional flag.
 	//fmt.Printf("usage: nin -t rules [options]\n\noptions:\n  -d     also print the description of the rule\n  -h     print this message\n")
 	print_description := false
@@ -575,7 +575,7 @@ func ToolRules(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolWinCodePage(n *NinjaMain, options *Options, args []string) int {
+func toolWinCodePage(n *ninjaMain, opts *options, args []string) int {
 	panic("TODO") // Windows only
 	/*
 		if len(args) != 0 {
@@ -591,14 +591,14 @@ func ToolWinCodePage(n *NinjaMain, options *Options, args []string) int {
 	*/
 }
 
-type PrintCommandMode bool
+type printCommandMode bool
 
 const (
-	PCM_Single PrintCommandMode = false
-	PCM_All    PrintCommandMode = true
+	pcmSingle printCommandMode = false
+	pcmAll    printCommandMode = true
 )
 
-func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
+func printCommands(edge *Edge, seen *EdgeSet, mode printCommandMode) {
 	if edge == nil {
 		return
 	}
@@ -607,9 +607,9 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 	}
 	seen.Add(edge)
 
-	if mode == PCM_All {
+	if mode == pcmAll {
 		for _, in := range edge.Inputs {
-			PrintCommands(in.InEdge, seen, mode)
+			printCommands(in.InEdge, seen, mode)
 		}
 	}
 
@@ -618,35 +618,35 @@ func PrintCommands(edge *Edge, seen *EdgeSet, mode PrintCommandMode) {
 	}
 }
 
-func ToolCommands(n *NinjaMain, options *Options, args []string) int {
+func toolCommands(n *ninjaMain, opts *options, args []string) int {
 	// HACK: parse one additional flag.
 	//fmt.Printf("usage: nin -t commands [options] [targets]\n\noptions:\n  -s     only print the final command to build [target], not the whole chain\n")
-	mode := PCM_All
+	mode := pcmAll
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-s" {
 			if i != len(args)-1 {
 				copy(args[i:], args[i+1:])
 				args = args[:len(args)-1]
 			}
-			mode = PCM_Single
+			mode = pcmSingle
 		}
 	}
 
 	var nodes []*Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
-		Error("%s", err)
+		errorf("%s", err)
 		return 1
 	}
 
 	seen := NewEdgeSet()
 	for _, in := range nodes {
-		PrintCommands(in.InEdge, seen, mode)
+		printCommands(in.InEdge, seen, mode)
 	}
 	return 0
 }
 
-func ToolClean(n *NinjaMain, options *Options, args []string) int {
+func toolClean(n *ninjaMain, opts *options, args []string) int {
 	// HACK: parse two additional flags.
 	// fmt.Printf("usage: nin -t clean [options] [targets]\n\noptions:\n  -g     also clean files marked as ninja generator output\n  -r     interpret targets as a list of rules to clean instead\n" )
 	generator := false
@@ -668,7 +668,7 @@ func ToolClean(n *NinjaMain, options *Options, args []string) int {
 	}
 
 	if clean_rules && len(args) == 0 {
-		Error("expected a rule to clean")
+		errorf("expected a rule to clean")
 		return 1
 	}
 
@@ -682,21 +682,21 @@ func ToolClean(n *NinjaMain, options *Options, args []string) int {
 	return cleaner.CleanAll(generator)
 }
 
-func ToolCleanDead(n *NinjaMain, options *Options, args []string) int {
+func toolCleanDead(n *ninjaMain, opts *options, args []string) int {
 	cleaner := NewCleaner(&n.state_, n.config_, &n.disk_interface_)
 	return cleaner.CleanDead(n.build_log_.entries())
 }
 
-type EvaluateCommandMode bool
+type evaluateCommandMode bool
 
 const (
-	ECM_NORMAL         EvaluateCommandMode = false
-	ECM_EXPAND_RSPFILE EvaluateCommandMode = true
+	ecmNormal        evaluateCommandMode = false
+	ecmExpandRSPFile evaluateCommandMode = true
 )
 
-func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
+func evaluateCommandWithRspfile(edge *Edge, mode evaluateCommandMode) string {
 	command := edge.EvaluateCommand(false)
-	if mode == ECM_NORMAL {
+	if mode == ecmNormal {
 		return command
 	}
 
@@ -723,11 +723,11 @@ func EvaluateCommandWithRspfile(edge *Edge, mode EvaluateCommandMode) string {
 	*/
 }
 
-func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
+func printCompdb(directory string, edge *Edge, eval_mode evaluateCommandMode) {
 	fmt.Printf("\n  {\n    \"directory\": \"")
 	PrintJSONString(directory)
 	fmt.Printf("\",\n    \"command\": \"")
-	PrintJSONString(EvaluateCommandWithRspfile(edge, eval_mode))
+	PrintJSONString(evaluateCommandWithRspfile(edge, eval_mode))
 	fmt.Printf("\",\n    \"file\": \"")
 	PrintJSONString(edge.Inputs[0].Path)
 	fmt.Printf("\",\n    \"output\": \"")
@@ -735,17 +735,17 @@ func printCompdb(directory string, edge *Edge, eval_mode EvaluateCommandMode) {
 	fmt.Printf("\"\n  }")
 }
 
-func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int {
+func toolCompilationDatabase(n *ninjaMain, opts *options, args []string) int {
 	// HACK: parse one additional flag.
 	// fmt.Printf( "usage: nin -t compdb [options] [rules]\n\noptions:\n  -x     expand @rspfile style response file invocations\n" )
-	eval_mode := ECM_NORMAL
+	eval_mode := ecmNormal
 	for i := 0; i < len(args); i++ {
 		if args[i] == "-x" {
 			if i != len(args)-1 {
 				copy(args[i:], args[i+1:])
 				args = args[:len(args)-1]
 			}
-			eval_mode = ECM_EXPAND_RSPFILE
+			eval_mode = ecmExpandRSPFile
 		}
 	}
 
@@ -782,7 +782,7 @@ func ToolCompilationDatabase(n *NinjaMain, options *Options, args []string) int 
 	return 0
 }
 
-func ToolRecompact(n *NinjaMain, options *Options, args []string) int {
+func toolRecompact(n *ninjaMain, opts *options, args []string) int {
 	if !n.EnsureBuildDirExists() {
 		return 1
 	}
@@ -795,7 +795,7 @@ func ToolRecompact(n *NinjaMain, options *Options, args []string) int {
 	return 0
 }
 
-func ToolRestat(n *NinjaMain, options *Options, args []string) int {
+func toolRestat(n *ninjaMain, opts *options, args []string) int {
 	if !n.EnsureBuildDirExists() {
 		return 1
 	}
@@ -808,7 +808,7 @@ func ToolRestat(n *NinjaMain, options *Options, args []string) int {
 	err := ""
 	status := n.build_log_.Load(log_path, &err)
 	if status == LOAD_ERROR {
-		Error("loading build log %s: %s", log_path, err)
+		errorf("loading build log %s: %s", log_path, err)
 		return ExitFailure
 	}
 	if status == LOAD_NOT_FOUND {
@@ -817,18 +817,18 @@ func ToolRestat(n *NinjaMain, options *Options, args []string) int {
 	}
 	if len(err) != 0 {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-		Warning("%s", err)
+		warningf("%s", err)
 		err = ""
 	}
 
 	if !n.build_log_.Restat(log_path, &n.disk_interface_, args, &err) {
-		Error("failed recompaction: %s", err)
+		errorf("failed recompaction: %s", err)
 		return ExitFailure
 	}
 
 	if !n.config_.dry_run {
 		if !n.build_log_.OpenForWrite(log_path, n, &err) {
-			Error("opening build log: %s", err)
+			errorf("opening build log: %s", err)
 			return ExitFailure
 		}
 	}
@@ -838,56 +838,56 @@ func ToolRestat(n *NinjaMain, options *Options, args []string) int {
 
 // Find the function to execute for \a tool_name and return it via \a func.
 // Returns a Tool, or NULL if Ninja should exit.
-func ChooseTool(tool_name string) *Tool {
-	kTools := []*Tool{
-		{"browse", "browse dependency graph in a web browser", RUN_AFTER_LOAD, ToolBrowse},
-		//{"msvc", "build helper for MSVC cl.exe (EXPERIMENTAL)",RUN_AFTER_FLAGS, ToolMSVC},
-		{"clean", "clean built files", RUN_AFTER_LOAD, ToolClean},
-		{"commands", "list all commands required to rebuild given targets", RUN_AFTER_LOAD, ToolCommands},
-		{"deps", "show dependencies stored in the deps log", RUN_AFTER_LOGS, ToolDeps},
-		{"missingdeps", "check deps log dependencies on generated files", RUN_AFTER_LOGS, ToolMissingDeps},
-		{"graph", "output graphviz dot file for targets", RUN_AFTER_LOAD, ToolGraph},
-		{"query", "show inputs/outputs for a path", RUN_AFTER_LOGS, ToolQuery},
-		{"targets", "list targets by their rule or depth in the DAG", RUN_AFTER_LOAD, ToolTargets},
-		{"compdb", "dump JSON compilation database to stdout", RUN_AFTER_LOAD, ToolCompilationDatabase},
-		{"recompact", "recompacts ninja-internal data structures", RUN_AFTER_LOAD, ToolRecompact},
-		{"restat", "restats all outputs in the build log", RUN_AFTER_FLAGS, ToolRestat},
-		{"rules", "list all rules", RUN_AFTER_LOAD, ToolRules},
-		{"cleandead", "clean built files that are no longer produced by the manifest", RUN_AFTER_LOGS, ToolCleanDead},
-		//{"wincodepage", "print the Windows code page used by nin", RUN_AFTER_FLAGS, ToolWinCodePage},
+func chooseTool(tool_name string) *tool {
+	tools := []*tool{
+		{"browse", "browse dependency graph in a web browser", runAfterLoad, toolBrowse},
+		//{"msvc", "build helper for MSVC cl.exe (EXPERIMENTAL)",runAfterFlags, toolMSVC},
+		{"clean", "clean built files", runAfterLoad, toolClean},
+		{"commands", "list all commands required to rebuild given targets", runAfterLoad, toolCommands},
+		{"deps", "show dependencies stored in the deps log", runAfterLogs, toolDeps},
+		{"missingdeps", "check deps log dependencies on generated files", runAfterLogs, toolMissingDeps},
+		{"graph", "output graphviz dot file for targets", runAfterLoad, toolGraph},
+		{"query", "show inputs/outputs for a path", runAfterLogs, toolQuery},
+		{"targets", "list targets by their rule or depth in the DAG", runAfterLoad, toolTargets},
+		{"compdb", "dump JSON compilation database to stdout", runAfterLoad, toolCompilationDatabase},
+		{"recompact", "recompacts ninja-internal data structures", runAfterLoad, toolRecompact},
+		{"restat", "restats all outputs in the build log", runAfterFlags, toolRestat},
+		{"rules", "list all rules", runAfterLoad, toolRules},
+		{"cleandead", "clean built files that are no longer produced by the manifest", runAfterLogs, toolCleanDead},
+		//{"wincodepage", "print the Windows code page used by nin", runAfterFlags, toolWinCodePage},
 	}
 	if tool_name == "list" {
 		fmt.Printf("nin subtools:\n")
-		for _, tool := range kTools {
-			if tool.desc != "" {
-				fmt.Printf("%11s  %s\n", tool.name, tool.desc)
+		for _, t := range tools {
+			if t.desc != "" {
+				fmt.Printf("%11s  %s\n", t.name, t.desc)
 			}
 		}
 		return nil
 	}
 
-	for _, tool := range kTools {
-		if tool.name == tool_name {
-			return tool
+	for _, t := range tools {
+		if t.name == tool_name {
+			return t
 		}
 	}
 
 	var words []string
-	for _, tool := range kTools {
-		words = append(words, tool.name)
+	for _, t := range tools {
+		words = append(words, t.name)
 	}
 	suggestion := SpellcheckString(tool_name, words...)
 	if suggestion != "" {
-		Fatal("unknown tool '%s', did you mean '%s'?", tool_name, suggestion)
+		fatalf("unknown tool '%s', did you mean '%s'?", tool_name, suggestion)
 	} else {
-		Fatal("unknown tool '%s'", tool_name)
+		fatalf("unknown tool '%s'", tool_name)
 	}
 	return nil // Not reached.
 }
 
 // Enable a debugging mode.  Returns false if Ninja should exit instead
 // of continuing.
-func DebugEnable(name string) bool {
+func debugEnable(name string) bool {
 	if name == "list" {
 		fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n  nostatcache  don't batch stat() calls per directory and cache them\nmultiple modes can be enabled via -d FOO -d BAR\n")
 		//#ifdef _WIN32//#endif
@@ -910,9 +910,9 @@ func DebugEnable(name string) bool {
 	} else {
 		suggestion := SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
 		if suggestion != "" {
-			Error("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
+			errorf("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
 		} else {
-			Error("unknown debug setting '%s'", name)
+			errorf("unknown debug setting '%s'", name)
 		}
 		return false
 	}
@@ -920,31 +920,31 @@ func DebugEnable(name string) bool {
 
 // Set a warning flag.  Returns false if Ninja should exit instead of
 // continuing.
-func WarningEnable(name string, options *Options) bool {
+func warningEnable(name string, opts *options) bool {
 	if name == "list" {
 		fmt.Printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n")
 		return false
 	} else if name == "dupbuild=err" {
-		options.dupe_edges_should_err = true
+		opts.dupe_edges_should_err = true
 		return true
 	} else if name == "dupbuild=warn" {
-		options.dupe_edges_should_err = false
+		opts.dupe_edges_should_err = false
 		return true
 	} else if name == "phonycycle=err" {
-		options.phony_cycle_should_err = true
+		opts.phony_cycle_should_err = true
 		return true
 	} else if name == "phonycycle=warn" {
-		options.phony_cycle_should_err = false
+		opts.phony_cycle_should_err = false
 		return true
 	} else if name == "depfilemulti=err" || name == "depfilemulti=warn" {
-		Warning("deprecated warning 'depfilemulti'")
+		warningf("deprecated warning 'depfilemulti'")
 		return true
 	} else {
 		suggestion := SpellcheckString(name, "dupbuild=err", "dupbuild=warn", "phonycycle=err", "phonycycle=warn")
 		if suggestion != "" {
-			Error("unknown warning flag '%s', did you mean '%s'?", name, suggestion)
+			errorf("unknown warning flag '%s', did you mean '%s'?", name, suggestion)
 		} else {
-			Error("unknown warning flag '%s'", name)
+			errorf("unknown warning flag '%s'", name)
 		}
 		return false
 	}
@@ -952,7 +952,7 @@ func WarningEnable(name string, options *Options) bool {
 
 // Open the build log.
 // @return false on error.
-func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
+func (n *ninjaMain) OpenBuildLog(recompact_only bool) bool {
 	log_path := ".ninja_log"
 	if n.build_dir_ != "" {
 		log_path = n.build_dir_ + "/" + log_path
@@ -961,12 +961,12 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 	err := ""
 	status := n.build_log_.Load(log_path, &err)
 	if status == LOAD_ERROR {
-		Error("loading build log %s: %s", log_path, err)
+		errorf("loading build log %s: %s", log_path, err)
 		return false
 	}
 	if len(err) != 0 {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-		Warning("%s", err)
+		warningf("%s", err)
 		err = ""
 	}
 
@@ -976,14 +976,14 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 		}
 		success := n.build_log_.Recompact(log_path, n, &err)
 		if !success {
-			Error("failed recompaction: %s", err)
+			errorf("failed recompaction: %s", err)
 		}
 		return success
 	}
 
 	if !n.config_.dry_run {
 		if !n.build_log_.OpenForWrite(log_path, n, &err) {
-			Error("opening build log: %s", err)
+			errorf("opening build log: %s", err)
 			return false
 		}
 	}
@@ -995,7 +995,7 @@ func (n *NinjaMain) OpenBuildLog(recompact_only bool) bool {
 // @return false on error.
 // Open the deps log: load it, then open for writing.
 // @return false on error.
-func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
+func (n *ninjaMain) OpenDepsLog(recompact_only bool) bool {
 	path := ".ninja_deps"
 	if n.build_dir_ != "" {
 		path = n.build_dir_ + "/" + path
@@ -1004,12 +1004,12 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
 	err := ""
 	status := n.deps_log_.Load(path, &n.state_, &err)
 	if status == LOAD_ERROR {
-		Error("loading deps log %s: %s", path, err)
+		errorf("loading deps log %s: %s", path, err)
 		return false
 	}
 	if len(err) != 0 {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
-		Warning("%s", err)
+		warningf("%s", err)
 		err = ""
 	}
 
@@ -1019,14 +1019,14 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
 		}
 		success := n.deps_log_.Recompact(path, &err)
 		if !success {
-			Error("failed recompaction: %s", err)
+			errorf("failed recompaction: %s", err)
 		}
 		return success
 	}
 
 	if !n.config_.dry_run {
 		if !n.deps_log_.OpenForWrite(path, &err) {
-			Error("opening deps log: %s", err)
+			errorf("opening deps log: %s", err)
 			return false
 		}
 	}
@@ -1035,7 +1035,7 @@ func (n *NinjaMain) OpenDepsLog(recompact_only bool) bool {
 }
 
 // Dump the output requested by '-d stats'.
-func (n *NinjaMain) DumpMetrics() {
+func (n *ninjaMain) DumpMetrics() {
 	g_metrics.Report()
 
 	fmt.Printf("\n")
@@ -1047,12 +1047,12 @@ func (n *NinjaMain) DumpMetrics() {
 
 // Ensure the build directory exists, creating it if necessary.
 // @return false on error.
-func (n *NinjaMain) EnsureBuildDirExists() bool {
+func (n *ninjaMain) EnsureBuildDirExists() bool {
 	n.build_dir_ = n.state_.bindings_.LookupVariable("builddir")
 	if n.build_dir_ != "" && !n.config_.dry_run {
 		// TODO(maruel): We need real error.
 		if !MakeDirs(&n.disk_interface_, filepath.Join(n.build_dir_, ".")) {
-			Error("creating build directory %s", n.build_dir_)
+			errorf("creating build directory %s", n.build_dir_)
 			//return false
 		}
 	}
@@ -1061,7 +1061,7 @@ func (n *NinjaMain) EnsureBuildDirExists() bool {
 
 // Build the targets listed on the command line.
 // @return an exit code.
-func (n *NinjaMain) RunBuild(args []string, status Status) int {
+func (n *ninjaMain) RunBuild(args []string, status Status) int {
 	err := ""
 	var targets []*Node
 	if !n.CollectTargetsFromArgs(args, &targets, &err) {
@@ -1107,14 +1107,14 @@ func (n *NinjaMain) RunBuild(args []string, status Status) int {
 // Real-world example: ninja launched a compiler to process a tricky
 // C++ input file. The compiler got itself into a state where it
 // generated 3 GB of output and caused ninja to crash.
-func TerminateHandler() {
+func terminateHandler() {
   CreateWin32MiniDump(nil)
   Fatal("terminate handler called")
 }
 
 // On Windows, we want to prevent error dialogs in case of exceptions.
 // This function handles the exception, and writes a minidump.
-func ExceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
+func exceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
   Error("exception: 0x%X", code)  // e.g. EXCEPTION_ACCESS_VIOLATION
   fflush(stderr)
   CreateWin32MiniDump(ep)
@@ -1124,33 +1124,33 @@ func ExceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
 
 // Parse args for command-line options.
 // Returns an exit code, or -1 if Ninja should continue.
-func readFlags(options *Options, config *BuildConfig) int {
+func readFlags(opts *options, config *BuildConfig) int {
 	// TODO(maruel): For now just do something simple to get started but we'll
 	// have to make it custom if we want it to be drop-in replacement.
-	// It's funny how "options" and "config" is a bit mixed up here.
-	flag.StringVar(&options.input_file, "f", "build.ninja", "specify input build file")
-	flag.StringVar(&options.working_dir, "C", "", "change to DIR before doing anything else")
-	options.dupe_edges_should_err = true
-	flag.StringVar(&options.cpuprofile, "cpuprofile", "", "activate the CPU sampling profiler")
-	flag.StringVar(&options.memprofile, "memprofile", "", "snapshot a heap dump at the end")
-	flag.StringVar(&options.trace, "trace", "", "capture a runtime trace")
+	// It's funny how "opts" and "config" is a bit mixed up here.
+	flag.StringVar(&opts.input_file, "f", "build.ninja", "specify input build file")
+	flag.StringVar(&opts.working_dir, "C", "", "change to DIR before doing anything else")
+	opts.dupe_edges_should_err = true
+	flag.StringVar(&opts.cpuprofile, "cpuprofile", "", "activate the CPU sampling profiler")
+	flag.StringVar(&opts.memprofile, "memprofile", "", "snapshot a heap dump at the end")
+	flag.StringVar(&opts.trace, "trace", "", "capture a runtime trace")
 
-	flag.IntVar(&config.parallelism, "j", GuessParallelism(), "run N jobs in parallel (0 means infinity)")
+	flag.IntVar(&config.parallelism, "j", guessParallelism(), "run N jobs in parallel (0 means infinity)")
 	flag.IntVar(&config.failures_allowed, "k", 1, "keep going until N jobs fail (0 means infinity)")
 	flag.Float64Var(&config.max_load_average, "l", 0, "do not start new jobs if the load average is greater than N")
 	flag.BoolVar(&config.dry_run, "n", false, "dry run (don't run commands but act like they succeeded)")
 
 	// TODO(maruel): terminates toplevel options; further flags are passed to the tool
-	tool := flag.String("t", "", "run a subtool (use '-t list' to list subtools)")
+	t := flag.String("t", "", "run a subtool (use '-t list' to list subtools)")
 	// TODO(maruel): It's supposed to be accumulative.
-	debugEnable := flag.String("d", "", "enable debugging (use '-d list' to list modes)")
+	dbgEnable := flag.String("d", "", "enable debugging (use '-d list' to list modes)")
 	verbose := flag.Bool("v", false, "show all command lines while building")
 	flag.BoolVar(verbose, "verbose", false, "show all command lines while building")
 	quiet := flag.Bool("quiet", false, "don't show progress status, just command output")
 	warning := flag.String("w", "", "adjust warnings (use '-w list' to list warnings)")
 	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", kNinjaVersion))
 
-	flag.Usage = Usage
+	flag.Usage = usage
 	flag.Parse()
 
 	if *verbose && *quiet {
@@ -1164,12 +1164,12 @@ func readFlags(options *Options, config *BuildConfig) int {
 		config.verbosity = NO_STATUS_UPDATE
 	}
 	if *warning != "" {
-		if !WarningEnable(*warning, options) {
+		if !warningEnable(*warning, opts) {
 			return 1
 		}
 	}
-	if *debugEnable != "" {
-		if !DebugEnable(*debugEnable) {
+	if *dbgEnable != "" {
+		if !debugEnable(*dbgEnable) {
 			return 1
 		}
 	}
@@ -1177,20 +1177,20 @@ func readFlags(options *Options, config *BuildConfig) int {
 		fmt.Printf("%s\n", kNinjaVersion)
 		return 0
 	}
-	if *tool != "" {
-		options.tool = ChooseTool(*tool)
-		if options.tool == nil {
+	if *t != "" {
+		opts.tool = chooseTool(*t)
+		if opts.tool == nil {
 			return 0
 		}
 	}
 	i := 0
-	if options.cpuprofile != "" {
+	if opts.cpuprofile != "" {
 		i++
 	}
-	if options.memprofile != "" {
+	if opts.memprofile != "" {
 		i++
 	}
-	if options.trace != "" {
+	if opts.trace != "" {
 		i++
 	}
 	if i > 1 {
@@ -1209,19 +1209,19 @@ func readFlags(options *Options, config *BuildConfig) int {
 			     { nil, 0, nil, 0 }
 			   }
 
-			   for options.tool ==nil {
+			   for opts.tool ==nil {
 					 opt := getopt_long(*argc, *argv, "d:f:j:k:l:nt:vw:C:h", kLongOptions, nil))
 					 if opt == -1 {
 						 continue
 					 }
 			     switch opt {
 			       case 'd':
-			         if !DebugEnable(optarg) {
+			         if !debugEnable(optarg) {
 			           return 1
 			         }
 			         break
 			       case 'f':
-			         options.input_file = optarg
+			         opts.input_file = optarg
 			         break
 			       case 'j': {
 			         var end *char
@@ -1261,8 +1261,8 @@ func readFlags(options *Options, config *BuildConfig) int {
 			         config.dry_run = true
 			         break
 			       case 't':
-			         options.tool = ChooseTool(optarg)
-			         if !options.tool {
+			         opts.tool = chooseTool(optarg)
+			         if !opts.tool {
 			           return 0
 			         }
 			         break
@@ -1273,19 +1273,19 @@ func readFlags(options *Options, config *BuildConfig) int {
 			         config.verbosity = BuildConfig::NO_STATUS_UPDATE
 			         break
 			       case 'w':
-			         if !WarningEnable(optarg, options) {
+			         if !warningEnable(optarg, opts) {
 			           return 1
 			         }
 			         break
 			       case 'C':
-			         options.working_dir = optarg
+			         opts.working_dir = optarg
 			         break
 			       case OPT_VERSION:
 			         fmt.Printf("%s\n", kNinjaVersion)
 			         return 0
 			       case 'h':
 			       default:
-			         Usage(*config)
+			         usage()
 			         return 1
 			     }
 			   }
@@ -1297,13 +1297,13 @@ func readFlags(options *Options, config *BuildConfig) int {
 
 func Main() int {
 	// Use exit() instead of return in this function to avoid potentially
-	// expensive cleanup when destructing NinjaMain.
+	// expensive cleanup when destructing ninjaMain.
 	config := NewBuildConfig()
-	options := Options{}
+	opts := options{}
 
 	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
 	ninja_command := os.Args[0]
-	exit_code := readFlags(&options, &config)
+	exit_code := readFlags(&opts, &config)
 	if exit_code >= 0 {
 		return exit_code
 	}
@@ -1312,8 +1312,8 @@ func Main() int {
 	// Disable GC (TODO: unless running a stateful server).
 	debug.SetGCPercent(-1)
 
-	if options.cpuprofile != "" {
-		f, err := os.Create(options.cpuprofile)
+	if opts.cpuprofile != "" {
+		f, err := os.Create(opts.cpuprofile)
 		if err != nil {
 			log.Fatal("could not create CPU profile: ", err)
 		}
@@ -1324,11 +1324,11 @@ func Main() int {
 		defer pprof.StopCPUProfile()
 	}
 
-	if options.memprofile != "" {
+	if opts.memprofile != "" {
 		// Take all memory allocation. This significantly slows down the process.
 		runtime.MemProfileRate = 1
 		defer func() {
-			f, err := os.Create(options.memprofile)
+			f, err := os.Create(opts.memprofile)
 			if err != nil {
 				log.Fatal("could not create memory profile: ", err)
 			}
@@ -1341,8 +1341,8 @@ func Main() int {
 		// No need.
 		runtime.MemProfileRate = 0
 	}
-	if options.trace != "" {
-		f, err := os.Create(options.trace)
+	if opts.trace != "" {
+		f, err := os.Create(opts.trace)
 		if err != nil {
 			log.Fatal("could not create trace: ", err)
 		}
@@ -1357,25 +1357,25 @@ func Main() int {
 	args := flag.Args()
 
 	status := NewStatusPrinter(&config)
-	if options.working_dir != "" {
+	if opts.working_dir != "" {
 		// The formatting of this string, complete with funny quotes, is
 		// so Emacs can properly identify that the cwd has changed for
 		// subsequent commands.
 		// Don't print this if a tool is being used, so that tool output
 		// can be piped into a file without this string showing up.
-		if options.tool == nil && config.verbosity != NO_STATUS_UPDATE {
-			status.Info("Entering directory `%s'", options.working_dir)
+		if opts.tool == nil && config.verbosity != NO_STATUS_UPDATE {
+			status.Info("Entering directory `%s'", opts.working_dir)
 		}
-		if err := os.Chdir(options.working_dir); err != nil {
-			Fatal("chdir to '%s' - %s", options.working_dir, err)
+		if err := os.Chdir(opts.working_dir); err != nil {
+			fatalf("chdir to '%s' - %s", opts.working_dir, err)
 		}
 	}
 
-	if options.tool != nil && options.tool.when == RUN_AFTER_FLAGS {
-		// None of the RUN_AFTER_FLAGS actually use a NinjaMain, but it's needed
+	if opts.tool != nil && opts.tool.when == runAfterFlags {
+		// None of the runAfterFlags actually use a ninjaMain, but it's needed
 		// by other tools.
-		ninja := NewNinjaMain(ninja_command, &config)
-		return options.tool.tool(&ninja, &options, args)
+		ninja := newNinjaMain(ninja_command, &config)
+		return opts.tool.tool(&ninja, &opts, args)
 	}
 
 	// TODO(maruel): Let's wrap stdout/stderr with our own buffer?
@@ -1387,31 +1387,31 @@ func Main() int {
 	  // Buffering used to be disabled in the LinePrinter constructor but that
 	  // now disables it too early and breaks -t deps performance (see issue #2018)
 	  // so we disable it here instead, but only when not running a tool.
-	  if !options.tool {
+	  if !opts.tool {
 	    setvbuf(stdout, nil, _IONBF, 0)
 	  }
 	*/
 	// Limit number of rebuilds, to prevent infinite loops.
 	kCycleLimit := 100
 	for cycle := 1; cycle <= kCycleLimit; cycle++ {
-		ninja := NewNinjaMain(ninja_command, &config)
+		ninja := newNinjaMain(ninja_command, &config)
 
 		var parser_opts ManifestParserOptions
-		if options.dupe_edges_should_err {
+		if opts.dupe_edges_should_err {
 			parser_opts.dupe_edge_action_ = kDupeEdgeActionError
 		}
-		if options.phony_cycle_should_err {
+		if opts.phony_cycle_should_err {
 			parser_opts.phony_cycle_action_ = kPhonyCycleActionError
 		}
 		parser := NewManifestParser(&ninja.state_, &ninja.disk_interface_, parser_opts)
 		err := ""
-		if !parser.Load(options.input_file, &err, nil) {
+		if !parser.Load(opts.input_file, &err, nil) {
 			status.Error("%s", err)
 			return 1
 		}
 
-		if options.tool != nil && options.tool.when == RUN_AFTER_LOAD {
-			return options.tool.tool(&ninja, &options, args)
+		if opts.tool != nil && opts.tool.when == runAfterLoad {
+			return opts.tool.tool(&ninja, &opts, args)
 		}
 
 		if !ninja.EnsureBuildDirExists() {
@@ -1422,12 +1422,12 @@ func Main() int {
 			return 1
 		}
 
-		if options.tool != nil && options.tool.when == RUN_AFTER_LOGS {
-			return options.tool.tool(&ninja, &options, args)
+		if opts.tool != nil && opts.tool.when == runAfterLogs {
+			return opts.tool.tool(&ninja, &opts, args)
 		}
 
 		// Attempt to rebuild the manifest before building anything else
-		if ninja.RebuildManifest(options.input_file, &err, status) {
+		if ninja.RebuildManifest(opts.input_file, &err, status) {
 			// In dry_run mode the regeneration will succeed without changing the
 			// manifest forever. Better to return immediately.
 			if config.dry_run {
@@ -1436,7 +1436,7 @@ func Main() int {
 			// Start the build over with the new manifest.
 			continue
 		} else if len(err) != 0 {
-			status.Error("rebuilding '%s': %s", options.input_file, err)
+			status.Error("rebuilding '%s': %s", opts.input_file, err)
 			return 1
 		}
 
@@ -1447,6 +1447,6 @@ func Main() int {
 		return result
 	}
 
-	status.Error("manifest '%s' still dirty after %d tries", options.input_file, kCycleLimit)
+	status.Error("manifest '%s' still dirty after %d tries", opts.input_file, kCycleLimit)
 	return 1
 }

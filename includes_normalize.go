@@ -31,7 +31,7 @@ func NewIncludesNormalize(relative_to string) IncludesNormalize {
 	err := ""
 	relative_to = AbsPath(relative_to, &err)
 	if err != "" {
-		Fatal("Initializing IncludesNormalize(): %s", err)
+		fatalf("Initializing IncludesNormalize(): %s", err)
 	}
 	return IncludesNormalize{
 		relative_to_:       relative_to,
@@ -59,7 +59,7 @@ func SameDriveFast(a string, b string) bool {
 		return false
 	}
 
-	return IsPathSeparator(a[2]) && IsPathSeparator(b[2])
+	return isPathSeparator(a[2]) && isPathSeparator(b[2])
 }
 
 // Return true if paths a and b are on the same Windows drive.
@@ -91,23 +91,23 @@ func getDrive(s string) string {
 // This ignores difference of path separator.
 // This is used not to call very slow GetFullPathName API.
 func IsFullPathName(s string) bool {
-	if len(s) < 3 || !islatinalpha(s[0]) || s[1] != ':' || !IsPathSeparator(s[2]) {
+	if len(s) < 3 || !islatinalpha(s[0]) || s[1] != ':' || !isPathSeparator(s[2]) {
 		return false
 	}
 
 	// Check "." or ".." is contained in path.
 	for i := 2; i < len(s); i++ {
-		if !IsPathSeparator(s[i]) {
+		if !isPathSeparator(s[i]) {
 			continue
 		}
 
 		// Check ".".
-		if i+1 < len(s) && s[i+1] == '.' && (i+2 >= len(s) || IsPathSeparator(s[i+2])) {
+		if i+1 < len(s) && s[i+1] == '.' && (i+2 >= len(s) || isPathSeparator(s[i+2])) {
 			return false
 		}
 
 		// Check "..".
-		if i+2 < len(s) && s[i+1] == '.' && s[i+2] == '.' && (i+3 >= len(s) || IsPathSeparator(s[i+3])) {
+		if i+2 < len(s) && s[i+1] == '.' && s[i+2] == '.' && (i+3 >= len(s) || isPathSeparator(s[i+3])) {
 			return false
 		}
 	}

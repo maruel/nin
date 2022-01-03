@@ -434,7 +434,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 				cycle += e.lookups_[i] + " -> "
 			}
 			cycle += var2
-			Fatal(("cycle in rule variables: " + cycle))
+			fatalf(("cycle in rule variables: " + cycle))
 		}
 	}
 

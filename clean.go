@@ -59,7 +59,7 @@ func (c *Cleaner) FileExists(path string) bool {
 	err := ""
 	mtime := c.disk_interface_.Stat(path, &err)
 	if mtime == -1 {
-		Error("%s", err)
+		errorf("%s", err)
 	}
 	return mtime > 0 // Treat Stat() errors as "file does not exist".
 }
@@ -231,7 +231,7 @@ func (c *Cleaner) CleanTarget(target string) int {
 	if node != nil {
 		c.CleanTargetNode(node)
 	} else {
-		Error("unknown target '%s'", target)
+		errorf("unknown target '%s'", target)
 		c.status_ = 1
 	}
 	return c.status_
@@ -246,7 +246,7 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 	c.LoadDyndeps()
 	for _, target_name := range targets {
 		if target_name == "" {
-			Error("failed to canonicalize '': empty path")
+			errorf("failed to canonicalize '': empty path")
 			c.status_ = 1
 			continue
 		}
@@ -258,7 +258,7 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 			}
 			c.DoCleanTarget(target)
 		} else {
-			Error("unknown target '%s'", target_name)
+			errorf("unknown target '%s'", target_name)
 			c.status_ = 1
 		}
 	}
@@ -308,7 +308,7 @@ func (c *Cleaner) CleanRuleName(rule string) int {
 	if r != nil {
 		c.CleanRule(r)
 	} else {
-		Error("unknown rule '%s'", rule)
+		errorf("unknown rule '%s'", rule)
 		c.status_ = 1
 	}
 	return c.status_
@@ -333,7 +333,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 			}
 			c.DoCleanRule(rule)
 		} else {
-			Error("unknown rule '%s'", rule_name)
+			errorf("unknown rule '%s'", rule_name)
 			c.status_ = 1
 		}
 	}

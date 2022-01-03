@@ -406,7 +406,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				return false
 			}
 			if !m.quiet_ {
-				Warning("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
+				warningf("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
 			}
 			if len(outs)-i <= implicit_outs {
 				implicit_outs--
@@ -454,7 +454,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				copy(edge.Inputs[i:], edge.Inputs[i+1:])
 				edge.Inputs = edge.Inputs[:len(edge.Inputs)-1]
 				if !m.quiet_ {
-					Warning("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
+					warningf("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
 				}
 				break
 			}

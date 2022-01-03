@@ -157,7 +157,7 @@ func (r *RealCommandRunner) Abort() {
 func (r *RealCommandRunner) CanRunMore() bool {
 	subproc_number := r.subprocs_.Running() + r.subprocs_.Finished()
 	more := subproc_number < r.config_.parallelism
-	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || GetLoadAverage() < r.config_.max_load_average
+	load := r.subprocs_.Running() == 0 || r.config_.max_load_average <= 0. || getLoadAverage() < r.config_.max_load_average
 	return more && load
 }
 
@@ -1076,7 +1076,7 @@ func (b *Builder) ExtractDeps(result *Result, deps_type string, deps_prefix stri
 			}
 		}
 	} else {
-		Fatal("unknown deps type '%s'", deps_type)
+		fatalf("unknown deps type '%s'", deps_type)
 	}
 	return true
 }

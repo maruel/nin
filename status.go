@@ -271,7 +271,7 @@ func (s *StatusPrinter) FormatProgressStatus(progress_status_format string, time
 				out += fmt.Sprintf("%.3f", float64(s.time_millis_)*0.001)
 
 			default:
-				Fatal("unknown placeholder '%%%c' in $NINJA_STATUS", c)
+				fatalf("unknown placeholder '%%%c' in $NINJA_STATUS", c)
 				return ""
 			}
 		} else {
@@ -303,13 +303,13 @@ func (s *StatusPrinter) PrintStatus(edge *Edge, time_millis int32) {
 }
 
 func (s *StatusPrinter) Warning(msg string, i ...interface{}) {
-	Warning(msg, i...)
+	warningf(msg, i...)
 }
 
 func (s *StatusPrinter) Error(msg string, i ...interface{}) {
-	Error(msg, i...)
+	errorf(msg, i...)
 }
 
 func (s *StatusPrinter) Info(msg string, i ...interface{}) {
-	Info(msg, i...)
+	infof(msg, i...)
 }
