@@ -73,7 +73,7 @@ func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 }
 
 func (m *MissingDependencyScannerTest) CreateInitialState() {
-	depsType := &EvalString{}
+	depsType := EvalString{}
 	depsType.AddText("gcc")
 	m.compileRule.Bindings["deps"] = depsType
 	m.generatorRule.Bindings["deps"] = depsType

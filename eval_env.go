@@ -45,7 +45,7 @@ type EvalString struct {
 	Parsed []TokenListItem
 }
 
-func (e *EvalString) String() string {
+func (e EvalString) String() string {
 	out := ""
 	for i, t := range e.Parsed {
 		if i != 0 {
@@ -58,7 +58,7 @@ func (e *EvalString) String() string {
 
 // @return The evaluated string with variable expanded using value found in
 //         environment @a env.
-func (e *EvalString) Evaluate(env Env) string {
+func (e EvalString) Evaluate(env Env) string {
 	// Warning: this function is recursive.
 	var z [64]string
 	var s []string
@@ -147,13 +147,13 @@ func IsReservedBinding(v string) bool {
 // An invocable build command and associated metadata (description, etc.).
 type Rule struct {
 	Name     string
-	Bindings map[string]*EvalString
+	Bindings map[string]EvalString
 }
 
 func NewRule(name string) *Rule {
 	return &Rule{
 		Name:     name,
-		Bindings: map[string]*EvalString{},
+		Bindings: map[string]EvalString{},
 	}
 }
 
@@ -168,7 +168,8 @@ func (r *Rule) String() string {
 		if i != 0 {
 			out += ","
 		}
-		out += n + ":" + r.Bindings[n].String()
+		e := r.Bindings[n]
+		out += n + ":" + e.String()
 	}
 	out += "}"
 	return out
@@ -244,11 +245,11 @@ func (b *BindingEnv) LookupRule(ruleName string) *Rule {
 // 2) value set on rule, with expansion in the edge's scope
 // 3) value set on enclosing scope of edge (edge->env->parent)
 // This function takes as parameters the necessary info to do (2).
-func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) string {
+func (b *BindingEnv) LookupWithFallback(v string, eval EvalString, env Env) string {
 	if i, ok := b.Bindings[v]; ok {
 		return i
 	}
-	if eval != nil {
+	if len(eval.Parsed) != 0 {
 		return eval.Evaluate(env)
 	}
 	if b.Parent != nil {

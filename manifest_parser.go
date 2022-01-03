@@ -177,7 +177,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		}
 
 		if IsReservedBinding(key) {
-			rule.Bindings[key] = &value
+			rule.Bindings[key] = value
 		} else {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.

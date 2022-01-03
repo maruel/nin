@@ -559,9 +559,8 @@ func toolRules(n *ninjaMain, opts *options, args []string) int {
 		fmt.Printf("%s", name)
 		if printDescription {
 			rule := rules[name]
-			description := rule.Bindings["description"]
-			if description != nil {
-				fmt.Printf(": %s", description.Unparse())
+			if desc, ok := rule.Bindings["description"]; ok {
+				fmt.Printf(": %s", desc.Unparse())
 			}
 		}
 		fmt.Printf("\n")

@@ -441,9 +441,9 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 		}
 	}
 
-	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge.Rule.Bindings[var2]
-	if e.recursive && eval != nil {
+	// See notes on BindingEnv.LookupWithFallback.
+	eval, ok := e.edge.Rule.Bindings[var2]
+	if e.recursive_ && ok {
 		e.lookups = append(e.lookups, var2)
 	}
 

@@ -67,7 +67,8 @@ func TestParserTest_Rules(t *testing.T) {
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$in][ > ][$out]"
-	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$in][ ][>][ ][$out]" {
+	e := rule.Bindings["command"]
+	if got := e.Serialize(); got != "[cat][ ][$in][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
 }
@@ -123,13 +124,16 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$rspfile][ > ][$out]"
-	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$rspfile][ ][>][ ][$out]" {
+	e := rule.Bindings["command"]
+	if got := e.Serialize(); got != "[cat][ ][$rspfile][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
-	if "[$rspfile]" != rule.Bindings["rspfile"].Serialize() {
+	e = rule.Bindings["rspfile"]
+	if "[$rspfile]" != e.Serialize() {
 		t.Fatal("expected equal")
 	}
-	if "[$in]" != rule.Bindings["rspfile_content"].Serialize() {
+	e = rule.Bindings["rspfile_content"]
+	if "[$in]" != e.Serialize() {
 		t.Fatal("expected equal")
 	}
 }
@@ -148,7 +152,8 @@ func TestParserTest_InNewline(t *testing.T) {
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[cat ][$in_newline][ > ][$out]"
-	if got := rule.Bindings["command"].Serialize(); got != "[cat][ ][$in_newline][ ][>][ ][$out]" {
+	e := rule.Bindings["command"]
+	if got := e.Serialize(); got != "[cat][ ][$in_newline][ ][>][ ][$out]" {
 		t.Fatal(got)
 	}
 
@@ -208,7 +213,8 @@ func TestParserTest_Continuation(t *testing.T) {
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
 	// Original: "[foo bar baz]"
-	if got := rule.Bindings["command"].Serialize(); got != "[foo][ ][bar][ ][baz]" {
+	e := rule.Bindings["command"]
+	if got := e.Serialize(); got != "[foo][ ][bar][ ][baz]" {
 		t.Fatal(got)
 	}
 }
