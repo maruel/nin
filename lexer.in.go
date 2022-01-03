@@ -44,14 +44,14 @@ const (
 )
 
 type Lexer struct {
-	filename_ string
-	input_    string
+	filename string
+	input    string
 	// In the original C++ code, these two are char pointers and are used to do
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
-	// indexes. ofs_ starts at 0. lastToken_ is initially -1 to mark that it is
+	// indexes. ofs starts at 0. lastToken is initially -1 to mark that it is
 	// not yet set.
-	ofs_       int
-	lastToken_ int
+	ofs       int
+	lastToken int
 }
 
 // Read a path (complete with $escapes).
@@ -72,18 +72,18 @@ func (l *Lexer) Error(message string, err *string) bool {
 	// Compute line/column.
 	line := 1
 	lineStart := 0
-	for p := 0; p < l.lastToken_; p++ {
-		if l.input_[p] == '\n' {
+	for p := 0; p < l.lastToken; p++ {
+		if l.input[p] == '\n' {
 			line++
 			lineStart = p + 1
 		}
 	}
 	col := 0
-	if l.lastToken_ != -1 {
-		col = l.lastToken_ - lineStart
+	if l.lastToken != -1 {
+		col = l.lastToken - lineStart
 	}
 
-	*err = fmt.Sprintf("%s:%d: ", l.filename_, line)
+	*err = fmt.Sprintf("%s:%d: ", l.filename, line)
 	*err += message + "\n"
 	// Add some context to the message.
 	const truncateColumn = 72
@@ -91,12 +91,12 @@ func (l *Lexer) Error(message string, err *string) bool {
 		truncated := true
 		length := 0
 		for ; length < truncateColumn; length++ {
-			if l.input_[lineStart+length] == 0 || l.input_[lineStart+length] == '\n' {
+			if l.input[lineStart+length] == 0 || l.input[lineStart+length] == '\n' {
 				truncated = false
 				break
 			}
 		}
-		*err += l.input_[lineStart : lineStart+length]
+		*err += l.input[lineStart : lineStart+length]
 		if truncated {
 			*err += "..."
 		}
@@ -116,13 +116,13 @@ func NewLexer(input string) Lexer {
 
 // Start parsing some input.
 func (l *Lexer) Start(filename, input string) {
-	l.filename_ = filename
+	l.filename = filename
 	if !strings.HasSuffix(input, "\x00") {
 		panic("Requires hack with a trailing 0 byte")
 	}
-	l.input_ = input
-	l.ofs_ = 0
-	l.lastToken_ = -1
+	l.input = input
+	l.ofs = 0
+	l.lastToken = -1
 }
 
 // Return a human-readable form of a token, used in error messages.
@@ -177,8 +177,8 @@ func TokenErrorHint(expected Token) string {
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
 func (l *Lexer) DescribeLastError() string {
-	if l.lastToken_ != -1 {
-		switch l.input_[l.lastToken_] {
+	if l.lastToken != -1 {
+		switch l.input[l.lastToken] {
 		case '\t':
 			return "tabs are not allowed, use spaces"
 		}
@@ -188,11 +188,11 @@ func (l *Lexer) DescribeLastError() string {
 
 // Rewind to the last read Token.
 func (l *Lexer) UnreadToken() {
-	l.ofs_ = l.lastToken_
+	l.ofs = l.lastToken
 }
 
 func (l *Lexer) ReadToken() Token {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	start := 0
 	var token Token
@@ -200,12 +200,12 @@ func (l *Lexer) ReadToken() Token {
 		start = p
 		/*!re2c
 		    re2c:define:YYCTYPE = "byte";
-		    re2c:define:YYCURSOR = "l.input_[p]";
+		    re2c:define:YYCURSOR = "l.input[p]";
 				re2c:define:YYSKIP = "p++";
 		    re2c:define:YYMARKER = q;
 		    re2c:yyfill:enable = 0;
 				re2c:flags:nested-ifs = 0;
-		    re2c:define:YYPEEK = "l.input_[p]";
+		    re2c:define:YYPEEK = "l.input[p]";
 				re2c:define:YYBACKUP = "q = p";
 				re2c:define:YYRESTORE = "p = q";
 
@@ -234,8 +234,8 @@ func (l *Lexer) ReadToken() Token {
 		*/
 	}
 
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	if token != NEWLINE && token != TEOF {
 		l.eatWhitespace()
 	}
@@ -254,10 +254,10 @@ func (l *Lexer) PeekToken(token Token) bool {
 
 // Skip past whitespace (called after each read token/ident/etc.).
 func (l *Lexer) eatWhitespace() {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	for {
-		l.ofs_ = p
+		l.ofs = p
 		/*!re2c
 		  [ ]+    { continue; }
 		  "$\r\n" { continue; }
@@ -271,37 +271,37 @@ func (l *Lexer) eatWhitespace() {
 // Read a simple identifier (a rule or variable name).
 // Returns false if a name can't be read.
 func (l *Lexer) ReadIdent(out *string) bool {
-	p := l.ofs_
+	p := l.ofs
 	start := 0
 	for {
 		start = p
 		/*!re2c
 		  varname {
-				*out = l.input_[start:p]
+				*out = l.input[start:p]
 		    break
 		  }
 		  [^] {
-		    l.lastToken_ = start
+		    l.lastToken = start
 		    return false
 		  }
 		*/
 	}
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	l.eatWhitespace()
 	return true
 }
 
 // Read a $-escaped string.
 func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	start := 0
 	for {
 		start = p
 		/*!re2c
 		  [^$ :\r\n|\000]+ {
-				eval.AddText(l.input_[start: p])
+				eval.AddText(l.input[start: p])
 		    continue
 		  }
 		  "\r\n" {
@@ -315,10 +315,10 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		      p = start
 		      break
 		    } else {
-		      if l.input_[start] == '\n' {
+		      if l.input[start] == '\n' {
 		        break
 		      }
-					eval.AddText(l.input_[start:start+1])
+					eval.AddText(l.input[start:start+1])
 		      continue
 		    }
 		  }
@@ -337,11 +337,11 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "${"varname"}" {
-				eval.AddSpecial(l.input_[start + 2: p - 1])
+				eval.AddSpecial(l.input[start + 2: p - 1])
 		    continue
 		  }
 		  "$"simpleVarname {
-				eval.AddSpecial(l.input_[start + 1: p])
+				eval.AddSpecial(l.input[start + 1: p])
 		    continue
 		  }
 		  "$:" {
@@ -349,21 +349,21 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "$". {
-		    l.lastToken_ = start
+		    l.lastToken = start
 		    return l.Error("bad $-escape (literal $ must be written as $$)", err)
 		  }
 		  nul {
-		    l.lastToken_ = start
+		    l.lastToken = start
 		    return l.Error("unexpected EOF", err)
 		  }
 		  [^] {
-		    l.lastToken_ = start
+		    l.lastToken = start
 		    return l.Error(l.DescribeLastError(), err)
 		  }
 		*/
 	}
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	if path {
 		l.eatWhitespace()
 	}

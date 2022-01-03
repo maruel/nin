@@ -25,19 +25,19 @@ import (
 type ParserTest struct {
 	t     *testing.T
 	state State
-	fs_   VirtualFileSystem
+	fs    VirtualFileSystem
 }
 
 func NewParserTest(t *testing.T) ParserTest {
 	return ParserTest{
 		t:     t,
 		state: NewState(),
-		fs_:   NewVirtualFileSystem(),
+		fs:    NewVirtualFileSystem(),
 	}
 }
 
 func (p *ParserTest) AssertParse(input string) {
-	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
+	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if !parser.ParseTest(input, &err) {
 		p.t.Fatal(err)
@@ -57,10 +57,10 @@ func TestParserTest_Rules(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\n\nrule date\n  command = date > $out\n\nbuild result: cat in_1.cc in-2.O\n")
 
-	if 3 != len(p.state.bindings_.Rules) {
+	if 3 != len(p.state.bindings.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.Rules["cat"]
+	rule := p.state.bindings.Rules["cat"]
 	if got := rule.Name; got != "cat" {
 		t.Fatal(got)
 	}
@@ -82,10 +82,10 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("  #indented comment\nrule cat\n  command = cat $in > $out\n  #generator = 1\n  restat = 1 # comment\n  #comment\nbuild result: cat in_1.cc in-2.O\n  #comment\n")
 
-	if 2 != len(p.state.bindings_.Rules) {
+	if 2 != len(p.state.bindings.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.Rules["cat"]
+	rule := p.state.bindings.Rules["cat"]
 	if "cat" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -104,7 +104,7 @@ func TestParserTest_IgnoreIndentedBlankLines(t *testing.T) {
 	p.AssertParse("  \nrule cat\n  command = cat $in > $out\n  \nbuild result: cat in_1.cc in-2.O\n  \nvariable=1\n")
 
 	// the variable must be in the top level environment
-	if "1" != p.state.bindings_.LookupVariable("variable") {
+	if "1" != p.state.bindings.LookupVariable("variable") {
 		t.Fatal("expected equal")
 	}
 }
@@ -113,10 +113,10 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\n\nbuild out: cat_rsp in\n  rspfile=out.rsp\n")
 
-	if 2 != len(p.state.bindings_.Rules) {
+	if 2 != len(p.state.bindings.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.Rules["cat_rsp"]
+	rule := p.state.bindings.Rules["cat_rsp"]
 	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -138,10 +138,10 @@ func TestParserTest_InNewline(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat_rsp\n  command = cat $in_newline > $out\n\nbuild out: cat_rsp in in2\n  rspfile=out.rsp\n")
 
-	if 2 != len(p.state.bindings_.Rules) {
+	if 2 != len(p.state.bindings.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.Rules["cat_rsp"]
+	rule := p.state.bindings.Rules["cat_rsp"]
 	if "cat_rsp" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -152,7 +152,7 @@ func TestParserTest_InNewline(t *testing.T) {
 		t.Fatal(got)
 	}
 
-	edge := p.state.edges_[0]
+	edge := p.state.edges[0]
 	if "cat in\nin2 > out" != edge.EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
@@ -162,18 +162,18 @@ func TestParserTest_Variables(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("l = one-letter-test\nrule link\n  command = ld $l $extra $with_under -o $out $in\n\nextra = -pthread\nwith_under = -under\nbuild a: link b c\nnested1 = 1\nnested2 = $nested1/2\nbuild supernested: link x\n  extra = $nested2/3\n")
 
-	if 2 != len(p.state.edges_) {
-		t.Fatalf("%v", p.state.edges_)
+	if 2 != len(p.state.edges) {
+		t.Fatalf("%v", p.state.edges)
 	}
-	edge := p.state.edges_[0]
+	edge := p.state.edges[0]
 	if got := edge.EvaluateCommand(false); "ld one-letter-test -pthread -under -o a b c" != got {
 		t.Fatal(got)
 	}
-	if "1/2" != p.state.bindings_.LookupVariable("nested2") {
+	if "1/2" != p.state.bindings.LookupVariable("nested2") {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.state.edges_[1]
+	edge = p.state.edges[1]
 	if "ld one-letter-test 1/2/3 -under -o supernested x" != edge.EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
@@ -183,13 +183,13 @@ func TestParserTest_VariableScope(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("foo = bar\nrule cmd\n  command = cmd $foo $in $out\n\nbuild inner: cmd a\n  foo = baz\nbuild outer: cmd b\n\n") // Extra newline after build line tickles a regression.
 
-	if 2 != len(p.state.edges_) {
+	if 2 != len(p.state.edges) {
 		t.Fatal("expected equal")
 	}
-	if "cmd baz a inner" != p.state.edges_[0].EvaluateCommand(false) {
+	if "cmd baz a inner" != p.state.edges[0].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
-	if "cmd bar b outer" != p.state.edges_[1].EvaluateCommand(false) {
+	if "cmd bar b outer" != p.state.edges[1].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
 }
@@ -198,10 +198,10 @@ func TestParserTest_Continuation(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule link\n  command = foo bar $\n    baz\n\nbuild a: link c $\n d e f\n")
 
-	if 2 != len(p.state.bindings_.Rules) {
+	if 2 != len(p.state.bindings.Rules) {
 		t.Fatal("expected equal")
 	}
-	rule := p.state.bindings_.Rules["link"]
+	rule := p.state.bindings.Rules["link"]
 	if "link" != rule.Name {
 		t.Fatal("expected equal")
 	}
@@ -216,10 +216,10 @@ func TestParserTest_Continuation(t *testing.T) {
 func TestParserTest_Backslash(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("foo = bar\\baz\nfoo2 = bar\\ baz\n")
-	if "bar\\baz" != p.state.bindings_.LookupVariable("foo") {
+	if "bar\\baz" != p.state.bindings.LookupVariable("foo") {
 		t.Fatal("expected equal")
 	}
-	if "bar\\ baz" != p.state.bindings_.LookupVariable("foo2") {
+	if "bar\\ baz" != p.state.bindings.LookupVariable("foo2") {
 		t.Fatal("expected equal")
 	}
 }
@@ -227,7 +227,7 @@ func TestParserTest_Backslash(t *testing.T) {
 func TestParserTest_Comment(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("# this is a comment\nfoo = not # a comment\n")
-	if "not # a comment" != p.state.bindings_.LookupVariable("foo") {
+	if "not # a comment" != p.state.bindings.LookupVariable("foo") {
 		t.Fatal("expected equal")
 	}
 }
@@ -235,14 +235,14 @@ func TestParserTest_Comment(t *testing.T) {
 func TestParserTest_Dollars(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n")
-	if "$dollar" != p.state.bindings_.LookupVariable("x") {
+	if "$dollar" != p.state.bindings.LookupVariable("x") {
 		t.Fatal("expected equal")
 	}
 	want := "'$dollar'bar$baz$blah"
 	if runtime.GOOS == "windows" {
 		want = "$dollarbar$baz$blah"
 	}
-	if want != p.state.edges_[0].EvaluateCommand(false) {
+	if want != p.state.edges[0].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
 }
@@ -253,16 +253,16 @@ func TestParserTest_EscapeSpaces(t *testing.T) {
 	if p.state.LookupNode("foo bar") == nil {
 		t.Fatal("expected true")
 	}
-	if p.state.edges_[0].Outputs[0].Path != "foo bar" {
+	if p.state.edges[0].Outputs[0].Path != "foo bar" {
 		t.Fatal("expected equal")
 	}
-	if p.state.edges_[0].Inputs[0].Path != "$one" {
+	if p.state.edges[0].Inputs[0].Path != "$one" {
 		t.Fatal("expected equal")
 	}
-	if p.state.edges_[0].Inputs[1].Path != "two$ three" {
+	if p.state.edges[0].Inputs[1].Path != "two$ three" {
 		t.Fatal("expected equal")
 	}
-	if p.state.edges_[0].EvaluateCommand(false) != "something" {
+	if p.state.edges[0].EvaluateCommand(false) != "something" {
 		t.Fatal("expected equal")
 	}
 }
@@ -412,8 +412,8 @@ func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.dupeEdgeAction_ = DupeEdgeActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
+	parserOpts.dupeEdgeAction = DupeEdgeActionError
+	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
 		t.Fatal("expected false")
@@ -425,11 +425,11 @@ func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 
 func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	p := NewParserTest(t)
-	p.fs_.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
+	p.fs.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
 	kInput := "subninja sub.ninja\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.dupeEdgeAction_ = DupeEdgeActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
+	parserOpts.dupeEdgeAction = DupeEdgeActionError
+	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
 	err := ""
 	if parser.ParseTest(kInput, &err) {
 		t.Fatal("expected false")
@@ -454,8 +454,8 @@ func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	p := NewParserTest(t)
 	kInput := "build a: phony a\n"
 	var parserOpts ManifestParserOptions
-	parserOpts.phonyCycleAction_ = PhonyCycleActionError
-	parser := NewManifestParser(&p.state, &p.fs_, parserOpts)
+	parserOpts.phonyCycleAction = PhonyCycleActionError
+	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
 	err := ""
 	if !parser.ParseTest(kInput, &err) {
 		t.Fatal("expected true")
@@ -909,7 +909,7 @@ func TestParserTest_Errors(t *testing.T) {
 func TestParserTest_MissingInput(t *testing.T) {
 	p := NewParserTest(t)
 	localState := NewState()
-	parser := NewManifestParser(&localState, &p.fs_, ManifestParserOptions{})
+	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
 	err := ""
 	if parser.Load("build.ninja", &err, nil) {
 		t.Fatal("expected false")
@@ -945,13 +945,13 @@ func TestParserTest_MultipleOutputsWithDeps(t *testing.T) {
 
 func TestParserTest_SubNinja(t *testing.T) {
 	p := NewParserTest(t)
-	p.fs_.Create("test.ninja", "var2 = inner\nbuild $builddir/inner: varref\n")
+	p.fs.Create("test.ninja", "var2 = inner\nbuild $builddir/inner: varref\n")
 	p.AssertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\nbuild $builddir/outer: varref\nsubninja test.ninja\nbuild $builddir/outer2: varref\n")
-	if 1 != len(p.fs_.filesRead_) {
+	if 1 != len(p.fs.filesRead) {
 		t.Fatal("expected equal")
 	}
 
-	if "test.ninja" != p.fs_.filesRead_[0] {
+	if "test.ninja" != p.fs.filesRead[0] {
 		t.Fatal("expected equal")
 	}
 	if p.state.LookupNode("some_dir/outer") == nil {
@@ -962,23 +962,23 @@ func TestParserTest_SubNinja(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	if 3 != len(p.state.edges_) {
+	if 3 != len(p.state.edges) {
 		t.Fatal("expected equal")
 	}
-	if "varref outer" != p.state.edges_[0].EvaluateCommand(false) {
+	if "varref outer" != p.state.edges[0].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
-	if "varref inner" != p.state.edges_[1].EvaluateCommand(false) {
+	if "varref inner" != p.state.edges[1].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
-	if "varref outer" != p.state.edges_[2].EvaluateCommand(false) {
+	if "varref outer" != p.state.edges[2].EvaluateCommand(false) {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestParserTest_MissingSubNinja(t *testing.T) {
 	p := NewParserTest(t)
-	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
+	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if parser.ParseTest("subninja foo.ninja\n", &err) {
 		t.Fatal("expected false")
@@ -991,8 +991,8 @@ func TestParserTest_MissingSubNinja(t *testing.T) {
 func TestParserTest_DuplicateRuleInDifferentSubninjas(t *testing.T) {
 	p := NewParserTest(t)
 	// Test that rules are scoped to subninjas.
-	p.fs_.Create("test.ninja", "rule cat\n  command = cat\n")
-	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
+	p.fs.Create("test.ninja", "rule cat\n  command = cat\n")
+	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if !parser.ParseTest("rule cat\n  command = cat\nsubninja test.ninja\n", &err) {
 		t.Fatal("expected true")
@@ -1002,9 +1002,9 @@ func TestParserTest_DuplicateRuleInDifferentSubninjas(t *testing.T) {
 func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
 	p := NewParserTest(t)
 	// Test that rules are scoped to subninjas even with includes.
-	p.fs_.Create("rules.ninja", "rule cat\n  command = cat\n")
-	p.fs_.Create("test.ninja", "include rules.ninja\nbuild x : cat\n")
-	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
+	p.fs.Create("rules.ninja", "rule cat\n  command = cat\n")
+	p.fs.Create("test.ninja", "include rules.ninja\nbuild x : cat\n")
+	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if !parser.ParseTest("include rules.ninja\nsubninja test.ninja\nbuild y : cat\n", &err) {
 		t.Fatal("expected true")
@@ -1013,24 +1013,24 @@ func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
 
 func TestParserTest_Include(t *testing.T) {
 	p := NewParserTest(t)
-	p.fs_.Create("include.ninja", "var2 = inner\n")
+	p.fs.Create("include.ninja", "var2 = inner\n")
 	p.AssertParse("var2 = outer\ninclude include.ninja\n")
 
-	if 1 != len(p.fs_.filesRead_) {
+	if 1 != len(p.fs.filesRead) {
 		t.Fatal("expected equal")
 	}
-	if "include.ninja" != p.fs_.filesRead_[0] {
+	if "include.ninja" != p.fs.filesRead[0] {
 		t.Fatal("expected equal")
 	}
-	if "inner" != p.state.bindings_.LookupVariable("var2") {
+	if "inner" != p.state.bindings.LookupVariable("var2") {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestParserTest_BrokenInclude(t *testing.T) {
 	p := NewParserTest(t)
-	p.fs_.Create("include.ninja", "build\n")
-	parser := NewManifestParser(&p.state, &p.fs_, ManifestParserOptions{})
+	p.fs.Create("include.ninja", "build\n")
+	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if parser.ParseTest("include include.ninja\n", &err) {
 		t.Fatal("expected false")

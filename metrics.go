@@ -52,12 +52,12 @@ type Metric struct {
 
 // The singleton that stores metrics and prints the report.
 type Metrics struct {
-	metrics_ map[string]*Metric
+	metrics map[string]*Metric
 }
 
 func NewMetrics() *Metrics {
 	return &Metrics{
-		metrics_: map[string]*Metric{},
+		metrics: map[string]*Metric{},
 	}
 }
 
@@ -66,13 +66,13 @@ func NewMetrics() *Metrics {
 var gMetrics *Metrics
 
 func (m *Metrics) GetMetric(name string) *Metric {
-	if m.metrics_ == nil {
-		m.metrics_ = map[string]*Metric{}
+	if m.metrics == nil {
+		m.metrics = map[string]*Metric{}
 	}
-	metric, ok := m.metrics_[name]
+	metric, ok := m.metrics[name]
 	if !ok {
 		metric = &Metric{name: name}
-		m.metrics_[name] = metric
+		m.metrics[name] = metric
 	}
 	return metric
 }
@@ -80,8 +80,8 @@ func (m *Metrics) GetMetric(name string) *Metric {
 // Print a summary report to stdout.
 func (m *Metrics) Report() {
 	width := 0
-	names := make([]string, 0, len(m.metrics_))
-	for name := range m.metrics_ {
+	names := make([]string, 0, len(m.metrics))
+	for name := range m.metrics {
 		if j := len(name); j > width {
 			width = j
 		}
@@ -91,7 +91,7 @@ func (m *Metrics) Report() {
 
 	fmt.Printf("%-*s\t%-6s\t%-9s\t%s\n", width, "metric", "count", "avg", "total")
 	for _, name := range names {
-		metric := m.metrics_[name]
+		metric := m.metrics[name]
 		avg := metric.sum / time.Duration(metric.count)
 		fmt.Printf("%-*s\t%-6d\t%-10s\t%-10s\n", width, name, metric.count, avg.Round(time.Microsecond), metric.sum.Round(time.Microsecond))
 	}

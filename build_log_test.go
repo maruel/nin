@@ -38,7 +38,7 @@ func (b *BuildLogTest) IsPathDead(s string) bool {
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
 	log1 := NewBuildLog()
 	defer log1.Close()
@@ -50,8 +50,8 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	log1.RecordCommand(b.state_.edges_[0], 15, 18, 0)
-	log1.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+	log1.RecordCommand(b.state.edges[0], 15, 18, 0)
+	log1.RecordCommand(b.state.edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()
@@ -63,10 +63,10 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 2 != len(log1.entries()) {
+	if 2 != len(log1.entries) {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(log2.entries()) {
+	if 2 != len(log2.entries) {
 		t.Fatal("expected equal")
 	}
 	e1 := log1.LookupByOutput("out")
@@ -158,7 +158,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 
 func TestBuildLogTest_Truncate(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 
 	{
@@ -171,8 +171,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		log1.RecordCommand(b.state_.edges_[0], 15, 18, 0)
-		log1.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+		log1.RecordCommand(b.state.edges[0], 15, 18, 0)
+		log1.RecordCommand(b.state.edges[1], 20, 25, 0)
 		log1.Close()
 	}
 
@@ -188,8 +188,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		log2.RecordCommand(b.state_.edges_[0], 15, 18, 0)
-		log2.RecordCommand(b.state_.edges_[1], 20, 25, 0)
+		log2.RecordCommand(b.state.edges[0], 15, 18, 0)
+		log2.RecordCommand(b.state.edges[1], 20, 25, 0)
 		log2.Close()
 
 		if err := os.Truncate(testFilename, int64(size)); err != nil {
@@ -432,13 +432,13 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state_, "build out out.d: cat\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out out.d: cat\n", ManifestParserOptions{})
 
 	log := NewBuildLog()
 	defer log.Close()
-	log.RecordCommand(b.state_.edges_[0], 21, 22, 0)
+	log.RecordCommand(b.state.edges[0], 21, 22, 0)
 
-	if 2 != len(log.entries()) {
+	if 2 != len(log.entries) {
 		t.Fatal("expected equal")
 	}
 	e1 := log.LookupByOutput("out")
@@ -483,7 +483,7 @@ func NewBuildLogRecompactTest(t *testing.T) *BuildLogRecompactTest {
 
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	b := NewBuildLogRecompactTest(t)
-	b.AssertParse(&b.state_, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	err := ""
 
@@ -499,9 +499,9 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		// Record the same edge several times, to trigger recompaction
 		// the next time the log is opened.
 		for i := 0; i < 200; i++ {
-			log1.RecordCommand(b.state_.edges_[0], 15, int32(18+i), 0)
+			log1.RecordCommand(b.state.edges[0], 15, int32(18+i), 0)
 		}
-		log1.RecordCommand(b.state_.edges_[1], 21, 22, 0)
+		log1.RecordCommand(b.state.edges[1], 21, 22, 0)
 		log1.Close()
 	}
 
@@ -515,7 +515,7 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 2 != len(log2.entries()) {
+		if 2 != len(log2.entries) {
 			t.Fatal("expected equal")
 		}
 		if log2.LookupByOutput("out") == nil {
@@ -541,8 +541,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 1 != len(log3.entries()) {
-			t.Fatalf("%#v", log3.entries())
+		if 1 != len(log3.entries) {
+			t.Fatalf("%#v", log3.entries)
 		}
 		if log3.LookupByOutput("out") == nil {
 			t.Fatal("expected true")

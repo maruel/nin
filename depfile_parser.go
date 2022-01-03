@@ -20,15 +20,15 @@ type DepfileParserOptions struct {
 
 // Parser for the dependency information emitted by gcc's -M flags.
 type DepfileParser struct {
-	outs_ []string
-	ins_  []string
+	outs []string
+	ins  []string
 
-	options_ DepfileParserOptions
+	options DepfileParserOptions
 }
 
 func NewDepfileParser(options DepfileParserOptions) DepfileParser {
 	return DepfileParser{
-		options_: options,
+		options: options,
 	}
 }
 
@@ -78,7 +78,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			yymarker := 0
 			/*
 			 re2c:define:YYCTYPE = "byte";
-			 re2c:define:YYCURSOR = "l.input_[p]";
+			 re2c:define:YYCURSOR = "l.input[p]";
 			 re2c:define:YYMARKER = q;
 			 re2c:yyfill:enable = 0;
 			 re2c:flags:nested-ifs = 1;
@@ -542,7 +542,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			// If we've seen this as an input before, skip it.
 			// TODO(maruel): Use a map[string]struct{} while constructing.
 			pos := -1
-			for i, v := range d.ins_ {
+			for i, v := range d.ins {
 				if piece == v {
 					pos = i
 					break
@@ -555,18 +555,18 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 						return false
 					}
 					// New input.
-					d.ins_ = append(d.ins_, piece)
+					d.ins = append(d.ins, piece)
 				} else {
 					// Check for a new output.
 					pos = -1
-					for i, v := range d.outs_ {
+					for i, v := range d.outs {
 						if piece == v {
 							pos = i
 							break
 						}
 					}
 					if pos == -1 {
-						d.outs_ = append(d.outs_, piece)
+						d.outs = append(d.outs, piece)
 					}
 				}
 			} else if !isDependency {

@@ -23,28 +23,28 @@ import (
 
 // Runs the process of creating GraphViz .dot file output.
 type GraphViz struct {
-	out           io.Writer
-	dyndepLoader_ DyndepLoader
-	visitedNodes_ map[*Node]struct{}
-	visitedEdges_ map[*Edge]struct{}
+	out          io.Writer
+	dyndepLoader DyndepLoader
+	visitedNodes map[*Node]struct{}
+	visitedEdges map[*Edge]struct{}
 }
 
 func NewGraphViz(state *State, diskInterface DiskInterface) GraphViz {
 	return GraphViz{
-		out:           os.Stdout,
-		dyndepLoader_: NewDyndepLoader(state, diskInterface),
-		visitedNodes_: map[*Node]struct{}{},
-		visitedEdges_: map[*Edge]struct{}{},
+		out:          os.Stdout,
+		dyndepLoader: NewDyndepLoader(state, diskInterface),
+		visitedNodes: map[*Node]struct{}{},
+		visitedEdges: map[*Edge]struct{}{},
 	}
 }
 
 func (g *GraphViz) AddTarget(node *Node) {
-	if _, ok := g.visitedNodes_[node]; ok {
+	if _, ok := g.visitedNodes[node]; ok {
 		return
 	}
 
 	fmt.Fprintf(g.out, "\"%p\" [label=\"%s\"]\n", node, strings.ReplaceAll(node.Path, "\\", "/"))
-	g.visitedNodes_[node] = struct{}{}
+	g.visitedNodes[node] = struct{}{}
 
 	edge := node.InEdge
 
@@ -54,14 +54,14 @@ func (g *GraphViz) AddTarget(node *Node) {
 		return
 	}
 
-	if _, ok := g.visitedEdges_[edge]; ok {
+	if _, ok := g.visitedEdges[edge]; ok {
 		return
 	}
-	g.visitedEdges_[edge] = struct{}{}
+	g.visitedEdges[edge] = struct{}{}
 
 	if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
 		err := ""
-		if !g.dyndepLoader_.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
+		if !g.dyndepLoader.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
 			warningf("%s\n", err)
 		}
 	}

@@ -78,27 +78,19 @@ func NewDeps(mtime TimeStamp, nodeCount int) *Deps {
 // wins, allowing updates to just be appended to the file.  A separate
 // repacking step can run occasionally to remove dead records.
 type DepsLog struct {
-	needsRecompaction_ bool
-	file_              *os.File
-	buf                *bufio.Writer
-	filePath_          string
+	needsRecompaction bool
+	file              *os.File
+	buf               *bufio.Writer
+	filePath          string
 
 	// Maps id -> Node.
-	nodes_ []*Node
+	nodes []*Node
 	// Maps id -> deps of that id.
-	deps_ []*Deps
+	deps []*Deps
 }
 
 func NewDepsLog() DepsLog {
 	return DepsLog{}
-}
-
-// Used for tests.
-func (d *DepsLog) nodes() []*Node {
-	return d.nodes_
-}
-func (d *DepsLog) deps() []*Deps {
-	return d.deps_
 }
 
 // The version is stored as 4 bytes after the signature and also serves as a
@@ -114,18 +106,18 @@ const maxRecordSize = (1 << 19) - 1
 
 // Writing (build-time) interface.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
-	if d.needsRecompaction_ {
+	if d.needsRecompaction {
 		if !d.Recompact(path, err) {
 			return false
 		}
 	}
 
-	if d.file_ != nil {
+	if d.file != nil {
 		panic("M-A")
 	}
 	// we don't actually open the file right now, but will do
 	// so on the first write attempt
-	d.filePath_ = path
+	d.filePath = path
 	return true
 }
 
@@ -215,16 +207,16 @@ func (d *DepsLog) Close() error {
 	// TODO(maruel): Error handling.
 	d.OpenForWriteIfNeeded()
 	var err error
-	if d.file_ != nil {
+	if d.file != nil {
 		if err2 := d.buf.Flush(); err2 != nil {
 			err = err2
 		}
-		if err2 := d.file_.Close(); err2 != nil {
+		if err2 := d.file.Close(); err2 != nil {
 			err = err2
 		}
 	}
 	d.buf = nil
-	d.file_ = nil
+	d.file = nil
 	return err
 }
 
@@ -324,13 +316,13 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				if err2 := binary.Read(r, binary.LittleEndian, &v); err2 != nil {
 					panic(err2)
 				}
-				if int(v) >= len(d.nodes_) {
+				if int(v) >= len(d.nodes) {
 					panic("M-A")
 				}
-				if d.nodes_[v] == nil {
+				if d.nodes[v] == nil {
 					panic("M-A")
 				}
-				deps.nodes[i] = d.nodes_[v]
+				deps.nodes[i] = d.nodes[v]
 			}
 
 			totalDepRecordCount++
@@ -369,7 +361,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				panic(err2)
 			}
 			expectedID := ^checksum
-			id := int32(len(d.nodes_))
+			id := int32(len(d.nodes))
 			if id != int32(expectedID) {
 				readFailed = true
 				// TODO(maruel): Make it a real error.
@@ -380,7 +372,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 				panic("M-A")
 			}
 			node.ID = id
-			d.nodes_ = append(d.nodes_, node)
+			d.nodes = append(d.nodes, node)
 		}
 	}
 
@@ -408,7 +400,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	const minCompactionEntryCount = 1000
 	kCompactionRatio := 3
 	if totalDepRecordCount > minCompactionEntryCount && totalDepRecordCount > uniqueDepRecordCount*kCompactionRatio {
-		d.needsRecompaction_ = true
+		d.needsRecompaction = true
 	}
 	return LoadSuccess
 }
@@ -416,21 +408,21 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 func (d *DepsLog) GetDeps(node *Node) *Deps {
 	// Abort if the node has no id (never referenced in the deps) or if
 	// there's no deps recorded for the node.
-	if node.ID < 0 || int(node.ID) >= len(d.deps_) {
+	if node.ID < 0 || int(node.ID) >= len(d.deps) {
 		return nil
 	}
-	return d.deps_[node.ID]
+	return d.deps[node.ID]
 }
 
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
-	for id := 0; id < len(d.deps_); id++ {
-		deps := d.deps_[id]
+	for id := 0; id < len(d.deps); id++ {
+		deps := d.deps[id]
 		if deps == nil {
 			continue
 		}
 		for i := 0; i < deps.nodeCount; i++ {
 			if deps.nodes[i] == node {
-				return d.nodes_[id]
+				return d.nodes[id]
 			}
 		}
 	}
@@ -458,22 +450,22 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 
 	// Clear all known ids so that new ones can be reassigned.  The new indices
 	// will refer to the ordering in newLog, not in the current log.
-	for _, i := range d.nodes_ {
+	for _, i := range d.nodes {
 		i.ID = -1
 	}
 
 	// Write out all deps again.
-	for oldID := 0; oldID < len(d.deps_); oldID++ {
-		deps := d.deps_[oldID]
-		if deps == nil { // If nodes_[oldID] is a leaf, it has no deps.
+	for oldID := 0; oldID < len(d.deps); oldID++ {
+		deps := d.deps[oldID]
+		if deps == nil { // If nodes[oldID] is a leaf, it has no deps.
 			continue
 		}
 
-		if !d.IsDepsEntryLiveFor(d.nodes_[oldID]) {
+		if !d.IsDepsEntryLiveFor(d.nodes[oldID]) {
 			continue
 		}
 
-		if !newLog.RecordDeps(d.nodes_[oldID], deps.mtime, deps.nodes) {
+		if !newLog.RecordDeps(d.nodes[oldID], deps.mtime, deps.nodes) {
 			_ = newLog.Close()
 			return false
 		}
@@ -482,8 +474,8 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 	_ = newLog.Close()
 
 	// All nodes now have ids that refer to newLog, so steal its data.
-	d.deps_ = newLog.deps_
-	d.nodes_ = newLog.nodes_
+	d.deps = newLog.deps
+	d.nodes = newLog.nodes
 
 	if err2 := os.Remove(path); err2 != nil {
 		*err = err2.Error()
@@ -516,11 +508,11 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
 func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
-	if n := int(outID) + 1 - len(d.deps_); n > 0 {
-		d.deps_ = append(d.deps_, make([]*Deps, n)...)
+	if n := int(outID) + 1 - len(d.deps); n > 0 {
+		d.deps = append(d.deps, make([]*Deps, n)...)
 	}
-	existed := d.deps_[outID] != nil
-	d.deps_[outID] = deps
+	existed := d.deps[outID] != nil
+	d.deps[outID] = deps
 	return existed
 }
 
@@ -557,7 +549,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 			return false
 		}
 	}
-	id := int32(len(d.nodes_))
+	id := int32(len(d.nodes))
 	checksum := ^uint32(id)
 	if err := binary.Write(d.buf, binary.LittleEndian, checksum); err != nil {
 		// TODO(maruel): Make it a real error.
@@ -567,33 +559,33 @@ func (d *DepsLog) RecordID(node *Node) bool {
 		return false
 	}
 	node.ID = id
-	d.nodes_ = append(d.nodes_, node)
+	d.nodes = append(d.nodes, node)
 
 	return true
 }
 
-// Should be called before using file_. When false is returned, errno will
+// Should be called before using file. When false is returned, errno will
 // be set.
 func (d *DepsLog) OpenForWriteIfNeeded() bool {
-	if d.filePath_ == "" {
+	if d.filePath == "" {
 		return true
 	}
-	if d.file_ != nil {
+	if d.file != nil {
 		panic("surprising state")
 	}
-	d.file_, _ = os.OpenFile(d.filePath_, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
-	if d.file_ == nil {
+	d.file, _ = os.OpenFile(d.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
+	if d.file == nil {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
 	// Set the buffer size to this and flush the file buffer after every record
 	// to make sure records aren't written partially.
-	d.buf = bufio.NewWriterSize(d.file_, maxRecordSize+1)
-	//SetCloseOnExec(fileno(d.file_))
+	d.buf = bufio.NewWriterSize(d.file, maxRecordSize+1)
+	//SetCloseOnExec(fileno(d.file))
 
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
-	offset, err := d.file_.Seek(0, os.SEEK_END)
+	offset, err := d.file.Seek(0, os.SEEK_END)
 
 	if err != nil {
 		// TODO(maruel): Make it a real error.
@@ -613,6 +605,6 @@ func (d *DepsLog) OpenForWriteIfNeeded() bool {
 	if err := d.buf.Flush(); err != nil {
 		return false
 	}
-	d.filePath_ = ""
+	d.filePath = ""
 	return true
 }

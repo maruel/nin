@@ -36,9 +36,9 @@ func Touch(path string) bool {
 }
 
 func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
-	if 0 != disk_.Stat("nosuchfile", &err) {
+	if 0 != disk.Stat("nosuchfile", &err) {
 		t.Fatal(1)
 	}
 	if "" != err {
@@ -47,7 +47,7 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 
 	// On Windows, the errno for a file in a nonexistent directory
 	// is different.
-	if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) {
+	if 0 != disk.Stat("nosuchdir/nosuchfile", &err) {
 		t.Fatal(1)
 	}
 	if "" != err {
@@ -59,7 +59,7 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 	if !Touch("notadir") {
 		t.Fatal(1)
 	}
-	if got := disk_.Stat("notadir/nosuchfile", &err); got != 0 {
+	if got := disk.Stat("notadir/nosuchfile", &err); got != 0 {
 		t.Fatal(got)
 	}
 	if "" != err {
@@ -68,14 +68,14 @@ func TestDiskInterfaceTest_StatMissingFile(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
 
 	badPath := strings.Repeat("x", 512)
 	if runtime.GOOS == "windows" {
 		badPath = "cc:\\foo"
 	}
-	if got := disk_.Stat(badPath, &err); got != -1 {
+	if got := disk.Stat(badPath, &err); got != -1 {
 		t.Fatal(got)
 	}
 	if "" == err {
@@ -84,12 +84,12 @@ func TestDiskInterfaceTest_StatBadPath(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
 	if !Touch("file") {
 		t.Fatal("failed")
 	}
-	if disk_.Stat("file", &err) <= 1 {
+	if disk.Stat("file", &err) <= 1 {
 		t.Fatal("failed")
 	}
 	if "" != err {
@@ -98,46 +98,46 @@ func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
-	if !disk_.MakeDir("subdir") {
+	if !disk.MakeDir("subdir") {
 		t.Fatal(0)
 	}
-	if !disk_.MakeDir("subdir/subsubdir") {
+	if !disk.MakeDir("subdir/subsubdir") {
 		t.Fatal(0)
 	}
-	if disk_.Stat("..", &err) <= 1 {
-		t.Fatal(0)
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
-	if disk_.Stat(".", &err) <= 1 {
+	if disk.Stat("..", &err) <= 1 {
 		t.Fatal(0)
 	}
 	if "" != err {
 		t.Fatal(err)
 	}
-	if disk_.Stat("subdir", &err) <= 1 {
+	if disk.Stat(".", &err) <= 1 {
 		t.Fatal(0)
 	}
 	if "" != err {
 		t.Fatal(err)
 	}
-	if disk_.Stat("subdir/subsubdir", &err) <= 1 {
+	if disk.Stat("subdir", &err) <= 1 {
+		t.Fatal(0)
+	}
+	if "" != err {
+		t.Fatal(err)
+	}
+	if disk.Stat("subdir/subsubdir", &err) <= 1 {
 		t.Fatal(0)
 	}
 	if "" != err {
 		t.Fatal(err)
 	}
 
-	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/.", &err) {
+	if disk.Stat("subdir", &err) != disk.Stat("subdir/.", &err) {
 		t.Fatal(0)
 	}
-	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/subsubdir/..", &err) {
+	if disk.Stat("subdir", &err) != disk.Stat("subdir/subsubdir/..", &err) {
 		t.Fatal(0)
 	}
-	if disk_.Stat("subdir/subsubdir", &err) != disk_.Stat("subdir/subsubdir/.", &err) {
+	if disk.Stat("subdir/subsubdir", &err) != disk.Stat("subdir/subsubdir/.", &err) {
 		t.Fatal(0)
 	}
 }
@@ -147,7 +147,7 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 		t.Skip("windows-only test")
 	}
 	t.Skip("TODO")
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
 
 	if !Touch("file1") {
@@ -156,10 +156,10 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 	if !Touch("fiLE2") {
 		t.Fatal("expected true")
 	}
-	if !disk_.MakeDir("subdir") {
+	if !disk.MakeDir("subdir") {
 		t.Fatal("expected true")
 	}
-	if !disk_.MakeDir("subdir/subsubdir") {
+	if !disk.MakeDir("subdir/subsubdir") {
 		t.Fatal("expected true")
 	}
 	if !Touch("subdir\\subfile1") {
@@ -172,80 +172,80 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	disk_.AllowStatCache(false)
-	parentStatUncached := disk_.Stat("..", &err)
-	disk_.AllowStatCache(true)
+	disk.AllowStatCache(false)
+	parentStatUncached := disk.Stat("..", &err)
+	disk.AllowStatCache(true)
 
-	if got := disk_.Stat("FIle1", &err); got <= 1 {
+	if got := disk.Stat("FIle1", &err); got <= 1 {
 		t.Fatal(got)
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("file1", &err) <= 1 {
+	if disk.Stat("file1", &err) <= 1 {
 		t.Fatal("expected greater")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	if disk_.Stat("subdir/subfile2", &err) <= 1 {
+	if disk.Stat("subdir/subfile2", &err) <= 1 {
 		t.Fatal("expected greater")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("sUbdir\\suBFile1", &err) <= 1 {
-		t.Fatal("expected greater")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-
-	if disk_.Stat("..", &err) <= 1 {
-		t.Fatal("expected greater")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if disk_.Stat(".", &err) <= 1 {
-		t.Fatal("expected greater")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if disk_.Stat("subdir", &err) <= 1 {
-		t.Fatal("expected greater")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
-	if disk_.Stat("subdir/subsubdir", &err) <= 1 {
+	if disk.Stat("sUbdir\\suBFile1", &err) <= 1 {
 		t.Fatal("expected greater")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/.", &err) {
+	if disk.Stat("..", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk.Stat(".", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk.Stat("subdir", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+	if disk.Stat("subdir/subsubdir", &err) <= 1 {
+		t.Fatal("expected greater")
+	}
+	if "" != err {
+		t.Fatal("expected equal")
+	}
+
+	if disk.Stat("subdir", &err) != disk.Stat("subdir/.", &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("subdir", &err) != disk_.Stat("subdir/subsubdir/..", &err) {
+	if disk.Stat("subdir", &err) != disk.Stat("subdir/subsubdir/..", &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("..", &err) != parentStatUncached {
+	if disk.Stat("..", &err) != parentStatUncached {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if disk_.Stat("subdir/subsubdir", &err) != disk_.Stat("subdir/subsubdir/.", &err) {
+	if disk.Stat("subdir/subsubdir", &err) != disk.Stat("subdir/subsubdir/.", &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
@@ -254,27 +254,27 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 
 	// Test error cases.
 	badPath := "cc:\\foo"
-	if -1 != disk_.Stat(badPath, &err) {
+	if -1 != disk.Stat(badPath, &err) {
 		t.Fatal("expected equal")
 	}
 	if "" == err {
 		t.Fatal("expected error")
 	}
 	err = ""
-	if -1 != disk_.Stat(badPath, &err) {
+	if -1 != disk.Stat(badPath, &err) {
 		t.Fatal("expected equal")
 	}
 	if "" == err {
 		t.Fatal("expected error")
 	}
 	err = ""
-	if 0 != disk_.Stat("nosuchfile", &err) {
+	if 0 != disk.Stat("nosuchfile", &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 0 != disk_.Stat("nosuchdir/nosuchfile", &err) {
+	if 0 != disk.Stat("nosuchdir/nosuchfile", &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != err {
@@ -283,10 +283,10 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	err := ""
 	content := ""
-	if NotFound != disk_.ReadFile("foobar", &content, &err) {
+	if NotFound != disk.ReadFile("foobar", &content, &err) {
 		t.Fatal("expected equal")
 	}
 	if "" != content {
@@ -308,7 +308,7 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if Okay != disk_.ReadFile(testFile, &content, &err) {
+	if Okay != disk.ReadFile(testFile, &content, &err) {
 		t.Fatal("expected equal")
 	}
 	if content != testContent+"\x00" {
@@ -320,9 +320,9 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	path := "path/with/double//slash/"
-	if !MakeDirs(&disk_, path) {
+	if !MakeDirs(&disk, path) {
 		t.Fatal("expected true")
 	}
 	f, _ := os.OpenFile(path+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
@@ -333,7 +333,7 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	path2 := "another\\with\\back\\\\slashes\\"
-	if !MakeDirs(&disk_, path2) {
+	if !MakeDirs(&disk, path2) {
 		t.Fatal("expected true")
 	}
 	f2, _ := os.OpenFile(path2+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
@@ -346,18 +346,18 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	kFileName := "file-to-remove"
 	if !Touch(kFileName) {
 		t.Fatal("expected true")
 	}
-	if 0 != disk_.RemoveFile(kFileName) {
+	if 0 != disk.RemoveFile(kFileName) {
 		t.Fatal("expected equal")
 	}
-	if 1 != disk_.RemoveFile(kFileName) {
+	if 1 != disk.RemoveFile(kFileName) {
 		t.Fatal("expected equal")
 	}
-	if 1 != disk_.RemoveFile("does not exist") {
+	if 1 != disk.RemoveFile("does not exist") {
 		t.Fatal("expected equal")
 	}
 	if !Touch(kFileName) {
@@ -367,36 +367,36 @@ func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 	if err := os.Chmod(kFileName, 0o400); err != nil {
 		t.Fatal(err)
 	}
-	if 0 != disk_.RemoveFile(kFileName) {
+	if 0 != disk.RemoveFile(kFileName) {
 		t.Fatal("expected equal")
 	}
-	if 1 != disk_.RemoveFile(kFileName) {
+	if 1 != disk.RemoveFile(kFileName) {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
-	disk_ := DiskInterfaceTest(t)
+	disk := DiskInterfaceTest(t)
 	kDirectoryName := "directory-to-remove"
-	if !disk_.MakeDir(kDirectoryName) {
+	if !disk.MakeDir(kDirectoryName) {
 		t.Fatal("expected true")
 	}
-	if 0 != disk_.RemoveFile(kDirectoryName) {
+	if 0 != disk.RemoveFile(kDirectoryName) {
 		t.Fatal("expected equal")
 	}
-	if 1 != disk_.RemoveFile(kDirectoryName) {
+	if 1 != disk.RemoveFile(kDirectoryName) {
 		t.Fatal("expected equal")
 	}
-	if 1 != disk_.RemoveFile("does not exist") {
+	if 1 != disk.RemoveFile("does not exist") {
 		t.Fatal("expected equal")
 	}
 }
 
 type StatTest struct {
 	StateTestWithBuiltinRules
-	scan_   DependencyScan
-	mtimes_ map[string]TimeStamp
-	stats_  []string
+	scan   DependencyScan
+	mtimes map[string]TimeStamp
+	stats  []string
 }
 
 func (s *StatTest) WriteFile(path string, contents string) bool {
@@ -418,22 +418,22 @@ func (s *StatTest) RemoveFile(path string) int {
 
 // DiskInterface implementation.
 func (s *StatTest) Stat(path string, err *string) TimeStamp {
-	s.stats_ = append(s.stats_, path)
-	return s.mtimes_[path]
+	s.stats = append(s.stats, path)
+	return s.mtimes[path]
 }
 
 func NewStatTest(t *testing.T) *StatTest {
 	s := &StatTest{
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
-		mtimes_:                   map[string]TimeStamp{},
+		mtimes:                    map[string]TimeStamp{},
 	}
-	s.scan_ = NewDependencyScan(&s.state_, nil, nil, s, nil)
+	s.scan = NewDependencyScan(&s.state, nil, nil, s, nil)
 	return s
 }
 
 func TestStatTest_Simple(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state_, "build out: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat in\n", ManifestParserOptions{})
 
 	out := s.GetNode("out")
 	err := ""
@@ -443,24 +443,24 @@ func TestStatTest_Simple(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(s.stats_) {
+	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan_.RecomputeDirty(out, nil, nil)
-	if 2 != len(s.stats_) {
+	s.scan.RecomputeDirty(out, nil, nil)
+	if 2 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	if "out" != s.stats_[0] {
+	if "out" != s.stats[0] {
 		t.Fatal("expected equal")
 	}
-	if "in" != s.stats_[1] {
+	if "in" != s.stats[1] {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestStatTest_TwoStep(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
 	out := s.GetNode("out")
 	err := ""
@@ -470,33 +470,33 @@ func TestStatTest_TwoStep(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(s.stats_) {
+	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan_.RecomputeDirty(out, nil, nil)
-	if 3 != len(s.stats_) {
+	s.scan.RecomputeDirty(out, nil, nil)
+	if 3 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	if "out" != s.stats_[0] {
+	if "out" != s.stats[0] {
 		t.Fatal("expected equal")
 	}
 	if !s.GetNode("out").Dirty {
 		t.Fatal("expected true")
 	}
-	if "mid" != s.stats_[1] {
+	if "mid" != s.stats[1] {
 		t.Fatal("expected equal")
 	}
 	if !s.GetNode("mid").Dirty {
 		t.Fatal("expected true")
 	}
-	if "in" != s.stats_[2] {
+	if "in" != s.stats[2] {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestStatTest_Tree(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state_, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n", ManifestParserOptions{})
 
 	out := s.GetNode("out")
 	err := ""
@@ -506,31 +506,31 @@ func TestStatTest_Tree(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(s.stats_) {
+	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan_.RecomputeDirty(out, nil, nil)
-	if 1+6 != len(s.stats_) {
+	s.scan.RecomputeDirty(out, nil, nil)
+	if 1+6 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	if "mid1" != s.stats_[1] {
+	if "mid1" != s.stats[1] {
 		t.Fatal("expected equal")
 	}
 	if !s.GetNode("mid1").Dirty {
 		t.Fatal("expected true")
 	}
-	if "in11" != s.stats_[2] {
+	if "in11" != s.stats[2] {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestStatTest_Middle(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state_, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
 
-	s.mtimes_["in"] = 1
-	s.mtimes_["mid"] = 0 // missing
-	s.mtimes_["out"] = 1
+	s.mtimes["in"] = 1
+	s.mtimes["mid"] = 0 // missing
+	s.mtimes["out"] = 1
 
 	out := s.GetNode("out")
 	err := ""
@@ -540,10 +540,10 @@ func TestStatTest_Middle(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 1 != len(s.stats_) {
+	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan_.RecomputeDirty(out, nil, nil)
+	s.scan.RecomputeDirty(out, nil, nil)
 	if s.GetNode("in").Dirty {
 		t.Fatal("expected false")
 	}

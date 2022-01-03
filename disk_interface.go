@@ -231,11 +231,11 @@ func MakeDirs(d DiskInterface, path string) bool {
 // Implementation of DiskInterface that actually hits the disk.
 type RealDiskInterface struct {
 	// Whether stat information can be cached.
-	useCache_ bool
+	useCache bool
 
 	// TODO: Neither a map nor a hashmap seems ideal here.  If the statcache
 	// works out, come up with a better data structure.
-	cache_ Cache
+	cache Cache
 }
 
 func NewRealDiskInterface() RealDiskInterface {
@@ -253,7 +253,7 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 			*err = fmt.Sprintf("Stat(%s): Filename longer than %d characters", path, maxPath)
 			return -1
 		}
-		if !r.useCache_ {
+		if !r.useCache {
 			return StatSingleFile(path, err)
 		}
 
@@ -272,16 +272,16 @@ func (r *RealDiskInterface) Stat(path string, err *string) TimeStamp {
 		dir = strings.ToLower(dir)
 		base = strings.ToLower(base)
 
-		ci, ok := r.cache_[dir]
+		ci, ok := r.cache[dir]
 		if !ok {
 			ci = DirCache{}
-			r.cache_[dir] = ci
+			r.cache[dir] = ci
 			s := "."
 			if dir != "" {
 				s = dir
 			}
 			if !StatAllFilesInDir(s, ci, err) {
-				delete(r.cache_, dir)
+				delete(r.cache, dir)
 				return -1
 			}
 		}
@@ -389,11 +389,11 @@ func (r *RealDiskInterface) RemoveFile(path string) int {
 // Whether stat information can be cached.  Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
 	if runtime.GOOS == "windows" {
-		r.useCache_ = allow
-		if !r.useCache_ {
-			r.cache_ = nil
-		} else if r.cache_ == nil {
-			r.cache_ = Cache{}
+		r.useCache = allow
+		if !r.useCache {
+			r.cache = nil
+		} else if r.cache == nil {
+			r.cache = Cache{}
 		}
 	}
 }

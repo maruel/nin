@@ -100,13 +100,13 @@ func (s *Subprocess) run(ctx context.Context, c string, useConsole bool) {
 }
 
 type SubprocessSet struct {
-	ctx       context.Context
-	cancel    func()
-	wg        sync.WaitGroup
-	procDone  chan *Subprocess
-	mu        sync.Mutex
-	running_  []*Subprocess
-	finished_ []*Subprocess
+	ctx      context.Context
+	cancel   func()
+	wg       sync.WaitGroup
+	procDone chan *Subprocess
+	mu       sync.Mutex
+	running  []*Subprocess
+	finished []*Subprocess
 }
 
 func NewSubprocessSet() *SubprocessSet {
@@ -131,7 +131,7 @@ func (s *SubprocessSet) Clear() {
 // Running returns the number of running processes.
 func (s *SubprocessSet) Running() int {
 	s.mu.Lock()
-	r := len(s.running_)
+	r := len(s.running)
 	s.mu.Unlock()
 	return r
 }
@@ -139,7 +139,7 @@ func (s *SubprocessSet) Running() int {
 // Finished returns the number of processes to parse their output.
 func (s *SubprocessSet) Finished() int {
 	s.mu.Lock()
-	f := len(s.finished_)
+	f := len(s.finished)
 	s.mu.Unlock()
 	return f
 }
@@ -150,7 +150,7 @@ func (s *SubprocessSet) Add(c string, useConsole bool) *Subprocess {
 	s.wg.Add(1)
 	go s.enqueue(subproc, c, useConsole)
 	s.mu.Lock()
-	s.running_ = append(s.running_, subproc)
+	s.running = append(s.running, subproc)
 	s.mu.Unlock()
 	return subproc
 }
@@ -168,10 +168,10 @@ func (s *SubprocessSet) enqueue(subproc *Subprocess, c string, useConsole bool) 
 func (s *SubprocessSet) NextFinished() *Subprocess {
 	s.mu.Lock()
 	var subproc *Subprocess
-	if len(s.finished_) != 0 {
+	if len(s.finished) != 0 {
 		// LIFO queue.
-		subproc = s.finished_[len(s.finished_)-1]
-		s.finished_ = s.finished_[:len(s.finished_)-1]
+		subproc = s.finished[len(s.finished)-1]
+		s.finished = s.finished[:len(s.finished)-1]
 	}
 	s.mu.Unlock()
 	return subproc
@@ -192,16 +192,16 @@ func (s *SubprocessSet) DoWork() bool {
 			// TODO(maruel): Do a perf compare with a map[*Subprocess]struct{}.
 			s.mu.Lock()
 			i := 0
-			for i = range s.running_ {
-				if s.running_[i] == p {
+			for i = range s.running {
+				if s.running[i] == p {
 					break
 				}
 			}
-			s.finished_ = append(s.finished_, p)
-			if i < len(s.running_)-1 {
-				copy(s.running_[i:], s.running_[i+1:])
+			s.finished = append(s.finished, p)
+			if i < len(s.running)-1 {
+				copy(s.running[i:], s.running[i+1:])
 			}
-			s.running_ = s.running_[:len(s.running_)-1]
+			s.running = s.running[:len(s.running)-1]
 			s.mu.Unlock()
 			// The unit tests expect that Subprocess.Done() is only true once the
 			// subprocess has been added to finished.

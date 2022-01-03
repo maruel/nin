@@ -78,12 +78,12 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if len(log1.nodes()) != len(log2.nodes()) {
+	if len(log1.nodes) != len(log2.nodes) {
 		t.Fatal("expected equal")
 	}
-	for i := 0; i < len(log1.nodes()); i++ {
-		node1 := log1.nodes()[i]
-		node2 := log2.nodes()[i]
+	for i := 0; i < len(log1.nodes); i++ {
+		node1 := log1.nodes[i]
+		node2 := log2.nodes[i]
 		if int32(i) != node1.ID {
 			t.Fatal("expected equal")
 		}
@@ -351,7 +351,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if "foo.h" != deps.nodes[0].Path {
 			t.Fatal("expected equal")
 		}
-		if out != log.nodes()[out.ID] {
+		if out != log.nodes[out.ID] {
 			t.Fatal("expected equal")
 		}
 
@@ -371,7 +371,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		if "baz.h" != deps.nodes[1].Path {
 			t.Fatal("expected equal")
 		}
-		if otherOut != log.nodes()[otherOut.ID] {
+		if otherOut != log.nodes[otherOut.ID] {
 			t.Fatal("expected equal")
 		}
 
@@ -544,14 +544,14 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 			break
 		}
 
-		if nodeCount < len(log.nodes()) {
+		if nodeCount < len(log.nodes) {
 			t.Fatal("expected greater or equal")
 		}
-		nodeCount = len(log.nodes())
+		nodeCount = len(log.nodes)
 
 		// Count how many non-NULL deps entries there are.
 		newDepsCount := 0
-		for _, i := range log.deps() {
+		for _, i := range log.deps {
 			if i != nil {
 				newDepsCount++
 			}

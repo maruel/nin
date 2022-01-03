@@ -23,31 +23,31 @@ import (
 // A base test fixture that includes a State object with a
 // builtin "cat" rule.
 type StateTestWithBuiltinRules struct {
-	t      *testing.T
-	state_ State
+	t     *testing.T
+	state State
 }
 
 func NewStateTestWithBuiltinRules(t *testing.T) StateTestWithBuiltinRules {
 	s := StateTestWithBuiltinRules{
-		t:      t,
-		state_: NewState(),
+		t:     t,
+		state: NewState(),
 	}
-	s.AddCatRule(&s.state_)
+	s.AddCatRule(&s.state)
 	return s
 }
 
 // Add a "cat" rule to \a state.  Used by some tests; it's
-// otherwise done by the ctor to state_.
+// otherwise done by the ctor to state.
 func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
 	s.AssertParse(state, "rule cat\n  command = cat $in > $out\n", ManifestParserOptions{})
 }
 
-// Short way to get a Node by its path from state_.
+// Short way to get a Node by its path from state.
 func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 	if strings.ContainsAny(path, "/\\") {
 		s.t.Fatal(path)
 	}
-	return s.state_.GetNode(path, 0)
+	return s.state.GetNode(path, 0)
 }
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
@@ -71,7 +71,7 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 }
 
 func VerifyGraph(t *testing.T, state *State) {
-	for _, e := range state.edges_ {
+	for _, e := range state.edges {
 		if len(e.Outputs) == 0 {
 			t.Fatal("all edges need at least one output")
 		}
@@ -93,9 +93,9 @@ func VerifyGraph(t *testing.T, state *State) {
 		}
 	}
 
-	// The union of all in- and out-edges of each nodes should be exactly edges_.
+	// The union of all in- and out-edges of each nodes should be exactly edges.
 	nodeEdgeSet := map[*Edge]struct{}{}
-	for _, n := range state.paths_ {
+	for _, n := range state.paths {
 		if n.InEdge != nil {
 			nodeEdgeSet[n.InEdge] = struct{}{}
 		}
@@ -103,8 +103,8 @@ func VerifyGraph(t *testing.T, state *State) {
 			nodeEdgeSet[oe] = struct{}{}
 		}
 	}
-	if len(state.edges_) != len(nodeEdgeSet) {
-		t.Fatal("the union of all in- and out-edges must match State.edges_")
+	if len(state.edges) != len(nodeEdgeSet) {
+		t.Fatal("the union of all in- and out-edges must match State.edges")
 	}
 }
 
@@ -114,14 +114,14 @@ func VerifyGraph(t *testing.T, state *State) {
 type VirtualFileSystem struct {
 	// In the C++ code, it's an ordered set. The only test cases that depends on
 	// this is TestBuildTest_MakeDirs.
-	directoriesMade_ map[string]struct{}
-	filesRead_       []string
-	files_           FileMap
-	filesRemoved_    map[string]struct{}
-	filesCreated_    map[string]struct{}
+	directoriesMade map[string]struct{}
+	filesRead       []string
+	files           FileMap
+	filesRemoved    map[string]struct{}
+	filesCreated    map[string]struct{}
 
 	// A simple fake timestamp for file operations.
-	now_ TimeStamp
+	now TimeStamp
 }
 
 // An entry for a single in-memory file.
@@ -134,33 +134,33 @@ type FileMap map[string]Entry
 
 func NewVirtualFileSystem() VirtualFileSystem {
 	return VirtualFileSystem{
-		directoriesMade_: map[string]struct{}{},
-		files_:           FileMap{},
-		filesRemoved_:    map[string]struct{}{},
-		filesCreated_:    map[string]struct{}{},
-		now_:             1,
+		directoriesMade: map[string]struct{}{},
+		files:           FileMap{},
+		filesRemoved:    map[string]struct{}{},
+		filesCreated:    map[string]struct{}{},
+		now:             1,
 	}
 }
 
 // Tick "time" forwards; subsequent file operations will be newer than
 // previous ones.
 func (v *VirtualFileSystem) Tick() TimeStamp {
-	v.now_++
-	return v.now_
+	v.now++
+	return v.now
 }
 
 // "Create" a file with contents.
 func (v *VirtualFileSystem) Create(path string, contents string) {
-	f := v.files_[path]
-	f.mtime = v.now_
+	f := v.files[path]
+	f.mtime = v.now
 	f.contents = contents
-	v.files_[path] = f
-	v.filesCreated_[path] = struct{}{}
+	v.files[path] = f
+	v.filesCreated[path] = struct{}{}
 }
 
 // DiskInterface
 func (v *VirtualFileSystem) Stat(path string, err *string) TimeStamp {
-	i, ok := v.files_[path]
+	i, ok := v.files[path]
 	if ok {
 		*err = i.statError
 		return i.mtime
@@ -174,13 +174,13 @@ func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
 }
 
 func (v *VirtualFileSystem) MakeDir(path string) bool {
-	v.directoriesMade_[path] = struct{}{}
+	v.directoriesMade[path] = struct{}{}
 	return true // success
 }
 
 func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) DiskStatus {
-	v.filesRead_ = append(v.filesRead_, path)
-	i, ok := v.files_[path]
+	v.filesRead = append(v.filesRead, path)
+	i, ok := v.files[path]
 	if ok {
 		if len(i.contents) == 0 {
 			*contents = ""
@@ -194,12 +194,12 @@ func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string)
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {
-	if _, ok := v.directoriesMade_[path]; ok {
+	if _, ok := v.directoriesMade[path]; ok {
 		return -1
 	}
-	if _, ok := v.files_[path]; ok {
-		delete(v.files_, path)
-		v.filesRemoved_[path] = struct{}{}
+	if _, ok := v.files[path]; ok {
+		delete(v.files, path)
+		v.filesRemoved[path] = struct{}{}
 		return 0
 	}
 	return 1

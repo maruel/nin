@@ -21,8 +21,8 @@ import (
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
 type IncludesNormalize struct {
-	relativeTo_      string
-	splitRelativeTo_ []string
+	relativeTo      string
+	splitRelativeTo []string
 }
 
 func NewIncludesNormalize(relativeTo string) IncludesNormalize {
@@ -32,8 +32,8 @@ func NewIncludesNormalize(relativeTo string) IncludesNormalize {
 		fatalf("Initializing IncludesNormalize(): %s", err)
 	}
 	return IncludesNormalize{
-		relativeTo_:      relativeTo,
-		splitRelativeTo_: strings.Split(relativeTo, "/"),
+		relativeTo:      relativeTo,
+		splitRelativeTo: strings.Split(relativeTo, "/"),
 	}
 }
 
@@ -158,7 +158,7 @@ func relativize(path string, startList []string, err *string) string {
 }
 
 /// Normalize by fixing slashes style, fixing redundant .. and . and makes the
-/// path |input| relative to |this->relativeTo_| and store to |result|.
+/// path |input| relative to |this->relativeTo| and store to |result|.
 func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
 	len2 := len(input)
 	if len2 >= maxPath {
@@ -171,13 +171,13 @@ func (i *IncludesNormalize) Normalize(input string, result *string, err *string)
 		return false
 	}
 
-	if !sameDrive(absInput, i.relativeTo_, err) {
+	if !sameDrive(absInput, i.relativeTo, err) {
 		if len(*err) != 0 {
 			return false
 		}
 		*result = cp
 		return true
 	}
-	*result = relativize(absInput, i.splitRelativeTo_, err)
+	*result = relativize(absInput, i.splitRelativeTo, err)
 	return len(*err) == 0
 }

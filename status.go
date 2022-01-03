@@ -41,91 +41,91 @@ type Status interface {
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
 type StatusPrinter struct {
-	config_ *BuildConfig
+	config *BuildConfig
 
-	startedEdges_, finishedEdges_, totalEdges_, runningEdges_ int
-	timeMillis_                                               int32
+	startedEdges, finishedEdges, totalEdges, runningEdges int
+	timeMillis                                            int32
 
 	// Prints progress output.
-	printer_ LinePrinter
+	printer LinePrinter
 
 	// The custom progress status format to use.
-	progressStatusFormat_ string
-	currentRate_          slidingRateInfo
+	progressStatusFormat string
+	currentRate          slidingRateInfo
 }
 
 type slidingRateInfo struct {
-	rate_       float64
-	N           int
-	times_      []float64
-	lastUpdate_ int
+	rate       float64
+	N          int
+	times      []float64
+	lastUpdate int
 }
 
 func (s *slidingRateInfo) updateRate(updateHint int, timeMillis int32) {
-	if updateHint == s.lastUpdate_ {
+	if updateHint == s.lastUpdate {
 		return
 	}
-	s.lastUpdate_ = updateHint
+	s.lastUpdate = updateHint
 
-	if len(s.times_) == s.N {
-		s.times_ = s.times_[:len(s.times_)-1]
+	if len(s.times) == s.N {
+		s.times = s.times[:len(s.times)-1]
 	}
-	s.times_ = append(s.times_, float64(timeMillis))
-	back := s.times_[0]
-	front := s.times_[len(s.times_)-1]
+	s.times = append(s.times, float64(timeMillis))
+	back := s.times[0]
+	front := s.times[len(s.times)-1]
 	if back != front {
-		s.rate_ = float64(len(s.times_)) / ((back - front) / 1e3)
+		s.rate = float64(len(s.times)) / ((back - front) / 1e3)
 	}
 }
 
 func NewStatusPrinter(config *BuildConfig) *StatusPrinter {
 	s := &StatusPrinter{
-		config_:  config,
-		printer_: NewLinePrinter(),
-		currentRate_: slidingRateInfo{
-			rate_:       -1,
-			N:           config.parallelism,
-			lastUpdate_: -1,
+		config:  config,
+		printer: NewLinePrinter(),
+		currentRate: slidingRateInfo{
+			rate:       -1,
+			N:          config.parallelism,
+			lastUpdate: -1,
 		},
 	}
 	// Don't do anything fancy in verbose mode.
-	if s.config_.verbosity != Normal {
-		s.printer_.setSmartTerminal(false)
+	if s.config.verbosity != Normal {
+		s.printer.setSmartTerminal(false)
 	}
 
-	s.progressStatusFormat_ = os.Getenv("NINJA_STATUS")
-	if s.progressStatusFormat_ == "" {
-		s.progressStatusFormat_ = "[%f/%t] "
+	s.progressStatusFormat = os.Getenv("NINJA_STATUS")
+	if s.progressStatusFormat == "" {
+		s.progressStatusFormat = "[%f/%t] "
 	}
 	return s
 }
 
 func (s *StatusPrinter) PlanHasTotalEdges(total int) {
-	s.totalEdges_ = total
+	s.totalEdges = total
 }
 
 func (s *StatusPrinter) BuildEdgeStarted(edge *Edge, startTimeMillis int32) {
-	s.startedEdges_++
-	s.runningEdges_++
-	s.timeMillis_ = startTimeMillis
-	if edge.Pool == ConsolePool || s.printer_.isSmartTerminal() {
+	s.startedEdges++
+	s.runningEdges++
+	s.timeMillis = startTimeMillis
+	if edge.Pool == ConsolePool || s.printer.isSmartTerminal() {
 		s.PrintStatus(edge, startTimeMillis)
 	}
 
 	if edge.Pool == ConsolePool {
-		s.printer_.SetConsoleLocked(true)
+		s.printer.SetConsoleLocked(true)
 	}
 }
 
 func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, success bool, output string) {
-	s.timeMillis_ = endTimeMillis
-	s.finishedEdges_++
+	s.timeMillis = endTimeMillis
+	s.finishedEdges++
 
 	if edge.Pool == ConsolePool {
-		s.printer_.SetConsoleLocked(false)
+		s.printer.SetConsoleLocked(false)
 	}
 
-	if s.config_.verbosity == Quiet {
+	if s.config.verbosity == Quiet {
 		return
 	}
 
@@ -133,7 +133,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		s.PrintStatus(edge, endTimeMillis)
 	}
 
-	s.runningEdges_--
+	s.runningEdges--
 
 	// Print the command that is spewing before printing its output.
 	if !success {
@@ -141,12 +141,12 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		for _, o := range edge.Outputs {
 			outputs += o.Path + " "
 		}
-		if s.printer_.supportsColor() {
-			s.printer_.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
+		if s.printer.supportsColor {
+			s.printer.PrintOnNewLine("\x1B[31mFAILED: \x1B[0m" + outputs + "\n")
 		} else {
-			s.printer_.PrintOnNewLine("FAILED: " + outputs + "\n")
+			s.printer.PrintOnNewLine("FAILED: " + outputs + "\n")
 		}
-		s.printer_.PrintOnNewLine(edge.EvaluateCommand(false) + "\n")
+		s.printer.PrintOnNewLine(edge.EvaluateCommand(false) + "\n")
 	}
 
 	if len(output) != 0 {
@@ -157,12 +157,12 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		// be run with a flag that forces them to always print color escape codes.
 		// To make sure these escape codes don't show up in a file if ninja's output
 		// is piped to a file, ninja strips ansi escape codes again if it's not
-		// writing to a |smartTerminal_|.
+		// writing to a |smartTerminal|.
 		// (Launching subprocesses in pseudo ttys doesn't work because there are
 		// only a few hundred available on some systems, and ninja can launch
 		// thousands of parallel compile commands.)
 		finalOutput := ""
-		if !s.printer_.supportsColor() {
+		if !s.printer.supportsColor {
 			finalOutput = StripAnsiEscapeCodes(output)
 		} else {
 			finalOutput = output
@@ -172,7 +172,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		// Fix extra CR being added on Windows, writing out CR CR LF (#773)
 		//Setmode(Fileno(stdout), _O_BINARY) // Begin Windows extra CR fix
 
-		s.printer_.PrintOnNewLine(finalOutput)
+		s.printer.PrintOnNewLine(finalOutput)
 
 		//Setmode(Fileno(stdout), _O_TEXT) // End Windows extra CR fix
 
@@ -190,19 +190,19 @@ func (s *StatusPrinter) BuildLoadDyndeps() {
 	// append to the status line.  After the explanations are done a
 	// new build status line will appear.
 	if gExplaining {
-		s.printer_.PrintOnNewLine("")
+		s.printer.PrintOnNewLine("")
 	}
 }
 
 func (s *StatusPrinter) BuildStarted() {
-	s.startedEdges_ = 0
-	s.finishedEdges_ = 0
-	s.runningEdges_ = 0
+	s.startedEdges = 0
+	s.finishedEdges = 0
+	s.runningEdges = 0
 }
 
 func (s *StatusPrinter) BuildFinished() {
-	s.printer_.SetConsoleLocked(false)
-	s.printer_.PrintOnNewLine("")
+	s.printer.SetConsoleLocked(false)
+	s.printer.PrintOnNewLine("")
 }
 
 // Format the progress status string by replacing the placeholders.
@@ -225,27 +225,27 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 
 				// Started edges.
 			case 's':
-				out += strconv.Itoa(s.startedEdges_)
+				out += strconv.Itoa(s.startedEdges)
 
 				// Total edges.
 			case 't':
-				out += strconv.Itoa(s.totalEdges_)
+				out += strconv.Itoa(s.totalEdges)
 
 				// Running edges.
 			case 'r':
-				out += strconv.Itoa(s.runningEdges_)
+				out += strconv.Itoa(s.runningEdges)
 
 				// Unstarted edges.
 			case 'u':
-				out += strconv.Itoa(s.totalEdges_ - s.startedEdges_)
+				out += strconv.Itoa(s.totalEdges - s.startedEdges)
 
 				// Finished edges.
 			case 'f':
-				out += strconv.Itoa(s.finishedEdges_)
+				out += strconv.Itoa(s.finishedEdges)
 
 				// Overall finished edges per second.
 			case 'o':
-				rate := float64(s.finishedEdges_) / float64(s.timeMillis_) * 1000.
+				rate := float64(s.finishedEdges) / float64(s.timeMillis) * 1000.
 				if rate == -1 {
 					out += "?"
 				} else {
@@ -254,8 +254,8 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 
 				// Current rate, average over the last '-j' jobs.
 			case 'c':
-				s.currentRate_.updateRate(s.finishedEdges_, s.timeMillis_)
-				rate := s.currentRate_.rate_
+				s.currentRate.updateRate(s.finishedEdges, s.timeMillis)
+				rate := s.currentRate.rate
 				if rate == -1 {
 					out += "?"
 				} else {
@@ -264,11 +264,11 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 
 				// Percentage
 			case 'p':
-				percent := (100 * s.finishedEdges_) / s.totalEdges_
+				percent := (100 * s.finishedEdges) / s.totalEdges
 				out += fmt.Sprintf("%3d%%", percent)
 
 			case 'e':
-				out += fmt.Sprintf("%.3f", float64(s.timeMillis_)*0.001)
+				out += fmt.Sprintf("%.3f", float64(s.timeMillis)*0.001)
 
 			default:
 				fatalf("unknown placeholder '%%%c' in $NINJA_STATUS", c)
@@ -282,24 +282,24 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 }
 
 func (s *StatusPrinter) PrintStatus(edge *Edge, timeMillis int32) {
-	if s.config_.verbosity == Quiet || s.config_.verbosity == NoStatusUpdate {
+	if s.config.verbosity == Quiet || s.config.verbosity == NoStatusUpdate {
 		return
 	}
 
-	forceFullCommand := s.config_.verbosity == Verbose
+	forceFullCommand := s.config.verbosity == Verbose
 
 	toPrint := edge.GetBinding("description")
 	if toPrint == "" || forceFullCommand {
 		toPrint = edge.GetBinding("command")
 	}
 
-	toPrint = s.FormatProgressStatus(s.progressStatusFormat_, timeMillis) + toPrint
+	toPrint = s.FormatProgressStatus(s.progressStatusFormat, timeMillis) + toPrint
 
 	l := FULL
 	if forceFullCommand {
 		l = ELIDE
 	}
-	s.printer_.Print(toPrint, l)
+	s.printer.Print(toPrint, l)
 }
 
 func (s *StatusPrinter) Warning(msg string, i ...interface{}) {

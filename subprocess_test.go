@@ -36,19 +36,19 @@ func NewSubprocessSetTest(t *testing.T) *SubprocessSet {
 
 // Run a command that fails and emits to stderr.
 func TestSubprocessTest_BadCommandStderr(t *testing.T) {
-	subprocs_ := NewSubprocessSetTest(t)
+	subprocs := NewSubprocessSetTest(t)
 	cmd := "bash -c foo"
 	if runtime.GOOS == "windows" {
 		cmd = "cmd /c ninja_no_such_command"
 	}
-	subproc := subprocs_.Add(cmd, false)
+	subproc := subprocs.Add(cmd, false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
 		// Pretend we discovered that stderr was ready for writing.
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	// ExitFailure
@@ -66,15 +66,15 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 
 // Run a command that does not exist
 func TestSubprocessTest_NoSuchCommand(t *testing.T) {
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("ninja_no_such_command", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("ninja_no_such_command", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
 		// Pretend we discovered that stderr was ready for writing.
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	// ExitFailure
@@ -102,14 +102,14 @@ func TestSubprocessTest_InterruptChild(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("kill -INT $$", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("kill -INT $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	// ExitInterrupted
@@ -123,21 +123,21 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
 		t.Skip("can't run on Windows")
 	}
 	t.Skip("TODO")
-	subprocs_ := NewSubprocessSetTest(t)
+	subprocs := NewSubprocessSetTest(t)
 	c := make(chan os.Signal, 1)
 	go func() {
 		<-c
-		subprocs_.Clear()
+		subprocs.Clear()
 	}()
 	signal.Notify(c, os.Interrupt)
 	defer signal.Reset(os.Interrupt)
-	subproc := subprocs_.Add("kill -INT $PPID ; sleep 1", false)
+	subproc := subprocs.Add("kill -INT $PPID ; sleep 1", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		if subprocs_.DoWork() {
+		if subprocs.DoWork() {
 			return
 		}
 	}
@@ -149,14 +149,14 @@ func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("kill -TERM $$", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("kill -TERM $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	// TODO(maruel): ExitInterrupted
@@ -170,14 +170,14 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
 		t.Skip("can't run on Windows")
 	}
 	t.Skip("TODO")
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("kill -TERM $PPID ; sleep 1", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("kill -TERM $PPID ; sleep 1", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		if subprocs_.DoWork() {
+		if subprocs.DoWork() {
 			return
 		}
 	}
@@ -189,14 +189,14 @@ func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("kill -HUP $$", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("kill -HUP $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	// TODO(maruel): ExitInterrupted
@@ -210,14 +210,14 @@ func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("kill -HUP $PPID ; sleep 1", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("kill -HUP $PPID ; sleep 1", false)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		if subprocs_.DoWork() {
+		if subprocs.DoWork() {
 			return
 		}
 	}
@@ -237,15 +237,15 @@ func TestSubprocessTest_Console(t *testing.T) {
 			t.Skip("need a real console to run this test")
 		}
 	*/
-	subprocs_ := NewSubprocessSetTest(t)
+	subprocs := NewSubprocessSetTest(t)
 	// useConsole = true
-	subproc := subprocs_.Add("test -t 0 -a -t 1 -a -t 2", true)
+	subproc := subprocs.Add("test -t 0 -a -t 1 -a -t 2", true)
 	if nil == subproc {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
 	if got := subproc.Finish(); got != ExitSuccess {
@@ -254,14 +254,14 @@ func TestSubprocessTest_Console(t *testing.T) {
 }
 
 func TestSubprocessTest_SetWithSingle(t *testing.T) {
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add(testCommand(), false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add(testCommand(), false)
 	if subproc == nil {
 		t.Fatal("expected different")
 	}
 
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 	if subproc.Finish() != ExitSuccess {
 		t.Fatal("expected equal")
@@ -270,7 +270,7 @@ func TestSubprocessTest_SetWithSingle(t *testing.T) {
 		t.Fatal("expected different")
 	}
 
-	if got := subprocs_.Finished(); got != 1 {
+	if got := subprocs.Finished(); got != 1 {
 		t.Fatal(got)
 	}
 }
@@ -284,15 +284,15 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 		commands = append(commands, "id -u", "pwd")
 	}
 
-	subprocs_ := NewSubprocessSetTest(t)
+	subprocs := NewSubprocessSetTest(t)
 	for i := 0; i < 3; i++ {
-		processes[i] = subprocs_.Add(commands[i], false)
+		processes[i] = subprocs.Add(commands[i], false)
 		if processes[i] == nil {
 			t.Fatal("expected different")
 		}
 	}
 
-	if subprocs_.Running() != 3 {
+	if subprocs.Running() != 3 {
 		t.Fatal("expected equal")
 	}
 	/* The expectations with the C++ code is different.
@@ -307,16 +307,16 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 	*/
 
 	for !processes[0].Done() || !processes[1].Done() || !processes[2].Done() {
-		if subprocs_.Running() <= 0 {
+		if subprocs.Running() <= 0 {
 			t.Fatal("expected greater")
 		}
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 
-	if subprocs_.Running() != 0 {
+	if subprocs.Running() != 0 {
 		t.Fatal("expected equal")
 	}
-	if subprocs_.Finished() != 3 {
+	if subprocs.Finished() != 3 {
 		t.Fatal("expected equal")
 	}
 
@@ -342,17 +342,17 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 	subprocessTestFixUlimit(t, numProcs)
 	cmd := "/bin/echo"
 
-	subprocs_ := NewSubprocessSetTest(t)
+	subprocs := NewSubprocessSetTest(t)
 	var procs []*Subprocess
 	for i := 0; i < numProcs; i++ {
-		subproc := subprocs_.Add(cmd, false)
+		subproc := subprocs.Add(cmd, false)
 		if nil == subproc {
 			t.Fatal("expected different")
 		}
 		procs = append(procs, subproc)
 	}
-	for subprocs_.Running() != 0 {
-		subprocs_.DoWork()
+	for subprocs.Running() != 0 {
+		subprocs.DoWork()
 	}
 	for i := 0; i < len(procs); i++ {
 		if got := procs[i].Finish(); got != ExitSuccess {
@@ -362,7 +362,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 			t.Fatal("expected different")
 		}
 	}
-	if numProcs != subprocs_.Finished() {
+	if numProcs != subprocs.Finished() {
 		t.Fatal("expected equal")
 	}
 }
@@ -375,15 +375,15 @@ func TestSubprocessTest_ReadStdin(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Has to be ported")
 	}
-	subprocs_ := NewSubprocessSetTest(t)
-	subproc := subprocs_.Add("cat -", false)
+	subprocs := NewSubprocessSetTest(t)
+	subproc := subprocs.Add("cat -", false)
 	for !subproc.Done() {
-		subprocs_.DoWork()
+		subprocs.DoWork()
 	}
 	if subproc.Finish() != ExitSuccess {
 		t.Fatal("expected equal")
 	}
-	if subprocs_.Finished() != 1 {
+	if subprocs.Finished() != 1 {
 		t.Fatal("expected equal")
 	}
 }

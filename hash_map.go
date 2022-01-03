@@ -55,7 +55,7 @@ template<>
 type hash struct {
 
   sizeT operator()(string key) const {
-    return MurmurHash2(key.str_, key.len_)
+    return MurmurHash2(key.str, key.len)
   }
 
 type argumentType string
@@ -66,16 +66,16 @@ using stdext::hashCompare
 
 type StringPieceCmp struct {
   sizeT operator()(const string& key) const {
-    return MurmurHash2(key.str_, key.len_)
+    return MurmurHash2(key.str, key.len)
   }
   bool operator()(const string& a, const string& b) const {
-    int cmp = memcmp(a.str_, b.str_, min(a.len_, b.len_))
+    int cmp = memcmp(a.str, b.str, min(a.len, b.len))
     if (cmp < 0) {
       return true
     } else if (cmp > 0) {
       return false
     } else {
-      return a.len_ < b.len_
+      return a.len < b.len
     }
   }
 }

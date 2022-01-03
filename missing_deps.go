@@ -24,43 +24,43 @@ type MissingDependencyPrinter struct {
 }
 
 type MissingDependencyScanner struct {
-	delegate_            MissingDependencyScannerDelegate
-	depsLog_             *DepsLog
-	state_               *State
-	diskInterface_       DiskInterface
-	seen_                map[*Node]struct{}
-	nodesMissingDeps_    map[*Node]struct{}
-	generatedNodes_      map[*Node]struct{}
-	generatorRules_      map[*Rule]struct{}
-	missingDepPathCount_ int
+	delegate            MissingDependencyScannerDelegate
+	depsLog             *DepsLog
+	state               *State
+	diskInterface       DiskInterface
+	seen                map[*Node]struct{}
+	nodesMissingDeps    map[*Node]struct{}
+	generatedNodes      map[*Node]struct{}
+	generatorRules      map[*Rule]struct{}
+	missingDepPathCount int
 
-	adjacencyMap_ AdjacencyMap
+	adjacencyMap AdjacencyMap
 }
 type InnerAdjacencyMap map[*Edge]bool
 type AdjacencyMap map[*Edge]InnerAdjacencyMap
 
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
-	return len(m.nodesMissingDeps_) != 0
+	return len(m.nodesMissingDeps) != 0
 }
 
 // ImplicitDepLoader variant that stores dep nodes into the given output
 // without updating graph deps like the base loader does.
 type NodeStoringImplicitDepLoader struct {
 	ImplicitDepLoader
-	depNodesOutput_ []*Node
+	depNodesOutput []*Node
 }
 
 func NewNodeStoringImplicitDepLoader(state *State, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions, depNodesOutput []*Node) NodeStoringImplicitDepLoader {
 	return NodeStoringImplicitDepLoader{
 		ImplicitDepLoader: NewImplicitDepLoader(state, depsLog, diskInterface, depfileParserOptions),
-		depNodesOutput_:   depNodesOutput,
+		depNodesOutput:    depNodesOutput,
 	}
 }
 
 func (n *NodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
 	for _, i := range depfileIns {
-		node := n.state_.GetNode(CanonicalizePathBits(i))
-		n.depNodesOutput_ = append(n.depNodesOutput_, node)
+		node := n.state.GetNode(CanonicalizePathBits(i))
+		n.depNodesOutput = append(n.depNodesOutput, node)
 	}
 	return true
 }
@@ -71,15 +71,15 @@ func (m *MissingDependencyPrinter) OnMissingDep(node *Node, path string, generat
 
 func NewMissingDependencyScanner(delegate MissingDependencyScannerDelegate, depsLog *DepsLog, state *State, diskInterface DiskInterface) MissingDependencyScanner {
 	return MissingDependencyScanner{
-		delegate_:         delegate,
-		depsLog_:          depsLog,
-		state_:            state,
-		diskInterface_:    diskInterface,
-		seen_:             map[*Node]struct{}{},
-		nodesMissingDeps_: map[*Node]struct{}{},
-		generatedNodes_:   map[*Node]struct{}{},
-		generatorRules_:   map[*Rule]struct{}{},
-		adjacencyMap_:     AdjacencyMap{},
+		delegate:         delegate,
+		depsLog:          depsLog,
+		state:            state,
+		diskInterface:    diskInterface,
+		seen:             map[*Node]struct{}{},
+		nodesMissingDeps: map[*Node]struct{}{},
+		generatedNodes:   map[*Node]struct{}{},
+		generatorRules:   map[*Rule]struct{}{},
+		adjacencyMap:     AdjacencyMap{},
 	}
 }
 
@@ -91,10 +91,10 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	if edge == nil {
 		return
 	}
-	if _, ok := m.seen_[node]; ok {
+	if _, ok := m.seen[node]; ok {
 		return
 	}
-	m.seen_[node] = struct{}{}
+	m.seen[node] = struct{}{}
 
 	for _, in := range edge.Inputs {
 		m.ProcessNode(in)
@@ -102,14 +102,14 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 
 	depsType := edge.GetBinding("deps")
 	if len(depsType) != 0 {
-		deps := m.depsLog_.GetDeps(node)
+		deps := m.depsLog.GetDeps(node)
 		if deps != nil {
 			m.ProcessNodeDeps(node, deps.nodes)
 		}
 	} else {
 		var parserOpts DepfileParserOptions
 		var depfileDeps []*Node
-		depLoader := NewNodeStoringImplicitDepLoader(m.state_, m.depsLog_, m.diskInterface_, &parserOpts, depfileDeps)
+		depLoader := NewNodeStoringImplicitDepLoader(m.state, m.depsLog, m.diskInterface, &parserOpts, depfileDeps)
 		err := ""
 		depLoader.LoadDeps(edge, &err)
 		if len(depfileDeps) != 0 {
@@ -154,28 +154,28 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, depNodes []*Node)
 				if depNodes[i].InEdge == nil {
 					panic("M-A")
 				}
-				if m.delegate_ == nil {
+				if m.delegate == nil {
 					panic("M-A")
 				}
 				if depNodes[i].InEdge == ne {
-					m.generatedNodes_[depNodes[i]] = struct{}{}
-					m.generatorRules_[ne.Rule] = struct{}{}
+					m.generatedNodes[depNodes[i]] = struct{}{}
+					m.generatorRules[ne.Rule] = struct{}{}
 					missingDepsRuleNames[ne.Rule.Name] = struct{}{}
-					m.delegate_.OnMissingDep(node, depNodes[i].Path, ne.Rule)
+					m.delegate.OnMissingDep(node, depNodes[i].Path, ne.Rule)
 				}
 			}
 		}
-		m.missingDepPathCount_ += len(missingDepsRuleNames)
-		m.nodesMissingDeps_[node] = struct{}{}
+		m.missingDepPathCount += len(missingDepsRuleNames)
+		m.nodesMissingDeps[node] = struct{}{}
 	}
 }
 
 func (m *MissingDependencyScanner) PrintStats() {
-	fmt.Printf("Processed %d nodes.\n", len(m.seen_))
+	fmt.Printf("Processed %d nodes.\n", len(m.seen))
 	if m.HadMissingDeps() {
-		fmt.Printf("Error: There are %d missing dependency paths.\n", m.missingDepPathCount_)
+		fmt.Printf("Error: There are %d missing dependency paths.\n", m.missingDepPathCount)
 		fmt.Printf("%d targets had depfile dependencies on %d distinct generated inputs (from %d rules) without a non-depfile dep path to the generator.\n",
-			len(m.nodesMissingDeps_), len(m.generatedNodes_), len(m.generatorRules_))
+			len(m.nodesMissingDeps), len(m.generatedNodes), len(m.generatorRules))
 		fmt.Printf("There might be build flakiness if any of the targets listed above are built alone, or not late enough, in a clean output directory.\n")
 	} else {
 		fmt.Printf("No missing dependencies on generated files found.\n")
@@ -183,7 +183,7 @@ func (m *MissingDependencyScanner) PrintStats() {
 }
 
 func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool {
-	it, ok := m.adjacencyMap_[from]
+	it, ok := m.adjacencyMap[from]
 	if ok {
 		innerIt, ok := it[to]
 		if ok {
@@ -191,7 +191,7 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
 		}
 	} else {
 		it = InnerAdjacencyMap{}
-		m.adjacencyMap_[from] = it
+		m.adjacencyMap[from] = it
 	}
 	found := false
 	for i := 0; i < len(to.Inputs); i++ {

@@ -17,47 +17,42 @@ package nin
 import "fmt"
 
 type Cleaner struct {
-	state_             *State
-	config_            *BuildConfig
-	dyndepLoader_      DyndepLoader
-	removed_           map[string]struct{}
-	cleaned_           map[*Node]struct{}
-	cleanedFilesCount_ int
-	diskInterface_     DiskInterface
-	status_            int
-}
-
-// @return the number of file cleaned.
-func (c *Cleaner) cleanedFilesCount() int {
-	return c.cleanedFilesCount_
+	state             *State
+	config            *BuildConfig
+	dyndepLoader      DyndepLoader
+	removed           map[string]struct{}
+	cleaned           map[*Node]struct{}
+	cleanedFilesCount int // Number of files cleaned.
+	diskInterface     DiskInterface
+	status            int
 }
 
 // @return whether the cleaner is in verbose mode.
 func (c *Cleaner) IsVerbose() bool {
-	return c.config_.verbosity != Quiet && (c.config_.verbosity == Verbose || c.config_.dryRun)
+	return c.config.verbosity != Quiet && (c.config.verbosity == Verbose || c.config.dryRun)
 }
 
 func NewCleaner(state *State, config *BuildConfig, diskInterface DiskInterface) *Cleaner {
 	return &Cleaner{
-		state_:         state,
-		config_:        config,
-		dyndepLoader_:  NewDyndepLoader(state, diskInterface),
-		removed_:       map[string]struct{}{},
-		cleaned_:       map[*Node]struct{}{},
-		diskInterface_: diskInterface,
+		state:         state,
+		config:        config,
+		dyndepLoader:  NewDyndepLoader(state, diskInterface),
+		removed:       map[string]struct{}{},
+		cleaned:       map[*Node]struct{}{},
+		diskInterface: diskInterface,
 	}
 }
 
 // Remove the file @a path.
 // @return whether the file has been removed.
 func (c *Cleaner) RemoveFile(path string) int {
-	return c.diskInterface_.RemoveFile(path)
+	return c.diskInterface.RemoveFile(path)
 }
 
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
 	err := ""
-	mtime := c.diskInterface_.Stat(path, &err)
+	mtime := c.diskInterface.Stat(path, &err)
 	if mtime == -1 {
 		errorf("%s", err)
 	}
@@ -65,7 +60,7 @@ func (c *Cleaner) FileExists(path string) bool {
 }
 
 func (c *Cleaner) Report(path string) {
-	c.cleanedFilesCount_++
+	c.cleanedFilesCount++
 	if c.IsVerbose() {
 		fmt.Printf("Remove %s\n", path)
 	}
@@ -74,8 +69,8 @@ func (c *Cleaner) Report(path string) {
 // Remove the given @a path file only if it has not been already removed.
 func (c *Cleaner) Remove(path string) {
 	if !c.IsAlreadyRemoved(path) {
-		c.removed_[path] = struct{}{}
-		if c.config_.dryRun {
+		c.removed[path] = struct{}{}
+		if c.config.dryRun {
 			if c.FileExists(path) {
 				c.Report(path)
 			}
@@ -84,7 +79,7 @@ func (c *Cleaner) Remove(path string) {
 			if ret == 0 {
 				c.Report(path)
 			} else if ret == -1 {
-				c.status_ = 1
+				c.status = 1
 			}
 		}
 	}
@@ -92,7 +87,7 @@ func (c *Cleaner) Remove(path string) {
 
 // @return whether the given @a path has already been removed.
 func (c *Cleaner) IsAlreadyRemoved(path string) bool {
-	_, ok := c.removed_[path]
+	_, ok := c.removed[path]
 	return ok
 }
 
@@ -110,7 +105,7 @@ func (c *Cleaner) RemoveEdgeFiles(edge *Edge) {
 }
 
 func (c *Cleaner) PrintHeader() {
-	if c.config_.verbosity == Quiet {
+	if c.config.verbosity == Quiet {
 		return
 	}
 	fmt.Printf("Cleaning...")
@@ -123,10 +118,10 @@ func (c *Cleaner) PrintHeader() {
 }
 
 func (c *Cleaner) PrintFooter() {
-	if c.config_.verbosity == Quiet {
+	if c.config.verbosity == Quiet {
 		return
 	}
-	fmt.Printf("%d files.\n", c.cleanedFilesCount_)
+	fmt.Printf("%d files.\n", c.cleanedFilesCount)
 }
 
 // Clean all built files, except for files created by generator rules.
@@ -136,7 +131,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 	c.Reset()
 	c.PrintHeader()
 	c.LoadDyndeps()
-	for _, e := range c.state_.edges_ {
+	for _, e := range c.state.edges {
 		// Do not try to remove phony targets
 		if e.Rule == PhonyRule {
 			continue
@@ -152,7 +147,7 @@ func (c *Cleaner) CleanAll(generator bool) int {
 		c.RemoveEdgeFiles(e)
 	}
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 // Clean the files produced by previous builds that are no longer in the
@@ -162,7 +157,7 @@ func (c *Cleaner) CleanDead(entries Entries) int {
 	c.Reset()
 	c.PrintHeader()
 	for k := range entries {
-		n := c.state_.LookupNode(k)
+		n := c.state.LookupNode(k)
 		// Detecting stale outputs works as follows:
 		//
 		// - If it has no Node, it is not in the build graph, or the deps log
@@ -177,7 +172,7 @@ func (c *Cleaner) CleanDead(entries Entries) int {
 		}
 	}
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 // Helper recursive method for CleanTarget().
@@ -190,14 +185,14 @@ func (c *Cleaner) DoCleanTarget(target *Node) {
 		}
 		for _, next := range e.Inputs {
 			// call DoCleanTarget recursively if this node has not been visited
-			if _, ok := c.cleaned_[next]; !ok {
+			if _, ok := c.cleaned[next]; !ok {
 				c.DoCleanTarget(next)
 			}
 		}
 	}
 
 	// mark this target to be cleaned already
-	c.cleaned_[target] = struct{}{}
+	c.cleaned[target] = struct{}{}
 }
 
 // Clean the given target @a target.
@@ -214,7 +209,7 @@ func (c *Cleaner) CleanTargetNode(target *Node) int {
 	c.LoadDyndeps()
 	c.DoCleanTarget(target)
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 // Clean the given target @a target.
@@ -227,14 +222,14 @@ func (c *Cleaner) CleanTarget(target string) int {
 	}
 
 	c.Reset()
-	node := c.state_.LookupNode(target)
+	node := c.state.LookupNode(target)
 	if node != nil {
 		c.CleanTargetNode(node)
 	} else {
 		errorf("unknown target '%s'", target)
-		c.status_ = 1
+		c.status = 1
 	}
-	return c.status_
+	return c.status
 }
 
 // Clean the given target @a targets.
@@ -247,11 +242,11 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 	for _, targetName := range targets {
 		if targetName == "" {
 			errorf("failed to canonicalize '': empty path")
-			c.status_ = 1
+			c.status = 1
 			continue
 		}
 		targetName = CanonicalizePath(targetName)
-		target := c.state_.LookupNode(targetName)
+		target := c.state.LookupNode(targetName)
 		if target != nil {
 			if c.IsVerbose() {
 				fmt.Printf("Target %s\n", targetName)
@@ -259,11 +254,11 @@ func (c *Cleaner) CleanTargets(targets []string) int {
 			c.DoCleanTarget(target)
 		} else {
 			errorf("unknown target '%s'", targetName)
-			c.status_ = 1
+			c.status = 1
 		}
 	}
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 func (c *Cleaner) DoCleanRule(rule *Rule) {
@@ -271,7 +266,7 @@ func (c *Cleaner) DoCleanRule(rule *Rule) {
 		panic("oops")
 	}
 
-	for _, e := range c.state_.edges_ {
+	for _, e := range c.state.edges {
 		if e.Rule.Name == rule.Name {
 			for _, outNode := range e.Outputs {
 				c.Remove(outNode.Path)
@@ -291,7 +286,7 @@ func (c *Cleaner) CleanRule(rule *Rule) int {
 	c.LoadDyndeps()
 	c.DoCleanRule(rule)
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 // Clean the file produced by the given @a rule.
@@ -304,14 +299,14 @@ func (c *Cleaner) CleanRuleName(rule string) int {
 	}
 
 	c.Reset()
-	r := c.state_.bindings_.LookupRule(rule)
+	r := c.state.bindings.LookupRule(rule)
 	if r != nil {
 		c.CleanRule(r)
 	} else {
 		errorf("unknown rule '%s'", rule)
-		c.status_ = 1
+		c.status = 1
 	}
-	return c.status_
+	return c.status
 }
 
 // Clean the file produced by the given @a rules.
@@ -326,7 +321,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 	c.PrintHeader()
 	c.LoadDyndeps()
 	for _, ruleName := range rules {
-		rule := c.state_.bindings_.LookupRule(ruleName)
+		rule := c.state.bindings.LookupRule(ruleName)
 		if rule != nil {
 			if c.IsVerbose() {
 				fmt.Printf("Rule %s\n", ruleName)
@@ -334,29 +329,29 @@ func (c *Cleaner) CleanRules(rules []string) int {
 			c.DoCleanRule(rule)
 		} else {
 			errorf("unknown rule '%s'", ruleName)
-			c.status_ = 1
+			c.status = 1
 		}
 	}
 	c.PrintFooter()
-	return c.status_
+	return c.status
 }
 
 func (c *Cleaner) Reset() {
-	c.status_ = 0
-	c.cleanedFilesCount_ = 0
-	c.removed_ = map[string]struct{}{}
-	c.cleaned_ = map[*Node]struct{}{}
+	c.status = 0
+	c.cleanedFilesCount = 0
+	c.removed = map[string]struct{}{}
+	c.cleaned = map[*Node]struct{}{}
 }
 
 // Load dependencies from dyndep bindings.
 func (c *Cleaner) LoadDyndeps() {
 	// Load dyndep files that exist, before they are cleaned.
-	for _, e := range c.state_.edges_ {
+	for _, e := range c.state.edges {
 		if e.Dyndep != nil {
 			// Capture and ignore errors loading the dyndep file.
 			// We clean as much of the graph as we know.
 			err := ""
-			c.dyndepLoader_.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
+			c.dyndepLoader.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
 		}
 	}
 }

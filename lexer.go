@@ -42,14 +42,14 @@ const (
 )
 
 type Lexer struct {
-	filename_ string
-	input_    string
+	filename string
+	input    string
 	// In the original C++ code, these two are char pointers and are used to do
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
-	// indexes. ofs_ starts at 0. lastToken_ is initially -1 to mark that it is
+	// indexes. ofs starts at 0. lastToken is initially -1 to mark that it is
 	// not yet set.
-	ofs_       int
-	lastToken_ int
+	ofs       int
+	lastToken int
 }
 
 // Read a path (complete with $escapes).
@@ -70,18 +70,18 @@ func (l *Lexer) Error(message string, err *string) bool {
 	// Compute line/column.
 	line := 1
 	lineStart := 0
-	for p := 0; p < l.lastToken_; p++ {
-		if l.input_[p] == '\n' {
+	for p := 0; p < l.lastToken; p++ {
+		if l.input[p] == '\n' {
 			line++
 			lineStart = p + 1
 		}
 	}
 	col := 0
-	if l.lastToken_ != -1 {
-		col = l.lastToken_ - lineStart
+	if l.lastToken != -1 {
+		col = l.lastToken - lineStart
 	}
 
-	*err = fmt.Sprintf("%s:%d: ", l.filename_, line)
+	*err = fmt.Sprintf("%s:%d: ", l.filename, line)
 	*err += message + "\n"
 	// Add some context to the message.
 	const truncateColumn = 72
@@ -89,12 +89,12 @@ func (l *Lexer) Error(message string, err *string) bool {
 		truncated := true
 		length := 0
 		for ; length < truncateColumn; length++ {
-			if l.input_[lineStart+length] == 0 || l.input_[lineStart+length] == '\n' {
+			if l.input[lineStart+length] == 0 || l.input[lineStart+length] == '\n' {
 				truncated = false
 				break
 			}
 		}
-		*err += l.input_[lineStart : lineStart+length]
+		*err += l.input[lineStart : lineStart+length]
 		if truncated {
 			*err += "..."
 		}
@@ -114,13 +114,13 @@ func NewLexer(input string) Lexer {
 
 // Start parsing some input.
 func (l *Lexer) Start(filename, input string) {
-	l.filename_ = filename
+	l.filename = filename
 	if !strings.HasSuffix(input, "\x00") {
 		panic("Requires hack with a trailing 0 byte")
 	}
-	l.input_ = input
-	l.ofs_ = 0
-	l.lastToken_ = -1
+	l.input = input
+	l.ofs = 0
+	l.lastToken = -1
 }
 
 // Return a human-readable form of a token, used in error messages.
@@ -175,8 +175,8 @@ func TokenErrorHint(expected Token) string {
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
 func (l *Lexer) DescribeLastError() string {
-	if l.lastToken_ != -1 {
-		switch l.input_[l.lastToken_] {
+	if l.lastToken != -1 {
+		switch l.input[l.lastToken] {
 		case '\t':
 			return "tabs are not allowed, use spaces"
 		}
@@ -186,11 +186,11 @@ func (l *Lexer) DescribeLastError() string {
 
 // Rewind to the last read Token.
 func (l *Lexer) UnreadToken() {
-	l.ofs_ = l.lastToken_
+	l.ofs = l.lastToken
 }
 
 func (l *Lexer) ReadToken() Token {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	start := 0
 	var token Token
@@ -200,7 +200,7 @@ func (l *Lexer) ReadToken() Token {
 		{
 			var yych byte
 			yyaccept := 0
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 0x00:
 				goto yy2
@@ -372,7 +372,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy8:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy28
@@ -383,7 +383,7 @@ func (l *Lexer) ReadToken() Token {
 			yyaccept = 0
 			p++
 			q = p
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy6
@@ -405,14 +405,14 @@ func (l *Lexer) ReadToken() Token {
 			yyaccept = 1
 			p++
 			q = p
-			yych = l.input_[p]
+			yych = l.input[p]
 			if yych <= 0x00 {
 				goto yy5
 			}
 			goto yy33
 		yy13:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 		yy14:
 			switch yych {
 			case '-':
@@ -567,7 +567,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy20:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'u':
 				goto yy36
@@ -576,7 +576,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy21:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'e':
 				goto yy37
@@ -585,7 +585,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy22:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'n':
 				goto yy38
@@ -594,7 +594,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy23:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'o':
 				goto yy39
@@ -603,7 +603,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy24:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'u':
 				goto yy40
@@ -612,7 +612,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy25:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'u':
 				goto yy41
@@ -621,7 +621,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy26:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '@':
 				goto yy42
@@ -643,7 +643,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy30:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy28
@@ -659,7 +659,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy32:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 		yy33:
 			switch yych {
 			case 0x00:
@@ -676,7 +676,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy36:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'i':
 				goto yy46
@@ -685,7 +685,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy37:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'f':
 				goto yy47
@@ -694,7 +694,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy38:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'c':
 				goto yy48
@@ -703,7 +703,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy39:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'o':
 				goto yy49
@@ -712,7 +712,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy40:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'l':
 				goto yy50
@@ -721,7 +721,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy41:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'b':
 				goto yy51
@@ -742,7 +742,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy46:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'l':
 				goto yy52
@@ -751,7 +751,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy47:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'a':
 				goto yy53
@@ -760,7 +760,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy48:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'l':
 				goto yy54
@@ -769,7 +769,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy49:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'l':
 				goto yy55
@@ -778,7 +778,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy50:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'e':
 				goto yy57
@@ -787,7 +787,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy51:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'n':
 				goto yy59
@@ -796,7 +796,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy52:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'd':
 				goto yy60
@@ -805,7 +805,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy53:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'u':
 				goto yy62
@@ -814,7 +814,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy54:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'u':
 				goto yy63
@@ -823,7 +823,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy55:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -965,7 +965,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy57:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1107,7 +1107,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy59:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'i':
 				goto yy64
@@ -1116,7 +1116,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy60:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1258,7 +1258,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy62:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'l':
 				goto yy65
@@ -1267,7 +1267,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy63:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'd':
 				goto yy66
@@ -1276,7 +1276,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy64:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'n':
 				goto yy67
@@ -1285,7 +1285,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy65:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 't':
 				goto yy68
@@ -1294,7 +1294,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy66:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'e':
 				goto yy70
@@ -1303,7 +1303,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy67:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'j':
 				goto yy72
@@ -1312,7 +1312,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy68:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1454,7 +1454,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy70:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1596,7 +1596,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy72:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 'a':
 				goto yy73
@@ -1605,7 +1605,7 @@ func (l *Lexer) ReadToken() Token {
 			}
 		yy73:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1749,8 +1749,8 @@ func (l *Lexer) ReadToken() Token {
 
 	}
 
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	if token != NEWLINE && token != TEOF {
 		l.eatWhitespace()
 	}
@@ -1769,14 +1769,14 @@ func (l *Lexer) PeekToken(token Token) bool {
 
 // Skip past whitespace (called after each read token/ident/etc.).
 func (l *Lexer) eatWhitespace() {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	for {
-		l.ofs_ = p
+		l.ofs = p
 
 		{
 			var yych byte
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 0x00:
 				goto yy77
@@ -1800,7 +1800,7 @@ func (l *Lexer) eatWhitespace() {
 			}
 		yy81:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case ' ':
 				goto yy81
@@ -1814,7 +1814,7 @@ func (l *Lexer) eatWhitespace() {
 		yy84:
 			p++
 			q = p
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy85
@@ -1830,7 +1830,7 @@ func (l *Lexer) eatWhitespace() {
 			}
 		yy87:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy89
@@ -1853,14 +1853,14 @@ func (l *Lexer) eatWhitespace() {
 // Read a simple identifier (a rule or variable name).
 // Returns false if a name can't be read.
 func (l *Lexer) ReadIdent(out *string) bool {
-	p := l.ofs_
+	p := l.ofs
 	start := 0
 	for {
 		start = p
 
 		{
 			var yych byte
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -1998,12 +1998,12 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		yy93:
 			p++
 			{
-				l.lastToken_ = start
+				l.lastToken = start
 				return false
 			}
 		yy95:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -2140,21 +2140,21 @@ func (l *Lexer) ReadIdent(out *string) bool {
 			}
 		yy97:
 			{
-				*out = l.input_[start:p]
+				*out = l.input[start:p]
 				break
 			}
 		}
 
 	}
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	l.eatWhitespace()
 	return true
 }
 
 // Read a $-escaped string.
 func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
-	p := l.ofs_
+	p := l.ofs
 	q := 0
 	start := 0
 	for {
@@ -2162,7 +2162,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 
 		{
 			var yych byte
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 0x00:
 				goto yy100
@@ -2184,12 +2184,12 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy100:
 			p++
 			{
-				l.lastToken_ = start
+				l.lastToken = start
 				return l.Error("unexpected EOF", err)
 			}
 		yy102:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case 0x00:
 				fallthrough
@@ -2210,7 +2210,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy104:
 			{
-				eval.AddText(l.input_[start:p])
+				eval.AddText(l.input[start:p])
 				continue
 			}
 		yy105:
@@ -2220,16 +2220,16 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 					p = start
 					break
 				} else {
-					if l.input_[start] == '\n' {
+					if l.input[start] == '\n' {
 						break
 					}
-					eval.AddText(l.input_[start : start+1])
+					eval.AddText(l.input[start : start+1])
 					continue
 				}
 			}
 		yy107:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy110
@@ -2238,12 +2238,12 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy108:
 			{
-				l.lastToken_ = start
+				l.lastToken = start
 				return l.Error(l.DescribeLastError(), err)
 			}
 		yy109:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy114
@@ -2400,12 +2400,12 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			p++
 		yy113:
 			{
-				l.lastToken_ = start
+				l.lastToken = start
 				return l.Error("bad $-escape (literal $ must be written as $$)", err)
 			}
 		yy114:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case ' ':
 				goto yy114
@@ -2418,7 +2418,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy117:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '\n':
 				goto yy128
@@ -2439,7 +2439,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy122:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -2574,7 +2574,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy124:
 			{
-				eval.AddSpecial(l.input_[start+1 : p])
+				eval.AddSpecial(l.input[start+1 : p])
 				continue
 			}
 		yy125:
@@ -2586,7 +2586,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy127:
 			p++
 			q = p
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -2723,7 +2723,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy128:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case ' ':
 				goto yy128
@@ -2736,7 +2736,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 			}
 		yy131:
 			p++
-			yych = l.input_[p]
+			yych = l.input[p]
 			switch yych {
 			case '-':
 				fallthrough
@@ -2879,14 +2879,14 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		yy134:
 			p++
 			{
-				eval.AddSpecial(l.input_[start+2 : p-1])
+				eval.AddSpecial(l.input[start+2 : p-1])
 				continue
 			}
 		}
 
 	}
-	l.lastToken_ = start
-	l.ofs_ = p
+	l.lastToken = start
+	l.ofs = p
 	if path {
 		l.eatWhitespace()
 	}

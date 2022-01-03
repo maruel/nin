@@ -24,37 +24,34 @@ import (
 // if the terminal supports it.
 type LinePrinter struct {
 	// Whether we can do fancy terminal control codes.
-	smartTerminal_ bool
+	smartTerminal bool
 
 	// Whether we can use ISO 6429 (ANSI) color sequences.
-	supportsColor_ bool
+	supportsColor bool
 
 	// Whether the caret is at the beginning of a blank line.
-	haveBlankLine_ bool
+	haveBlankLine bool
 
 	// Whether console is locked.
-	consoleLocked_ bool
+	consoleLocked bool
 
 	// Buffered current line while console is locked.
-	lineBuffer_ string
+	lineBuffer string
 
 	// Buffered line type while console is locked.
-	lineType_ LineType
+	lineType LineType
 
 	// Buffered console output while console is locked.
-	outputBuffer_ string
+	outputBuffer string
 
-	//console_ *void
+	//console *void
 }
 
 func (l *LinePrinter) isSmartTerminal() bool {
-	return l.smartTerminal_
+	return l.smartTerminal
 }
 func (l *LinePrinter) setSmartTerminal(smart bool) {
-	l.smartTerminal_ = smart
-}
-func (l *LinePrinter) supportsColor() bool {
-	return l.supportsColor_
+	l.smartTerminal = smart
 }
 
 type LineType bool
@@ -66,35 +63,35 @@ const (
 
 func NewLinePrinter() LinePrinter {
 	l := LinePrinter{
-		haveBlankLine_: true,
+		haveBlankLine: true,
 	}
 	/*
 		if os.Getenv("TERM") != "dumb" {
 			if runtime.GOOS != "windows" {
 				// Don't panic for now.
-				//l.smartTerminal_ = isatty(1)
+				//l.smartTerminal = isatty(1)
 			} else {
 				// Don't panic for now.
-				//console_ = GetStdHandle(STD_OUTPUT_HANDLE)
+				//console = GetStdHandle(STD_OUTPUT_HANDLE)
 				//var csbi CONSOLE_SCREEN_BUFFER_INFO
-				//smartTerminal_ = GetConsoleScreenBufferInfo(console_, &csbi)
+				//smartTerminal = GetConsoleScreenBufferInfo(console, &csbi)
 			}
 		}
 	*/
-	l.supportsColor_ = l.smartTerminal_
-	if !l.supportsColor_ {
+	l.supportsColor = l.smartTerminal
+	if !l.supportsColor {
 		f := os.Getenv("CLICOLOR_FORCE")
-		l.supportsColor_ = f != "" && f != "0"
+		l.supportsColor = f != "" && f != "0"
 	}
 	// Try enabling ANSI escape sequence support on Windows 10 terminals.
 	if runtime.GOOS == "windows" {
-		if l.supportsColor_ {
+		if l.supportsColor {
 			panic("TODO")
 			/*
 				var mode DWORD
-				if GetConsoleMode(console_, &mode) {
-					if !SetConsoleMode(console_, mode|ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
-						supportsColor_ = false
+				if GetConsoleMode(console, &mode) {
+					if !SetConsoleMode(console, mode|ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+						supportsColor = false
 					}
 				}
 			*/
@@ -106,27 +103,27 @@ func NewLinePrinter() LinePrinter {
 // Overprints the current line. If type is ELIDE, elides toPrint to fit on
 // one line.
 func (l *LinePrinter) Print(toPrint string, t LineType) {
-	if l.consoleLocked_ {
-		l.lineBuffer_ = toPrint
-		l.lineType_ = t
+	if l.consoleLocked {
+		l.lineBuffer = toPrint
+		l.lineType = t
 		return
 	}
 
-	if l.smartTerminal_ {
+	if l.smartTerminal {
 		fmt.Printf("\r") // Print over previous line, if any.
 		// On Windows, calling a C library function writing to stdout also handles
 		// pausing the executable when the "Pause" key or Ctrl-S is pressed.
 	}
 
-	if l.smartTerminal_ && t == ELIDE {
-		l.haveBlankLine_ = false
+	if l.smartTerminal && t == ELIDE {
+		l.haveBlankLine = false
 		if runtime.GOOS == "windows" {
 			panic("TODO")
 			/*
 				var csbi CONSOLE_SCREEN_BUFFER_INFO
-				GetConsoleScreenBufferInfo(l.console_, &csbi)
+				GetConsoleScreenBufferInfo(l.console, &csbi)
 				toPrint = ElideMiddle(toPrint, csbi.dwSize.X)
-				if l.supportsColor_ {
+				if l.supportsColor {
 					// this means ENABLE_VIRTUAL_TERMINAL_PROCESSING
 					// succeeded
 					fmt.Printf("%s\x1B[K", toPrint) // Clear to end of line.
@@ -149,7 +146,7 @@ func (l *LinePrinter) Print(toPrint string, t LineType) {
 						}
 						charData[i].Attributes = csbi.wAttributes
 					}
-					WriteConsoleOutput(l.console_, &charData[0], bufSize, zeroZero, &target)
+					WriteConsoleOutput(l.console, &charData[0], bufSize, zeroZero, &target)
 				}
 			*/
 		} else {
@@ -173,8 +170,8 @@ func (l *LinePrinter) Print(toPrint string, t LineType) {
 
 // Print the given data to the console, or buffer it if it is locked.
 func (l *LinePrinter) PrintOrBuffer(data string) {
-	if l.consoleLocked_ {
-		l.outputBuffer_ += data
+	if l.consoleLocked {
+		l.outputBuffer += data
 	} else {
 		// Avoid printf and C strings, since the actual output might contain null
 		// bytes like UTF-16 does (yuck).
@@ -184,24 +181,24 @@ func (l *LinePrinter) PrintOrBuffer(data string) {
 
 // Prints a string on a new line, not overprinting previous output.
 func (l *LinePrinter) PrintOnNewLine(toPrint string) {
-	if l.consoleLocked_ && len(l.lineBuffer_) != 0 {
-		l.outputBuffer_ += l.lineBuffer_
-		l.outputBuffer_ += "\n"
-		l.lineBuffer_ = ""
+	if l.consoleLocked && len(l.lineBuffer) != 0 {
+		l.outputBuffer += l.lineBuffer
+		l.outputBuffer += "\n"
+		l.lineBuffer = ""
 	}
-	if !l.haveBlankLine_ {
+	if !l.haveBlankLine {
 		l.PrintOrBuffer("\n")
 	}
 	if len(toPrint) != 0 {
 		l.PrintOrBuffer(toPrint)
 	}
-	l.haveBlankLine_ = len(toPrint) == 0 || toPrint[0] == '\n'
+	l.haveBlankLine = len(toPrint) == 0 || toPrint[0] == '\n'
 }
 
 // Lock or unlock the console.  Any output sent to the LinePrinter while the
 // console is locked will not be printed until it is unlocked.
 func (l *LinePrinter) SetConsoleLocked(locked bool) {
-	if locked == l.consoleLocked_ {
+	if locked == l.consoleLocked {
 		return
 	}
 
@@ -209,14 +206,14 @@ func (l *LinePrinter) SetConsoleLocked(locked bool) {
 		l.PrintOnNewLine("")
 	}
 
-	l.consoleLocked_ = locked
+	l.consoleLocked = locked
 
 	if !locked {
-		l.PrintOnNewLine(l.outputBuffer_)
-		if len(l.lineBuffer_) != 0 {
-			l.Print(l.lineBuffer_, l.lineType_)
+		l.PrintOnNewLine(l.outputBuffer)
+		if len(l.lineBuffer) != 0 {
+			l.Print(l.lineBuffer, l.lineType)
 		}
-		l.outputBuffer_ = ""
-		l.lineBuffer_ = ""
+		l.outputBuffer = ""
+		l.lineBuffer = ""
 	}
 }

@@ -395,43 +395,43 @@ const (
 
 // An Env for an Edge, providing $in and $out.
 type EdgeEnv struct {
-	lookups_     []string
-	edge_        *Edge
-	escapeInOut_ EscapeKind
-	recursive_   bool
+	lookups     []string
+	edge        *Edge
+	escapeInOut EscapeKind
+	recursive   bool
 }
 
 func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
 	return EdgeEnv{
-		edge_:        edge,
-		escapeInOut_: escape,
+		edge:        edge,
+		escapeInOut: escape,
 	}
 }
 
 func (e *EdgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
-		explicitDepsCount := len(e.edge_.Inputs) - int(e.edge_.ImplicitDeps) - int(e.edge_.OrderOnlyDeps)
+		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
 		s := byte('\n')
 		if var2 == "in" {
 			s = ' '
 		}
-		return e.MakePathList(e.edge_.Inputs[:explicitDepsCount], s)
+		return e.MakePathList(e.edge.Inputs[:explicitDepsCount], s)
 	} else if var2 == "out" {
-		explicitOutsCount := len(e.edge_.Outputs) - int(e.edge_.ImplicitOuts)
-		return e.MakePathList(e.edge_.Outputs[:explicitOutsCount], ' ')
+		explicitOutsCount := len(e.edge.Outputs) - int(e.edge.ImplicitOuts)
+		return e.MakePathList(e.edge.Outputs[:explicitOutsCount], ' ')
 	}
 
-	if e.recursive_ {
+	if e.recursive {
 		i := 0
-		for ; i < len(e.lookups_); i++ {
-			if e.lookups_[i] == var2 {
+		for ; i < len(e.lookups); i++ {
+			if e.lookups[i] == var2 {
 				break
 			}
 		}
-		if i != len(e.lookups_) {
+		if i != len(e.lookups) {
 			cycle := ""
-			for ; i < len(e.lookups_); i++ {
-				cycle += e.lookups_[i] + " -> "
+			for ; i < len(e.lookups); i++ {
+				cycle += e.lookups[i] + " -> "
 			}
 			cycle += var2
 			fatalf(("cycle in rule variables: " + cycle))
@@ -439,15 +439,15 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 	}
 
 	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge_.Rule.Bindings[var2]
-	if e.recursive_ && eval != nil {
-		e.lookups_ = append(e.lookups_, var2)
+	eval := e.edge.Rule.Bindings[var2]
+	if e.recursive && eval != nil {
+		e.lookups = append(e.lookups, var2)
 	}
 
 	// In practice, variables defined on rules never use another rule variable.
 	// For performance, only start checking for cycles after the first lookup.
-	e.recursive_ = true
-	return e.edge_.Env.LookupWithFallback(var2, eval, e)
+	e.recursive = true
+	return e.edge.Env.LookupWithFallback(var2, eval, e)
 }
 
 // Given a span of Nodes, construct a list of paths suitable for a command
@@ -464,7 +464,7 @@ func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
 	first := false
 	for i, x := range span {
 		path := x.PathDecanonicalized()
-		if e.escapeInOut_ == ShellEscape {
+		if e.escapeInOut == ShellEscape {
 			if runtime.GOOS == "windows" {
 				path = getWin32EscapedString(path)
 			} else {
@@ -523,33 +523,26 @@ func PathDecanonicalized(path string, slashBits uint64) string {
 // DependencyScan manages the process of scanning the files in a graph
 // and updating the dirty/outputsReady state of all the nodes and edges.
 type DependencyScan struct {
-	buildLog_      *BuildLog
-	diskInterface_ DiskInterface
-	depLoader_     ImplicitDepLoader
-	dyndepLoader_  DyndepLoader
+	buildLog      *BuildLog
+	diskInterface DiskInterface
+	depLoader     ImplicitDepLoader
+	dyndepLoader  DyndepLoader
 }
 
 func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) DependencyScan {
 	return DependencyScan{
-		buildLog_:      buildLog,
-		diskInterface_: diskInterface,
-		depLoader_:     NewImplicitDepLoader(state, depsLog, diskInterface, depfileParserOptions),
-		dyndepLoader_:  NewDyndepLoader(state, diskInterface),
+		buildLog:      buildLog,
+		diskInterface: diskInterface,
+		depLoader:     NewImplicitDepLoader(state, depsLog, diskInterface, depfileParserOptions),
+		dyndepLoader:  NewDyndepLoader(state, diskInterface),
 	}
 }
 
-func (d *DependencyScan) buildLog() *BuildLog {
-	return d.buildLog_
-}
-func (d *DependencyScan) setBuildLog(log *BuildLog) {
-	d.buildLog_ = log
-}
-
 func (d *DependencyScan) depsLog() *DepsLog {
-	return d.depLoader_.depsLog()
+	return d.depLoader.depsLog
 }
 
-// Update the |dirty_| state of the given node by transitively inspecting their
+// Update the |dirty| state of the given node by transitively inspecting their
 // input edges.
 // Examine inputs, outputs, and command lines to judge whether an edge
 // needs to be re-run, and update OutputsReady and each outputs' Dirty
@@ -591,7 +584,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
-		if !node.StatIfNecessary(d.diskInterface_, err) {
+		if !node.StatIfNecessary(d.diskInterface, err) {
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
@@ -651,7 +644,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
-		if !o.StatIfNecessary(d.diskInterface_, err) {
+		if !o.StatIfNecessary(d.diskInterface, err) {
 			return false
 		}
 	}
@@ -659,7 +652,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.  Load discovered deps.
 		edge.DepsLoaded = true
-		if !d.depLoader_.LoadDeps(edge, err) {
+		if !d.depLoader.LoadDeps(edge, err) {
 			if len(*err) != 0 {
 				return false
 			}
@@ -838,8 +831,8 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		// build log.  Use that mtime instead, so that the file will only be
 		// considered dirty if an input was modified since the previous run.
 		usedRestat := false
-		if edge.GetBinding("restat") != "" && d.buildLog() != nil {
-			if entry = d.buildLog().LookupByOutput(output.Path); entry != nil {
+		if edge.GetBinding("restat") != "" && d.buildLog != nil {
+			if entry = d.buildLog.LookupByOutput(output.Path); entry != nil {
 				outputMtime = entry.mtime
 				usedRestat = true
 			}
@@ -855,10 +848,10 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		}
 	}
 
-	if d.buildLog() != nil {
+	if d.buildLog != nil {
 		generator := edge.GetBinding("generator") != ""
 		if entry == nil {
-			entry = d.buildLog().LookupByOutput(output.Path)
+			entry = d.buildLog.LookupByOutput(output.Path)
 		}
 		if entry != nil {
 			if !generator && HashCommand(command) != entry.commandHash {
@@ -890,7 +883,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 //
 // The 'DyndepFile' object stores the information loaded from the dyndep file.
 func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
-	return d.dyndepLoader_.LoadDyndeps(node, ddf, err)
+	return d.dyndepLoader.LoadDyndeps(node, ddf, err)
 }
 
 //
@@ -898,23 +891,19 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
-	state_                *State
-	diskInterface_        DiskInterface
-	depsLog_              *DepsLog
-	depfileParserOptions_ *DepfileParserOptions
+	state                *State
+	diskInterface        DiskInterface
+	depsLog              *DepsLog
+	depfileParserOptions *DepfileParserOptions
 }
 
 func NewImplicitDepLoader(state *State, depsLog *DepsLog, diskInterface DiskInterface, depfileParserOptions *DepfileParserOptions) ImplicitDepLoader {
 	return ImplicitDepLoader{
-		state_:                state,
-		diskInterface_:        diskInterface,
-		depsLog_:              depsLog,
-		depfileParserOptions_: depfileParserOptions,
+		state:                state,
+		diskInterface:        diskInterface,
+		depsLog:              depsLog,
+		depfileParserOptions: depfileParserOptions,
 	}
-}
-
-func (i *ImplicitDepLoader) depsLog() *DepsLog {
-	return i.depsLog_
 }
 
 // Load implicit dependencies for \a edge.
@@ -941,7 +930,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	defer MetricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
-	switch i.diskInterface_.ReadFile(path, &content, err) {
+	switch i.diskInterface.ReadFile(path, &content, err) {
 	case Okay:
 	case NotFound:
 		*err = ""
@@ -956,8 +945,8 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 
 	x := DepfileParserOptions{}
-	if i.depfileParserOptions_ != nil {
-		x = *i.depfileParserOptions_
+	if i.depfileParserOptions != nil {
+		x = *i.depfileParserOptions
 	}
 	depfile := NewDepfileParser(x)
 	depfileErr := ""
@@ -966,7 +955,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 		return false
 	}
 
-	if len(depfile.outs_) == 0 {
+	if len(depfile.outs) == 0 {
 		*err = path + ": no outputs declared"
 		return false
 	}
@@ -974,13 +963,13 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// Check that this depfile matches the edge's output, if not return false to
 	// mark the edge as dirty.
 	firstOutput := edge.Outputs[0]
-	if primaryOut := CanonicalizePath(depfile.outs_[0]); firstOutput.Path != primaryOut {
+	if primaryOut := CanonicalizePath(depfile.outs[0]); firstOutput.Path != primaryOut {
 		Explain("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
 		return false
 	}
 
 	// Ensure that all mentioned outputs are outputs of the edge.
-	for _, o := range depfile.outs_ {
+	for _, o := range depfile.outs {
 		found := false
 		for _, n := range edge.Outputs {
 			if n.Path == o {
@@ -993,7 +982,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 			return false
 		}
 	}
-	return i.ProcessDepfileDeps(edge, depfile.ins_, err)
+	return i.ProcessDepfileDeps(edge, depfile.ins, err)
 }
 
 // Process loaded implicit dependencies for \a edge and update the graph
@@ -1004,7 +993,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, 
 
 	// Add all its in-edges.
 	for _, j := range depfileIns {
-		node := i.state_.GetNode(CanonicalizePathBits(j))
+		node := i.state.GetNode(CanonicalizePathBits(j))
 		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
 		i.CreatePhonyInEdge(node)
@@ -1019,8 +1008,8 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	// NOTE: deps are only supported for single-target edges.
 	output := edge.Outputs[0]
 	var deps *Deps
-	if i.depsLog_ != nil {
-		deps = i.depsLog_.GetDeps(output)
+	if i.depsLog != nil {
+		deps = i.depsLog.GetDeps(output)
 	}
 	if deps == nil {
 		Explain("deps for '%s' are missing", output.Path)
@@ -1064,7 +1053,7 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 		return
 	}
 
-	phonyEdge := i.state_.AddEdge(PhonyRule)
+	phonyEdge := i.state.AddEdge(PhonyRule)
 	phonyEdge.GeneratedByDepLoader = true
 	node.InEdge = phonyEdge
 	phonyEdge.Outputs = append(phonyEdge.Outputs, node)

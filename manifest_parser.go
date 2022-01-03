@@ -31,28 +31,28 @@ const (
 )
 
 type ManifestParserOptions struct {
-	dupeEdgeAction_   DupeEdgeAction
-	phonyCycleAction_ PhonyCycleAction
+	dupeEdgeAction   DupeEdgeAction
+	phonyCycleAction PhonyCycleAction
 }
 
 // Parses .ninja files.
 type ManifestParser struct {
 	Parser
-	env_     *BindingEnv
-	options_ ManifestParserOptions
-	quiet_   bool
+	env     *BindingEnv
+	options ManifestParserOptions
+	quiet   bool
 }
 
 // Parse a text string of input.  Used by tests.
 func (m *ManifestParser) ParseTest(input string, err *string) bool {
-	m.quiet_ = true
+	m.quiet = true
 	return m.Parse("input", input+"\x00", err)
 }
 
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
 	m := &ManifestParser{
-		options_: options,
-		env_:     state.bindings_,
+		options: options,
+		env:     state.bindings,
 	}
 	m.Parser = NewParser(state, fileReader, m)
 	return m
@@ -60,10 +60,10 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input string, err *string) bool {
-	m.lexer_.Start(filename, input)
+	m.lexer.Start(filename, input)
 
 	for {
-		token := m.lexer_.ReadToken()
+		token := m.lexer.ReadToken()
 		switch token {
 		case POOL:
 			if !m.ParsePool(err) {
@@ -83,19 +83,19 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 			}
 		case IDENT:
 			{
-				m.lexer_.UnreadToken()
+				m.lexer.UnreadToken()
 				name := ""
 				var letValue EvalString
 				if !m.ParseLet(&name, &letValue, err) {
 					return false
 				}
-				value := letValue.Evaluate(m.env_)
+				value := letValue.Evaluate(m.env)
 				// Check ninjaRequiredVersion immediately so we can exit
 				// before encountering any syntactic surprises.
 				if name == "ninja_required_version" {
 					CheckNinjaVersion(value)
 				}
-				m.env_.Bindings[name] = value
+				m.env.Bindings[name] = value
 			}
 		case INCLUDE:
 			if !m.ParseFileInclude(false, err) {
@@ -106,12 +106,12 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 				return false
 			}
 		case ERROR:
-			return m.lexer_.Error(m.lexer_.DescribeLastError(), err)
+			return m.lexer.Error(m.lexer.DescribeLastError(), err)
 		case TEOF:
 			return true
 		case NEWLINE:
 		default:
-			return m.lexer_.Error(string("unexpected ")+TokenName(token), err)
+			return m.lexer.Error(string("unexpected ")+TokenName(token), err)
 		}
 	}
 }
@@ -119,21 +119,21 @@ func (m *ManifestParser) Parse(filename string, input string, err *string) bool 
 // Parse various statement types.
 func (m *ManifestParser) ParsePool(err *string) bool {
 	name := ""
-	if !m.lexer_.ReadIdent(&name) {
-		return m.lexer_.Error("expected pool name", err)
+	if !m.lexer.ReadIdent(&name) {
+		return m.lexer.Error("expected pool name", err)
 	}
 
 	if !m.ExpectToken(NEWLINE, err) {
 		return false
 	}
 
-	if m.state_.LookupPool(name) != nil {
-		return m.lexer_.Error("duplicate pool '"+name+"'", err)
+	if m.state.LookupPool(name) != nil {
+		return m.lexer.Error("duplicate pool '"+name+"'", err)
 	}
 
 	depth := -1
 
-	for m.lexer_.PeekToken(INDENT) {
+	for m.lexer.PeekToken(INDENT) {
 		key := ""
 		var value EvalString
 		if !m.ParseLet(&key, &value, err) {
@@ -141,42 +141,42 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 		}
 
 		if key == "depth" {
-			depthString := value.Evaluate(m.env_)
+			depthString := value.Evaluate(m.env)
 			var err2 error
 			depth, err2 = strconv.Atoi(depthString)
 			if depth < 0 || err2 != nil {
-				return m.lexer_.Error("invalid pool depth", err)
+				return m.lexer.Error("invalid pool depth", err)
 			}
 		} else {
-			return m.lexer_.Error("unexpected variable '"+key+"'", err)
+			return m.lexer.Error("unexpected variable '"+key+"'", err)
 		}
 	}
 
 	if depth < 0 {
-		return m.lexer_.Error("expected 'depth =' line", err)
+		return m.lexer.Error("expected 'depth =' line", err)
 	}
 
-	m.state_.AddPool(NewPool(name, depth))
+	m.state.AddPool(NewPool(name, depth))
 	return true
 }
 
 func (m *ManifestParser) ParseRule(err *string) bool {
 	name := ""
-	if !m.lexer_.ReadIdent(&name) {
-		return m.lexer_.Error("expected rule name", err)
+	if !m.lexer.ReadIdent(&name) {
+		return m.lexer.Error("expected rule name", err)
 	}
 
 	if !m.ExpectToken(NEWLINE, err) {
 		return false
 	}
 
-	if m.env_.Rules[name] != nil {
-		return m.lexer_.Error("duplicate rule '"+name+"'", err)
+	if m.env.Rules[name] != nil {
+		return m.lexer.Error("duplicate rule '"+name+"'", err)
 	}
 
 	rule := NewRule(name)
 
-	for m.lexer_.PeekToken(INDENT) {
+	for m.lexer.PeekToken(INDENT) {
 		key := ""
 		var value EvalString
 		if !m.ParseLet(&key, &value, err) {
@@ -188,32 +188,32 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 		} else {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.
-			return m.lexer_.Error("unexpected variable '"+key+"'", err)
+			return m.lexer.Error("unexpected variable '"+key+"'", err)
 		}
 	}
 
 	b1, ok1 := rule.Bindings["rspfile"]
 	b2, ok2 := rule.Bindings["rspfile_content"]
 	if ok1 != ok2 || (ok1 && (len(b1.Parsed) == 0) != (len(b2.Parsed) == 0)) {
-		return m.lexer_.Error("rspfile and rspfile_content need to be both specified", err)
+		return m.lexer.Error("rspfile and rspfile_content need to be both specified", err)
 	}
 
 	b, ok := rule.Bindings["command"]
 	if !ok || len(b.Parsed) == 0 {
-		return m.lexer_.Error("expected 'command =' line", err)
+		return m.lexer.Error("expected 'command =' line", err)
 	}
-	m.env_.Rules[rule.Name] = rule
+	m.env.Rules[rule.Name] = rule
 	return true
 }
 
 func (m *ManifestParser) ParseLet(key *string, value *EvalString, err *string) bool {
-	if !m.lexer_.ReadIdent(key) {
-		return m.lexer_.Error("expected variable name", err)
+	if !m.lexer.ReadIdent(key) {
+		return m.lexer.Error("expected variable name", err)
 	}
 	if !m.ExpectToken(EQUALS, err) {
 		return false
 	}
-	if !m.lexer_.ReadVarValue(value, err) {
+	if !m.lexer.ReadVarValue(value, err) {
 		return false
 	}
 	return true
@@ -221,25 +221,25 @@ func (m *ManifestParser) ParseLet(key *string, value *EvalString, err *string) b
 
 func (m *ManifestParser) ParseDefault(err *string) bool {
 	var eval EvalString
-	if !m.lexer_.ReadPath(&eval, err) {
+	if !m.lexer.ReadPath(&eval, err) {
 		return false
 	}
 	if len(eval.Parsed) == 0 {
-		return m.lexer_.Error("expected target name", err)
+		return m.lexer.Error("expected target name", err)
 	}
 
 	for {
-		path := eval.Evaluate(m.env_)
+		path := eval.Evaluate(m.env)
 		if len(path) == 0 {
-			return m.lexer_.Error("empty path", err)
+			return m.lexer.Error("empty path", err)
 		}
 		defaultErr := ""
-		if !m.state_.AddDefault(CanonicalizePath(path), &defaultErr) {
-			return m.lexer_.Error(defaultErr, err)
+		if !m.state.AddDefault(CanonicalizePath(path), &defaultErr) {
+			return m.lexer.Error(defaultErr, err)
 		}
 
 		eval.Parsed = nil
-		if !m.lexer_.ReadPath(&eval, err) {
+		if !m.lexer.ReadPath(&eval, err) {
 			return false
 		}
 		if len(eval.Parsed) == 0 {
@@ -255,14 +255,14 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 	{
 		var out EvalString
-		if !m.lexer_.ReadPath(&out, err) {
+		if !m.lexer.ReadPath(&out, err) {
 			return false
 		}
 		for len(out.Parsed) != 0 {
 			outs = append(outs, out)
 
 			out.Parsed = nil
-			if !m.lexer_.ReadPath(&out, err) {
+			if !m.lexer.ReadPath(&out, err) {
 				return false
 			}
 		}
@@ -270,10 +270,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 	// Add all implicit outs, counting how many as we go.
 	implicitOuts := 0
-	if m.lexer_.PeekToken(PIPE) {
+	if m.lexer.PeekToken(PIPE) {
 		for {
 			var out EvalString
-			if !m.lexer_.ReadPath(&out, err) {
+			if !m.lexer.ReadPath(&out, err) {
 				return false
 			}
 			if len(out.Parsed) == 0 {
@@ -285,7 +285,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	if len(outs) == 0 {
-		return m.lexer_.Error("expected path", err)
+		return m.lexer.Error("expected path", err)
 	}
 
 	if !m.ExpectToken(COLON, err) {
@@ -293,19 +293,19 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	ruleName := ""
-	if !m.lexer_.ReadIdent(&ruleName) {
-		return m.lexer_.Error("expected build command name", err)
+	if !m.lexer.ReadIdent(&ruleName) {
+		return m.lexer.Error("expected build command name", err)
 	}
 
-	rule := m.env_.LookupRule(ruleName)
+	rule := m.env.LookupRule(ruleName)
 	if rule == nil {
-		return m.lexer_.Error("unknown build rule '"+ruleName+"'", err)
+		return m.lexer.Error("unknown build rule '"+ruleName+"'", err)
 	}
 
 	for {
 		// XXX should we require one path here?
 		var in EvalString
-		if !m.lexer_.ReadPath(&in, err) {
+		if !m.lexer.ReadPath(&in, err) {
 			return false
 		}
 		if len(in.Parsed) == 0 {
@@ -316,10 +316,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 	// Add all implicit deps, counting how many as we go.
 	implicit := 0
-	if m.lexer_.PeekToken(PIPE) {
+	if m.lexer.PeekToken(PIPE) {
 		for {
 			var in EvalString
-			if !m.lexer_.ReadPath(&in, err) {
+			if !m.lexer.ReadPath(&in, err) {
 				return false
 			}
 			if len(in.Parsed) == 0 {
@@ -332,10 +332,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 
 	// Add all order-only deps, counting how many as we go.
 	orderOnly := 0
-	if m.lexer_.PeekToken(PIPE2) {
+	if m.lexer.PeekToken(PIPE2) {
 		for {
 			var in EvalString
-			if !m.lexer_.ReadPath(&in, err) {
+			if !m.lexer.ReadPath(&in, err) {
 				return false
 			}
 			if len(in.Parsed) == 0 {
@@ -347,10 +347,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	// Add all validations, counting how many as we go.
-	if m.lexer_.PeekToken(PIPEAT) {
+	if m.lexer.PeekToken(PIPEAT) {
 		for {
 			var validation EvalString
-			if !m.lexer_.ReadPath(&validation, err) {
+			if !m.lexer.ReadPath(&validation, err) {
 				return false
 			}
 			if len(validation.Parsed) == 0 {
@@ -365,10 +365,10 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	}
 
 	// Bindings on edges are rare, so allocate per-edge envs only when needed.
-	hasIndentToken := m.lexer_.PeekToken(INDENT)
-	env := m.env_
+	hasIndentToken := m.lexer.PeekToken(INDENT)
+	env := m.env
 	if hasIndentToken {
-		env = NewBindingEnv(m.env_)
+		env = NewBindingEnv(m.env)
 	}
 	for hasIndentToken {
 		key := ""
@@ -377,35 +377,35 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			return false
 		}
 
-		env.Bindings[key] = val.Evaluate(m.env_)
-		hasIndentToken = m.lexer_.PeekToken(INDENT)
+		env.Bindings[key] = val.Evaluate(m.env)
+		hasIndentToken = m.lexer.PeekToken(INDENT)
 	}
 
-	edge := m.state_.AddEdge(rule)
+	edge := m.state.AddEdge(rule)
 	edge.Env = env
 
 	poolName := edge.GetBinding("pool")
 	if poolName != "" {
-		pool := m.state_.LookupPool(poolName)
+		pool := m.state.LookupPool(poolName)
 		if pool == nil {
-			return m.lexer_.Error("unknown pool name '"+poolName+"'", err)
+			return m.lexer.Error("unknown pool name '"+poolName+"'", err)
 		}
 		edge.Pool = pool
 	}
 
-	// TODO: edge.outputs_.reserve(outs.size())
+	// TODO: edge.outputs.reserve(outs.size())
 	for i := range outs {
 		path := outs[i].Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer_.Error("empty path", err)
+			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		if !m.state_.AddOut(edge, path, slashBits) {
-			if m.options_.dupeEdgeAction_ == DupeEdgeActionError {
-				m.lexer_.Error("multiple rules generate "+path, err)
+		if !m.state.AddOut(edge, path, slashBits) {
+			if m.options.dupeEdgeAction == DupeEdgeActionError {
+				m.lexer.Error("multiple rules generate "+path, err)
 				return false
 			}
-			if !m.quiet_ {
+			if !m.quiet {
 				warningf("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
 			}
 			if len(outs)-i <= implicitOuts {
@@ -416,34 +416,34 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	if len(edge.Outputs) == 0 {
 		// All outputs of the edge are already created by other edges. Don't add
 		// this edge.  Do this check before input nodes are connected to the edge.
-		m.state_.edges_ = m.state_.edges_[:len(m.state_.edges_)-1]
+		m.state.edges = m.state.edges[:len(m.state.edges)-1]
 		return true
 	}
 	edge.ImplicitOuts = int32(implicitOuts)
 
-	// TODO: edge.inputs_.reserve(ins.size())
+	// TODO: edge.inputs.reserve(ins.size())
 	for _, i := range ins {
 		path := i.Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer_.Error("empty path", err)
+			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		m.state_.AddIn(edge, path, slashBits)
+		m.state.AddIn(edge, path, slashBits)
 	}
 	edge.ImplicitDeps = int32(implicit)
 	edge.OrderOnlyDeps = int32(orderOnly)
 
-	//edge.validations_.reserve(validations.size());
+	//edge.validations.reserve(validations.size());
 	for _, v := range validations {
 		path := v.Evaluate(env)
 		if path == "" {
-			return m.lexer_.Error("empty path", err)
+			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		m.state_.AddValidation(edge, path, slashBits)
+		m.state.AddValidation(edge, path, slashBits)
 	}
 
-	if m.options_.phonyCycleAction_ == PhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
+	if m.options.phonyCycleAction == PhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
 		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to
@@ -453,7 +453,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if n == out {
 				copy(edge.Inputs[i:], edge.Inputs[i+1:])
 				edge.Inputs = edge.Inputs[:len(edge.Inputs)-1]
-				if !m.quiet_ {
+				if !m.quiet {
 					warningf("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
 				}
 				break
@@ -466,7 +466,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	// be one of our manifest-specified inputs.
 	dyndep := edge.GetUnescapedDyndep()
 	if len(dyndep) != 0 {
-		n := m.state_.GetNode(CanonicalizePathBits(dyndep))
+		n := m.state.GetNode(CanonicalizePathBits(dyndep))
 		n.DyndepPending = true
 		edge.Dyndep = n
 		found := false
@@ -477,7 +477,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			}
 		}
 		if !found {
-			return m.lexer_.Error("dyndep '"+dyndep+"' is not an input", err)
+			return m.lexer.Error("dyndep '"+dyndep+"' is not an input", err)
 		}
 	}
 	return true
@@ -486,21 +486,21 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) ParseFileInclude(newScope bool, err *string) bool {
 	var eval EvalString
-	if !m.lexer_.ReadPath(&eval, err) {
+	if !m.lexer.ReadPath(&eval, err) {
 		return false
 	}
-	path := eval.Evaluate(m.env_)
+	path := eval.Evaluate(m.env)
 
 	// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
 	// not create lock contention.
-	subparser := NewManifestParser(m.state_, m.fileReader_, m.options_)
+	subparser := NewManifestParser(m.state, m.fileReader, m.options)
 	if newScope {
-		subparser.env_ = NewBindingEnv(m.env_)
+		subparser.env = NewBindingEnv(m.env)
 	} else {
-		subparser.env_ = m.env_
+		subparser.env = m.env
 	}
 
-	if !subparser.Load(path, err, &m.lexer_) {
+	if !subparser.Load(path, err, &m.lexer) {
 		return false
 	}
 

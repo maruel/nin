@@ -50,7 +50,7 @@ func WriteDepFileOrDie(objectPath string, parse *CLParser) {
 			os.Remove(depfilePath)
 			Fatal("writing %s", depfilePath)
 		}
-		headers := parse.includes_
+		headers := parse.includes
 		for i := range headers {
 			if _, err := fmt.Fprintf(depfile, "%s\n", EscapeForDepfile(i)); err != nil {
 				os.Remove(objectPath)

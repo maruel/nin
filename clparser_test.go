@@ -69,7 +69,7 @@ func TestCLParserTest_ParseSimple(t *testing.T) {
 	if "foo\nbar\n" != output {
 		t.Fatal(output)
 	}
-	if diff := cmp.Diff(map[string]struct{}{"foo.h": {}}, parser.includes_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"foo.h": {}}, parser.includes); diff != "" {
 		t.Fatal(diff)
 	}
 }
@@ -110,7 +110,7 @@ func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 	if "" != output {
 		t.Fatal("expected equal")
 	}
-	if diff := cmp.Diff(map[string]struct{}{"path.h": {}}, parser.includes_); diff != "" {
+	if diff := cmp.Diff(map[string]struct{}{"path.h": {}}, parser.includes); diff != "" {
 		t.Fatal(diff)
 	}
 }
@@ -126,7 +126,7 @@ func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 	if "" != output {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(parser.includes_) {
+	if 2 != len(parser.includes) {
 		t.Fatal("expected equal")
 	}
 }
@@ -146,7 +146,7 @@ func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
 	if "" != output {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(parser.includes_) {
+	if 2 != len(parser.includes) {
 		t.Fatal("expected equal")
 	}
 }

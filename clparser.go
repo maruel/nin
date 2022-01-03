@@ -21,11 +21,11 @@ import "strings"
 // format when building with /showIncludes.  This class parses this
 // output.
 type CLParser struct {
-	includes_ map[string]struct{}
+	includes map[string]struct{}
 }
 
 func NewCLParser() CLParser {
-	return CLParser{includes_: map[string]struct{}{}}
+	return CLParser{includes: map[string]struct{}{}}
 }
 
 // Parse a line of cl.exe output and extract /showIncludes info.
@@ -91,7 +91,7 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err 
 				return false
 			}
 			if !isSystemInclude(normalized) {
-				c.includes_[normalized] = struct{}{}
+				c.includes[normalized] = struct{}{}
 			}
 		} else if !seenShowIncludes && filterInputFilename(line) {
 			// Drop it.
