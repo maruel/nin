@@ -15,11 +15,36 @@
 package main
 
 import (
+	"fmt"
 	"os"
-
-	"github.com/maruel/nin"
 )
 
 func main() {
-	os.Exit(nin.Main())
+	os.Exit(Main())
+}
+
+// Log a fatalf message and exit.
+func fatalf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: fatal: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
+	// On Windows, some tools may inject extra threads.
+	// exit() may block on locks held by those threads, so forcibly exit.
+	_ = os.Stderr.Sync()
+	_ = os.Stdout.Sync()
+	os.Exit(1)
+}
+
+// Log a warning message.
+func warningf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: warning: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
+}
+
+// Log an error message.
+func errorf(msg string, s ...interface{}) {
+	fmt.Fprintf(os.Stderr, "nin: error: ")
+	fmt.Fprintf(os.Stderr, msg, s...)
+	fmt.Fprintf(os.Stderr, "\n")
 }

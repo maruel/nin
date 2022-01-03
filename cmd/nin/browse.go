@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nin
+package main
 
 import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/maruel/nin"
 )
 
 // TODO(maruel): Rewrite as a native Go server anyway, no need to depend on
@@ -29,7 +31,7 @@ const browsePy = "abc"
 // \a args are the number of arguments to be passed to the Python script.
 // \a argv are arguments to be passed to the Python script.
 // This function does not return if it runs successfully.
-func runBrowsePython(state *State, ninjaCommand string, inputFile string, args []string) {
+func runBrowsePython(state *nin.State, ninjaCommand string, inputFile string, args []string) {
 	// The original C++ code exec() python as the parent, which is super weird.
 	// We cannot do this easily so do it the normal way for now.
 

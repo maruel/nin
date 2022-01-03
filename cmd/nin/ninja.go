@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(maruel): Move to cmd/nin/main.go once the package is importable.
-
-package nin
+package main
 
 import (
 	"flag"
@@ -29,6 +27,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/maruel/nin"
 )
 
 // Command-line options.
@@ -43,7 +43,7 @@ type options struct {
 	tool *tool
 
 	// build.ninja parsing options.
-	parserOpts ManifestParserOptions
+	parserOpts nin.ManifestParserOptions
 
 	cpuprofile string
 	memprofile string
@@ -57,33 +57,33 @@ type ninjaMain struct {
 	ninjaCommand string
 
 	// Build configuration set from flags (e.g. parallelism).
-	config *BuildConfig
+	config *nin.BuildConfig
 
 	// Loaded state (rules, nodes).
-	state State
+	state nin.State
 
 	// Functions for accessing the disk.
-	di RealDiskInterface
+	di nin.RealDiskInterface
 
 	// The build directory, used for storing the build log etc.
 	buildDir string
 
-	buildLog BuildLog
-	depsLog  DepsLog
+	buildLog nin.BuildLog
+	depsLog  nin.DepsLog
 
 	// The type of functions that are the entry points to tools (subcommands).
 
 	startTimeMillis int64
 }
 
-func newNinjaMain(ninjaCommand string, config *BuildConfig) ninjaMain {
+func newNinjaMain(ninjaCommand string, config *nin.BuildConfig) ninjaMain {
 	return ninjaMain{
 		ninjaCommand:    ninjaCommand,
 		config:          config,
-		state:           NewState(),
-		buildLog:        NewBuildLog(),
-		depsLog:         NewDepsLog(),
-		startTimeMillis: GetTimeMillis(),
+		state:           nin.NewState(),
+		buildLog:        nin.NewBuildLog(),
+		depsLog:         nin.NewDepsLog(),
+		startTimeMillis: nin.GetTimeMillis(),
 	}
 }
 
@@ -173,18 +173,18 @@ func guessParallelism() int {
 // Rebuild the manifest, if necessary.
 // Fills in \a err on error.
 // @return true if the manifest was rebuilt.
-func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status Status) bool {
+func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status nin.Status) bool {
 	path := inputFile
 	if len(path) == 0 {
 		*err = "empty path"
 		return false
 	}
-	node := n.state.Paths[CanonicalizePath(path)]
+	node := n.state.Paths[nin.CanonicalizePath(path)]
 	if node == nil {
 		return false
 	}
 
-	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
+	builder := nin.NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	if !builder.AddTarget(node, err) {
 		return false
 	}
@@ -211,13 +211,13 @@ func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status Status
 
 // Get the Node for a given command-line path, handling features like
 // spell correction.
-func (n *ninjaMain) CollectTarget(cpath string, err *string) *Node {
+func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 	path := cpath
 	if len(path) == 0 {
 		*err = "empty path"
 		return nil
 	}
-	path, slashBits := CanonicalizePathBits(path)
+	path, slashBits := nin.CanonicalizePathBits(path)
 
 	// Special syntax: "foo.cc^" means "the first output of foo.cc".
 	firstDependent := false
@@ -247,7 +247,7 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *Node {
 		}
 		return node
 	}
-	*err = "unknown target '" + PathDecanonicalized(path, slashBits) + "'"
+	*err = "unknown target '" + nin.PathDecanonicalized(path, slashBits) + "'"
 	if path == "clean" {
 		*err += ", did you mean 'nin -t clean'?"
 	} else if path == "help" {
@@ -262,7 +262,7 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *Node {
 }
 
 // CollectTarget for all command-line arguments, filling in \a targets.
-func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*Node, err *string) bool {
+func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*nin.Node, err *string) bool {
 	if len(args) == 0 {
 		*targets = n.state.DefaultNodes(err)
 		return *err == ""
@@ -280,14 +280,14 @@ func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*Node, err 
 
 // The various subcommands, run via "-t XXX".
 func toolGraph(n *ninjaMain, opts *options, args []string) int {
-	var nodes []*Node
+	var nodes []*nin.Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
 		errorf("%s", err)
 		return 1
 	}
 
-	graph := NewGraphViz(&n.state, &n.di)
+	graph := nin.NewGraphViz(&n.state, &n.di)
 	graph.Start()
 	for _, n := range nodes {
 		graph.AddTarget(n)
@@ -302,7 +302,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	dyndepLoader := NewDyndepLoader(&n.state, &n.di)
+	dyndepLoader := nin.NewDyndepLoader(&n.state, &n.di)
 
 	for i := 0; i < len(args); i++ {
 		err := ""
@@ -315,7 +315,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 		fmt.Printf("%s:\n", node.Path)
 		if edge := node.InEdge; edge != nil {
 			if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
-				if !dyndepLoader.LoadDyndeps(edge.Dyndep, DyndepFile{}, &err) {
+				if !dyndepLoader.LoadDyndeps(edge.Dyndep, nin.DyndepFile{}, &err) {
 					warningf("%s\n", err)
 				}
 			}
@@ -370,7 +370,7 @@ func  toolMSVC(n *ninjaMain,opts *options, args []string) int {
 }
 */
 
-func toolTargetsListNodes(nodes []*Node, depth int, indent int) int {
+func toolTargetsListNodes(nodes []*nin.Node, depth int, indent int) int {
 	for _, n := range nodes {
 		for i := 0; i < indent; i++ {
 			fmt.Printf("  ")
@@ -388,7 +388,7 @@ func toolTargetsListNodes(nodes []*Node, depth int, indent int) int {
 	return 0
 }
 
-func toolTargetsSourceList(state *State) int {
+func toolTargetsSourceList(state *nin.State) int {
 	for _, e := range state.Edges {
 		for _, inps := range e.Inputs {
 			if inps.InEdge == nil {
@@ -399,7 +399,7 @@ func toolTargetsSourceList(state *State) int {
 	return 0
 }
 
-func toolTargetsListRule(state *State, ruleName string) int {
+func toolTargetsListRule(state *nin.State, ruleName string) int {
 	rules := map[string]struct{}{}
 
 	// Gather the outputs.
@@ -423,7 +423,7 @@ func toolTargetsListRule(state *State, ruleName string) int {
 	return 0
 }
 
-func toolTargetsList(state *State) int {
+func toolTargetsList(state *nin.State) int {
 	for _, e := range state.Edges {
 		for _, outNode := range e.Outputs {
 			fmt.Printf("%s: %s\n", outNode.Path, e.Rule.Name)
@@ -433,7 +433,7 @@ func toolTargetsList(state *State) int {
 }
 
 func toolDeps(n *ninjaMain, opts *options, args []string) int {
-	var nodes []*Node
+	var nodes []*nin.Node
 	if len(args) == 0 {
 		for _, ni := range n.depsLog.Nodes {
 			if n.depsLog.IsDepsEntryLiveFor(ni) {
@@ -448,7 +448,7 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	di := NewRealDiskInterface()
+	di := nin.NewRealDiskInterface()
 	for _, it := range nodes {
 		deps := n.depsLog.GetDeps(it)
 		if deps == nil {
@@ -474,15 +474,15 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 }
 
 func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
-	var nodes []*Node
+	var nodes []*nin.Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
 		errorf("%s", err)
 		return 1
 	}
-	di := NewRealDiskInterface()
-	printer := MissingDependencyPrinter{}
-	scanner := NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &di)
+	di := nin.NewRealDiskInterface()
+	printer := nin.MissingDependencyPrinter{}
+	scanner := nin.NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &di)
 	for _, it := range nodes {
 		scanner.ProcessNode(it)
 	}
@@ -515,7 +515,7 @@ func toolTargets(n *ninjaMain, opts *options, args []string) int {
 		} else if mode == "all" {
 			return toolTargetsList(&n.state)
 		} else {
-			suggestion := SpellcheckString(mode, "rule", "depth", "all")
+			suggestion := nin.SpellcheckString(mode, "rule", "depth", "all")
 			if suggestion != "" {
 				errorf("unknown target tool mode '%s', did you mean '%s'?", mode, suggestion)
 			} else {
@@ -593,7 +593,7 @@ const (
 	pcmAll    printCommandMode = true
 )
 
-func printCommands(edge *Edge, seen map[*Edge]struct{}, mode printCommandMode) {
+func printCommands(edge *nin.Edge, seen map[*nin.Edge]struct{}, mode printCommandMode) {
 	if edge == nil {
 		return
 	}
@@ -608,7 +608,7 @@ func printCommands(edge *Edge, seen map[*Edge]struct{}, mode printCommandMode) {
 		}
 	}
 
-	if edge.Rule != PhonyRule {
+	if edge.Rule != nin.PhonyRule {
 		fmt.Printf("%s\n", (edge.EvaluateCommand(false)))
 	}
 }
@@ -627,14 +627,14 @@ func toolCommands(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	var nodes []*Node
+	var nodes []*nin.Node
 	err := ""
 	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
 		errorf("%s", err)
 		return 1
 	}
 
-	seen := map[*Edge]struct{}{}
+	seen := map[*nin.Edge]struct{}{}
 	for _, in := range nodes {
 		printCommands(in.InEdge, seen, mode)
 	}
@@ -667,7 +667,7 @@ func toolClean(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 
-	cleaner := NewCleaner(&n.state, n.config, &n.di)
+	cleaner := nin.NewCleaner(&n.state, n.config, &n.di)
 	if len(args) >= 1 {
 		if cleanRules {
 			return cleaner.CleanRules(args)
@@ -678,7 +678,7 @@ func toolClean(n *ninjaMain, opts *options, args []string) int {
 }
 
 func toolCleanDead(n *ninjaMain, opts *options, args []string) int {
-	cleaner := NewCleaner(&n.state, n.config, &n.di)
+	cleaner := nin.NewCleaner(&n.state, n.config, &n.di)
 	return cleaner.CleanDead(n.buildLog.Entries)
 }
 
@@ -689,7 +689,7 @@ const (
 	ecmExpandRSPFile evaluateCommandMode = true
 )
 
-func evaluateCommandWithRspfile(edge *Edge, mode evaluateCommandMode) string {
+func evaluateCommandWithRspfile(edge *nin.Edge, mode evaluateCommandMode) string {
 	command := edge.EvaluateCommand(false)
 	if mode == ecmNormal {
 		return command
@@ -718,7 +718,7 @@ func evaluateCommandWithRspfile(edge *Edge, mode evaluateCommandMode) string {
 	*/
 }
 
-func printCompdb(directory string, edge *Edge, evalMode evaluateCommandMode) {
+func printCompdb(directory string, edge *nin.Edge, evalMode evaluateCommandMode) {
 	fmt.Printf("\n  {\n    \"directory\": \"")
 	printJSONString(directory)
 	fmt.Printf("\",\n    \"command\": \"")
@@ -802,13 +802,13 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 
 	err := ""
 	status := n.buildLog.Load(logPath, &err)
-	if status == LoadError {
+	if status == nin.LoadError {
 		errorf("loading build log %s: %s", logPath, err)
-		return ExitFailure
+		return nin.ExitFailure
 	}
-	if status == LoadNotFound {
+	if status == nin.LoadNotFound {
 		// Nothing to restat, ignore this
-		return ExitSuccess
+		return nin.ExitSuccess
 	}
 	if len(err) != 0 {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
@@ -818,17 +818,17 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 
 	if !n.buildLog.Restat(logPath, &n.di, args, &err) {
 		errorf("failed recompaction: %s", err)
-		return ExitFailure
+		return nin.ExitFailure
 	}
 
 	if !n.config.DryRun {
 		if !n.buildLog.OpenForWrite(logPath, n, &err) {
 			errorf("opening build log: %s", err)
-			return ExitFailure
+			return nin.ExitFailure
 		}
 	}
 
-	return ExitSuccess
+	return nin.ExitSuccess
 }
 
 // Find the function to execute for \a toolName and return it via \a func.
@@ -871,7 +871,7 @@ func chooseTool(toolName string) *tool {
 	for _, t := range tools {
 		words = append(words, t.name)
 	}
-	suggestion := SpellcheckString(toolName, words...)
+	suggestion := nin.SpellcheckString(toolName, words...)
 	if suggestion != "" {
 		fatalf("unknown tool '%s', did you mean '%s'?", toolName, suggestion)
 	} else {
@@ -894,22 +894,22 @@ func debugEnable(name string) bool {
 		return false
 	} else if name == "stats" {
 		metricsEnabled = true
-		Metrics.Enable()
+		nin.Metrics.Enable()
 		return true
 	} else if name == "explain" {
-		Debug.Explaining = true
+		nin.Debug.Explaining = true
 		return true
 	} else if name == "keepdepfile" {
-		Debug.KeepDepfile = true
+		nin.Debug.KeepDepfile = true
 		return true
 	} else if name == "keeprsp" {
-		Debug.KeepRsp = true
+		nin.Debug.KeepRsp = true
 		return true
 	} else if name == "nostatcache" {
 		disableExperimentalStatcache = true
 		return true
 	} else {
-		suggestion := SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
+		suggestion := nin.SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
 		if suggestion != "" {
 			errorf("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
 		} else {
@@ -941,7 +941,7 @@ func warningEnable(name string, opts *options) bool {
 		warningf("deprecated warning 'depfilemulti'")
 		return true
 	} else {
-		suggestion := SpellcheckString(name, "dupbuild=err", "dupbuild=warn", "phonycycle=err", "phonycycle=warn")
+		suggestion := nin.SpellcheckString(name, "dupbuild=err", "dupbuild=warn", "phonycycle=err", "phonycycle=warn")
 		if suggestion != "" {
 			errorf("unknown warning flag '%s', did you mean '%s'?", name, suggestion)
 		} else {
@@ -961,7 +961,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 
 	err := ""
 	status := n.buildLog.Load(logPath, &err)
-	if status == LoadError {
+	if status == nin.LoadError {
 		errorf("loading build log %s: %s", logPath, err)
 		return false
 	}
@@ -972,7 +972,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 	}
 
 	if recompactOnly {
-		if status == LoadNotFound {
+		if status == nin.LoadNotFound {
 			return true
 		}
 		success := n.buildLog.Recompact(logPath, n, &err)
@@ -1004,7 +1004,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 
 	err := ""
 	status := n.depsLog.Load(path, &n.state, &err)
-	if status == LoadError {
+	if status == nin.LoadError {
 		errorf("loading deps log %s: %s", path, err)
 		return false
 	}
@@ -1015,7 +1015,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 	}
 
 	if recompactOnly {
-		if status == LoadNotFound {
+		if status == nin.LoadNotFound {
 			return true
 		}
 		success := n.depsLog.Recompact(path, &err)
@@ -1037,7 +1037,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 
 // Dump the output requested by '-d stats'.
 func (n *ninjaMain) DumpMetrics() {
-	Metrics.Report()
+	nin.Metrics.Report()
 
 	fmt.Printf("\n")
 	// There's no such concept in Go's map.
@@ -1052,7 +1052,7 @@ func (n *ninjaMain) EnsureBuildDirExists() bool {
 	n.buildDir = n.state.Bindings.LookupVariable("builddir")
 	if n.buildDir != "" && !n.config.DryRun {
 		// TODO(maruel): We need real error.
-		if !MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {
+		if !nin.MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {
 			errorf("creating build directory %s", n.buildDir)
 			//return false
 		}
@@ -1062,9 +1062,9 @@ func (n *ninjaMain) EnsureBuildDirExists() bool {
 
 // Build the targets listed on the command line.
 // @return an exit code.
-func (n *ninjaMain) RunBuild(args []string, status Status) int {
+func (n *ninjaMain) RunBuild(args []string, status nin.Status) int {
 	err := ""
-	var targets []*Node
+	var targets []*nin.Node
 	if !n.CollectTargetsFromArgs(args, &targets, &err) {
 		status.Error("%s", err)
 		return 1
@@ -1072,7 +1072,7 @@ func (n *ninjaMain) RunBuild(args []string, status Status) int {
 
 	n.di.AllowStatCache(!disableExperimentalStatcache)
 
-	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
+	builder := nin.NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	for i := 0; i < len(targets); i++ {
 		if !builder.AddTarget(targets[i], &err) {
 			if len(err) != 0 {
@@ -1125,7 +1125,7 @@ func exceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
 
 // Parse args for command-line options.
 // Returns an exit code, or -1 if Ninja should continue.
-func readFlags(opts *options, config *BuildConfig) int {
+func readFlags(opts *options, config *nin.BuildConfig) int {
 	// TODO(maruel): For now just do something simple to get started but we'll
 	// have to make it custom if we want it to be drop-in replacement.
 	// It's funny how "opts" and "config" is a bit mixed up here.
@@ -1149,7 +1149,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 	flag.BoolVar(verbose, "verbose", false, "show all command lines while building")
 	quiet := flag.Bool("quiet", false, "don't show progress status, just command output")
 	warning := flag.String("w", "", "adjust warnings (use '-w list' to list warnings)")
-	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", NinjaVersion))
+	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", nin.NinjaVersion))
 
 	flag.Usage = usage
 	flag.Parse()
@@ -1159,10 +1159,10 @@ func readFlags(opts *options, config *BuildConfig) int {
 		return 2
 	}
 	if *verbose {
-		config.Verbosity = Verbose
+		config.Verbosity = nin.Verbose
 	}
 	if *quiet {
-		config.Verbosity = NoStatusUpdate
+		config.Verbosity = nin.NoStatusUpdate
 	}
 	if *warning != "" {
 		if !warningEnable(*warning, opts) {
@@ -1175,7 +1175,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 		}
 	}
 	if *version {
-		fmt.Printf("%s\n", NinjaVersion)
+		fmt.Printf("%s\n", nin.NinjaVersion)
 		return 0
 	}
 	if *t != "" {
@@ -1268,10 +1268,10 @@ func readFlags(opts *options, config *BuildConfig) int {
 			         }
 			         break
 			       case 'v':
-			         config.verbosity = BuildConfig::VERBOSE
+			         config.verbosity = Verbose
 			         break
 			       case OPT_QUIET:
-			         config.verbosity = BuildConfig::NO_STATUS_UPDATE
+			         config.verbosity = nin.NoStatusUpdate
 			         break
 			       case 'w':
 			         if !warningEnable(optarg, opts) {
@@ -1282,7 +1282,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 			         opts.workingDir = optarg
 			         break
 			       case OPT_VERSION:
-			         fmt.Printf("%s\n", NinjaVersion)
+			         fmt.Printf("%s\n", nin.NinjaVersion)
 			         return 0
 			       case 'h':
 			       default:
@@ -1299,7 +1299,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 func Main() int {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing ninjaMain.
-	config := NewBuildConfig()
+	config := nin.NewBuildConfig()
 	opts := options{}
 
 	//setvbuf(stdout, nil, _IOLBF, BUFSIZ)
@@ -1357,14 +1357,14 @@ func Main() int {
 
 	args := flag.Args()
 
-	status := NewStatusPrinter(&config)
+	status := nin.NewStatusPrinter(&config)
 	if opts.workingDir != "" {
 		// The formatting of this string, complete with funny quotes, is
 		// so Emacs can properly identify that the cwd has changed for
 		// subsequent commands.
 		// Don't print this if a tool is being used, so that tool output
 		// can be piped into a file without this string showing up.
-		if opts.tool == nil && config.Verbosity != NoStatusUpdate {
+		if opts.tool == nil && config.Verbosity != nin.NoStatusUpdate {
 			status.Info("Entering directory `%s'", opts.workingDir)
 		}
 		if err := os.Chdir(opts.workingDir); err != nil {
@@ -1396,7 +1396,7 @@ func Main() int {
 	const cycleLimit = 100
 	for cycle := 1; cycle <= cycleLimit; cycle++ {
 		ninja := newNinjaMain(ninjaCommand, &config)
-		parser := NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
+		parser := nin.NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
 		err := ""
 		if !parser.Load(opts.inputFile, &err, nil) {
 			status.Error("%s", err)

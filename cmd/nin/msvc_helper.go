@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nin
+package main
 
 // Wraps a synchronous execution of a CL subprocess.
 type CLWrapper struct {
