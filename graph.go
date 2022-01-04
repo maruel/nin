@@ -946,7 +946,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 		return false
 	}
 
-	depfile := NewDepfileParser()
+	depfile := DepfileParser{}
 	depfileErr := ""
 	if !depfile.Parse([]byte(content), &depfileErr) {
 		*err = path + ": " + depfileErr

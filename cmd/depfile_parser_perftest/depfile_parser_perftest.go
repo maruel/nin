@@ -42,7 +42,7 @@ func main() {
 				}
 
 				err2 := ""
-				parser := nin.NewDepfileParser(nin.DepfileParserOptions{})
+				parser := nin.DepfileParser{}
 				if !parser.Parse(buf, &err2) {
 					fmt.Printf("%s: %s\n", filename, err2)
 					os.Exit(1)

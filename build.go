@@ -1062,7 +1062,7 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 			return true
 		}
 
-		deps := NewDepfileParser()
+		deps := DepfileParser{}
 		// TODO(maruel): Memory copy.
 		if !deps.Parse([]byte(content), err) {
 			return false
