@@ -47,11 +47,11 @@ type EvalString struct {
 
 func (e *EvalString) String() string {
 	out := ""
-	for i, t := range e.Parsed {
+	for i := range e.Parsed {
 		if i != 0 {
 			out += ","
 		}
-		out += t.String()
+		out += e.Parsed[i].String()
 	}
 	return out
 }
@@ -68,13 +68,13 @@ func (e *EvalString) Evaluate(env Env) string {
 		s = make([]string, l)
 	}
 	total := 0
-	for i, p := range e.Parsed {
-		if !p.IsSpecial {
-			x := p.Value
+	for i := range e.Parsed {
+		x := e.Parsed[i].Value
+		if !e.Parsed[i].IsSpecial {
 			s[i] = x
 			total += len(x)
 		} else {
-			x := env.LookupVariable(p.Value)
+			x = env.LookupVariable(x)
 			s[i] = x
 			total += len(x)
 		}
@@ -99,14 +99,16 @@ func (e *EvalString) AddSpecial(text string) {
 
 // Construct a human-readable representation of the parsed state,
 // for use in tests.
+//
+// Mostly used in unit tests.
 func (e *EvalString) Serialize() string {
 	result := ""
-	for _, i := range e.Parsed {
+	for i := range e.Parsed {
 		result += "["
-		if i.IsSpecial {
+		if e.Parsed[i].IsSpecial {
 			result += "$"
 		}
-		result += i.Value
+		result += e.Parsed[i].Value
 		result += "]"
 	}
 	return result
