@@ -126,7 +126,7 @@ jobs:
       # Now run proper checks.
     - name: 'Check: go vet'
       if: always()
-      run: go vet ./...
+      run: go vet -unsafeptr=false ./...
     - name: 'Check: go vet shadow; shadowed variables'
       run: |
         SHADOW_TOOL="$(which shadow)"
