@@ -1586,6 +1586,7 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("windows only")
 	}
+	t.Skip("TODO")
 	b := NewBuildTest(t)
 	err := ""
 	origEdges := len(b.state.Edges)

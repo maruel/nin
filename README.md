@@ -64,7 +64,7 @@ Some people did advent of code 2021, I did a brain teaser instead.
 - Manifest (build.ninja) parsing: 5% faster on average! 📉
 - Latency: nin is in the same ballpark (-5%) for building ninja itself.
 - CPU usage: about 15% higher, has to be optimized.
-- 15 test cases out of 394 (5%) have to be fixed. `git grep Skip..TODO | wc -l`
+- 16 test cases out of 394 (5%) have to be fixed. `git grep Skip..TODO | wc -l`
   versus `git grep "^func Test" | wc -l`.
 - Closely tracking upstream as-is.
 - Code is not yet Go idiomatic.
