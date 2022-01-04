@@ -55,18 +55,18 @@ jobs:
 
       # Run tests first because it's important.
     - name: 'Check: go test -cover'
-      run: go test -timeout=120s -covermode=count -coverprofile coverage.txt ./...
+      run: go test -timeout=60s -covermode=count -coverprofile coverage.txt ./...
+      # Don't send code coverage if anything failed to reduce spam.
     - uses: codecov/codecov-action@v2
     - name: 'Cleanup'
       if: always()
       run: rm coverage.txt
 
-      # TODO(maruel): Skip -race for now because it's using too much memory.
       # Don't run go test -race if anything failed, to speed up the results.
-#    - name: 'Check: go test -race'
-#      run: go test -timeout=120s -race ./...
+    - name: 'Check: go test -race'
+      run: go test -timeout=60s -race ./...
     - name: 'Check: go test -bench=.'
-      run: go test -timeout=120s -bench=. -benchtime=100ms -cpu=1  -run NONE ./...
+      run: go test -timeout=60s -bench=. -benchtime=100ms -cpu=1 -run NONE ./...
 
     - name: "Check: tree is clean"
       if: always()
@@ -85,7 +85,6 @@ jobs:
       if: always()
       run: |
         go generate ./...
-        # Also test for untracked files.
         TOUCHED=$(git status --porcelain)
         if ! test -z "$TOUCHED"; then
           echo "go generate created these files, please fix:"
