@@ -448,18 +448,24 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 		}
 		if !found {
 			// Recompute mostRecentInput.
-			mostRecentInput := -1
-			for i := 0; i != end; i++ {
-				if mostRecentInput == -1 || oe.Inputs[i].MTime > oe.Inputs[mostRecentInput].MTime {
-					mostRecentInput = i
+			var mostRecentInput *Node
+			if end > 0 {
+				mostRecentInput = oe.Inputs[0]
+				for i := 1; i != end; i++ {
+					if oe.Inputs[i].MTime > mostRecentInput.MTime {
+						mostRecentInput = oe.Inputs[i]
+					}
 				}
 			}
+
+			// TODO(maruel): This code doesn't have unit test coverage when
+			// mostRecentInput is nil.
 
 			// Now, this edge is dirty if any of the outputs are dirty.
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
 			outputsDirty := false
-			if !scan.RecomputeOutputsDirty(oe, oe.Inputs[mostRecentInput], &outputsDirty, err) {
+			if !scan.RecomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, err) {
 				return false
 			}
 			if !outputsDirty {
