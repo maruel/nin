@@ -744,7 +744,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	var pdepsLog *DepsLog
 	if depsPath != "" {
 		pdepsLog = &DepsLog{}
-		pdepsLog.Close()
+		defer pdepsLog.Close()
 		if s := pdepsLog.Load(depsPath, pstate, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", depsPath, s, err)
 		}
@@ -2968,7 +2968,9 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 		t.Fatal("expected equal")
 	}
 	t.Cleanup(func() {
-		_ = b.log.Close()
+		if err2 := b.log.Close(); err2 != nil {
+			t.Error(err2)
+		}
 	})
 	b.builder = NewBuilder(&b.state, &b.config, nil, &b.log, &b.fs, b.status, 0)
 	b.builder.commandRunner = &b.commandRunner
