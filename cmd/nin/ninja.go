@@ -82,7 +82,6 @@ func newNinjaMain(ninjaCommand string, config *nin.BuildConfig) ninjaMain {
 		config:          config,
 		state:           nin.NewState(),
 		buildLog:        nin.NewBuildLog(),
-		depsLog:         nin.NewDepsLog(),
 		startTimeMillis: nin.GetTimeMillis(),
 	}
 }

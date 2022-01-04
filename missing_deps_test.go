@@ -40,7 +40,6 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 		t:             t,
 		generatorRule: NewRule("generator_rule"),
 		compileRule:   NewRule("compile_rule"),
-		depsLog:       NewDepsLog(),
 		state:         NewState(),
 		filesystem:    NewVirtualFileSystem(),
 	}

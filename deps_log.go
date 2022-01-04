@@ -37,24 +37,30 @@ func NewDeps(mtime TimeStamp, nodeCount int) *Deps {
 	}
 }
 
+// DepsLog represents a .ninja_deps log file to accelerate incremental build.
+//
 // As build commands run they can output extra dependency information
-// (e.g. header dependencies for C source) dynamically.  DepsLog collects
+// (e.g. header dependencies for C source) dynamically. DepsLog collects
 // that information at build time and uses it for subsequent builds.
 //
 // The on-disk format is based on two primary design constraints:
+//
 // - it must be written to as a stream (during the build, which may be
-//   interrupted);
-// - it can be read all at once on startup.  (Alternative designs, where
-//   it contains indexing information, were considered and discarded as
-//   too complicated to implement; if the file is small than reading it
-//   fully on startup is acceptable.)
+// interrupted);
+//
+// - it can be read all at once on startup. (Alternative designs, where
+// it contains indexing information, were considered and discarded as
+// too complicated to implement; if the file is small than reading it
+// fully on startup is acceptable.)
+//
 // Here are some stats from the Windows Chrome dependency files, to
-// help guide the design space.  The total text in the files sums to
+// help guide the design space. The total text in the files sums to
 // 90mb so some compression is warranted to keep load-time fast.
 // There's about 10k files worth of dependencies that reference about
 // 40k total paths totalling 2mb of unique strings.
 //
 // Based on these stats, here's the current design.
+//
 // The file is structured as version header followed by a sequence of records.
 // Each record is either a path string or a dependency list.
 // Numbering the path strings in file order gives them dense integer ids.
@@ -77,19 +83,15 @@ func NewDeps(mtime TimeStamp, nodeCount int) *Deps {
 // wins, allowing updates to just be appended to the file.  A separate
 // repacking step can run occasionally to remove dead records.
 type DepsLog struct {
-	needsRecompaction bool
-	file              *os.File
-	buf               *bufio.Writer
-	filePath          string
-
 	// Maps id -> Node.
 	Nodes []*Node
 	// Maps id -> Deps of that id.
 	Deps []*Deps
-}
 
-func NewDepsLog() DepsLog {
-	return DepsLog{}
+	filePath          string
+	file              *os.File
+	buf               *bufio.Writer
+	needsRecompaction bool
 }
 
 // The version is stored as 4 bytes after the signature and also serves as a
@@ -447,7 +449,8 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 		return false
 	}
 
-	newLog := NewDepsLog()
+	// Create a new temporary log to regenerate everything.
+	newLog := DepsLog{}
 	if !newLog.OpenForWrite(tempPath, err) {
 		return false
 	}

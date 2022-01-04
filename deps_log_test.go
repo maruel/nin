@@ -25,7 +25,7 @@ import (
 func TestDepsLogTest_WriteRead(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state1 := NewState()
-	log1 := NewDepsLog()
+	log1 := DepsLog{}
 	err := ""
 	if !log1.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
@@ -70,7 +70,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 	log1.Close()
 
 	state2 := NewState()
-	log2 := NewDepsLog()
+	log2 := DepsLog{}
 	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 	const numDeps = 100000 // More than 64k.
 
 	state1 := NewState()
-	log1 := NewDepsLog()
+	log1 := DepsLog{}
 	err := ""
 	if !log1.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
@@ -142,7 +142,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 	log1.Close()
 
 	state2 := NewState()
-	log2 := NewDepsLog()
+	log2 := DepsLog{}
 	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
@@ -171,7 +171,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 	fileSize := 0
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
@@ -195,7 +195,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 	// Now reload the file, and read the same deps.
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -230,7 +230,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	{
 		state := NewState()
 		assertParse(t, manifest, &state)
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
@@ -262,7 +262,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	{
 		state := NewState()
 		assertParse(t, manifest, &state)
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -293,7 +293,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	{
 		state := NewState()
 		assertParse(t, manifest, &state)
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -386,7 +386,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	{
 		state := NewState()
 		// Intentionally not parsing manifest here.
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -478,7 +478,7 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 		}
 
 		err := ""
-		log := NewDepsLog()
+		log := DepsLog{}
 		state := NewState()
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -496,7 +496,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 	// Create a file with some entries.
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
@@ -532,7 +532,7 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 		}
 
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) == LoadNotFound {
 			t.Fatal(err)
@@ -568,7 +568,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	// Create a file with some entries.
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if !log.OpenForWrite(testFilename, &err) {
 			t.Fatal("expected true")
@@ -605,7 +605,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	// Load the file again, add an entry.
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -640,7 +640,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	// entry doesn't break things.
 	{
 		state := NewState()
-		log := NewDepsLog()
+		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
@@ -657,7 +657,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state := NewState()
-	log := NewDepsLog()
+	log := DepsLog{}
 	err := ""
 	if !log.OpenForWrite(testFilename, &err) {
 		t.Fatal("expected true")
