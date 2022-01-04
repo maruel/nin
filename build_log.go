@@ -20,7 +20,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -60,62 +59,57 @@ const (
 	BuildLogCurrentVersion         = 5
 )
 
-// HashCommand hashes a command using the MurmurHash2 algorithm by Austin
-// Appleby.
-func HashCommand(command string) uint64 {
+// 64bit MurmurHash2, by Austin Appleby
+func murmurHash64A(data []byte) uint64 {
 	seed := uint64(0xDECAFBADDECAFBAD)
 	const m = 0xc6a4a7935bd1e995
 	r := 47
-	data := (*[0x7fff0000]byte)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))
-	l := len(command)
-	if l > len(data) {
-		panic("internal failure")
-	}
-	h := seed ^ (uint64(l) * m)
-
-	i := 0
-	for ; i < l; i += 8 {
-		k := *(*uint64)(unsafe.Pointer(&data[i]))
+	len2 := uint64(len(data))
+	h := seed ^ (len2 * m)
+	for ; len2 >= 8; len2 -= 8 {
+		// TODO(maruel): Assumes little endian.
+		k := *(*uint64)(unsafe.Pointer(&data[0]))
 		k *= m
 		k ^= k >> r
 		k *= m
 		h ^= k
 		h *= m
+		data = data[8:]
 	}
-
-	// Interestingly, even if the following switch causes a lot of panicIndex
-	// calls, it is still faster than this following block:
-	//   k := *(*uint64)(unsafe.Pointer(&data[i]))
-	//   k = 0xFFFFFFFFFFFFFFFF >> (8 - (i & 7))
-	//   h ^= k
-	//   h *= m
-	switch i & 7 {
+	switch len2 & 7 {
 	case 7:
-		h ^= uint64(data[i+6]) << 48
+		h ^= uint64(data[6]) << 48
 		fallthrough
 	case 6:
-		h ^= uint64(data[i+5]) << 40
+		h ^= uint64(data[5]) << 40
 		fallthrough
 	case 5:
-		h ^= uint64(data[i+4]) << 32
+		h ^= uint64(data[4]) << 32
 		fallthrough
 	case 4:
-		h ^= uint64(data[i+3]) << 24
+		h ^= uint64(data[3]) << 24
 		fallthrough
 	case 3:
-		h ^= uint64(data[i+2]) << 16
+		h ^= uint64(data[2]) << 16
 		fallthrough
 	case 2:
-		h ^= uint64(data[i+1]) << 8
+		h ^= uint64(data[1]) << 8
 		fallthrough
 	case 1:
-		h ^= uint64(data[i])
+		h ^= uint64(data[0])
 		h *= m
 	}
 	h ^= h >> r
 	h *= m
 	h ^= h >> r
 	return h
+}
+
+// HashCommand hashes a command using the MurmurHash2 algorithm by Austin
+// Appleby.
+func HashCommand(command string) uint64 {
+	// TODO(maruel): Memory copy.
+	return murmurHash64A([]byte(command))
 }
 
 //
