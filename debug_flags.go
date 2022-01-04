@@ -19,15 +19,16 @@ import (
 	"os"
 )
 
-var (
-	gExplaining            = false
-	gKeepDepfile           = false
-	gKeepRsp               = false
-	gExperimentalStatcache = true
-)
+// Debug contains debug functionality.
+var Debug struct {
+	// Explaining enables debug print of reason while a command is run.
+	Explaining  bool
+	KeepDepfile bool
+	KeepRsp     bool
+}
 
 func Explain(f string, i ...interface{}) {
-	if gExplaining {
+	if Debug.Explaining {
 		fmt.Fprintf(os.Stderr, "ninja explain: "+f+"\n", i...)
 	}
 }

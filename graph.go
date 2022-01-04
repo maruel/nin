@@ -102,7 +102,7 @@ func (n *Node) PathDecanonicalized() string {
 
 // Return false on error.
 func (n *Node) Stat(di DiskInterface) error {
-	defer MetricRecord("node stat")()
+	defer metricRecord("node stat")()
 	mtime, err := di.Stat(n.Path)
 	n.MTime = mtime
 	if mtime == -1 {
@@ -929,7 +929,7 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
-	defer MetricRecord("depfile load")()
+	defer metricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content := ""
 	switch i.di.ReadFile(path, &content, err) {

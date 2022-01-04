@@ -287,7 +287,7 @@ func (l *LineReader) ReadLine(lineStart *char*, lineEnd *char*) bool {
 
 // Load the on-disk log.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
-	defer MetricRecord(".ninja_log load")()
+	defer metricRecord(".ninja_log load")()
 	file, err2 := ioutil.ReadFile(path)
 	if file == nil {
 		if os.IsNotExist(err2) {
@@ -401,7 +401,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
-	defer MetricRecord(".ninja_log recompact")()
+	defer metricRecord(".ninja_log recompact")()
 	_ = b.Close()
 	tempPath := path + ".recompact"
 	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
@@ -450,7 +450,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 
 // Restat all outputs in the log
 func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *string) bool {
-	defer MetricRecord(".ninja_log restat")()
+	defer metricRecord(".ninja_log restat")()
 	_ = b.Close()
 	tempPath := path + ".restat"
 	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY, 0o666)

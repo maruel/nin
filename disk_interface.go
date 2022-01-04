@@ -220,7 +220,7 @@ func NewRealDiskInterface() RealDiskInterface {
 const maxPath = 260
 
 func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
-	defer MetricRecord("node stat")()
+	defer metricRecord("node stat")()
 	if runtime.GOOS == "windows" {
 		if path != "" && path[0] != '\\' && len(path) >= maxPath {
 			return -1, fmt.Errorf("Stat(%s): Filename longer than %d characters", path, maxPath)

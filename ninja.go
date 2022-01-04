@@ -880,6 +880,11 @@ func chooseTool(toolName string) *tool {
 	return nil // Not reached.
 }
 
+var (
+	disableExperimentalStatcache bool
+	metricsEnabled               bool
+)
+
 // Enable a debugging mode.  Returns false if Ninja should exit instead
 // of continuing.
 func debugEnable(name string) bool {
@@ -888,19 +893,20 @@ func debugEnable(name string) bool {
 		//#ifdef _WIN32//#endif
 		return false
 	} else if name == "stats" {
-		gMetrics = NewMetrics()
+		metricsEnabled = true
+		Metrics.Enable()
 		return true
 	} else if name == "explain" {
-		gExplaining = true
+		Debug.Explaining = true
 		return true
 	} else if name == "keepdepfile" {
-		gKeepDepfile = true
+		Debug.KeepDepfile = true
 		return true
 	} else if name == "keeprsp" {
-		gKeepRsp = true
+		Debug.KeepRsp = true
 		return true
 	} else if name == "nostatcache" {
-		gExperimentalStatcache = false
+		disableExperimentalStatcache = true
 		return true
 	} else {
 		suggestion := SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
@@ -1031,7 +1037,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 
 // Dump the output requested by '-d stats'.
 func (n *ninjaMain) DumpMetrics() {
-	gMetrics.Report()
+	Metrics.Report()
 
 	fmt.Printf("\n")
 	// There's no such concept in Go's map.
@@ -1064,7 +1070,7 @@ func (n *ninjaMain) RunBuild(args []string, status Status) int {
 		return 1
 	}
 
-	n.di.AllowStatCache(gExperimentalStatcache)
+	n.di.AllowStatCache(!disableExperimentalStatcache)
 
 	builder := NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	for i := 0; i < len(targets); i++ {
@@ -1428,7 +1434,7 @@ func Main() int {
 		}
 
 		result := ninja.RunBuild(args, status)
-		if gMetrics != nil {
+		if metricsEnabled {
 			ninja.DumpMetrics()
 		}
 		return result

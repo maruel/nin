@@ -226,7 +226,7 @@ func (d *DepsLog) Close() error {
 // don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
 // and there was no release with it, so pretend that it never happened.)
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
-	defer MetricRecord(".ninja_deps load")()
+	defer metricRecord(".ninja_deps load")()
 	data, err2 := ioutil.ReadFile(path)
 	if err2 != nil {
 		if os.IsNotExist(err2) {
@@ -435,7 +435,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 
 // Rewrite the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
-	defer MetricRecord(".ninja_deps recompact")()
+	defer metricRecord(".ninja_deps recompact")()
 
 	_ = d.Close()
 	tempPath := path + ".recompact"

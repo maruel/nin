@@ -189,7 +189,7 @@ func (s *StatusPrinter) BuildLoadDyndeps() {
 	// line.  Start a new line so that the first explanation does not
 	// append to the status line.  After the explanations are done a
 	// new build status line will appear.
-	if gExplaining {
+	if Debug.Explaining {
 		s.printer.PrintOnNewLine("")
 	}
 }

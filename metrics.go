@@ -17,23 +17,23 @@ package nin
 import (
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 )
-
-// The Metrics module is used for the debug mode that dumps timing stats of
-// various actions.  To use, see MetricRecord below.
 
 func emptyFunc() {
 }
 
-/// The primary interface to metrics.  Use MetricRecord("foobar") at the top
-/// of a function to get timing stats recorded for each call of the function.
-func MetricRecord(name string) func() {
+// metricRecord is the primary interface to metrics.
+//
+// Use defer metricRecord("foobar")() at the top of a function to get timing
+// stats recorded for each call of the function.
+func metricRecord(name string) func() {
 	// TODO(maruel): Use runtime/trace.StartRegion() instead.
-	if gMetrics == nil {
+	if Metrics.metrics == nil {
 		return emptyFunc
 	}
-	m := gMetrics.GetMetric(name)
+	m := Metrics.getMetric(name)
 	start := time.Now()
 	return func() {
 		m.count++
@@ -42,7 +42,7 @@ func MetricRecord(name string) func() {
 }
 
 // A single metrics we're tracking, like "depfile load time".
-type Metric struct {
+type metric struct {
 	name string
 	// Number of times we've hit the code path.
 	count int
@@ -50,35 +50,35 @@ type Metric struct {
 	sum time.Duration
 }
 
-// The singleton that stores metrics and prints the report.
-type Metrics struct {
-	metrics map[string]*Metric
+// MetricsCollection collects metrics.
+type MetricsCollection struct {
+	mu      sync.Mutex
+	metrics map[string]*metric
 }
 
-func NewMetrics() *Metrics {
-	return &Metrics{
-		metrics: map[string]*Metric{},
-	}
+// Metrics is the singleton that stores metrics for this package.
+var Metrics MetricsCollection
+
+// Enable enables metrics collection.
+//
+// Must be called before using any other functionality in this package.
+func (m *MetricsCollection) Enable() {
+	Metrics.metrics = map[string]*metric{}
 }
 
-// The primary interface to metrics.  Use MetricRecord("foobar") at the top
-// of a function to get timing stats recorded for each call of the function.
-var gMetrics *Metrics
-
-func (m *Metrics) GetMetric(name string) *Metric {
-	if m.metrics == nil {
-		m.metrics = map[string]*Metric{}
+func (m *MetricsCollection) getMetric(name string) *metric {
+	m.mu.Lock()
+	met := m.metrics[name]
+	if met == nil {
+		met = &metric{name: name}
+		m.metrics[name] = met
 	}
-	metric, ok := m.metrics[name]
-	if !ok {
-		metric = &Metric{name: name}
-		m.metrics[name] = metric
-	}
-	return metric
+	m.mu.Unlock()
+	return met
 }
 
-// Print a summary report to stdout.
-func (m *Metrics) Report() {
+// Report prints a summary report to stdout.
+func (m *MetricsCollection) Report() {
 	width := 0
 	names := make([]string, 0, len(m.metrics))
 	for name := range m.metrics {
