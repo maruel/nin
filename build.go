@@ -701,11 +701,15 @@ func (b *Builder) Cleanup() {
 					b.status.Error("%s", err)
 				}
 				if depfile != "" || o.MTime != newMtime {
-					b.di.RemoveFile(o.Path)
+					if err := b.di.RemoveFile(o.Path); err != nil {
+						b.status.Error("%s", err)
+					}
 				}
 			}
 			if len(depfile) != 0 {
-				b.di.RemoveFile(depfile)
+				if err := b.di.RemoveFile(depfile); err != nil {
+					b.status.Error("%s", err)
+				}
 			}
 		}
 	}
@@ -1004,7 +1008,9 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	// Delete any left over response file.
 	rspfile := edge.GetUnescapedRspfile()
 	if rspfile != "" && !Debug.KeepRsp {
-		b.di.RemoveFile(rspfile)
+		if err2 := b.di.RemoveFile(rspfile); err2 != nil {
+			*err = err2.Error()
+		}
 	}
 
 	if b.scan.buildLog != nil {
