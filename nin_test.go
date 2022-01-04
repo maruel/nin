@@ -55,7 +55,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 	err := ""
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
-	if !parser.ParseTest(input+"\x00", &err) {
+	if !parser.parseTest(input, &err) {
 		s.t.Fatal(err)
 	}
 	if err != "" {

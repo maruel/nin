@@ -16,8 +16,14 @@ package nin
 
 import "testing"
 
+func newLexer(input string) Lexer {
+	l := Lexer{}
+	l.Start("input", []byte(input+"\x00"))
+	return l
+}
+
 func TestLexer_ReadVarValue(t *testing.T) {
-	lexer := NewLexer("plain text $var $VaR ${x}\n")
+	lexer := newLexer("plain text $var $VaR ${x}\n")
 	eval := EvalString{}
 	err := ""
 	if !lexer.ReadVarValue(&eval, &err) {
@@ -35,7 +41,7 @@ func TestLexer_ReadVarValue(t *testing.T) {
 }
 
 func TestLexer_ReadEvalStringEscapes(t *testing.T) {
-	lexer := NewLexer("$ $$ab c$: $\ncde\n")
+	lexer := newLexer("$ $$ab c$: $\ncde\n")
 	var eval EvalString
 	err := ""
 	if !lexer.ReadVarValue(&eval, &err) {
@@ -53,7 +59,7 @@ func TestLexer_ReadEvalStringEscapes(t *testing.T) {
 }
 
 func TestLexer_ReadIdent(t *testing.T) {
-	lexer := NewLexer("foo baR baz_123 foo-bar")
+	lexer := newLexer("foo baR baz_123 foo-bar")
 	ident := ""
 	if !lexer.ReadIdent(&ident) {
 		t.Fatal()
@@ -84,7 +90,7 @@ func TestLexer_ReadIdent(t *testing.T) {
 func TestLexer_ReadIdentCurlies(t *testing.T) {
 	// Verify that ReadIdent includes dots in the name,
 	// but in an expansion $bar.dots stops at the dot.
-	lexer := NewLexer("foo.dots $bar.dots ${bar.dots}\n")
+	lexer := newLexer("foo.dots $bar.dots ${bar.dots}\n")
 	ident := ""
 	if !lexer.ReadIdent(&ident) {
 		t.Fatal()
@@ -109,7 +115,7 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 }
 
 func TestLexer_Error(t *testing.T) {
-	lexer := NewLexer("foo$\nbad $")
+	lexer := newLexer("foo$\nbad $")
 	eval := EvalString{}
 	err := ""
 	if lexer.ReadVarValue(&eval, &err) {
@@ -123,7 +129,7 @@ func TestLexer_Error(t *testing.T) {
 func TestLexer_CommentEOF(t *testing.T) {
 	// Verify we don't run off the end of the string when the EOF is
 	// mid-comment.
-	lexer := NewLexer("# foo")
+	lexer := newLexer("# foo")
 	token := lexer.ReadToken()
 	if ERROR != token {
 		t.Fatal(token)
@@ -132,7 +138,7 @@ func TestLexer_CommentEOF(t *testing.T) {
 
 func TestLexer_Tabs(t *testing.T) {
 	// Verify we print a useful error on a disallowed character.
-	lexer := NewLexer("   \tfoobar")
+	lexer := newLexer("   \tfoobar")
 	token := lexer.ReadToken()
 	if INDENT != token {
 		t.Fatal()

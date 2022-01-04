@@ -1681,7 +1681,7 @@ func TestBuildTest_PhonyNoWork(t *testing.T) {
 func TestBuildTest_PhonySelfReference(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "build a: phony a\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build a: phony a\n", ManifestParserOptions{Quiet: true})
 
 	if b.builder.AddTargetName("a", &err) == nil {
 		t.Fatal("expected true")

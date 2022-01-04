@@ -15,7 +15,7 @@
 package nin
 
 type Parse interface {
-	Parse(filename, input string, err *string) bool
+	Parse(filename string, input []byte, err *string) bool
 }
 
 // Base class for parsers.
@@ -45,7 +45,7 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 		}
 		return false
 	}
-	return p.Parse.Parse(filename, unsafeString(contents), err)
+	return p.Parse.Parse(filename, contents, err)
 }
 
 // If the next token is not \a expected, produce an error string

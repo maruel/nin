@@ -70,8 +70,8 @@ func WriteTestData() error {
 	longRuleCommand += "$in -o $out\n"
 
 	state := nin.NewState()
-	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{})
-	if !parser.ParseTest("rule cxx\n  command = "+longRuleCommand, &err) {
+	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{Quiet: true})
+	if !parser.Parse("input", []byte("rule cxx\n  command = "+longRuleCommand+"\x00"), &err) {
 		return errors.New(err)
 	}
 
@@ -83,7 +83,7 @@ func WriteTestData() error {
 		buildRules += fmt.Sprintf("build input%d.o: cxx input%d.cc\n", i, i)
 	}
 
-	if !parser.ParseTest(buildRules, &err) {
+	if !parser.Parse("input", []byte(buildRules+"\x00"), &err) {
 		return errors.New(err)
 	}
 

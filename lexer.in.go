@@ -45,7 +45,7 @@ const (
 
 type Lexer struct {
 	filename string
-	input    string
+	input    []byte
 	// In the original C++ code, these two are char pointers and are used to do
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
 	// indexes. ofs starts at 0. lastToken is initially -1 to mark that it is
@@ -96,7 +96,7 @@ func (l *Lexer) Error(message string, err *string) bool {
 				break
 			}
 		}
-		*err += l.input[lineStart : lineStart+length]
+		*err += unsafeString(l.input[lineStart : lineStart+length])
 		if truncated {
 			*err += "..."
 		}
@@ -107,17 +107,10 @@ func (l *Lexer) Error(message string, err *string) bool {
 	return false
 }
 
-// NewLexer is only used in tests.
-func NewLexer(input string) Lexer {
-	l := Lexer{}
-	l.Start("input", input+"\x00")
-	return l
-}
-
 // Start parsing some input.
-func (l *Lexer) Start(filename, input string) {
+func (l *Lexer) Start(filename string, input []byte) {
 	l.filename = filename
-	if !strings.HasSuffix(input, "\x00") {
+	if input[len(input)-1] != 0 {
 		panic("Requires hack with a trailing 0 byte")
 	}
 	l.input = input
@@ -267,7 +260,7 @@ func (l *Lexer) ReadIdent(out *string) bool {
 		start = p
 		/*!re2c
 		  varname {
-				*out = l.input[start:p]
+				*out = unsafeString(l.input[start:p])
 		    break
 		  }
 		  [^] {
@@ -291,7 +284,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		start = p
 		/*!re2c
 		  [^$ :\r\n|\000]+ {
-				eval.AddText(l.input[start: p])
+				eval.AddText(unsafeString(l.input[start: p]))
 		    continue
 		  }
 		  "\r\n" {
@@ -308,7 +301,7 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		      if l.input[start] == '\n' {
 		        break
 		      }
-					eval.AddText(l.input[start:start+1])
+					eval.AddText(unsafeString(l.input[start:start+1]))
 		      continue
 		    }
 		  }
@@ -327,11 +320,11 @@ func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		    continue
 		  }
 		  "${"varname"}" {
-				eval.AddSpecial(l.input[start + 2: p - 1])
+				eval.AddSpecial(unsafeString(l.input[start + 2: p - 1]))
 		    continue
 		  }
 		  "$"simpleVarname {
-				eval.AddSpecial(l.input[start + 1: p])
+				eval.AddSpecial(unsafeString(l.input[start + 1: p]))
 		    continue
 		  }
 		  "$:" {

@@ -21,11 +21,6 @@ type DyndepParser struct {
 	env        *BindingEnv
 }
 
-// Parse a text string of input.  Used by tests.
-func (d *DyndepParser) ParseTest(input string, err *string) bool {
-	return d.Parse("input", input+"\x00", err)
-}
-
 func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile) *DyndepParser {
 	d := &DyndepParser{
 		dyndepFile: dyndepFile,
@@ -35,7 +30,7 @@ func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile)
 }
 
 // Parse a file, given its contents as a string.
-func (d *DyndepParser) Parse(filename string, input string, err *string) bool {
+func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 	d.lexer.Start(filename, input)
 
 	// Require a supported ninjaDyndepVersion value immediately so

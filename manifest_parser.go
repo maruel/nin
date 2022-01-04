@@ -23,6 +23,8 @@ type ManifestParserOptions struct {
 	ErrOnDupeEdge bool
 	// ErrOnPhonyCycle causes phony cycles to print an error, otherwise warns.
 	ErrOnPhonyCycle bool
+	// Silence warnings.
+	Quiet bool
 }
 
 // Parses .ninja files.
@@ -30,13 +32,6 @@ type ManifestParser struct {
 	Parser
 	env     *BindingEnv
 	options ManifestParserOptions
-	quiet   bool
-}
-
-// Parse a text string of input.  Used by tests.
-func (m *ManifestParser) ParseTest(input string, err *string) bool {
-	m.quiet = true
-	return m.Parse("input", input+"\x00", err)
 }
 
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
@@ -49,7 +44,7 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 }
 
 // Parse a file, given its contents as a string.
-func (m *ManifestParser) Parse(filename string, input string, err *string) bool {
+func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
 	m.lexer.Start(filename, input)
 
 	for {
@@ -398,7 +393,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 				m.lexer.Error("multiple rules generate "+path, err)
 				return false
 			}
-			if !m.quiet {
+			if !m.options.Quiet {
 				warningf("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
 			}
 			if len(outs)-i <= implicitOuts {
@@ -446,7 +441,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			if n == out {
 				copy(edge.Inputs[i:], edge.Inputs[i+1:])
 				edge.Inputs = edge.Inputs[:len(edge.Inputs)-1]
-				if !m.quiet {
+				if !m.options.Quiet {
 					warningf("phony target '%s' names itself as an input; ignoring [-w phonycycle=warn]", out.Path)
 				}
 				break
