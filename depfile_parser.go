@@ -22,10 +22,6 @@ type DepfileParser struct {
 	ins  []string
 }
 
-func NewDepfileParser() DepfileParser {
-	return DepfileParser{}
-}
-
 // A note on backslashes in Makefiles, from reading the docs:
 // Backslash-newline is the line continuation character.
 // Backslash-# escapes a # (otherwise meaningful as a comment start).
