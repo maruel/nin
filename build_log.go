@@ -60,6 +60,30 @@ const (
 	BuildLogCurrentVersion         = 5
 )
 
+// unsafeByteSlice converts string to a byte slice without memory allocation.
+func unsafeByteSlice(s string) (b []byte) {
+	/* #nosec G103 */
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	/* #nosec G103 */
+	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Len = sh.Len
+	bh.Cap = sh.Len
+	return
+}
+
+// unsafeUint64Slice converts string to a byte slice without memory allocation.
+func unsafeUint64Slice(s string) (b []uint64) {
+	/* #nosec G103 */
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	/* #nosec G103 */
+	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Len = sh.Len / 8
+	bh.Cap = sh.Len / 8
+	return
+}
+
 // HashCommand hashes a command using the MurmurHash2 algorithm by Austin
 // Appleby.
 func HashCommand(command string) uint64 {
@@ -67,22 +91,26 @@ func HashCommand(command string) uint64 {
 	const m = 0xc6a4a7935bd1e995
 	r := 47
 	l := len(command)
-	// I tried a few combinations (data as []byte) and this one seemed to be the
-	// best. Feel free to micro-optimize.
-	data := (*[0x7fff0000]uint64)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[:l/8]
 	h := seed ^ (uint64(l) * m)
-
 	i := 0
-	for ; i < len(data); i++ {
-		k := data[i]
-		k *= m
-		k ^= k >> r
-		k *= m
-		h ^= k
-		h *= m
+	if l > 7 {
+		// I tried a few combinations (data as []byte) and this one seemed to be the
+		// best. Feel free to micro-optimize.
+		//data := (*[0x7fff0000]uint64)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[:l/8]
+		data := unsafeUint64Slice(command)
+		for ; i < len(data); i++ {
+			k := data[i]
+			k *= m
+			k ^= k >> r
+			k *= m
+			h ^= k
+			h *= m
+		}
 	}
 
-	data2 := (*[0x7fff0000]byte)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[8*i : 8*(i+1)]
+	//data2 := (*[0x7fff0000]byte)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[8*i : 8*(i+1)]
+	data2 := unsafeByteSlice(command[i*8:])
+	//switch (l - 8*i) & 7 {
 	switch (l - 8*i) & 7 {
 	case 7:
 		h ^= uint64(data2[6]) << 48
@@ -105,6 +133,7 @@ func HashCommand(command string) uint64 {
 	case 1:
 		h ^= uint64(data2[0])
 		h *= m
+	case 0:
 	}
 	h ^= h >> r
 	h *= m
