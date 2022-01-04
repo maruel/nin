@@ -22,6 +22,12 @@ type DepfileParser struct {
 	ins  []string
 }
 
+// Parse parses a dependency file.
+//
+// content must contain a terminating zero byte.
+//
+// Warning: mutate the slice content in-place.
+//
 // A note on backslashes in Makefiles, from reading the docs:
 // Backslash-newline is the line continuation character.
 // Backslash-# escapes a # (otherwise meaningful as a comment start).
@@ -528,7 +534,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 
 		if l > 0 {
-			piece := string(content[filename : filename+l])
+			piece := unsafeString(content[filename : filename+l])
 			// If we've seen this as an input before, skip it.
 			// TODO(maruel): Use a map[string]struct{} while constructing.
 			pos := -1
