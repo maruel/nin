@@ -1050,10 +1050,9 @@ func (n *ninjaMain) DumpMetrics() {
 func (n *ninjaMain) EnsureBuildDirExists() bool {
 	n.buildDir = n.state.Bindings.LookupVariable("builddir")
 	if n.buildDir != "" && !n.config.DryRun {
-		// TODO(maruel): We need real error.
-		if !nin.MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {
+		if err := nin.MakeDirs(&n.di, filepath.Join(n.buildDir, ".")); err != nil {
 			errorf("creating build directory %s", n.buildDir)
-			//return false
+			return false
 		}
 	}
 	return true

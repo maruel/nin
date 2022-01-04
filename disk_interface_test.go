@@ -81,11 +81,11 @@ func TestDiskInterfaceTest_StatExistingFile(t *testing.T) {
 
 func TestDiskInterfaceTest_StatExistingDir(t *testing.T) {
 	disk := DiskInterfaceTest(t)
-	if !disk.MakeDir("subdir") {
-		t.Fatal(0)
+	if err := disk.MakeDir("subdir"); err != nil {
+		t.Fatal(err)
 	}
-	if !disk.MakeDir("subdir/subsubdir") {
-		t.Fatal(0)
+	if err := disk.MakeDir("subdir/subsubdir"); err != nil {
+		t.Fatal(err)
 	}
 	if mtime, err := disk.Stat(".."); mtime <= 0 || err != nil {
 		t.Fatal(mtime, err)
@@ -128,11 +128,11 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 	if !Touch("fiLE2") {
 		t.Fatal("expected true")
 	}
-	if !disk.MakeDir("subdir") {
-		t.Fatal("expected true")
+	if err := disk.MakeDir("subdir"); err != nil {
+		t.Fatal(err)
 	}
-	if !disk.MakeDir("subdir/subsubdir") {
-		t.Fatal("expected true")
+	if err := disk.MakeDir("subdir/subsubdir"); err != nil {
+		t.Fatal(err)
 	}
 	if !Touch("subdir\\subfile1") {
 		t.Fatal("expected true")
@@ -233,8 +233,8 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 	disk := DiskInterfaceTest(t)
 	path := "path/with/double//slash/"
-	if !MakeDirs(&disk, path) {
-		t.Fatal("expected true")
+	if err := MakeDirs(&disk, path); err != nil {
+		t.Fatal(err)
 	}
 	f, _ := os.OpenFile(path+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
 	if f == nil {
@@ -244,8 +244,8 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	path2 := "another\\with\\back\\\\slashes\\"
-	if !MakeDirs(&disk, path2) {
-		t.Fatal("expected true")
+	if err := MakeDirs(&disk, path2); err != nil {
+		t.Fatal(err)
 	}
 	f2, _ := os.OpenFile(path2+"a_file", os.O_CREATE|os.O_RDWR, 0o600)
 	if f2 == nil {
@@ -257,19 +257,21 @@ func TestDiskInterfaceTest_MakeDirs(t *testing.T) {
 }
 
 func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
+	// The Go os.Remove() function does much more than C++'s version, so we
+	// cannot disambiguate between file and directory removal.
 	disk := DiskInterfaceTest(t)
 	kFileName := "file-to-remove"
 	if !Touch(kFileName) {
 		t.Fatal("expected true")
 	}
-	if 0 != disk.RemoveFile(kFileName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kFileName); err != nil {
+		t.Fatal(err)
 	}
-	if 1 != disk.RemoveFile(kFileName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kFileName); err == nil || !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
-	if 1 != disk.RemoveFile("does not exist") {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile("does not exist"); err == nil || !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
 	if !Touch(kFileName) {
 		t.Fatal("expected true")
@@ -278,28 +280,28 @@ func TestDiskInterfaceTest_RemoveFile(t *testing.T) {
 	if err := os.Chmod(kFileName, 0o400); err != nil {
 		t.Fatal(err)
 	}
-	if 0 != disk.RemoveFile(kFileName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kFileName); err != nil {
+		t.Fatal(err)
 	}
-	if 1 != disk.RemoveFile(kFileName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kFileName); err == nil || !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
 }
 
 func TestDiskInterfaceTest_RemoveDirectory(t *testing.T) {
 	disk := DiskInterfaceTest(t)
 	kDirectoryName := "directory-to-remove"
-	if !disk.MakeDir(kDirectoryName) {
-		t.Fatal("expected true")
+	if err := disk.MakeDir(kDirectoryName); err != nil {
+		t.Fatal(err)
 	}
-	if 0 != disk.RemoveFile(kDirectoryName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kDirectoryName); err != nil {
+		t.Fatal(err)
 	}
-	if 1 != disk.RemoveFile(kDirectoryName) {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile(kDirectoryName); err == nil || !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
-	if 1 != disk.RemoveFile("does not exist") {
-		t.Fatal("expected equal")
+	if err := disk.RemoveFile("does not exist"); err == nil || !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
 }
 
@@ -310,14 +312,14 @@ type StatTest struct {
 	stats  []string
 }
 
-func (s *StatTest) WriteFile(path string, contents string) bool {
+func (s *StatTest) WriteFile(path string, contents string) error {
 	s.t.Fatal("Unexpected function call")
-	return false
+	return errors.New("not implemented")
 }
 
-func (s *StatTest) MakeDir(path string) bool {
+func (s *StatTest) MakeDir(path string) error {
 	s.t.Fatal("Unexpected function call")
-	return false
+	return errors.New("not implemented")
 }
 
 func (s *StatTest) ReadFile(path string) ([]byte, error) {
@@ -325,9 +327,9 @@ func (s *StatTest) ReadFile(path string) ([]byte, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (s *StatTest) RemoveFile(path string) int {
+func (s *StatTest) RemoveFile(path string) error {
 	s.t.Fatal("Unexpected function call")
-	return 0
+	return errors.New("not implemented")
 }
 
 // DiskInterface implementation.

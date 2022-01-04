@@ -875,8 +875,8 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
 	for _, o := range edge.Outputs {
-		if !MakeDirs(b.di, o.Path) {
-			*err = fmt.Sprintf("Can't make dir %q", o.Path)
+		if err2 := MakeDirs(b.di, o.Path); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 	}
@@ -886,8 +886,8 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 	rspfile := edge.GetUnescapedRspfile()
 	if len(rspfile) != 0 {
 		content := edge.GetBinding("rspfile_content")
-		if !b.di.WriteFile(rspfile, content) {
-			*err = fmt.Sprintf("Can't write file %q", rspfile)
+		if err2 := b.di.WriteFile(rspfile, content); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 	}
@@ -1078,8 +1078,8 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 		}
 
 		if !Debug.KeepDepfile {
-			if b.di.RemoveFile(depfile) < 0 {
-				*err = "deleting depfile: TODO\n"
+			if err2 := b.di.RemoveFile(depfile); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 		}

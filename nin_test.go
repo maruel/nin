@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -169,14 +170,15 @@ func (v *VirtualFileSystem) Stat(path string) (TimeStamp, error) {
 	return 0, nil
 }
 
-func (v *VirtualFileSystem) WriteFile(path string, contents string) bool {
+func (v *VirtualFileSystem) WriteFile(path string, contents string) error {
 	v.Create(path, contents)
-	return true
+	return nil
 }
 
-func (v *VirtualFileSystem) MakeDir(path string) bool {
+func (v *VirtualFileSystem) MakeDir(path string) error {
+	// Should check if a file exists with the same name.
 	v.directoriesMade[path] = struct{}{}
-	return true // success
+	return nil
 }
 
 func (v *VirtualFileSystem) ReadFile(path string) ([]byte, error) {
@@ -194,16 +196,16 @@ func (v *VirtualFileSystem) ReadFile(path string) ([]byte, error) {
 	return nil, os.ErrNotExist
 }
 
-func (v *VirtualFileSystem) RemoveFile(path string) int {
+func (v *VirtualFileSystem) RemoveFile(path string) error {
 	if _, ok := v.directoriesMade[path]; ok {
-		return -1
+		return errors.New("can't remove directory in unit tests; not true in practice")
 	}
 	if _, ok := v.files[path]; ok {
 		delete(v.files, path)
 		v.filesRemoved[path] = struct{}{}
-		return 0
+		return nil
 	}
-	return 1
+	return os.ErrNotExist
 }
 
 // CreateTempDirAndEnter creates a temporary directory and "cd" into it.

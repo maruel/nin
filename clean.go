@@ -14,7 +14,10 @@
 
 package nin
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type Cleaner struct {
 	state             *State
@@ -43,12 +46,6 @@ func NewCleaner(state *State, config *BuildConfig, di DiskInterface) *Cleaner {
 	}
 }
 
-// Remove the file @a path.
-// @return whether the file has been removed.
-func (c *Cleaner) RemoveFile(path string) int {
-	return c.di.RemoveFile(path)
-}
-
 // @returns whether the file @a path exists.
 func (c *Cleaner) FileExists(path string) bool {
 	mtime, err := c.di.Stat(path)
@@ -74,10 +71,9 @@ func (c *Cleaner) Remove(path string) {
 				c.Report(path)
 			}
 		} else {
-			ret := c.RemoveFile(path)
-			if ret == 0 {
+			if err := c.di.RemoveFile(path); err == nil {
 				c.Report(path)
-			} else if ret == -1 {
+			} else if !os.IsNotExist(err) {
 				c.status = 1
 			}
 		}

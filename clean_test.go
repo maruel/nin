@@ -79,10 +79,10 @@ func TestCleanTest_CleanAll(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.cleanedFilesCount {
-		t.Fatal("expected equal")
+		t.Fatal(cleaner.cleanedFilesCount)
 	}
 	if 0 != len(c.fs.filesRemoved) {
-		t.Fatal("expected equal")
+		t.Fatal(c.fs.filesRemoved)
 	}
 }
 

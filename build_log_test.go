@@ -318,21 +318,21 @@ type TestDiskInterface struct {
 func (t *TestDiskInterface) Stat(path string) (TimeStamp, error) {
 	return 4, nil
 }
-func (t *TestDiskInterface) WriteFile(path string, contents string) bool {
+func (t *TestDiskInterface) WriteFile(path string, contents string) error {
 	t.t.Fatal("Should not be reached")
-	return true
+	return errors.New("not implemented")
 }
-func (t *TestDiskInterface) MakeDir(path string) bool {
+func (t *TestDiskInterface) MakeDir(path string) error {
 	t.t.Fatal("Should not be reached")
-	return false
+	return errors.New("not implemented")
 }
 func (t *TestDiskInterface) ReadFile(path string) ([]byte, error) {
 	t.t.Fatal("Should not be reached")
 	return nil, errors.New("not implemented")
 }
-func (t *TestDiskInterface) RemoveFile(path string) int {
+func (t *TestDiskInterface) RemoveFile(path string) error {
 	t.t.Fatal("Should not be reached")
-	return 0
+	return errors.New("not implemented")
 }
 
 func TestBuildLogTest_Restat(t *testing.T) {
