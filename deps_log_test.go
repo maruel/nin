@@ -75,7 +75,7 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	if "" != err {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 
 	if len(log1.Nodes) != len(log2.Nodes) {
@@ -563,7 +563,6 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 
 // Run the truncation-recovery logic.
 func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
-	t.Skip("TODO; the load is still succeeding. This is not critical for release.")
 	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	// Create a file with some entries.
 	{
@@ -610,7 +609,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
 			t.Fatal("expected true")
 		}
-		if "premature end of file; recovering" != err {
+		if !strings.HasPrefix(err, "premature end of file after") {
 			t.Fatal(err)
 		}
 		err = ""

@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 )
@@ -169,7 +168,6 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 		//errno = ERANGE
 		return false
 	}
-
 	if !d.OpenForWriteIfNeeded() {
 		return false
 	}
@@ -181,7 +179,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	if err := binary.Write(d.buf, binary.LittleEndian, uint32(node.ID)); err != nil {
 		return false
 	}
-	if err := binary.Write(d.buf, binary.LittleEndian, mtime); err != nil {
+	if err := binary.Write(d.buf, binary.LittleEndian, uint64(mtime)); err != nil {
 		return false
 	}
 	for i := 0; i < nodeCount; i++ {
@@ -227,8 +225,16 @@ func (d *DepsLog) Close() error {
 // But the v1 format could sometimes (rarely) end up with invalid data, so
 // don't migrate v1 to v3 to force a rebuild. (v2 only existed for a few days,
 // and there was no release with it, so pretend that it never happened.)
+//
+// Warning: the whole file content is kept alive.
+//
+// TODO(maruel): Make it an option so that when used as a library it doesn't
+// become a memory bloat. This is especially important when recompacting.
 func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	defer metricRecord(".ninja_deps load")()
+	// Read the file all at once. The drawback is that it will fail hard on 32
+	// bits OS on large builds. This should be rare in 2022. For small builds, it
+	// will be fine (and faster).
 	data, err2 := ioutil.ReadFile(path)
 	if err2 != nil {
 		if os.IsNotExist(err2) {
@@ -237,7 +243,8 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		*err = err2.Error()
 		return LoadError
 	}
-	// Read the file all at once then use a buffer.
+
+	// Validate header.
 	validHeader := false
 	version := uint32(0)
 	if len(data) >= len(DepsLogFileSignature)+4 && unsafeString(data[:len(DepsLogFileSignature)]) == DepsLogFileSignature {
@@ -261,75 +268,64 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		return LoadSuccess
 	}
 
-	offset := len(DepsLogFileSignature) + 4
-	// TODO(maruel): Use binary.LittleEndian.Uint32() directly instead of using a
-	// io.Reader.
-	f := bytes.NewReader(data[offset:])
-	buf := [maxRecordSize + 1]byte{}
+	// Skip the header.
+	// TODO(maruel): Calculate if it is faster to do "data = data[4:8]" or use
+	// "data[offset+4:offset+8]".
+	// Offset is kept to keep the last successful read, to truncate in case of
+	// failure.
+	offset := int64(len(DepsLogFileSignature) + 4)
+	data = data[offset:]
 	readFailed := false
 	uniqueDepRecordCount := 0
 	totalDepRecordCount := 0
-	for {
-		var size uint32
-		if err2 := binary.Read(f, binary.LittleEndian, &size); err2 != nil {
-			if err2 != io.EOF {
-				readFailed = true
-				*err = err2.Error()
-			}
+	for len(data) != 0 {
+		// A minimal record is size (4 bytes) plus one of:
+		// - content (>=4 + checksum(4)); CanonicalizePath() rejects empty paths.
+		// - (id(4)+mtime(8)+nodes(4x) >12) for deps node.
+		if len(data) < 12 {
+			readFailed = true
 			break
 		}
+		size := binary.LittleEndian.Uint32(data[:4])
+		// Skip |size|. Only bump offset after a successful read down below.
+		data = data[4:]
 		isDeps := size&0x80000000 != 0
-		size = size & 0x7FFFFFFF
-		if size > maxRecordSize {
-			readFailed = true
+		size = size & ^uint32(0x80000000)
+		if size%4 != 0 || size < 8 || size > maxRecordSize || len(data) < int(size) {
+			// It'd be nice to do a check for "size < 12" instead. The likelihood of
+			// a path with 3 characters or less is very small.
 			// TODO(maruel): Make it a real error.
-			break
-		}
-		if _, err2 := f.Read(buf[:size]); err2 != nil {
 			readFailed = true
-			*err = err2.Error()
 			break
 		}
-
 		if isDeps {
-			if size%4 != 0 || size < 12 {
+			if size < 12 {
 				// TODO(maruel): Make it a real error.
+				readFailed = true
 				break
 			}
-			// TODO(maruel): Not super efficient but looking for correctness now.
-			// Optimize later.
-			r := bytes.NewReader(buf[:size])
-			outID := int32(0)
-			if err2 := binary.Read(r, binary.LittleEndian, &outID); err2 != nil {
-				panic(err2)
-			}
-			// TODO(maruel): It seems like it's registering invalid IDs.
+			outID := int32(binary.LittleEndian.Uint32(data[:4]))
 			if outID < 0 || outID >= 0x1000000 {
+				// TODO(maruel): Make it a real error.
 				// That's a lot of nodes.
 				readFailed = true
-				// TODO(maruel): Make it a real error.
 				break
 			}
-			var mtime TimeStamp
-			if err2 := binary.Read(r, binary.LittleEndian, &mtime); err2 != nil {
-				// TODO(maruel): Make it a real error.
-				panic(err2)
-			}
-			depsCount := int(size)/4 - 3
+			mtime := TimeStamp(binary.LittleEndian.Uint64(data[4:12]))
+			depsCount := int(size-12) / 4
 
+			// TODO(maruel): Redesign to reduce bound checks.
 			deps := NewDeps(mtime, depsCount)
+			x := 12
 			for i := 0; i < depsCount; i++ {
-				v := uint32(0)
-				if err2 := binary.Read(r, binary.LittleEndian, &v); err2 != nil {
-					panic(err2)
-				}
-				if int(v) >= len(d.Nodes) {
-					panic("M-A")
-				}
-				if d.Nodes[v] == nil {
-					panic("M-A")
+				v := binary.LittleEndian.Uint32(data[x : x+4])
+				if int(v) >= len(d.Nodes) || d.Nodes[v] == nil {
+					// TODO(maruel): Make it a real error.
+					readFailed = true
+					break
 				}
 				deps.Nodes[i] = d.Nodes[v]
+				x += 4
 			}
 
 			totalDepRecordCount++
@@ -338,20 +334,25 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 		} else {
 			pathSize := size - 4
-			if pathSize <= 0 {
-				panic("M-A")
-			} // CanonicalizePath() rejects empty paths.
 			// There can be up to 3 bytes of padding.
-			if buf[pathSize-1] == '\x00' {
+			if data[pathSize-1] == '\x00' {
 				pathSize--
+				if data[pathSize-1] == '\x00' {
+					pathSize--
+					if data[pathSize-1] == '\x00' {
+						pathSize--
+					}
+				}
 			}
-			if buf[pathSize-1] == '\x00' {
-				pathSize--
-			}
-			if buf[pathSize-1] == '\x00' {
-				pathSize--
-			}
-			subpath := string(buf[:pathSize])
+
+			// TODO(maruel): We need to differentiate if we are using the GC or not.
+			// When the GC is disabled, #YOLO, the buffer will never go away anyway
+			// so better to leverage it!
+			subpath := unsafeString(data[:pathSize])
+			// Here we make a copy, because we do not want to keep a reference to the
+			// read buffer.
+			// subpath := string(data[:pathSize])
+
 			// It is not necessary to pass in a correct slashBits here. It will
 			// either be a Node that's in the manifest (in which case it will already
 			// have a correct slashBits that GetNode will look up), or it is an
@@ -363,35 +364,34 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			// happen if two ninja processes write to the same deps log concurrently.
 			// (This uses unary complement to make the checksum look less like a
 			// dependency record entry.)
-			checksum := uint32(0) // *reinterpretCast<unsigned*>(buf + size - 4)
-			if err2 := binary.Read(bytes.NewReader(buf[size-4:]), binary.LittleEndian, &checksum); err2 != nil {
-				panic(err2)
-			}
+			checksum := binary.LittleEndian.Uint32(data[size-4 : size])
 			expectedID := ^checksum
 			id := int32(len(d.Nodes))
 			if id != int32(expectedID) {
-				readFailed = true
 				// TODO(maruel): Make it a real error.
+				readFailed = true
 				break
 			}
-
 			if node.ID >= 0 {
-				panic("M-A")
+				// TODO(maruel): Make it a real error.
+				readFailed = true
+				break
 			}
 			node.ID = id
 			d.Nodes = append(d.Nodes, node)
 		}
+		// Register the successful read.
+		data = data[size:]
+		offset += int64(size) + 4
 	}
 
 	if readFailed {
 		// An error occurred while loading; try to recover by truncating the
 		// file to the last fully-read record.
 		if *err == "" {
-			*err = "premature end of file"
+			*err = fmt.Sprintf("premature end of file after %d bytes", offset)
 		}
 
-		// TODO(maruel): Not exactly right.
-		offset, _ := f.Seek(0, io.SeekCurrent)
 		if err := os.Truncate(path, offset); err != nil {
 			return LoadError
 		}
@@ -523,8 +523,13 @@ func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
 	return existed
 }
 
+var zeroBytes [4]byte
+
 // Write a node name record, assigning it an id.
 func (d *DepsLog) RecordID(node *Node) bool {
+	if node.Path == "" {
+		panic("M-A")
+	}
 	pathSize := len(node.Path)
 	padding := (4 - pathSize%4) % 4 // Pad path to 4 byte boundary.
 
@@ -534,7 +539,6 @@ func (d *DepsLog) RecordID(node *Node) bool {
 		//errno = ERANGE
 		return false
 	}
-
 	if !d.OpenForWriteIfNeeded() {
 		// TODO(maruel): Make it a real error.
 		return false
@@ -544,14 +548,11 @@ func (d *DepsLog) RecordID(node *Node) bool {
 		return false
 	}
 	if _, err := d.buf.WriteString(node.Path); err != nil {
-		if node.Path == "" {
-			panic("M-A")
-		}
 		// TODO(maruel): Make it a real error.
 		return false
 	}
 	if padding != 0 {
-		if _, err := d.buf.Write(make([]byte, padding)); err != nil {
+		if _, err := d.buf.Write(zeroBytes[:padding]); err != nil {
 			// TODO(maruel): Make it a real error.
 			return false
 		}
