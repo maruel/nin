@@ -554,3 +554,20 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		log3.Close()
 	}
 }
+
+var optGuardBenchmarkHashCommand uint64
+
+// BenchmarkHashCommand runs a benchmark against HashCommand() with both a
+// large and a short string.
+func BenchmarkHashCommand(b *testing.B) {
+	b.ReportAllocs()
+	// Found the command by printing the longest command ran when building
+	// ninja_test.
+	cmd := "rm -f build/libninja.a && ar crs build/libninja.a build/browse.o build/build.o build/build_log.o build/clean.o build/clparser.o build/debug_flags.o build/depfile_parser.o build/deps_log.o build/disk_interface.o build/dyndep.o build/dyndep_parser.o build/edit_distance.o build/eval_env.o build/graph.o build/graphviz.o build/json.o build/lexer.o build/line_printer.o build/manifest_parser.o build/metrics.o build/missing_deps.o build/parser.o build/state.o build/status.o build/string_piece_util.o build/util.o build/version.o build/subprocess-posix.o"
+	v := optGuardBenchmarkHashCommand
+	for i := 0; i < b.N; i++ {
+		v += HashCommand(cmd)
+		v += HashCommand("short")
+	}
+	optGuardBenchmarkHashCommand = v
+}

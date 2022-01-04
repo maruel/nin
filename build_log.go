@@ -60,7 +60,7 @@ const (
 )
 
 // 64bit MurmurHash2, by Austin Appleby
-func MurmurHash64A(data []byte) uint64 {
+func murmurHash64A(data []byte) uint64 {
 	seed := uint64(0xDECAFBADDECAFBAD)
 	const m = 0xc6a4a7935bd1e995
 	r := 47
@@ -105,9 +105,11 @@ func MurmurHash64A(data []byte) uint64 {
 	return h
 }
 
+// HashCommand hashes a command using the MurmurHash2 algorithm by Austin
+// Appleby.
 func HashCommand(command string) uint64 {
 	// TODO(maruel): Memory copy.
-	return MurmurHash64A([]byte(command))
+	return murmurHash64A([]byte(command))
 }
 
 //

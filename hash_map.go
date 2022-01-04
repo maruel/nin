@@ -16,8 +16,8 @@ package nin
 
 import "unsafe"
 
-// MurmurHash2, by Austin Appleby
-func MurmurHash2(key []byte, len2 uint32) uint32 {
+// murmurHash2, by Austin Appleby
+func murmurHash2(key []byte, len2 uint32) uint32 {
 	const seed = uint32(0xDECAFBAD)
 	const m = uint32(0x5bd1e995)
 	const r = 24
