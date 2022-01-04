@@ -836,7 +836,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		// considered dirty if an input was modified since the previous run.
 		usedRestat := false
 		if edge.GetBinding("restat") != "" && d.buildLog != nil {
-			if entry = d.buildLog.LookupByOutput(output.Path); entry != nil {
+			if entry = d.buildLog.Entries[output.Path]; entry != nil {
 				outputMtime = entry.mtime
 				usedRestat = true
 			}
@@ -855,7 +855,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 	if d.buildLog != nil {
 		generator := edge.GetBinding("generator") != ""
 		if entry == nil {
-			entry = d.buildLog.LookupByOutput(output.Path)
+			entry = d.buildLog.Entries[output.Path]
 		}
 		if entry != nil {
 			if !generator && HashCommand(command) != entry.commandHash {

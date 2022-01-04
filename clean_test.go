@@ -680,19 +680,19 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(log2.entries) {
+	if 2 != len(log2.Entries) {
 		t.Fatal("expected equal")
 	}
-	if log2.LookupByOutput("out1") == nil {
+	if log2.Entries["out1"] == nil {
 		t.Fatal("expected true")
 	}
-	if log2.LookupByOutput("out2") == nil {
+	if log2.Entries["out2"] == nil {
 		t.Fatal("expected true")
 	}
 
 	// First use the manifest that describe how to build out1.
 	cleaner1 := NewCleaner(&c.state, &c.config, &c.fs)
-	if 0 != cleaner1.CleanDead(log2.entries) {
+	if 0 != cleaner1.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner1.cleanedFilesCount {
@@ -713,7 +713,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 
 	// Then use the manifest that does not build out1 anymore.
 	cleaner2 := NewCleaner(&c.state, &c.config, &c.fs)
-	if 0 != cleaner2.CleanDead(log2.entries) {
+	if 0 != cleaner2.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 1 != cleaner2.cleanedFilesCount {
@@ -733,7 +733,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	}
 
 	// Nothing to do now.
-	if 0 != cleaner2.CleanDead(log2.entries) {
+	if 0 != cleaner2.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner2.cleanedFilesCount {
@@ -789,19 +789,19 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(log2.entries) {
+	if 2 != len(log2.Entries) {
 		t.Fatal("expected equal")
 	}
-	if log2.LookupByOutput("out1") == nil {
+	if log2.Entries["out1"] == nil {
 		t.Fatal("expected true")
 	}
-	if log2.LookupByOutput("out2") == nil {
+	if log2.Entries["out2"] == nil {
 		t.Fatal("expected true")
 	}
 
 	// First use the manifest that describe how to build out1.
 	cleaner1 := NewCleaner(&c.state, &c.config, &c.fs)
-	if 0 != cleaner1.CleanDead(log2.entries) {
+	if 0 != cleaner1.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner1.cleanedFilesCount {
@@ -822,7 +822,7 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 
 	// Then use the manifest that does not build out1 anymore.
 	cleaner2 := NewCleaner(&c.state, &c.config, &c.fs)
-	if 0 != cleaner2.CleanDead(log2.entries) {
+	if 0 != cleaner2.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner2.cleanedFilesCount {
@@ -842,7 +842,7 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	}
 
 	// Nothing to do now.
-	if 0 != cleaner2.CleanDead(log2.entries) {
+	if 0 != cleaner2.CleanDead(log2.Entries) {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner2.cleanedFilesCount {

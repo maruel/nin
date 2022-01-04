@@ -682,7 +682,7 @@ func toolClean(n *ninjaMain, opts *options, args []string) int {
 
 func toolCleanDead(n *ninjaMain, opts *options, args []string) int {
 	cleaner := NewCleaner(&n.state, n.config, &n.di)
-	return cleaner.CleanDead(n.buildLog.entries)
+	return cleaner.CleanDead(n.buildLog.Entries)
 }
 
 type evaluateCommandMode bool

@@ -2469,7 +2469,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
 	// See that an entry in the logfile is created, capturing
 	// the right mtime
-	logEntry := b.buildLog.LookupByOutput("out1")
+	logEntry := b.buildLog.Entries["out1"]
 	if nil == logEntry {
 		t.Fatal("expected true")
 	}
@@ -2498,7 +2498,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	}
 
 	// Check that the logfile entry remains correctly set
-	logEntry = b.buildLog.LookupByOutput("out1")
+	logEntry = b.buildLog.Entries["out1"]
 	if nil == logEntry {
 		t.Fatal("expected true")
 	}
@@ -2750,7 +2750,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 
 	// 3. Alter the entry in the logfile
 	// (to simulate a change in the command line between 2 builds)
-	logEntry := b.buildLog.LookupByOutput("out")
+	logEntry := b.buildLog.Entries["out"]
 	if nil == logEntry {
 		t.Fatal("expected true")
 	}

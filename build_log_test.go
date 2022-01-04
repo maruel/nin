@@ -63,17 +63,17 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if 2 != len(log1.entries) {
+	if 2 != len(log1.Entries) {
 		t.Fatal("expected equal")
 	}
-	if 2 != len(log2.entries) {
+	if 2 != len(log2.Entries) {
 		t.Fatal("expected equal")
 	}
-	e1 := log1.LookupByOutput("out")
+	e1 := log1.Entries["out"]
 	if e1 == nil {
 		t.Fatal("expected true")
 	}
-	e2 := log2.LookupByOutput("out")
+	e2 := log2.Entries["out"]
 	if e2 == nil {
 		t.Fatal("expected true")
 	}
@@ -149,7 +149,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	e := log.LookupByOutput("out")
+	e := log.Entries["out"]
 	if e == nil {
 		t.Fatal("expected true")
 	}
@@ -242,7 +242,7 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := log.LookupByOutput("out with space")
+	e := log.Entries["out with space"]
 	if e == nil {
 		t.Fatal("expected true")
 	}
@@ -279,7 +279,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	e := log.LookupByOutput("out")
+	e := log.Entries["out"]
 	if e == nil {
 		t.Fatal("expected true")
 	}
@@ -294,7 +294,7 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 	}
 	b.AssertHash("command", e.commandHash)
 
-	e = log.LookupByOutput("out2")
+	e = log.Entries["out2"]
 	if e == nil {
 		t.Fatal("expected true")
 	}
@@ -349,7 +349,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	e := log.LookupByOutput("out")
+	e := log.Entries["out"]
 	if 3 != e.mtime {
 		t.Fatal("expected equal")
 	}
@@ -362,7 +362,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	e = log.LookupByOutput("out")
+	e = log.Entries["out"]
 	if 3 != e.mtime {
 		t.Fatal(e.mtime)
 	} // unchanged, since the filter doesn't match
@@ -373,7 +373,7 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	e = log.LookupByOutput("out")
+	e = log.Entries["out"]
 	if 4 != e.mtime {
 		t.Fatal("expected equal")
 	}
@@ -409,12 +409,12 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
 	// Difference from C++ version!
 	// In the Go version, lines are not ignored.
-	e := log.LookupByOutput("out")
+	e := log.Entries["out"]
 	if nil == e {
 		t.Fatal("expected equal")
 	}
 
-	e = log.LookupByOutput("out2")
+	e = log.Entries["out2"]
 	if e == nil {
 		t.Fatal("expected true")
 	}
@@ -438,14 +438,14 @@ func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 	defer log.Close()
 	log.RecordCommand(b.state.Edges[0], 21, 22, 0)
 
-	if 2 != len(log.entries) {
+	if 2 != len(log.Entries) {
 		t.Fatal("expected equal")
 	}
-	e1 := log.LookupByOutput("out")
+	e1 := log.Entries["out"]
 	if e1 == nil {
 		t.Fatal("expected true")
 	}
-	e2 := log.LookupByOutput("out.d")
+	e2 := log.Entries["out.d"]
 	if e2 == nil {
 		t.Fatal("expected true")
 	}
@@ -515,13 +515,13 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 2 != len(log2.entries) {
+		if 2 != len(log2.Entries) {
 			t.Fatal("expected equal")
 		}
-		if log2.LookupByOutput("out") == nil {
+		if log2.Entries["out"] == nil {
 			t.Fatal("expected true")
 		}
-		if log2.LookupByOutput("out2") == nil {
+		if log2.Entries["out2"] == nil {
 			t.Fatal("expected true")
 		}
 		// ...and force a recompaction.
@@ -541,13 +541,13 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if 1 != len(log3.entries) {
-			t.Fatalf("%#v", log3.entries)
+		if 1 != len(log3.Entries) {
+			t.Fatalf("%#v", log3.Entries)
 		}
-		if log3.LookupByOutput("out") == nil {
+		if log3.Entries["out"] == nil {
 			t.Fatal("expected true")
 		}
-		if log3.LookupByOutput("out2") != nil {
+		if log3.Entries["out2"] != nil {
 			t.Fatal("expected false")
 		}
 		log3.Close()

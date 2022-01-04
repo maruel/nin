@@ -125,7 +125,7 @@ type BuildLogUser interface {
 // 2) timing information, perhaps for generating reports
 // 3) restat information
 type BuildLog struct {
-	entries           map[string]*LogEntry
+	Entries           map[string]*LogEntry
 	logFile           *os.File
 	logFilePath       string
 	needsRecompaction bool
@@ -135,7 +135,7 @@ type BuildLog struct {
 // BuildLog.entries.
 
 func NewBuildLog() BuildLog {
-	return BuildLog{entries: map[string]*LogEntry{}}
+	return BuildLog{Entries: map[string]*LogEntry{}}
 }
 
 // Prepares writing to the log file without actually opening it - that will
@@ -161,13 +161,13 @@ func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime Tim
 	commandHash := HashCommand(command)
 	for _, out := range edge.Outputs {
 		path := out.Path
-		i, ok := b.entries[path]
+		i, ok := b.Entries[path]
 		var logEntry *LogEntry
 		if ok {
 			logEntry = i
 		} else {
 			logEntry = &LogEntry{output: path}
-			b.entries[logEntry.output] = logEntry
+			b.Entries[logEntry.output] = logEntry
 		}
 		logEntry.commandHash = commandHash
 		logEntry.startTime = startTime
@@ -364,12 +364,12 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		output := line[:end]
 		line = line[end+1:]
 		var entry *LogEntry
-		i, ok := b.entries[output]
+		i, ok := b.Entries[output]
 		if ok {
 			entry = i
 		} else {
 			entry = &LogEntry{output: output}
-			b.entries[entry.output] = entry
+			b.Entries[entry.output] = entry
 			uniqueEntryCount++
 		}
 		totalEntryCount++
@@ -399,11 +399,6 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	return LoadSuccess
 }
 
-// Lookup a previously-run command by its output path.
-func (b *BuildLog) LookupByOutput(path string) *LogEntry {
-	return b.entries[path]
-}
-
 // Rewrite the known log entries, throwing away old data.
 func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	defer MetricRecord(".ninja_log recompact")()
@@ -423,7 +418,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 
 	var deadOutputs []string
 	// TODO(maruel): Save in order?
-	for name, entry := range b.entries {
+	for name, entry := range b.Entries {
 		if user.IsPathDead(name) {
 			deadOutputs = append(deadOutputs, name)
 			continue
@@ -437,7 +432,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	}
 
 	for _, name := range deadOutputs {
-		delete(b.entries, name)
+		delete(b.Entries, name)
 	}
 
 	_ = f.Close()
@@ -469,7 +464,7 @@ func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *
 		_ = f.Close()
 		return false
 	}
-	for _, i := range b.entries {
+	for _, i := range b.Entries {
 		skip := len(outputs) > 0
 		for j := 0; j < len(outputs); j++ {
 			if i.output == outputs[j] {
