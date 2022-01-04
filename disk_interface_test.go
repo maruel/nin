@@ -353,7 +353,7 @@ func NewStatTest(t *testing.T) *StatTest {
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
 		mtimes:                    map[string]TimeStamp{},
 	}
-	s.scan = NewDependencyScan(&s.state, nil, nil, s, nil)
+	s.scan = NewDependencyScan(&s.state, nil, nil, s)
 	return s
 }
 

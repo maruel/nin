@@ -33,7 +33,7 @@ func NewCleanTest(t *testing.T) *CleanTest {
 		fs:                        NewVirtualFileSystem(),
 		config:                    NewBuildConfig(),
 	}
-	c.config.verbosity = Quiet
+	c.config.Verbosity = Quiet
 	return c
 }
 
@@ -94,7 +94,7 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 	c.fs.Create("in2", "")
 	c.fs.Create("out2", "")
 
-	c.config.dryRun = true
+	c.config.DryRun = true
 	cleaner := NewCleaner(&c.state, &c.config, &c.fs)
 
 	if 0 != cleaner.cleanedFilesCount {
@@ -193,7 +193,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	c.fs.Create("in2", "")
 	c.fs.Create("out2", "")
 
-	c.config.dryRun = true
+	c.config.DryRun = true
 	cleaner := NewCleaner(&c.state, &c.config, &c.fs)
 
 	if 0 != cleaner.cleanedFilesCount {
@@ -292,7 +292,7 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 	c.fs.Create("in2", "")
 	c.fs.Create("out2", "")
 
-	c.config.dryRun = true
+	c.config.DryRun = true
 	cleaner := NewCleaner(&c.state, &c.config, &c.fs)
 
 	if 0 != cleaner.cleanedFilesCount {

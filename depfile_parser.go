@@ -15,21 +15,15 @@
 
 package nin
 
-type DepfileParserOptions struct {
-}
-
-// Parser for the dependency information emitted by gcc's -M flags.
+// DepfileParser is the parser for the dependency information emitted by gcc's
+// -M flags.
 type DepfileParser struct {
 	outs []string
 	ins  []string
-
-	options DepfileParserOptions
 }
 
-func NewDepfileParser(options DepfileParserOptions) DepfileParser {
-	return DepfileParser{
-		options: options,
-	}
+func NewDepfileParser() DepfileParser {
+	return DepfileParser{}
 }
 
 // A note on backslashes in Makefiles, from reading the docs:

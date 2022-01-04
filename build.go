@@ -61,23 +61,25 @@ type Result struct {
 	Output   string
 }
 
-// Options (e.g. verbosity, parallelism) passed to a build.
+// TODO(maruel): The build per se shouldn't have verbosity as a flag. It should
+// be composed.
+
+// BuildConfig are the options (e.g. verbosity, parallelism) passed to a build.
 type BuildConfig struct {
-	verbosity       Verbosity
-	dryRun          bool
-	parallelism     int
-	failuresAllowed int
+	Verbosity       Verbosity
+	DryRun          bool
+	Parallelism     int
+	FailuresAllowed int
 	// The maximum load average we must not exceed. A negative or zero value
 	// means that we do not have any limit.
-	maxLoadAverage       float64
-	depfileParserOptions DepfileParserOptions
+	MaxLoadAvg float64
 }
 
 func NewBuildConfig() BuildConfig {
 	return BuildConfig{
-		verbosity:       Normal,
-		parallelism:     1,
-		failuresAllowed: 1,
+		Verbosity:       Normal,
+		Parallelism:     1,
+		FailuresAllowed: 1,
 	}
 }
 
@@ -156,8 +158,8 @@ func (r *RealCommandRunner) Abort() {
 
 func (r *RealCommandRunner) CanRunMore() bool {
 	subprocNumber := r.subprocs.Running() + r.subprocs.Finished()
-	more := subprocNumber < r.config.parallelism
-	load := r.subprocs.Running() == 0 || r.config.maxLoadAverage <= 0. || getLoadAverage() < r.config.maxLoadAverage
+	more := subprocNumber < r.config.Parallelism
+	load := r.subprocs.Running() == 0 || r.config.MaxLoadAvg <= 0. || getLoadAverage() < r.config.MaxLoadAvg
 	return more && load
 }
 
@@ -662,7 +664,7 @@ func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *
 		di:              di,
 	}
 	b.plan = NewPlan(b)
-	b.scan = NewDependencyScan(state, buildLog, depsLog, di, &b.config.depfileParserOptions)
+	b.scan = NewDependencyScan(state, buildLog, depsLog, di)
 	return b
 }
 
@@ -758,11 +760,11 @@ func (b *Builder) Build(err *string) bool {
 
 	b.status.PlanHasTotalEdges(b.plan.commandEdges)
 	pendingCommands := 0
-	failuresAllowed := b.config.failuresAllowed
+	failuresAllowed := b.config.FailuresAllowed
 
 	// Set up the command runner if we haven't done so already.
 	if b.commandRunner == nil {
-		if b.config.dryRun {
+		if b.config.DryRun {
 			b.commandRunner = &DryRunCommandRunner{}
 		} else {
 			b.commandRunner = NewRealCommandRunner(b.config)
@@ -836,12 +838,12 @@ func (b *Builder) Build(err *string) bool {
 		// If we get here, we cannot make any more progress.
 		b.status.BuildFinished()
 		if failuresAllowed == 0 {
-			if b.config.failuresAllowed > 1 {
+			if b.config.FailuresAllowed > 1 {
 				*err = "subcommands failed"
 			} else {
 				*err = "subcommand failed"
 			}
-		} else if failuresAllowed < b.config.failuresAllowed {
+		} else if failuresAllowed < b.config.FailuresAllowed {
 			*err = "cannot make progress due to previous errors"
 		} else {
 			*err = "stuck [this is a bug]"
@@ -930,7 +932,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	// Restat the edge outputs
 	outputMtime := TimeStamp(0)
 	restat := edge.GetBinding("restat") != ""
-	if !b.config.dryRun {
+	if !b.config.DryRun {
 		nodeCleaned := false
 
 		for _, o := range edge.Outputs {
@@ -1005,7 +1007,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 		}
 	}
 
-	if depsType != "" && !b.config.dryRun {
+	if depsType != "" && !b.config.DryRun {
 		if len(edge.Outputs) == 0 {
 			panic("should have been rejected by parser")
 		}
@@ -1060,7 +1062,7 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 			return true
 		}
 
-		deps := NewDepfileParser(b.config.depfileParserOptions)
+		deps := NewDepfileParser()
 		// TODO(maruel): Memory copy.
 		if !deps.Parse([]byte(content), err) {
 			return false

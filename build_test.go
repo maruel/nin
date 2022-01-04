@@ -697,7 +697,7 @@ func NewBuildTestBase(t *testing.T) *BuildTestBase {
 		config:                    NewBuildConfig(),
 		fs:                        NewVirtualFileSystem(),
 	}
-	b.config.verbosity = Quiet
+	b.config.Verbosity = Quiet
 	b.commandRunner = NewFakeCommandRunner(t, &b.fs)
 	//b.builder = NewBuilder(&b.state, &b.config, nil, nil, &b.fs, b.status, 0)
 	b.status = NewStatusPrinter(&b.config)
@@ -1931,7 +1931,7 @@ func TestBuildTest_SwallowFailures(t *testing.T) {
 	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild all: phony out1 out2 out3\n", ManifestParserOptions{})
 
 	// Swallow two failures, die on the third.
-	b.config.failuresAllowed = 3
+	b.config.FailuresAllowed = 3
 
 	err := ""
 	if b.builder.AddTargetName("all", &err) == nil {
@@ -1957,7 +1957,7 @@ func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
 	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ManifestParserOptions{})
 
 	// Swallow ten failures; we should stop before building final.
-	b.config.failuresAllowed = 11
+	b.config.FailuresAllowed = 11
 
 	err := ""
 	if b.builder.AddTargetName("final", &err) == nil {
@@ -1983,7 +1983,7 @@ func TestBuildTest_SwallowFailuresPool(t *testing.T) {
 	b.AssertParse(&b.state, "pool failpool\n  depth = 1\nrule fail\n  command = fail\n  pool = failpool\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ManifestParserOptions{})
 
 	// Swallow ten failures; we should stop before building final.
-	b.config.failuresAllowed = 11
+	b.config.FailuresAllowed = 11
 
 	err := ""
 	if b.builder.AddTargetName("final", &err) == nil {
@@ -2544,7 +2544,7 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 
 func NewBuildDryRunTest(t *testing.T) *BuildWithLogTest {
 	b := NewBuildWithLogTest(t)
-	b.config.dryRun = true
+	b.config.DryRun = true
 	return b
 }
 
@@ -3482,7 +3482,7 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 	b.AssertParse(&state, manifest, ManifestParserOptions{})
 
 	// The deps log is NULL in dry runs.
-	b.config.dryRun = true
+	b.config.DryRun = true
 	builder := NewBuilder(&state, &b.config, nil, nil, &b.fs, b.status, 0)
 	builder.commandRunner = &b.commandRunner
 	b.commandRunner.commandsRan = nil

@@ -531,11 +531,11 @@ type DependencyScan struct {
 	dyndepLoader DyndepLoader
 }
 
-func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface, depfileParserOptions *DepfileParserOptions) DependencyScan {
+func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface) DependencyScan {
 	return DependencyScan{
 		buildLog:     buildLog,
 		di:           di,
-		depLoader:    NewImplicitDepLoader(state, depsLog, di, depfileParserOptions),
+		depLoader:    NewImplicitDepLoader(state, depsLog, di),
 		dyndepLoader: NewDyndepLoader(state, di),
 	}
 }
@@ -895,18 +895,16 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 // ImplicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
 type ImplicitDepLoader struct {
-	state                *State
-	di                   DiskInterface
-	depsLog              *DepsLog
-	depfileParserOptions *DepfileParserOptions
+	state   *State
+	di      DiskInterface
+	depsLog *DepsLog
 }
 
-func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface, depfileParserOptions *DepfileParserOptions) ImplicitDepLoader {
+func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) ImplicitDepLoader {
 	return ImplicitDepLoader{
-		state:                state,
-		di:                   di,
-		depsLog:              depsLog,
-		depfileParserOptions: depfileParserOptions,
+		state:   state,
+		di:      di,
+		depsLog: depsLog,
 	}
 }
 
@@ -948,11 +946,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 		return false
 	}
 
-	x := DepfileParserOptions{}
-	if i.depfileParserOptions != nil {
-		x = *i.depfileParserOptions
-	}
-	depfile := NewDepfileParser(x)
+	depfile := NewDepfileParser()
 	depfileErr := ""
 	if !depfile.Parse([]byte(content), &depfileErr) {
 		*err = path + ": " + depfileErr

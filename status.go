@@ -84,12 +84,12 @@ func NewStatusPrinter(config *BuildConfig) *StatusPrinter {
 		printer: NewLinePrinter(),
 		currentRate: slidingRateInfo{
 			rate:       -1,
-			N:          config.parallelism,
+			N:          config.Parallelism,
 			lastUpdate: -1,
 		},
 	}
 	// Don't do anything fancy in verbose mode.
-	if s.config.verbosity != Normal {
+	if s.config.Verbosity != Normal {
 		s.printer.setSmartTerminal(false)
 	}
 
@@ -125,7 +125,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		s.printer.SetConsoleLocked(false)
 	}
 
-	if s.config.verbosity == Quiet {
+	if s.config.Verbosity == Quiet {
 		return
 	}
 
@@ -282,11 +282,11 @@ func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMi
 }
 
 func (s *StatusPrinter) PrintStatus(edge *Edge, timeMillis int32) {
-	if s.config.verbosity == Quiet || s.config.verbosity == NoStatusUpdate {
+	if s.config.Verbosity == Quiet || s.config.Verbosity == NoStatusUpdate {
 		return
 	}
 
-	forceFullCommand := s.config.verbosity == Verbose
+	forceFullCommand := s.config.Verbosity == Verbose
 
 	toPrint := edge.GetBinding("description")
 	if toPrint == "" || forceFullCommand {

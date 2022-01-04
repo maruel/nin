@@ -30,7 +30,7 @@ func NewGraphTest(t *testing.T) GraphTest {
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
 		fs:                        NewVirtualFileSystem(),
 	}
-	g.scan = NewDependencyScan(&g.state, nil, nil, &g.fs, nil)
+	g.scan = NewDependencyScan(&g.state, nil, nil, &g.fs)
 	return g
 }
 

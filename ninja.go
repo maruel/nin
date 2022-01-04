@@ -824,7 +824,7 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 		return ExitFailure
 	}
 
-	if !n.config.dryRun {
+	if !n.config.DryRun {
 		if !n.buildLog.OpenForWrite(logPath, n, &err) {
 			errorf("opening build log: %s", err)
 			return ExitFailure
@@ -979,7 +979,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 		return success
 	}
 
-	if !n.config.dryRun {
+	if !n.config.DryRun {
 		if !n.buildLog.OpenForWrite(logPath, n, &err) {
 			errorf("opening build log: %s", err)
 			return false
@@ -1022,7 +1022,7 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 		return success
 	}
 
-	if !n.config.dryRun {
+	if !n.config.DryRun {
 		if !n.depsLog.OpenForWrite(path, &err) {
 			errorf("opening deps log: %s", err)
 			return false
@@ -1047,7 +1047,7 @@ func (n *ninjaMain) DumpMetrics() {
 // @return false on error.
 func (n *ninjaMain) EnsureBuildDirExists() bool {
 	n.buildDir = n.state.Bindings.LookupVariable("builddir")
-	if n.buildDir != "" && !n.config.dryRun {
+	if n.buildDir != "" && !n.config.DryRun {
 		// TODO(maruel): We need real error.
 		if !MakeDirs(&n.di, filepath.Join(n.buildDir, ".")) {
 			errorf("creating build directory %s", n.buildDir)
@@ -1133,10 +1133,10 @@ func readFlags(opts *options, config *BuildConfig) int {
 	flag.StringVar(&opts.memprofile, "memprofile", "", "snapshot a heap dump at the end")
 	flag.StringVar(&opts.trace, "trace", "", "capture a runtime trace")
 
-	flag.IntVar(&config.parallelism, "j", guessParallelism(), "run N jobs in parallel (0 means infinity)")
-	flag.IntVar(&config.failuresAllowed, "k", 1, "keep going until N jobs fail (0 means infinity)")
-	flag.Float64Var(&config.maxLoadAverage, "l", 0, "do not start new jobs if the load average is greater than N")
-	flag.BoolVar(&config.dryRun, "n", false, "dry run (don't run commands but act like they succeeded)")
+	flag.IntVar(&config.Parallelism, "j", guessParallelism(), "run N jobs in parallel (0 means infinity)")
+	flag.IntVar(&config.FailuresAllowed, "k", 1, "keep going until N jobs fail (0 means infinity)")
+	flag.Float64Var(&config.MaxLoadAvg, "l", 0, "do not start new jobs if the load average is greater than N")
+	flag.BoolVar(&config.DryRun, "n", false, "dry run (don't run commands but act like they succeeded)")
 
 	// TODO(maruel): terminates toplevel options; further flags are passed to the tool
 	t := flag.String("t", "", "run a subtool (use '-t list' to list subtools)")
@@ -1156,10 +1156,10 @@ func readFlags(opts *options, config *BuildConfig) int {
 		return 2
 	}
 	if *verbose {
-		config.verbosity = Verbose
+		config.Verbosity = Verbose
 	}
 	if *quiet {
-		config.verbosity = NoStatusUpdate
+		config.Verbosity = NoStatusUpdate
 	}
 	if *warning != "" {
 		if !warningEnable(*warning, opts) {
@@ -1361,7 +1361,7 @@ func Main() int {
 		// subsequent commands.
 		// Don't print this if a tool is being used, so that tool output
 		// can be piped into a file without this string showing up.
-		if opts.tool == nil && config.verbosity != NoStatusUpdate {
+		if opts.tool == nil && config.Verbosity != NoStatusUpdate {
 			status.Info("Entering directory `%s'", opts.workingDir)
 		}
 		if err := os.Chdir(opts.workingDir); err != nil {
@@ -1428,7 +1428,7 @@ func Main() int {
 		if ninja.RebuildManifest(opts.inputFile, &err, status) {
 			// In dryRun mode the regeneration will succeed without changing the
 			// manifest forever. Better to return immediately.
-			if config.dryRun {
+			if config.DryRun {
 				return 0
 			}
 			// Start the build over with the new manifest.

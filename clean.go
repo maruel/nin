@@ -29,7 +29,7 @@ type Cleaner struct {
 
 // @return whether the cleaner is in verbose mode.
 func (c *Cleaner) IsVerbose() bool {
-	return c.config.verbosity != Quiet && (c.config.verbosity == Verbose || c.config.dryRun)
+	return c.config.Verbosity != Quiet && (c.config.Verbosity == Verbose || c.config.DryRun)
 }
 
 func NewCleaner(state *State, config *BuildConfig, di DiskInterface) *Cleaner {
@@ -69,7 +69,7 @@ func (c *Cleaner) Report(path string) {
 func (c *Cleaner) Remove(path string) {
 	if !c.IsAlreadyRemoved(path) {
 		c.removed[path] = struct{}{}
-		if c.config.dryRun {
+		if c.config.DryRun {
 			if c.FileExists(path) {
 				c.Report(path)
 			}
@@ -104,7 +104,7 @@ func (c *Cleaner) RemoveEdgeFiles(edge *Edge) {
 }
 
 func (c *Cleaner) PrintHeader() {
-	if c.config.verbosity == Quiet {
+	if c.config.Verbosity == Quiet {
 		return
 	}
 	fmt.Printf("Cleaning...")
@@ -117,7 +117,7 @@ func (c *Cleaner) PrintHeader() {
 }
 
 func (c *Cleaner) PrintFooter() {
-	if c.config.verbosity == Quiet {
+	if c.config.Verbosity == Quiet {
 		return
 	}
 	fmt.Printf("%d files.\n", c.cleanedFilesCount)
