@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -59,57 +60,56 @@ const (
 	BuildLogCurrentVersion         = 5
 )
 
-// 64bit MurmurHash2, by Austin Appleby
-func murmurHash64A(data []byte) uint64 {
+// HashCommand hashes a command using the MurmurHash2 algorithm by Austin
+// Appleby.
+func HashCommand(command string) uint64 {
 	seed := uint64(0xDECAFBADDECAFBAD)
 	const m = 0xc6a4a7935bd1e995
 	r := 47
-	len2 := uint64(len(data))
-	h := seed ^ (len2 * m)
-	for ; len2 >= 8; len2 -= 8 {
-		// TODO(maruel): Assumes little endian.
-		k := *(*uint64)(unsafe.Pointer(&data[0]))
+	l := len(command)
+	// I tried a few combinations (data as []byte) and this one seemed to be the
+	// best. Feel free to micro-optimize.
+	data := (*[0x7fff0000]uint64)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[:l/8]
+	h := seed ^ (uint64(l) * m)
+
+	i := 0
+	for ; i < len(data); i++ {
+		k := data[i]
 		k *= m
 		k ^= k >> r
 		k *= m
 		h ^= k
 		h *= m
-		data = data[8:]
 	}
-	switch len2 & 7 {
+
+	data2 := (*[0x7fff0000]byte)(unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&command)).Data))[8*i : 8*(i+1)]
+	switch (l - 8*i) & 7 {
 	case 7:
-		h ^= uint64(data[6]) << 48
+		h ^= uint64(data2[6]) << 48
 		fallthrough
 	case 6:
-		h ^= uint64(data[5]) << 40
+		h ^= uint64(data2[5]) << 40
 		fallthrough
 	case 5:
-		h ^= uint64(data[4]) << 32
+		h ^= uint64(data2[4]) << 32
 		fallthrough
 	case 4:
-		h ^= uint64(data[3]) << 24
+		h ^= uint64(data2[3]) << 24
 		fallthrough
 	case 3:
-		h ^= uint64(data[2]) << 16
+		h ^= uint64(data2[2]) << 16
 		fallthrough
 	case 2:
-		h ^= uint64(data[1]) << 8
+		h ^= uint64(data2[1]) << 8
 		fallthrough
 	case 1:
-		h ^= uint64(data[0])
+		h ^= uint64(data2[0])
 		h *= m
 	}
 	h ^= h >> r
 	h *= m
 	h ^= h >> r
 	return h
-}
-
-// HashCommand hashes a command using the MurmurHash2 algorithm by Austin
-// Appleby.
-func HashCommand(command string) uint64 {
-	// TODO(maruel): Memory copy.
-	return murmurHash64A([]byte(command))
 }
 
 //
