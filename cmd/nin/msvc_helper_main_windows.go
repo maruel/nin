@@ -14,7 +14,11 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/maruel/nin"
+)
 
 func MSVCHelperUsage() {
 	fmt.Printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
@@ -35,7 +39,7 @@ func PushPathIntoEnvironment(envBlock string) {
 	*/
 }
 
-func WriteDepFileOrDie(objectPath string, parse *CLParser) {
+func WriteDepFileOrDie(objectPath string, parse *nin.CLParser) {
 	panic("TODO")
 	/*
 		depfilePath := objectPath + ".d"
@@ -113,7 +117,7 @@ func MSVCHelperMain(arg []string) int {
 		exitCode := cl.Run(command, &output)
 
 		if outputFilename {
-			parser := NewCLParser()
+			parser := nin.NewCLParser()
 			err := ""
 			if !parser.Parse(output, depsPrefix, &output, &err) {
 				Fatal("%s\n", err)
