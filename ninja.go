@@ -42,11 +42,8 @@ type options struct {
 	// tool to run rather than building.
 	tool *tool
 
-	// Whether duplicate rules for one target should warn or print an error.
-	dupeEdgesShouldErr bool
-
-	// Whether phony cycles should warn or print an error.
-	phonyCycleShouldErr bool
+	// build.ninja parsing options.
+	parserOpts ManifestParserOptions
 
 	cpuprofile string
 	memprofile string
@@ -923,16 +920,16 @@ func warningEnable(name string, opts *options) bool {
 		fmt.Printf("warning flags:\n  phonycycle={err,warn}  phony build statement references itself\n")
 		return false
 	} else if name == "dupbuild=err" {
-		opts.dupeEdgesShouldErr = true
+		opts.parserOpts.ErrOnDupeEdge = true
 		return true
 	} else if name == "dupbuild=warn" {
-		opts.dupeEdgesShouldErr = false
+		opts.parserOpts.ErrOnDupeEdge = false
 		return true
 	} else if name == "phonycycle=err" {
-		opts.phonyCycleShouldErr = true
+		opts.parserOpts.ErrOnPhonyCycle = true
 		return true
 	} else if name == "phonycycle=warn" {
-		opts.phonyCycleShouldErr = false
+		opts.parserOpts.ErrOnPhonyCycle = false
 		return true
 	} else if name == "depfilemulti=err" || name == "depfilemulti=warn" {
 		warningf("deprecated warning 'depfilemulti'")
@@ -1128,7 +1125,7 @@ func readFlags(opts *options, config *BuildConfig) int {
 	// It's funny how "opts" and "config" is a bit mixed up here.
 	flag.StringVar(&opts.inputFile, "f", "build.ninja", "specify input build file")
 	flag.StringVar(&opts.workingDir, "C", "", "change to DIR before doing anything else")
-	opts.dupeEdgesShouldErr = true
+	opts.parserOpts.ErrOnDupeEdge = true
 	flag.StringVar(&opts.cpuprofile, "cpuprofile", "", "activate the CPU sampling profiler")
 	flag.StringVar(&opts.memprofile, "memprofile", "", "snapshot a heap dump at the end")
 	flag.StringVar(&opts.trace, "trace", "", "capture a runtime trace")
@@ -1393,15 +1390,7 @@ func Main() int {
 	const cycleLimit = 100
 	for cycle := 1; cycle <= cycleLimit; cycle++ {
 		ninja := newNinjaMain(ninjaCommand, &config)
-
-		var parserOpts ManifestParserOptions
-		if opts.dupeEdgesShouldErr {
-			parserOpts.dupeEdgeAction = DupeEdgeActionError
-		}
-		if opts.phonyCycleShouldErr {
-			parserOpts.phonyCycleAction = PhonyCycleActionError
-		}
-		parser := NewManifestParser(&ninja.state, &ninja.di, parserOpts)
+		parser := NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
 		err := ""
 		if !parser.Load(opts.inputFile, &err, nil) {
 			status.Error("%s", err)

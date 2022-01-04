@@ -16,23 +16,13 @@ package nin
 
 import "strconv"
 
-type DupeEdgeAction bool
-
-const (
-	DupeEdgeActionWarn  DupeEdgeAction = false
-	DupeEdgeActionError DupeEdgeAction = true
-)
-
-type PhonyCycleAction bool
-
-const (
-	PhonyCycleActionWarn  PhonyCycleAction = false
-	PhonyCycleActionError PhonyCycleAction = true
-)
-
+// ManifestParserOptions are the options when parsing a build.ninja file.
 type ManifestParserOptions struct {
-	dupeEdgeAction   DupeEdgeAction
-	phonyCycleAction PhonyCycleAction
+	// ErrOnDupeEdge causes duplicate rules for one target to print an error,
+	// otherwise warns.
+	ErrOnDupeEdge bool
+	// ErrOnPhonyCycle causes phony cycles to print an error, otherwise warns.
+	ErrOnPhonyCycle bool
 }
 
 // Parses .ninja files.
@@ -404,7 +394,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		if !m.state.AddOut(edge, path, slashBits) {
-			if m.options.dupeEdgeAction == DupeEdgeActionError {
+			if m.options.ErrOnDupeEdge {
 				m.lexer.Error("multiple rules generate "+path, err)
 				return false
 			}
@@ -446,7 +436,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		m.state.AddValidation(edge, path, slashBits)
 	}
 
-	if m.options.phonyCycleAction == PhonyCycleActionWarn && edge.maybePhonycycleDiagnostic() {
+	if !m.options.ErrOnPhonyCycle && edge.maybePhonycycleDiagnostic() {
 		// CMake 2.8.12.x and 3.0.x incorrectly write phony build statements
 		// that reference themselves.  Ninja used to tolerate these in the
 		// build graph but that has since been fixed.  Filter them out to
