@@ -42,7 +42,7 @@ func (t *TokenListItem) String() string {
 // EvalString is a a tokenized string that contains variable references.
 // Can be evaluated relative to an Env.
 type EvalString struct {
-	Parsed []TokenListItem
+	Parsed []*TokenListItem
 }
 
 func (e *EvalString) String() string {
@@ -90,11 +90,11 @@ func (e *EvalString) Evaluate(env Env) string {
 }
 
 func (e *EvalString) AddText(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, false})
+	e.Parsed = append(e.Parsed, &TokenListItem{text, false})
 }
 
 func (e *EvalString) AddSpecial(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, true})
+	e.Parsed = append(e.Parsed, &TokenListItem{text, true})
 }
 
 // Construct a human-readable representation of the parsed state,
