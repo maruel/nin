@@ -149,7 +149,7 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 	if 0 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
@@ -174,7 +174,7 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 	}
 	c.fs.filesRemoved = nil
 
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 0 != cleaner.cleanedFilesCount {
@@ -199,7 +199,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	if 0 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
@@ -224,7 +224,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	}
 	c.fs.filesRemoved = nil
 
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
@@ -390,7 +390,7 @@ func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
 	c.fs.Create("out1.d", "")
 
 	cleaner := NewCleaner(&c.state, &c.config, &c.fs)
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
@@ -515,13 +515,13 @@ func TestCleanTest_CleanRsp(t *testing.T) {
 	if 0 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.CleanTarget("out1") {
+	if 0 != cleaner.cleanTarget("out1") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
 		t.Fatal("expected equal")
 	}
-	if 0 != cleaner.CleanTarget("in2") {
+	if 0 != cleaner.cleanTarget("in2") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
@@ -592,8 +592,8 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 	c.fs.Create("t1", "")
 	c.fs.Create("t2", "")
 
-	// Check that CleanTarget does not remove "phony".
-	if 0 != cleaner.CleanTarget("phony") {
+	// Check that cleanTarget does not remove "phony".
+	if 0 != cleaner.cleanTarget("phony") {
 		t.Fatal("expected equal")
 	}
 	if 2 != cleaner.cleanedFilesCount {
