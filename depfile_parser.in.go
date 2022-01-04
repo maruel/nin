@@ -51,7 +51,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 	in := 0
 	end := len(content)
 	if end > 0 && content[len(content)-1] != 0 {
-		content = append(content, 0)
+		panic("internal error")
 	}
 	haveTarget := false
 	parsingTargets := true

@@ -20,15 +20,17 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestDepfileParserTest_Basic(t *testing.T) {
-	err := ""
+func parse(t *testing.T, s string) DepfileParser {
 	p := DepfileParser{}
-	if !p.Parse([]byte("build/ninja.o: ninja.cc ninja.h eval_env.h manifest_parser.h\n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
+	err := ""
+	if !p.Parse([]byte(s+"\x00"), &err) || err != "" {
 		t.Fatal(err)
 	}
+	return p
+}
+
+func TestDepfileParserTest_Basic(t *testing.T) {
+	p := parse(t, "build/ninja.o: ninja.cc ninja.h eval_env.h manifest_parser.h\n")
 	if 1 != len(p.outs) {
 		t.Fatal(p.outs)
 	}
@@ -41,25 +43,11 @@ func TestDepfileParserTest_Basic(t *testing.T) {
 }
 
 func TestDepfileParserTest_EarlyNewlineAndWhitespace(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte(" \\\n  out: in\n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
+	_ = parse(t, " \\\n  out: in\n")
 }
 
 func TestDepfileParserTest_Continuation(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo.o: \\\n  bar.h baz.h\n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
+	p := parse(t, "foo.o: \\\n  bar.h baz.h\n")
 	if 1 != len(p.outs) {
 		t.Fatal(p.outs)
 	}
@@ -72,14 +60,7 @@ func TestDepfileParserTest_Continuation(t *testing.T) {
 }
 
 func TestDepfileParserTest_CarriageReturnContinuation(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo.o: \\\r\n  bar.h baz.h\r\n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "foo.o: \\\r\n  bar.h baz.h\r\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -92,14 +73,7 @@ func TestDepfileParserTest_CarriageReturnContinuation(t *testing.T) {
 }
 
 func TestDepfileParserTest_BackSlashes(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("Project\\Dir\\Build\\Release8\\Foo\\Foo.res : \\\n  Dir\\Library\\Foo.rc \\\n  Dir\\Library\\Version\\Bar.h \\\n  Dir\\Library\\Foo.ico \\\n  Project\\Thing\\Bar.tlb \\\n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
+	p := parse(t, "Project\\Dir\\Build\\Release8\\Foo\\Foo.res : \\\n  Dir\\Library\\Foo.rc \\\n  Dir\\Library\\Version\\Bar.h \\\n  Dir\\Library\\Foo.ico \\\n  Project\\Thing\\Bar.tlb \\\n")
 	if 1 != len(p.outs) {
 		t.Fatal(p.outs)
 	}
@@ -112,14 +86,7 @@ func TestDepfileParserTest_BackSlashes(t *testing.T) {
 }
 
 func TestDepfileParserTest_Spaces(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("a\\ bc\\ def:   a\\ b c d"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "a\\ bc\\ def:   a\\ b c d")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -145,14 +112,7 @@ func TestDepfileParserTest_MultipleBackslashes(t *testing.T) {
 	// backslashes and the space. A single backslash before hash sign is removed.
 	// Other backslashes remain untouched (including 2N backslashes followed by
 	// space).
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("a\\ b\\#c.h: \\\\\\\\\\  \\\\\\\\ \\\\share\\info\\\\#1"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "a\\ b\\#c.h: \\\\\\\\\\  \\\\\\\\ \\\\share\\info\\\\#1")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -176,14 +136,7 @@ func TestDepfileParserTest_MultipleBackslashes(t *testing.T) {
 func TestDepfileParserTest_Escapes(t *testing.T) {
 	// Put backslashes before a variety of characters, see which ones make
 	// it through.
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("\\!\\@\\#$$\\%\\^\\&\\[\\]\\\\:"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
+	p := parse(t, "\\!\\@\\#$$\\%\\^\\&\\[\\]\\\\:")
 	if 1 != len(p.outs) {
 		t.Fatal(p.outs)
 	}
@@ -196,16 +149,9 @@ func TestDepfileParserTest_Escapes(t *testing.T) {
 }
 
 func TestDepfileParserTest_EscapedColons(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
 	// Tests for correct parsing of depfiles produced on Windows
 	// by both Clang, GCC pre 10 and GCC 10
-	if !p.Parse([]byte("c\\:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o: \\\n c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h \n"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "c\\:\\gcc\\x86_64-w64-mingw32\\include\\stddef.o: \\\n c:\\gcc\\x86_64-w64-mingw32\\include\\stddef.h \n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -221,14 +167,7 @@ func TestDepfileParserTest_EscapedColons(t *testing.T) {
 }
 
 func TestDepfileParserTest_EscapedTargetColon(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo1\\: x\nfoo1\\:\nfoo1\\:\r\nfoo1\\:\t\nfoo1\\:"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "foo1\\: x\nfoo1\\:\nfoo1\\:\r\nfoo1\\:\t\nfoo1\\:")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -246,14 +185,7 @@ func TestDepfileParserTest_EscapedTargetColon(t *testing.T) {
 func TestDepfileParserTest_SpecialChars(t *testing.T) {
 	// See filenames like istreambuf.iteratorOp!= in
 	// https://github.com/google/libcxx/tree/master/test/iterators/stream.iterators/istreambuf.iterator/
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("C:/Program\\ Files\\ (x86)/Microsoft\\ crtdefs.h: \\\n en@quot.header~ t+t-x!=1 \\\n openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif\\\n Fu\303\244ball\\\n a[1]b@2%c"), &err) {
-		t.Error("Parse failure")
-	}
-	if "" != err {
-		t.FailNow()
-	}
+	p := parse(t, "C:/Program\\ Files\\ (x86)/Microsoft\\ crtdefs.h: \\\n en@quot.header~ t+t-x!=1 \\\n openldap/slapd.d/cn=config/cn=schema/cn={0}core.ldif\\\n Fu\303\244ball\\\n a[1]b@2%c")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -282,14 +214,7 @@ func TestDepfileParserTest_SpecialChars(t *testing.T) {
 
 func TestDepfileParserTest_UnifyMultipleOutputs(t *testing.T) {
 	// check that multiple duplicate targets are properly unified
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo foo: x y z"), &err) {
-		t.Error("Parse failure")
-	}
-	if 1 != len(p.outs) {
-		t.FailNow()
-	}
+	p := parse(t, "foo foo: x y z")
 	if "foo" != p.outs[0] {
 		t.FailNow()
 	}
@@ -309,11 +234,7 @@ func TestDepfileParserTest_UnifyMultipleOutputs(t *testing.T) {
 
 func TestDepfileParserTest_MultipleDifferentOutputs(t *testing.T) {
 	// check that multiple different outputs are accepted by the parser
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo bar: x y z"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo bar: x y z")
 	if 2 != len(p.outs) {
 		t.FailNow()
 	}
@@ -338,11 +259,7 @@ func TestDepfileParserTest_MultipleDifferentOutputs(t *testing.T) {
 }
 
 func TestDepfileParserTest_MultipleEmptyRules(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\nfoo: \nfoo:\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\nfoo: \nfoo:\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -358,11 +275,7 @@ func TestDepfileParserTest_MultipleEmptyRules(t *testing.T) {
 }
 
 func TestDepfileParserTest_UnifyMultipleRulesLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\nfoo: y\nfoo \\\nfoo: z\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\nfoo: y\nfoo \\\nfoo: z\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -384,11 +297,7 @@ func TestDepfileParserTest_UnifyMultipleRulesLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_UnifyMultipleRulesCRLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\r\nfoo: y\r\nfoo \\\r\nfoo: z\r\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\r\nfoo: y\r\nfoo \\\r\nfoo: z\r\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -410,11 +319,7 @@ func TestDepfileParserTest_UnifyMultipleRulesCRLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_UnifyMixedRulesLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\\\n     y\nfoo \\\nfoo: z\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\\\n     y\nfoo \\\nfoo: z\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -436,11 +341,7 @@ func TestDepfileParserTest_UnifyMixedRulesLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_UnifyMixedRulesCRLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\\\r\n     y\r\nfoo \\\r\nfoo: z\r\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\\\r\n     y\r\nfoo \\\r\nfoo: z\r\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -462,11 +363,7 @@ func TestDepfileParserTest_UnifyMixedRulesCRLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_IndentedRulesLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte(" foo: x\n foo: y\n foo: z\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, " foo: x\n foo: y\n foo: z\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -488,11 +385,7 @@ func TestDepfileParserTest_IndentedRulesLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_IndentedRulesCRLF(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte(" foo: x\r\n foo: y\r\n foo: z\r\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, " foo: x\r\n foo: y\r\n foo: z\r\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -514,11 +407,7 @@ func TestDepfileParserTest_IndentedRulesCRLF(t *testing.T) {
 }
 
 func TestDepfileParserTest_TolerateMP(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x y z\nx:\ny:\nz:\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x y z\nx:\ny:\nz:\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -540,11 +429,7 @@ func TestDepfileParserTest_TolerateMP(t *testing.T) {
 }
 
 func TestDepfileParserTest_MultipleRulesTolerateMP(t *testing.T) {
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x\nx:\nfoo: y\ny:\nfoo: z\nz:\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x\nx:\nfoo: y\ny:\nfoo: z\nz:\n")
 	if 1 != len(p.outs) {
 		t.FailNow()
 	}
@@ -568,11 +453,7 @@ func TestDepfileParserTest_MultipleRulesTolerateMP(t *testing.T) {
 func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
 	// check that multiple different outputs are accepted by the parser
 	// when spread across multiple rules
-	err := ""
-	p := DepfileParser{}
-	if !p.Parse([]byte("foo: x y\nbar: y z\n"), &err) {
-		t.Error("Parse failure")
-	}
+	p := parse(t, "foo: x y\nbar: y z\n")
 	if 2 != len(p.outs) {
 		t.FailNow()
 	}
@@ -599,7 +480,7 @@ func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
 func TestDepfileParserTest_BuggyMP(t *testing.T) {
 	err := ""
 	p := DepfileParser{}
-	if p.Parse([]byte("foo: x y z\nx: alsoin\ny:\nz:\n"), &err) {
+	if p.Parse([]byte("foo: x y z\nx: alsoin\ny:\nz:\n\x00"), &err) {
 		t.Error("unexpected Parse success")
 	}
 	if "inputs may not also have inputs" != err {
