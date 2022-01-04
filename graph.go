@@ -17,6 +17,7 @@ package nin
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"runtime"
 	"sort"
 )
@@ -931,13 +932,9 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
 	defer metricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
-	content := ""
-	switch i.di.ReadFile(path, &content, err) {
-	case Okay:
-	case NotFound:
-		*err = ""
-	case OtherError:
-		*err = "loading '" + path + "': " + *err
+	content, err2 := i.di.ReadFile(path)
+	if err2 != nil && !os.IsNotExist(err2) {
+		*err = "loading '" + path + "': " + err2.Error()
 		return false
 	}
 	// On a missing depfile: return false and empty *err.
@@ -947,9 +944,8 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 
 	depfile := DepfileParser{}
-	depfileErr := ""
-	if !depfile.Parse([]byte(content), &depfileErr) {
-		*err = path + ": " + depfileErr
+	if !depfile.Parse(content, err) {
+		*err = path + ": " + *err
 		return false
 	}
 

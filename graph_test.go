@@ -717,8 +717,8 @@ func TestGraphTest_DyndepLoadMissingFile(t *testing.T) {
 	if g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
 		t.Fatal("expected false")
 	}
-	if "loading 'dd': No such file or directory" != err {
-		t.Fatal("expected equal")
+	if "loading 'dd': file does not exist" != err {
+		t.Fatal(err)
 	}
 }
 
@@ -911,8 +911,8 @@ func TestGraphTest_DyndepFileMissing(t *testing.T) {
 	if g.scan.RecomputeDirty(g.GetNode("out"), nil, &err) {
 		t.Fatal("expected false")
 	}
-	if "loading 'dd': No such file or directory" != err {
-		t.Fatal("expected equal")
+	if "loading 'dd': file does not exist" != err {
+		t.Fatal(err)
 	}
 }
 

@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -210,23 +211,13 @@ func TestDiskInterfaceTest_StatCache(t *testing.T) {
 
 func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 	disk := DiskInterfaceTest(t)
-	err := ""
-	content := ""
-	if NotFound != disk.ReadFile("foobar", &content, &err) {
-		t.Fatal("expected equal")
+	if content, err := disk.ReadFile("foobar"); content != nil || !os.IsNotExist(err) {
+		t.Fatal(content, err)
 	}
-	if "" != content {
-		t.Fatal("expected equal")
-	}
-	if "" == err {
-		t.Fatal("expected different")
-	} // actual value is platform-specific
-	err = ""
-
 	testFile := "testfile"
-	f, _ := os.OpenFile(testFile, os.O_CREATE|os.O_RDWR, 0o600)
-	if f == nil {
-		t.Fatal("expected true")
+	f, err := os.OpenFile(testFile, os.O_CREATE|os.O_RDWR, 0o600)
+	if f == nil || err != nil {
+		t.Fatal(err)
 	}
 	testContent := "test content\nok"
 	fmt.Fprintf(f, "%s", testContent)
@@ -234,14 +225,8 @@ func TestDiskInterfaceTest_ReadFile(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if Okay != disk.ReadFile(testFile, &content, &err) {
-		t.Fatal("expected equal")
-	}
-	if content != testContent+"\x00" {
-		t.Fatal("expected equal")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if content, err := disk.ReadFile(testFile); string(content) != testContent+"\x00" || err != nil {
+		t.Fatal(content, err)
 	}
 }
 
@@ -329,14 +314,17 @@ func (s *StatTest) WriteFile(path string, contents string) bool {
 	s.t.Fatal("Unexpected function call")
 	return false
 }
+
 func (s *StatTest) MakeDir(path string) bool {
 	s.t.Fatal("Unexpected function call")
 	return false
 }
-func (s *StatTest) ReadFile(path string, contents *string, err *string) DiskStatus {
+
+func (s *StatTest) ReadFile(path string) ([]byte, error) {
 	s.t.Fatal("Unexpected function call")
-	return NotFound
+	return nil, errors.New("not implemented")
 }
+
 func (s *StatTest) RemoveFile(path string) int {
 	s.t.Fatal("Unexpected function call")
 	return 0

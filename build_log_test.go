@@ -16,6 +16,7 @@ package nin
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -325,9 +326,9 @@ func (t *TestDiskInterface) MakeDir(path string) bool {
 	t.t.Fatal("Should not be reached")
 	return false
 }
-func (t *TestDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
+func (t *TestDiskInterface) ReadFile(path string) ([]byte, error) {
 	t.t.Fatal("Should not be reached")
-	return NotFound
+	return nil, errors.New("not implemented")
 }
 func (t *TestDiskInterface) RemoveFile(path string) int {
 	t.t.Fatal("Should not be reached")

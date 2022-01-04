@@ -28,20 +28,12 @@ import (
 // Interface for reading files from disk.  See DiskInterface for details.
 // This base offers the minimum interface needed just to read files.
 type FileReader interface {
-	// Read and store in given string.  On success, return Okay and injects a
-	// trailing 0 byte.
-	// On error, return another Status and fill |err|.
-	ReadFile(path string, contents *string, err *string) DiskStatus
+	// ReadFile reads a file and returns its content.
+	//
+	// If the content is not empty, it appends a zero byte at the end of the
+	// slice.
+	ReadFile(path string) ([]byte, error)
 }
-
-// Result of ReadFile.
-type DiskStatus int32
-
-const (
-	Okay DiskStatus = iota
-	NotFound
-	OtherError
-)
 
 // Interface for accessing the disk.
 //
@@ -289,23 +281,17 @@ func (r *RealDiskInterface) MakeDir(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-func (r *RealDiskInterface) ReadFile(path string, contents *string, err *string) DiskStatus {
-	c, err2 := ioutil.ReadFile(path)
-	if err2 == nil {
-		if len(c) == 0 {
-			*contents = ""
-		} else {
+func (r *RealDiskInterface) ReadFile(path string) ([]byte, error) {
+	c, err := ioutil.ReadFile(path)
+	if err == nil {
+		if len(c) != 0 {
 			// ioutil.ReadFile() is guaranteed to have an extra byte in the slice,
 			// (ab)use it.
-			*contents = string(c[:len(c)+1])
+			c = c[:len(c)+1]
 		}
-		return Okay
+		return c, nil
 	}
-	*err = err2.Error()
-	if os.IsNotExist(err2) {
-		return NotFound
-	}
-	return OtherError
+	return nil, err
 }
 
 func (r *RealDiskInterface) RemoveFile(path string) int {

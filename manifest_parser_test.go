@@ -914,8 +914,8 @@ func TestParserTest_MissingInput(t *testing.T) {
 	if parser.Load("build.ninja", &err, nil) {
 		t.Fatal("expected false")
 	}
-	if "loading 'build.ninja': No such file or directory" != err {
-		t.Fatal("expected equal")
+	if "loading 'build.ninja': file does not exist" != err {
+		t.Fatal(err)
 	}
 }
 
@@ -983,7 +983,7 @@ func TestParserTest_MissingSubNinja(t *testing.T) {
 	if parser.ParseTest("subninja foo.ninja\n", &err) {
 		t.Fatal("expected false")
 	}
-	if "input:1: loading 'foo.ninja': No such file or directory\nsubninja foo.ninja\n                  ^ near here" != err {
+	if "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here" != err {
 		t.Fatal(err)
 	}
 }

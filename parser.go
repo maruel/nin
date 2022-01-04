@@ -37,16 +37,15 @@ func NewParser(state *State, fileReader FileReader, p Parse) Parser {
 // Load and parse a file.
 func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 	defer metricRecord(".ninja parse")()
-	contents := ""
-	readErr := ""
-	if p.fileReader.ReadFile(filename, &contents, &readErr) != Okay {
-		*err = "loading '" + filename + "': " + readErr
+	contents, err2 := p.fileReader.ReadFile(filename)
+	if err2 != nil {
+		*err = "loading '" + filename + "': " + err2.Error()
 		if parent != nil {
 			parent.Error(string(*err), err)
 		}
 		return false
 	}
-	return p.Parse.Parse(filename, contents, err)
+	return p.Parse.Parse(filename, unsafeString(contents), err)
 }
 
 // If the next token is not \a expected, produce an error string

@@ -838,10 +838,14 @@ func (f *FakeCommandRunner) StartCommand(edge *Edge) bool {
 		if len(edge.Outputs) != 1 {
 			f.t.Fatalf("%#v", edge.Outputs)
 		}
-		content := ""
-		err := ""
-		if f.fs.ReadFile(edge.Inputs[0].Path, &content, &err) == Okay {
-			f.fs.WriteFile(edge.Outputs[0].Path, content)
+		content, err := f.fs.ReadFile(edge.Inputs[0].Path)
+		if err == nil {
+			// ReadFile append a zero byte, strip it when writing back.
+			c := content
+			if len(c) != 0 {
+				c = c[:len(c)-1]
+			}
+			f.fs.WriteFile(edge.Outputs[0].Path, string(c))
 		}
 	} else if edge.Rule.Name == "touch-implicit-dep-out" {
 		dep := edge.GetBinding("test_dependency")
@@ -2702,8 +2706,8 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 	}
 
 	// The RSP file contains what it should
-	if "Another very long command" != b.fs.files["out.rsp"].contents {
-		t.Fatal("expected equal")
+	if c, err := b.fs.ReadFile("out.rsp"); err != nil || string(c) != "Another very long command\x00" {
+		t.Fatal(c, err)
 	}
 }
 
@@ -4043,8 +4047,8 @@ func TestBuildTest_DyndepMissingAndNoRule(t *testing.T) {
 	if b.builder.AddTargetName("out", &err) != nil {
 		t.Fatal("expected false")
 	}
-	if "loading 'dd': No such file or directory" != err {
-		t.Fatal("expected equal")
+	if "loading 'dd': file does not exist" != err {
+		t.Fatal(err)
 	}
 }
 
@@ -4127,11 +4131,8 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if !b.builder.Build(&err) || err != "" {
+		t.Fatal(err)
 	}
 
 	wantCommand := []string{"cp dd-in dd", "touch out"}
@@ -4795,11 +4796,8 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if !b.builder.Build(&err) || err != "" {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd1-in dd1", "cp dd0-in dd0", "touch in", "touch tmp", "touch out"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {

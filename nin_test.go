@@ -128,7 +128,7 @@ type VirtualFileSystem struct {
 type Entry struct {
 	mtime     TimeStamp
 	statError error // If mtime is -1.
-	contents  string
+	contents  []byte
 }
 type FileMap map[string]Entry
 
@@ -153,7 +153,9 @@ func (v *VirtualFileSystem) Tick() TimeStamp {
 func (v *VirtualFileSystem) Create(path string, contents string) {
 	f := v.files[path]
 	f.mtime = v.now
-	f.contents = contents
+	// Make a copy in case it's a unsafeString() to a buffer that could be
+	// mutated later.
+	f.contents = []byte(contents)
 	v.files[path] = f
 	v.filesCreated[path] = struct{}{}
 }
@@ -177,19 +179,19 @@ func (v *VirtualFileSystem) MakeDir(path string) bool {
 	return true // success
 }
 
-func (v *VirtualFileSystem) ReadFile(path string, contents *string, err *string) DiskStatus {
+func (v *VirtualFileSystem) ReadFile(path string) ([]byte, error) {
 	v.filesRead = append(v.filesRead, path)
 	i, ok := v.files[path]
 	if ok {
 		if len(i.contents) == 0 {
-			*contents = ""
-		} else {
-			*contents = i.contents + "\x00"
+			return nil, nil
 		}
-		return Okay
+		// Return a copy since a lot of the code modify the buffer in-place.
+		n := make([]byte, len(i.contents)+1)
+		copy(n, i.contents)
+		return n, nil
 	}
-	*err = "No such file or directory"
-	return NotFound
+	return nil, os.ErrNotExist
 }
 
 func (v *VirtualFileSystem) RemoveFile(path string) int {

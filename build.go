@@ -16,6 +16,7 @@ package nin
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -1049,13 +1050,10 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 			return false
 		}
 
-		// Read depfile content.  Treat a missing depfile as empty.
-		content := ""
-		switch b.di.ReadFile(depfile, &content, err) {
-		case Okay:
-		case NotFound:
-			err = nil
-		case OtherError:
+		// Read depfile content. Treat a missing depfile as empty.
+		content, err2 := b.di.ReadFile(depfile)
+		if err2 != nil && !os.IsNotExist(err2) {
+			*err = err2.Error()
 			return false
 		}
 		if len(content) == 0 {
@@ -1063,8 +1061,7 @@ func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string
 		}
 
 		deps := DepfileParser{}
-		// TODO(maruel): Memory copy.
-		if !deps.Parse([]byte(content), err) {
+		if !deps.Parse(content, err) {
 			return false
 		}
 
