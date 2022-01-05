@@ -536,7 +536,7 @@ func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, di Di
 	return DependencyScan{
 		buildLog:     buildLog,
 		di:           di,
-		depLoader:    NewImplicitDepLoader(state, depsLog, di),
+		depLoader:    newImplicitDepLoader(state, depsLog, di),
 		dyndepLoader: NewDyndepLoader(state, di),
 	}
 }
@@ -901,7 +901,7 @@ type implicitDepLoader struct {
 	depsLog *DepsLog
 }
 
-func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) implicitDepLoader {
+func newImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) implicitDepLoader {
 	return implicitDepLoader{
 		state:   state,
 		di:      di,

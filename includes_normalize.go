@@ -25,7 +25,7 @@ type includesNormalize struct {
 	splitRelativeTo []string
 }
 
-func NewIncludesNormalize(relativeTo string) includesNormalize {
+func newIncludesNormalize(relativeTo string) includesNormalize {
 	err := ""
 	relativeTo = absPath(relativeTo, &err)
 	if err != "" {

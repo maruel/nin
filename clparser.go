@@ -73,7 +73,7 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err 
 	// Loop over all lines in the output to process them.
 	start := 0
 	seenShowIncludes := false
-	normalizer := NewIncludesNormalize(".")
+	normalizer := newIncludesNormalize(".")
 	for start < len(output) {
 		end := strings.IndexAny(output[start:], "\r\n")
 		if end == -1 {

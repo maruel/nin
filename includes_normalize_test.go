@@ -37,7 +37,7 @@ func NormalizeAndCheckNoError(t *testing.T, input string) string {
 func NormalizeRelativeAndCheckNoError(t *testing.T, input, relativeTo string) string {
 	result := ""
 	err := ""
-	normalizer := NewIncludesNormalize(relativeTo)
+	normalizer := newIncludesNormalize(relativeTo)
 	if !normalizer.Normalize(input, &result, &err) {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 	// Too long, won't be canonicalized. Ensure doesn't crash.
 	result := ""
 	err := ""
-	normalizer := NewIncludesNormalize(".")
+	normalizer := newIncludesNormalize(".")
 	if normalizer.Normalize(kLongInputString, &result, &err) {
 		t.Fatal("expected false")
 	}
@@ -179,7 +179,7 @@ func TestIncludesNormalize_LongInvalidPath(t *testing.T) {
 func TestIncludesNormalize_ShortRelativeButTooLongAbsolutePath(t *testing.T) {
 	result := ""
 	err := ""
-	normalizer := NewIncludesNormalize(".")
+	normalizer := newIncludesNormalize(".")
 	// A short path should work
 	if !normalizer.Normalize("a", &result, &err) {
 		t.Fatal("expected true")

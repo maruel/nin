@@ -45,9 +45,9 @@ type nodeStoringImplicitDepLoader struct {
 	depNodesOutput []*Node
 }
 
-func NewNodeStoringImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface, depNodesOutput []*Node) nodeStoringImplicitDepLoader {
+func newNodeStoringImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface, depNodesOutput []*Node) nodeStoringImplicitDepLoader {
 	return nodeStoringImplicitDepLoader{
-		implicitDepLoader: NewImplicitDepLoader(state, depsLog, di),
+		implicitDepLoader: newImplicitDepLoader(state, depsLog, di),
 		depNodesOutput:    depNodesOutput,
 	}
 }
@@ -101,7 +101,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 		}
 	} else {
 		var depfileDeps []*Node
-		depLoader := NewNodeStoringImplicitDepLoader(m.state, m.depsLog, m.di, depfileDeps)
+		depLoader := newNodeStoringImplicitDepLoader(m.state, m.depsLog, m.di, depfileDeps)
 		err := ""
 		depLoader.LoadDeps(edge, &err)
 		if len(depfileDeps) != 0 {
