@@ -111,7 +111,7 @@ func (m *ManifestParser) parsePool(err *string) bool {
 		return m.lexer.Error("expected pool name", err)
 	}
 
-	if !m.ExpectToken(NEWLINE, err) {
+	if !m.expectToken(NEWLINE, err) {
 		return false
 	}
 
@@ -154,7 +154,7 @@ func (m *ManifestParser) parseRule(err *string) bool {
 		return m.lexer.Error("expected rule name", err)
 	}
 
-	if !m.ExpectToken(NEWLINE, err) {
+	if !m.expectToken(NEWLINE, err) {
 		return false
 	}
 
@@ -198,7 +198,7 @@ func (m *ManifestParser) parseLet(key *string, value *EvalString, err *string) b
 	if !m.lexer.ReadIdent(key) {
 		return m.lexer.Error("expected variable name", err)
 	}
-	if !m.ExpectToken(EQUALS, err) {
+	if !m.expectToken(EQUALS, err) {
 		return false
 	}
 	if !m.lexer.ReadVarValue(value, err) {
@@ -235,7 +235,7 @@ func (m *ManifestParser) parseDefault(err *string) bool {
 		}
 	}
 
-	return m.ExpectToken(NEWLINE, err)
+	return m.expectToken(NEWLINE, err)
 }
 
 func (m *ManifestParser) parseEdge(err *string) bool {
@@ -276,7 +276,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		return m.lexer.Error("expected path", err)
 	}
 
-	if !m.ExpectToken(COLON, err) {
+	if !m.expectToken(COLON, err) {
 		return false
 	}
 
@@ -348,7 +348,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		}
 	}
 
-	if !m.ExpectToken(NEWLINE, err) {
+	if !m.expectToken(NEWLINE, err) {
 		return false
 	}
 
@@ -492,7 +492,7 @@ func (m *ManifestParser) parseFileInclude(newScope bool, err *string) bool {
 		return false
 	}
 
-	if !m.ExpectToken(NEWLINE, err) {
+	if !m.expectToken(NEWLINE, err) {
 		return false
 	}
 	return true

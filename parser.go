@@ -50,7 +50,7 @@ func (p *parser) Load(filename string, err *string, parent *lexer) bool {
 
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
-func (p *parser) ExpectToken(expected Token, err *string) bool {
+func (p *parser) expectToken(expected Token, err *string) bool {
 	if token := p.lexer.ReadToken(); token != expected {
 		msg := "expected " + expected.String() + ", got " + token.String() + tokenErrorHint(expected)
 		return p.lexer.Error(msg, err)

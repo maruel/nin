@@ -528,7 +528,7 @@ func PathDecanonicalized(path string, slashBits uint64) string {
 type DependencyScan struct {
 	buildLog     *BuildLog
 	di           DiskInterface
-	depLoader    ImplicitDepLoader
+	depLoader    implicitDepLoader
 	dyndepLoader DyndepLoader
 }
 
@@ -893,16 +893,16 @@ func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bo
 
 //
 
-// ImplicitDepLoader loads implicit dependencies, as referenced via the
+// implicitDepLoader loads implicit dependencies, as referenced via the
 // "depfile" attribute in build files.
-type ImplicitDepLoader struct {
+type implicitDepLoader struct {
 	state   *State
 	di      DiskInterface
 	depsLog *DepsLog
 }
 
-func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) ImplicitDepLoader {
-	return ImplicitDepLoader{
+func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) implicitDepLoader {
+	return implicitDepLoader{
 		state:   state,
 		di:      di,
 		depsLog: depsLog,
@@ -912,7 +912,7 @@ func NewImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) Impl
 // Load implicit dependencies for \a edge.
 // @return false on error (without filling \a err if info is just missing
 //                          or out of date).
-func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
+func (i *implicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 	depsType := edge.GetBinding("deps")
 	if len(depsType) != 0 {
 		return i.LoadDepsFromLog(edge, err)
@@ -929,7 +929,7 @@ func (i *ImplicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
 
 // Load implicit dependencies for \a edge from a depfile attribute.
 // @return false on error (without filling \a err if info is just missing).
-func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
+func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
 	defer metricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content, err2 := i.di.ReadFile(path)
@@ -981,9 +981,9 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 
 // Process loaded implicit dependencies for \a edge and update the graph
 // @return false on error (without filling \a err if info is just missing)
-func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
+func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
 	// Preallocate space in edge.Inputs to be filled in below.
-	implicitDep := i.PreallocateSpace(edge, len(depfileIns))
+	implicitDep := i.preallocateSpace(edge, len(depfileIns))
 
 	// Add all its in-edges.
 	for _, j := range depfileIns {
@@ -998,7 +998,7 @@ func (i *ImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, 
 
 // Load implicit dependencies for \a edge from the DepsLog.
 // @return false on error (without filling \a err if info is just missing).
-func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
+func (i *implicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 	// NOTE: deps are only supported for single-target edges.
 	output := edge.Outputs[0]
 	var deps *Deps
@@ -1016,7 +1016,7 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		return false
 	}
 
-	implicitDep := i.PreallocateSpace(edge, len(deps.Nodes))
+	implicitDep := i.preallocateSpace(edge, len(deps.Nodes))
 	for _, node := range deps.Nodes {
 		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
@@ -1028,7 +1028,7 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 
 // Preallocate \a count spaces in the input array on \a edge, returning
 // an iterator pointing at the first new space.
-func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
+func (i *implicitDepLoader) preallocateSpace(edge *Edge, count int) int {
 	offset := len(edge.Inputs) - int(edge.OrderOnlyDeps)
 	old := edge.Inputs
 	edge.Inputs = make([]*Node, len(old)+count)
@@ -1041,7 +1041,7 @@ func (i *ImplicitDepLoader) PreallocateSpace(edge *Edge, count int) int {
 // If we don't have a edge that generates this input already,
 // create one; this makes us not abort if the input is missing,
 // but instead will rebuild in that circumstance.
-func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
+func (i *implicitDepLoader) CreatePhonyInEdge(node *Node) {
 	if node.InEdge != nil {
 		return
 	}

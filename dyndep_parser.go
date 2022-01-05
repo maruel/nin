@@ -91,7 +91,7 @@ func (d *DyndepParser) parseLet(key *string, value *EvalString, err *string) boo
 	if !d.lexer.ReadIdent(key) {
 		return d.lexer.Error("expected variable name", err)
 	}
-	if !d.ExpectToken(EQUALS, err) {
+	if !d.expectToken(EQUALS, err) {
 		return false
 	}
 	if !d.lexer.ReadVarValue(value, err) {
@@ -157,7 +157,7 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 		}
 	}
 
-	if !d.ExpectToken(COLON, err) {
+	if !d.expectToken(COLON, err) {
 		return false
 	}
 
@@ -197,7 +197,7 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 		return d.lexer.Error("order-only inputs not supported", err)
 	}
 
-	if !d.ExpectToken(NEWLINE, err) {
+	if !d.expectToken(NEWLINE, err) {
 		return false
 	}
 

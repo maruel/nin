@@ -20,18 +20,18 @@ import (
 
 // Utility functions for normalizing include paths on Windows.
 // TODO: this likely duplicates functionality of CanonicalizePath; refactor.
-type IncludesNormalize struct {
+type includesNormalize struct {
 	relativeTo      string
 	splitRelativeTo []string
 }
 
-func NewIncludesNormalize(relativeTo string) IncludesNormalize {
+func NewIncludesNormalize(relativeTo string) includesNormalize {
 	err := ""
 	relativeTo = absPath(relativeTo, &err)
 	if err != "" {
 		fatalf("Initializing IncludesNormalize(): %s", err)
 	}
-	return IncludesNormalize{
+	return includesNormalize{
 		relativeTo:      relativeTo,
 		splitRelativeTo: strings.Split(relativeTo, "/"),
 	}
@@ -159,7 +159,7 @@ func relativize(path string, startList []string, err *string) string {
 
 /// Normalize by fixing slashes style, fixing redundant .. and . and makes the
 /// path |input| relative to |this->relativeTo| and store to |result|.
-func (i *IncludesNormalize) Normalize(input string, result *string, err *string) bool {
+func (i *includesNormalize) Normalize(input string, result *string, err *string) bool {
 	len2 := len(input)
 	if len2 >= maxPath {
 		*err = "path too long"
