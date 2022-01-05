@@ -77,16 +77,15 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 }
 
 func (d *DyndepParser) parseDyndepVersion(err *string) bool {
-	name, letValue, err2 := d.parseLet()
-	if err2 != nil {
+	eval := EvalString{}
+	if name, err2 := d.parseLet(&eval); err2 != nil {
 		*err = err2.Error()
 		return false
-	}
-	if name != "ninja_dyndep_version" {
+	} else if name != "ninja_dyndep_version" {
 		*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
 		return false
 	}
-	version := letValue.Evaluate(d.env)
+	version := eval.Evaluate(d.env)
 	major, minor := parseVersion(version)
 	if major != 1 || minor != 0 {
 		*err = d.lexer.Error("unsupported 'ninja_dyndep_version = " + version + "'").Error()
@@ -95,144 +94,25 @@ func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 	return true
 }
 
-func (d *DyndepParser) parseLet() (string, EvalString, error) {
+func (d *DyndepParser) parseLet(eval *EvalString) (string, error) {
 	key := d.lexer.readIdent()
 	if key == "" {
-		return "", EvalString{}, d.lexer.Error("expected variable name")
+		return key, d.lexer.Error("expected variable name")
 	}
 	err2 := ""
 	if !d.expectToken(EQUALS, &err2) {
-		return "", EvalString{}, errors.New(err2)
+		return key, errors.New(err2)
 	}
-	eval, err := d.lexer.readEvalString(false)
-	return key, eval, err
-}
-
-func (d *DyndepParser) parseEdge(err *string) bool {
-	// Parse one explicit output.  We expect it to already have an edge.
-	// We will record its dynamically-discovered dependency information.
-	var dyndeps *Dyndeps
-	{
-		out0, err2 := d.lexer.readEvalString(true)
-		if err2 != nil {
+	return key, d.lexer.readEvalString(eval, false)
+		eval.Parsed = eval.Parsed[:0]
+		if key, err2 := d.parseLet(&eval); err2 != nil {
 			*err = err2.Error()
 			return false
-		}
-		if len(out0.Parsed) == 0 {
-			*err = d.lexer.Error("expected path").Error()
-			return false
-		}
-
-		path := out0.Evaluate(d.env)
-		if len(path) == 0 {
-			*err = d.lexer.Error("empty path").Error()
-			return false
-		}
-		path = CanonicalizePath(path)
-		node := d.state.Paths[path]
-		if node == nil || node.InEdge == nil {
-			*err = d.lexer.Error("no build statement exists for '" + path + "'").Error()
-			return false
-		}
-		edge := node.InEdge
-		_, ok := d.dyndepFile[edge]
-		dyndeps = NewDyndeps()
-		d.dyndepFile[edge] = dyndeps
-		if ok {
-			*err = d.lexer.Error("multiple statements for '" + path + "'").Error()
-			return false
-		}
-	}
-
-	// Disallow explicit outputs.
-	{
-		out, err2 := d.lexer.readEvalString(true)
-		if err2 != nil {
-			*err = err2.Error()
-			return false
-		}
-		if len(out.Parsed) != 0 {
-			*err = d.lexer.Error("explicit outputs not supported").Error()
-			return false
-		}
-	}
-
-	// Parse implicit outputs, if any.
-	var outs []EvalString
-	if d.lexer.PeekToken(PIPE) {
-		for {
-			out, err2 := d.lexer.readEvalString(true)
-			if err2 != nil {
-				*err = err2.Error()
-				return false // TODO(maruel): Bug upstream.
-			}
-			if len(out.Parsed) == 0 {
-				break
-			}
-			outs = append(outs, out)
-		}
-	}
-
-	if !d.expectToken(COLON, err) {
-		return false
-	}
-
-	if ruleName := d.lexer.readIdent(); ruleName == "" || ruleName != "dyndep" {
-		*err = d.lexer.Error("expected build command name 'dyndep'").Error()
-		return false
-	}
-
-	// Disallow explicit inputs.
-	{
-		in, err2 := d.lexer.readEvalString(true)
-		if err2 != nil {
-			*err = err2.Error()
-			return false
-		}
-		if len(in.Parsed) != 0 {
-			*err = d.lexer.Error("explicit inputs not supported").Error()
-			return false
-		}
-	}
-
-	// Parse implicit inputs, if any.
-	var ins []EvalString
-	if d.lexer.PeekToken(PIPE) {
-		for {
-			in, err2 := d.lexer.readEvalString(true)
-			if err2 != nil {
-				*err = err2.Error()
-				return false // TODO(maruel): Bug upstream.
-			}
-			if len(in.Parsed) == 0 {
-				break
-			}
-			ins = append(ins, in)
-		}
-	}
-
-	// Disallow order-only inputs.
-	if d.lexer.PeekToken(PIPE2) {
-		*err = d.lexer.Error("order-only inputs not supported").Error()
-		return false
-	}
-
-	if !d.expectToken(NEWLINE, err) {
-		return false
-	}
-
-	if d.lexer.PeekToken(INDENT) {
-		key, val, err2 := d.parseLet()
-		if err2 != nil {
-			*err = err2.Error()
-			return false
-		}
-		if key != "restat" {
+		} else if key != "restat" {
 			*err = d.lexer.Error("binding is not 'restat'").Error()
 			return false
 		}
-		value := val.Evaluate(d.env)
-		dyndeps.restat = value != ""
+		dyndeps.restat = eval.Evaluate(d.env) != ""
 	}
 
 	dyndeps.implicitInputs = make([]*Node, 0, len(ins))

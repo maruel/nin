@@ -271,8 +271,7 @@ func (l *lexer) readIdent() string {
 // $escapes).
 //
 // Returned path may be empty if a delimiter (space, newline) is hit.
-func (l *lexer) readEvalString(path bool) (EvalString, error) {
-	eval := EvalString{}
+func (l *lexer) readEvalString(eval *EvalString, path bool) error {
 	p := l.ofs
 	q := 0
 	start := 0
@@ -329,15 +328,15 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		  }
 		  "$". {
 		    l.lastToken = start
-		    return eval, l.Error("bad $-escape (literal $ must be written as $$)")
+		    return l.Error("bad $-escape (literal $ must be written as $$)")
 		  }
 		  nul {
 		    l.lastToken = start
-		    return eval, l.Error("unexpected EOF")
+		    return l.Error("unexpected EOF")
 		  }
 		  [^] {
 		    l.lastToken = start
-		    return eval, l.Error(l.DescribeLastError())
+		    return l.Error(l.DescribeLastError())
 		  }
 		*/
 	}
@@ -347,5 +346,5 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
-	return eval, nil
+	return nil
 }

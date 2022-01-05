@@ -49,6 +49,7 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
 	m.lexer.Start(filename, input)
+	eval := EvalString{}
 
 	for {
 		token := m.lexer.ReadToken()
@@ -70,24 +71,23 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				return false
 			}
 		case IDENT:
-			{
-				m.lexer.UnreadToken()
-				name, letValue, err2 := m.parseLet()
-				if err2 != nil {
+			m.lexer.UnreadToken()
+			eval.Parsed = eval.Parsed[:0]
+			name, err2 := m.parseLet(&eval)
+			if err2 != nil {
+				*err = err2.Error()
+				return false
+			}
+			value := eval.Evaluate(m.env)
+			// Check ninjaRequiredVersion immediately so we can exit
+			// before encountering any syntactic surprises.
+			if name == "ninja_required_version" {
+				if err2 := checkNinjaVersion(value); err2 != nil {
 					*err = err2.Error()
 					return false
 				}
-				value := letValue.Evaluate(m.env)
-				// Check ninjaRequiredVersion immediately so we can exit
-				// before encountering any syntactic surprises.
-				if name == "ninja_required_version" {
-					if err2 := checkNinjaVersion(value); err2 != nil {
-						*err = err2.Error()
-						return false
-					}
-				}
-				m.env.Bindings[name] = value
 			}
+			m.env.Bindings[name] = value
 		case INCLUDE:
 			if !m.parseFileInclude(false, err) {
 				return false
@@ -127,22 +127,22 @@ func (m *ManifestParser) parsePool(err *string) bool {
 	}
 
 	depth := -1
-
+	eval := EvalString{}
 	for m.lexer.PeekToken(INDENT) {
-		key, value, err2 := m.parseLet()
-		if err2 != nil {
+		if key, err2 := m.parseLet(&eval); err2 != nil {
 			*err = err2.Error()
 			return false
-		}
-		if key != "depth" {
+		} else if key != "depth" {
 			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
 			return false
 		}
 		// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
-		if depth, err2 = strconv.Atoi(value.Evaluate(m.env)); depth < 0 || err2 != nil {
+		var err2 error
+		if depth, err2 = strconv.Atoi(eval.Evaluate(m.env)); depth < 0 || err2 != nil {
 			*err = m.lexer.Error("invalid pool depth").Error()
 			return false
 		}
+		eval.Parsed = eval.Parsed[:0]
 	}
 
 	if depth < 0 {
@@ -173,7 +173,8 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	rule := NewRule(name)
 
 	for m.lexer.PeekToken(INDENT) {
-		key, value, err2 := m.parseLet()
+		eval := &EvalString{}
+		key, err2 := m.parseLet(eval)
 		if err2 != nil {
 			*err = err2.Error()
 			return false
@@ -185,7 +186,7 @@ func (m *ManifestParser) parseRule(err *string) bool {
 			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
 			return false
 		}
-		rule.Bindings[key] = &value
+		rule.Bindings[key] = eval
 	}
 
 	b1, ok1 := rule.Bindings["rspfile"]
@@ -204,26 +205,24 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	return true
 }
 
-func (m *ManifestParser) parseLet() (string, EvalString, error) {
+func (m *ManifestParser) parseLet(eval *EvalString) (string, error) {
 	key := m.lexer.readIdent()
 	if key == "" {
-		return "", EvalString{}, m.lexer.Error("expected variable name")
+		return key, m.lexer.Error("expected variable name")
 	}
 	err2 := ""
 	if !m.expectToken(EQUALS, &err2) {
-		return "", EvalString{}, errors.New(err2)
+		return key, errors.New(err2)
 	}
-	ev, err := m.lexer.readEvalString(false)
-	return key, ev, err
+	return key, m.lexer.readEvalString(eval, false)
 }
 
 func (m *ManifestParser) parseDefault(err *string) bool {
-	eval, err2 := m.lexer.readEvalString(true)
-	if err2 != nil {
+	eval := EvalString{}
+	if err2 := m.lexer.readEvalString(&eval, true); err2 != nil {
 		*err = err2.Error()
 		return false
-	}
-	if len(eval.Parsed) == 0 {
+	} else if len(eval.Parsed) == 0 {
 		*err = m.lexer.Error("expected target name").Error()
 		return false
 	}
@@ -240,12 +239,11 @@ func (m *ManifestParser) parseDefault(err *string) bool {
 			return false
 		}
 
-		eval, err2 = m.lexer.readEvalString(true)
-		if err2 != nil {
+		eval.Parsed = eval.Parsed[:0]
+		if err2 := m.lexer.readEvalString(&eval, true); err2 != nil {
 			*err = err2.Error()
 			return false
-		}
-		if len(eval.Parsed) == 0 {
+		} else if len(eval.Parsed) == 0 {
 			break
 		}
 	}
@@ -254,32 +252,30 @@ func (m *ManifestParser) parseDefault(err *string) bool {
 }
 
 func (m *ManifestParser) parseEdge(err *string) bool {
-	var outs []EvalString
+	var outs []*EvalString
 	for {
-		ev, err2 := m.lexer.readEvalString(true)
-		if err2 != nil {
+		eval := &EvalString{}
+		if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 			*err = err2.Error()
 			return false
-		}
-		if len(ev.Parsed) == 0 {
+		} else if len(eval.Parsed) == 0 {
 			break
 		}
-		outs = append(outs, ev)
+		outs = append(outs, eval)
 	}
 
 	// Add all implicit outs, counting how many as we go.
 	implicitOuts := 0
 	if m.lexer.PeekToken(PIPE) {
 		for {
-			ev, err2 := m.lexer.readEvalString(true)
-			if err2 != nil {
+			eval := &EvalString{}
+			if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 				*err = err2.Error()
 				return false
-			}
-			if len(ev.Parsed) == 0 {
+			} else if len(eval.Parsed) == 0 {
 				break
 			}
-			outs = append(outs, ev)
+			outs = append(outs, eval)
 			implicitOuts++
 		}
 	}
@@ -305,33 +301,31 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		return false
 	}
 
-	var ins []EvalString
+	var ins []*EvalString
 	for {
 		// XXX should we require one path here?
-		ev, err2 := m.lexer.readEvalString(true)
-		if err2 != nil {
+		eval := &EvalString{}
+		if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 			*err = err2.Error()
 			return false
-		}
-		if len(ev.Parsed) == 0 {
+		} else if len(eval.Parsed) == 0 {
 			break
 		}
-		ins = append(ins, ev)
+		ins = append(ins, eval)
 	}
 
 	// Add all implicit deps, counting how many as we go.
 	implicit := 0
 	if m.lexer.PeekToken(PIPE) {
 		for {
-			ev, err2 := m.lexer.readEvalString(true)
-			if err2 != nil {
+			eval := &EvalString{}
+			if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 				*err = err2.Error()
 				return false
-			}
-			if len(ev.Parsed) == 0 {
+			} else if len(eval.Parsed) == 0 {
 				break
 			}
-			ins = append(ins, ev)
+			ins = append(ins, eval)
 			implicit++
 		}
 	}
@@ -340,32 +334,30 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	orderOnly := 0
 	if m.lexer.PeekToken(PIPE2) {
 		for {
-			ev, err2 := m.lexer.readEvalString(true)
-			if err2 != nil {
+			eval := &EvalString{}
+			if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 				*err = err2.Error()
 				return false
-			}
-			if len(ev.Parsed) == 0 {
+			} else if len(eval.Parsed) == 0 {
 				break
 			}
-			ins = append(ins, ev)
+			ins = append(ins, eval)
 			orderOnly++
 		}
 	}
 
 	// Add all validations, counting how many as we go.
-	var validations []EvalString
+	var validations []*EvalString
 	if m.lexer.PeekToken(PIPEAT) {
 		for {
-			ev, err2 := m.lexer.readEvalString(true)
-			if err2 != nil {
+			eval := &EvalString{}
+			if err2 := m.lexer.readEvalString(eval, true); err2 != nil {
 				*err = err2.Error()
 				return false
-			}
-			if len(ev.Parsed) == 0 {
+			} else if len(eval.Parsed) == 0 {
 				break
 			}
-			validations = append(validations, ev)
+			validations = append(validations, eval)
 		}
 	}
 
@@ -380,13 +372,13 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		env = NewBindingEnv(m.env)
 	}
 	for hasIndentToken {
-		key, val, err2 := m.parseLet()
+		eval := EvalString{}
+		key, err2 := m.parseLet(&eval)
 		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
-
-		env.Bindings[key] = val.Evaluate(m.env)
+		env.Bindings[key] = eval.Evaluate(m.env)
 		hasIndentToken = m.lexer.PeekToken(INDENT)
 	}
 
@@ -499,8 +491,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) parseFileInclude(newScope bool, err *string) bool {
-	eval, err2 := m.lexer.readEvalString(true)
-	if err2 != nil {
+	eval := EvalString{}
+	if err2 := m.lexer.readEvalString(&eval, true); err2 != nil {
 		*err = err2.Error()
 		return false
 	}

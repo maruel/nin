@@ -24,8 +24,8 @@ func newLexer(input string) lexer {
 
 func TestLexer_ReadVarValue(t *testing.T) {
 	lexer := newLexer("plain text $var $VaR ${x}\n")
-	eval, err := lexer.readEvalString(false)
-	if err != nil {
+	eval := EvalString{}
+	if err := lexer.readEvalString(&eval, false); err != nil {
 		t.Fatalf("readEvalString(false) = %v; %s", eval, err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
@@ -38,8 +38,8 @@ func TestLexer_ReadVarValue(t *testing.T) {
 
 func TestLexer_ReadEvalStringEscapes(t *testing.T) {
 	lexer := newLexer("$ $$ab c$: $\ncde\n")
-	eval, err := lexer.readEvalString(false)
-	if err != nil {
+	eval := EvalString{}
+	if err := lexer.readEvalString(&eval, false); err != nil {
 		t.Fatalf("readEvalString(false) = %v; %s", eval, err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
@@ -76,8 +76,8 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 	if got := lexer.readIdent(); got != "foo.dots" {
 		t.Fatal(got)
 	}
-	eval, err := lexer.readEvalString(false)
-	if err != nil {
+	eval := EvalString{}
+	if err := lexer.readEvalString(&eval, false); err != nil {
 		t.Fatal(err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
@@ -90,8 +90,8 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 
 func TestLexer_Error(t *testing.T) {
 	lexer := newLexer("foo$\nbad $")
-	_, err := lexer.readEvalString(false)
-	if err == nil || err.Error() != "input:2: bad $-escape (literal $ must be written as $$)\nbad $\n    ^ near here" {
+	eval := EvalString{}
+	if err := lexer.readEvalString(&eval, false); err == nil || err.Error() != "input:2: bad $-escape (literal $ must be written as $$)\nbad $\n    ^ near here" {
 		t.Fatal(err)
 	}
 }
