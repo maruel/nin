@@ -52,43 +52,29 @@ func TestLexer_ReadEvalStringEscapes(t *testing.T) {
 
 func TestLexer_ReadIdent(t *testing.T) {
 	lexer := newLexer("foo baR baz_123 foo-bar")
-	ident := ""
-	if !lexer.ReadIdent(&ident) {
-		t.Fatal()
+	if got := lexer.readIdent(); got != "foo" {
+		t.Fatal(got)
 	}
-	if ident != "foo" {
-		t.Fatal()
+	if got := lexer.readIdent(); got != "baR" {
+		t.Fatal(got)
 	}
-	if !lexer.ReadIdent(&ident) {
-		t.Fatal()
+	if got := lexer.readIdent(); got != "baz_123" {
+		t.Fatal(got)
 	}
-	if ident != "baR" {
-		t.Fatal()
+	if got := lexer.readIdent(); got != "foo-bar" {
+		t.Fatal(got)
 	}
-	if !lexer.ReadIdent(&ident) {
-		t.Fatal()
-	}
-	if ident != "baz_123" {
-		t.Fatal()
-	}
-	if !lexer.ReadIdent(&ident) {
-		t.Fatal()
-	}
-	if ident != "foo-bar" {
-		t.Fatal()
+	if got := lexer.readIdent(); got != "" {
+		t.Fatal(got)
 	}
 }
 
 func TestLexer_ReadIdentCurlies(t *testing.T) {
-	// Verify that ReadIdent includes dots in the name,
+	// Verify that readIdent includes dots in the name,
 	// but in an expansion $bar.dots stops at the dot.
 	lexer := newLexer("foo.dots $bar.dots ${bar.dots}\n")
-	ident := ""
-	if !lexer.ReadIdent(&ident) {
-		t.Fatal()
-	}
-	if ident != "foo.dots" {
-		t.Fatal(ident)
+	if got := lexer.readIdent(); got != "foo.dots" {
+		t.Fatal(got)
 	}
 	eval, err := lexer.readEvalString(false)
 	if err != nil {

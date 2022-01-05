@@ -72,9 +72,7 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 		case IDENT:
 			{
 				m.lexer.UnreadToken()
-				name := ""
-				var letValue EvalString
-				letValue, err2 := m.parseLet(&name)
+				name, letValue, err2 := m.parseLet()
 				if err2 != nil {
 					*err = err2.Error()
 					return false
@@ -113,8 +111,8 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 
 // Parse various statement types.
 func (m *ManifestParser) parsePool(err *string) bool {
-	name := ""
-	if !m.lexer.ReadIdent(&name) {
+	name := m.lexer.readIdent()
+	if name == "" {
 		*err = m.lexer.Error("expected pool name").Error()
 		return false
 	}
@@ -131,23 +129,18 @@ func (m *ManifestParser) parsePool(err *string) bool {
 	depth := -1
 
 	for m.lexer.PeekToken(INDENT) {
-		key := ""
-		value, err2 := m.parseLet(&key)
+		key, value, err2 := m.parseLet()
 		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
-
-		if key == "depth" {
-			depthString := value.Evaluate(m.env)
-			var err2 error
-			depth, err2 = strconv.Atoi(depthString)
-			if depth < 0 || err2 != nil {
-				*err = m.lexer.Error("invalid pool depth").Error()
-				return false
-			}
-		} else {
+		if key != "depth" {
 			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
+			return false
+		}
+		// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
+		if depth, err2 = strconv.Atoi(value.Evaluate(m.env)); depth < 0 || err2 != nil {
+			*err = m.lexer.Error("invalid pool depth").Error()
 			return false
 		}
 	}
@@ -162,8 +155,8 @@ func (m *ManifestParser) parsePool(err *string) bool {
 }
 
 func (m *ManifestParser) parseRule(err *string) bool {
-	name := ""
-	if !m.lexer.ReadIdent(&name) {
+	name := m.lexer.readIdent()
+	if name == "" {
 		*err = m.lexer.Error("expected rule name").Error()
 		return false
 	}
@@ -180,21 +173,19 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	rule := NewRule(name)
 
 	for m.lexer.PeekToken(INDENT) {
-		key := ""
-		value, err2 := m.parseLet(&key)
+		key, value, err2 := m.parseLet()
 		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
 
-		if IsReservedBinding(key) {
-			rule.Bindings[key] = &value
-		} else {
+		if !IsReservedBinding(key) {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.
 			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
 			return false
 		}
+		rule.Bindings[key] = &value
 	}
 
 	b1, ok1 := rule.Bindings["rspfile"]
@@ -213,15 +204,17 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	return true
 }
 
-func (m *ManifestParser) parseLet(key *string) (EvalString, error) {
-	if !m.lexer.ReadIdent(key) {
-		return EvalString{}, m.lexer.Error("expected variable name")
+func (m *ManifestParser) parseLet() (string, EvalString, error) {
+	key := m.lexer.readIdent()
+	if key == "" {
+		return "", EvalString{}, m.lexer.Error("expected variable name")
 	}
 	err2 := ""
 	if !m.expectToken(EQUALS, &err2) {
-		return EvalString{}, errors.New(err2)
+		return "", EvalString{}, errors.New(err2)
 	}
-	return m.lexer.readEvalString(false)
+	ev, err := m.lexer.readEvalString(false)
+	return key, ev, err
 }
 
 func (m *ManifestParser) parseDefault(err *string) bool {
@@ -300,8 +293,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		return false
 	}
 
-	ruleName := ""
-	if !m.lexer.ReadIdent(&ruleName) {
+	ruleName := m.lexer.readIdent()
+	if ruleName == "" {
 		*err = m.lexer.Error("expected build command name").Error()
 		return false
 	}
@@ -387,8 +380,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		env = NewBindingEnv(m.env)
 	}
 	for hasIndentToken {
-		key := ""
-		val, err2 := m.parseLet(&key)
+		key, val, err2 := m.parseLet()
 		if err2 != nil {
 			*err = err2.Error()
 			return false

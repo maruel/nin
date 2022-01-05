@@ -1822,7 +1822,8 @@ func (l *lexer) eatWhitespace() {
 
 // Read a simple identifier (a rule or variable name).
 // Returns false if a name can't be read.
-func (l *lexer) ReadIdent(out *string) bool {
+func (l *lexer) readIdent() string {
+	out := ""
 	p := l.ofs
 	start := 0
 	for {
@@ -1969,7 +1970,7 @@ func (l *lexer) ReadIdent(out *string) bool {
 			p++
 			{
 				l.lastToken = start
-				return false
+				return ""
 			}
 		yy95:
 			p++
@@ -2110,7 +2111,7 @@ func (l *lexer) ReadIdent(out *string) bool {
 			}
 		yy97:
 			{
-				*out = unsafeString(l.input[start:p])
+				out = unsafeString(l.input[start:p])
 				break
 			}
 		}
@@ -2119,7 +2120,7 @@ func (l *lexer) ReadIdent(out *string) bool {
 	l.lastToken = start
 	l.ofs = p
 	l.eatWhitespace()
-	return true
+	return out
 }
 
 // readEvalString reads a $-escaped string.

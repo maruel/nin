@@ -77,8 +77,7 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 }
 
 func (d *DyndepParser) parseDyndepVersion(err *string) bool {
-	name := ""
-	letValue, err2 := d.parseLet(&name)
+	name, letValue, err2 := d.parseLet()
 	if err2 != nil {
 		*err = err2.Error()
 		return false
@@ -96,15 +95,17 @@ func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 	return true
 }
 
-func (d *DyndepParser) parseLet(key *string) (EvalString, error) {
-	if !d.lexer.ReadIdent(key) {
-		return EvalString{}, d.lexer.Error("expected variable name")
+func (d *DyndepParser) parseLet() (string, EvalString, error) {
+	key := d.lexer.readIdent()
+	if key == "" {
+		return "", EvalString{}, d.lexer.Error("expected variable name")
 	}
 	err2 := ""
 	if !d.expectToken(EQUALS, &err2) {
-		return EvalString{}, errors.New(err2)
+		return "", EvalString{}, errors.New(err2)
 	}
-	return d.lexer.readEvalString(false)
+	eval, err := d.lexer.readEvalString(false)
+	return key, eval, err
 }
 
 func (d *DyndepParser) parseEdge(err *string) bool {
@@ -176,8 +177,7 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 		return false
 	}
 
-	ruleName := ""
-	if !d.lexer.ReadIdent(&ruleName) || ruleName != "dyndep" {
+	if ruleName := d.lexer.readIdent(); ruleName == "" || ruleName != "dyndep" {
 		*err = d.lexer.Error("expected build command name 'dyndep'").Error()
 		return false
 	}
@@ -222,9 +222,7 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	}
 
 	if d.lexer.PeekToken(INDENT) {
-		key := ""
-		var val EvalString
-		val, err2 := d.parseLet(&key)
+		key, val, err2 := d.parseLet()
 		if err2 != nil {
 			*err = err2.Error()
 			return false

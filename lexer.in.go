@@ -240,26 +240,27 @@ func (l *lexer) eatWhitespace() {
 
 // Read a simple identifier (a rule or variable name).
 // Returns false if a name can't be read.
-func (l *lexer) ReadIdent(out *string) bool {
+func (l *lexer) readIdent() string {
+	out := ""
 	p := l.ofs
 	start := 0
 	for {
 		start = p
 		/*!re2c
 		  varname {
-				*out = unsafeString(l.input[start:p])
+				out = unsafeString(l.input[start:p])
 		    break
 		  }
 		  [^] {
 		    l.lastToken = start
-		    return false
+		    return ""
 		  }
 		*/
 	}
 	l.lastToken = start
 	l.ofs = p
 	l.eatWhitespace()
-	return true
+	return out
 }
 
 // readEvalString reads a $-escaped string.
