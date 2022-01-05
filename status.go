@@ -210,7 +210,7 @@ func (s *StatusPrinter) BuildFinished() {
 // placeholders.
 // @param progressStatusFormat The format of the progress status.
 // @param status The status of the edge.
-func (s *StatusPrinter) FormatProgressStatus(progressStatusFormat string, timeMillis int32) string {
+func (s *StatusPrinter) formatProgressStatus(progressStatusFormat string, timeMillis int32) string {
 	out := ""
 	// TODO(maruel): Benchmark to optimize memory usage and performance
 	// especially when GC is disabled.
@@ -293,7 +293,7 @@ func (s *StatusPrinter) PrintStatus(edge *Edge, timeMillis int32) {
 		toPrint = edge.GetBinding("command")
 	}
 
-	toPrint = s.FormatProgressStatus(s.progressStatusFormat, timeMillis) + toPrint
+	toPrint = s.formatProgressStatus(s.progressStatusFormat, timeMillis) + toPrint
 	s.printer.Print(toPrint, !forceFullCommand)
 }
 

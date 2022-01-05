@@ -89,7 +89,7 @@ func NewNode(path string, slashBits uint64) *Node {
 }
 
 // Return false on error.
-func (n *Node) StatIfNecessary(di DiskInterface) error {
+func (n *Node) statIfNecessary(di DiskInterface) error {
 	if n.Exists != ExistenceStatusUnknown {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (n *Node) Stat(di DiskInterface) error {
 }
 
 // If the file doesn't exist, set the MTime from its dependencies
-func (n *Node) UpdatePhonyMtime(mtime TimeStamp) {
+func (n *Node) updatePhonyMtime(mtime TimeStamp) {
 	if n.Exists != ExistenceStatusExists {
 		if mtime > n.MTime {
 			n.MTime = mtime
@@ -587,7 +587,7 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return true
 		}
 		// This node has no in-edge; it is dirty if it is missing.
-		if err2 := node.StatIfNecessary(d.di); err2 != nil {
+		if err2 := node.statIfNecessary(d.di); err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -648,7 +648,7 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
-		if err2 := o.StatIfNecessary(d.di); err2 != nil {
+		if err2 := o.statIfNecessary(d.di); err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -812,7 +812,7 @@ func (d *DependencyScan) recomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		// Update the mtime with the newest input. Dependents can thus call mtime()
 		// on the fake node and get the latest mtime of the dependencies
 		if mostRecentInput != nil {
-			output.UpdatePhonyMtime(mostRecentInput.MTime)
+			output.updatePhonyMtime(mostRecentInput.MTime)
 		}
 
 		// Phony edges are clean, nothing to do
@@ -1046,7 +1046,7 @@ func (i *ImplicitDepLoader) CreatePhonyInEdge(node *Node) {
 		return
 	}
 
-	phonyEdge := i.state.AddEdge(PhonyRule)
+	phonyEdge := i.state.addEdge(PhonyRule)
 	phonyEdge.GeneratedByDepLoader = true
 	node.InEdge = phonyEdge
 	phonyEdge.Outputs = append(phonyEdge.Outputs, node)

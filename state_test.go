@@ -34,10 +34,10 @@ func TestState_Basic(t *testing.T) {
 	rule.Bindings["command"] = &command
 	state.Bindings.Rules[rule.Name] = rule
 
-	edge := state.AddEdge(rule)
-	state.AddIn(edge, "in1", 0)
-	state.AddIn(edge, "in2", 0)
-	state.AddOut(edge, "out", 0)
+	edge := state.addEdge(rule)
+	state.addIn(edge, "in1", 0)
+	state.addIn(edge, "in2", 0)
+	state.addOut(edge, "out", 0)
 
 	if got := edge.EvaluateCommand(false); got != "cat in1 in2 > out" {
 		t.Fatal(got)

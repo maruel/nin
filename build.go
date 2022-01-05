@@ -195,9 +195,9 @@ func (r *realCommandRunner) WaitForCommand(result *Result) bool {
 
 //
 
-// Plan stores the state of a build plan: what we intend to build,
+// plan stores the state of a build plan: what we intend to build,
 // which steps we're ready to execute.
-type Plan struct {
+type plan struct {
 	// Keep track of which edges we want to build in this plan.  If this map does
 	// not contain an entry for an edge, we do not want to build the entry or its
 	// dependents.  If it does contain an entry, the enumeration indicates what
@@ -216,12 +216,12 @@ type Plan struct {
 }
 
 // Returns true if there's more work to be done.
-func (p *Plan) moreToDo() bool {
+func (p *plan) moreToDo() bool {
 	return p.wantedEdges > 0 && p.commandEdges > 0
 }
 
-func NewPlan(builder *Builder) Plan {
-	return Plan{
+func newPlan(builder *Builder) plan {
+	return plan{
 		want:    map[*Edge]Want{},
 		ready:   NewEdgeSet(),
 		builder: builder,
@@ -229,7 +229,7 @@ func NewPlan(builder *Builder) Plan {
 }
 
 // Reset state.  Clears want and ready sets.
-func (p *Plan) Reset() {
+func (p *plan) Reset() {
 	p.commandEdges = 0
 	p.wantedEdges = 0
 	p.want = map[*Edge]Want{}
@@ -239,11 +239,11 @@ func (p *Plan) Reset() {
 // Add a target to our plan (including all its dependencies).
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
-func (p *Plan) AddTarget(target *Node, err *string) bool {
-	return p.AddSubTarget(target, nil, err, nil)
+func (p *plan) addTarget(target *Node, err *string) bool {
+	return p.addSubTarget(target, nil, err, nil)
 }
 
-func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk map[*Edge]struct{}) bool {
+func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk map[*Edge]struct{}) bool {
 	edge := node.InEdge
 	if edge == nil { // Leaf node.
 		if node.Dirty {
@@ -274,7 +274,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 	if node.Dirty && want == WantNothing {
 		want = WantToStart
 		p.want[edge] = want
-		p.EdgeWanted(edge)
+		p.edgeWanted(edge)
 		if len(dyndepWalk) == 0 && edge.allInputsReady() {
 			p.ScheduleWork(edge, want)
 		}
@@ -289,14 +289,14 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 	}
 
 	for _, i := range edge.Inputs {
-		if !p.AddSubTarget(i, node, err, dyndepWalk) && *err != "" {
+		if !p.addSubTarget(i, node, err, dyndepWalk) && *err != "" {
 			return false
 		}
 	}
 	return true
 }
 
-func (p *Plan) EdgeWanted(edge *Edge) {
+func (p *plan) edgeWanted(edge *Edge) {
 	p.wantedEdges++
 	if edge.Rule != PhonyRule {
 		p.commandEdges++
@@ -305,14 +305,14 @@ func (p *Plan) EdgeWanted(edge *Edge) {
 
 // Pop a ready edge off the queue of edges to build.
 // Returns NULL if there's no work to do.
-func (p *Plan) FindWork() *Edge {
+func (p *plan) findWork() *Edge {
 	return p.ready.Pop()
 }
 
 // Submits a ready edge as a candidate for execution.
 // The edge may be delayed from running, for example if it's a member of a
 // currently-full pool.
-func (p *Plan) ScheduleWork(edge *Edge, want Want) {
+func (p *plan) ScheduleWork(edge *Edge, want Want) {
 	if want == WantToFinish {
 		// This edge has already been scheduled.  We can get here again if an edge
 		// and one of its dependencies share an order-only input, or if a node
@@ -326,11 +326,11 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) {
 	p.want[edge] = WantToFinish
 
 	pool := edge.Pool
-	if pool.ShouldDelayEdge() {
-		pool.DelayEdge(edge)
-		pool.RetrieveReadyEdges(p.ready)
+	if pool.shouldDelayEdge() {
+		pool.delayEdge(edge)
+		pool.retrieveReadyEdges(p.ready)
 	} else {
-		pool.EdgeScheduled(edge)
+		pool.edgeScheduled(edge)
 		p.ready.Add(edge)
 	}
 }
@@ -339,7 +339,7 @@ func (p *Plan) ScheduleWork(edge *Edge, want Want) {
 // If any of the edge's outputs are dyndep bindings of their dependents,
 // this loads dynamic dependencies from the nodes' paths.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
-func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
+func (p *plan) edgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 	want, ok := p.want[edge]
 	if !ok {
 		panic("M-A")
@@ -348,9 +348,9 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 
 	// See if this job frees up any delayed jobs.
 	if directlyWanted {
-		edge.Pool.EdgeFinished(edge)
+		edge.Pool.edgeFinished(edge)
 	}
-	edge.Pool.RetrieveReadyEdges(p.ready)
+	edge.Pool.retrieveReadyEdges(p.ready)
 
 	// The rest of this function only applies to successful commands.
 	if result != EdgeSucceeded {
@@ -365,7 +365,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 
 	// Check off any nodes we were waiting for with this edge.
 	for _, o := range edge.Outputs {
-		if !p.NodeFinished(o, err) {
+		if !p.nodeFinished(o, err) {
 			return false
 		}
 	}
@@ -376,7 +376,7 @@ func (p *Plan) EdgeFinished(edge *Edge, result EdgeResult, err *string) bool {
 // If the node is a dyndep binding on any of its dependents, this
 // loads dynamic dependencies from the node's path.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
-func (p *Plan) NodeFinished(node *Node, err *string) bool {
+func (p *plan) nodeFinished(node *Node, err *string) bool {
 	// If this node provides dyndep info, load it now.
 	if node.DyndepPending {
 		if p.builder == nil {
@@ -395,21 +395,21 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 		}
 
 		// See if the edge is now ready.
-		if !p.EdgeMaybeReady(oe, want, err) {
+		if !p.edgeMaybeReady(oe, want, err) {
 			return false
 		}
 	}
 	return true
 }
 
-func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
+func (p *plan) edgeMaybeReady(edge *Edge, want Want, err *string) bool {
 	if edge.allInputsReady() {
 		if want != WantNothing {
 			p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of
 			// its dependents.
-			if !p.EdgeFinished(edge, EdgeSucceeded, err) {
+			if !p.edgeFinished(edge, EdgeSucceeded, err) {
 				return false
 			}
 		}
@@ -419,7 +419,7 @@ func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
 
 // Clean the given node during the build.
 // Return false on error.
-func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
+func (p *plan) cleanNode(scan *DependencyScan, node *Node, err *string) bool {
 	node.Dirty = false
 
 	for _, oe := range node.OutEdges {
@@ -468,7 +468,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			}
 			if !outputsDirty {
 				for _, o := range oe.Outputs {
-					if !p.CleanNode(scan, o, err) {
+					if !p.cleanNode(scan, o, err) {
 						return false
 					}
 				}
@@ -486,7 +486,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 
 // Update the build plan to account for modifications made to the graph
 // by information loaded from a dyndep file.
-func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, err *string) bool {
+func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, err *string) bool {
 	// Recompute the dirty state of all our direct and indirect dependents now
 	// that our dyndep information has been loaded.
 	if !p.RefreshDyndepDependents(scan, node, err) {
@@ -520,7 +520,7 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	dyndepWalk := map[*Edge]struct{}{}
 	for _, oe := range dyndepRoots {
 		for _, i := range ddf[oe].implicitInputs {
-			if !p.AddSubTarget(i, oe.Outputs[0], err, dyndepWalk) && *err != "" {
+			if !p.addSubTarget(i, oe.Outputs[0], err, dyndepWalk) && *err != "" {
 				return false
 			}
 		}
@@ -541,18 +541,18 @@ func (p *Plan) DyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		if !ok {
 			continue
 		}
-		if !p.EdgeMaybeReady(wi, want, err) {
+		if !p.edgeMaybeReady(wi, want, err) {
 			return false
 		}
 	}
 	return true
 }
 
-func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *string) bool {
+func (p *plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *string) bool {
 	// Collect the transitive closure of dependents and mark their edges
 	// as not yet visited by RecomputeDirty.
 	dependents := map[*Node]struct{}{}
-	p.UnmarkDependents(node, dependents)
+	p.unmarkDependents(node, dependents)
 
 	// Update the dirty state of all dependents and check if their edges
 	// have become wanted.
@@ -567,7 +567,7 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		// targets.
 		for _, v := range validationNodes {
 			if inEdge := v.InEdge; inEdge != nil {
-				if !inEdge.OutputsReady && !p.AddTarget(v, err) {
+				if !inEdge.OutputsReady && !p.addTarget(v, err) {
 					return false
 				}
 			}
@@ -589,13 +589,13 @@ func (p *Plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 		}
 		if wantE == WantNothing {
 			p.want[edge] = WantToStart
-			p.EdgeWanted(edge)
+			p.edgeWanted(edge)
 		}
 	}
 	return true
 }
 
-func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
+func (p *plan) unmarkDependents(node *Node, dependents map[*Node]struct{}) {
 	for _, edge := range node.OutEdges {
 		_, ok := p.want[edge]
 		if !ok {
@@ -607,7 +607,7 @@ func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
 			for _, o := range edge.Outputs {
 				_, ok := dependents[o]
 				if ok {
-					p.UnmarkDependents(o, dependents)
+					p.unmarkDependents(o, dependents)
 				} else {
 					dependents[o] = struct{}{}
 				}
@@ -617,7 +617,7 @@ func (p *Plan) UnmarkDependents(node *Node, dependents map[*Node]struct{}) {
 }
 
 // Dumps the current state of the plan.
-func (p *Plan) Dump() {
+func (p *plan) Dump() {
 	fmt.Printf("pending: %d\n", len(p.want))
 	for e, w := range p.want {
 		if w != WantNothing {
@@ -640,7 +640,7 @@ func (p *Plan) Dump() {
 type Builder struct {
 	state         *State
 	config        *BuildConfig
-	plan          Plan
+	plan          plan
 	commandRunner commandRunner
 	status        Status
 
@@ -663,7 +663,7 @@ func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *
 		startTimeMillis: startTimeMillis,
 		di:              di,
 	}
-	b.plan = NewPlan(b)
+	b.plan = newPlan(b)
 	b.scan = NewDependencyScan(state, buildLog, depsLog, di)
 	return b
 }
@@ -727,7 +727,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 
 	inEdge := target.InEdge
 	if inEdge == nil || !inEdge.OutputsReady {
-		if !b.plan.AddTarget(target, err) {
+		if !b.plan.addTarget(target, err) {
 			return false
 		}
 	}
@@ -736,7 +736,7 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	// targets.
 	for _, n := range validationNodes {
 		if validationInEdge := n.InEdge; validationInEdge != nil {
-			if !validationInEdge.OutputsReady && !b.plan.AddTarget(n, err) {
+			if !validationInEdge.OutputsReady && !b.plan.addTarget(n, err) {
 				return false
 			}
 		}
@@ -781,7 +781,7 @@ func (b *Builder) Build(err *string) bool {
 	for b.plan.moreToDo() {
 		// See if we can start any more commands.
 		if failuresAllowed != 0 && b.commandRunner.CanRunMore() {
-			if edge := b.plan.FindWork(); edge != nil {
+			if edge := b.plan.findWork(); edge != nil {
 				if edge.GetBinding("generator") != "" {
 					_ = b.scan.buildLog.Close()
 				}
@@ -793,7 +793,7 @@ func (b *Builder) Build(err *string) bool {
 				}
 
 				if edge.Rule == PhonyRule {
-					if !b.plan.EdgeFinished(edge, EdgeSucceeded, err) {
+					if !b.plan.edgeFinished(edge, EdgeSucceeded, err) {
 						b.cleanup()
 						b.status.BuildFinished()
 						return false
@@ -926,7 +926,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 
 	// The rest of this function only applies to successful commands.
 	if result.ExitCode != ExitSuccess {
-		return b.plan.EdgeFinished(edge, EdgeFailed, err)
+		return b.plan.edgeFinished(edge, EdgeFailed, err)
 	}
 	// Restat the edge outputs
 	outputMtime := TimeStamp(0)
@@ -947,7 +947,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).
-				if !b.plan.CleanNode(&b.scan, o, err) {
+				if !b.plan.cleanNode(&b.scan, o, err) {
 					return false
 				}
 				nodeCleaned = true
@@ -989,7 +989,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 		}
 	}
 
-	if !b.plan.EdgeFinished(edge, EdgeSucceeded, err) {
+	if !b.plan.edgeFinished(edge, EdgeSucceeded, err) {
 		return false
 	}
 
@@ -1094,7 +1094,7 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 	}
 
 	// Update the build plan to account for dyndep modifications to the graph.
-	if !b.plan.DyndepsLoaded(&b.scan, node, ddf, err) {
+	if !b.plan.dyndepsLoaded(&b.scan, node, ddf, err) {
 		return false
 	}
 

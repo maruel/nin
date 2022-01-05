@@ -32,13 +32,13 @@ import (
 // to create Nodes and Edges.
 type PlanTest struct {
 	StateTestWithBuiltinRules
-	plan Plan
+	plan plan
 }
 
 func NewPlanTest(t *testing.T) *PlanTest {
 	return &PlanTest{
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
-		plan:                      NewPlan(nil),
+		plan:                      newPlan(nil),
 	}
 }
 
@@ -51,13 +51,13 @@ func (p *PlanTest) FindWorkSorted(count int) []*Edge {
 		if !p.plan.moreToDo() {
 			p.t.Fatal("expected true")
 		}
-		edge := p.plan.FindWork()
+		edge := p.plan.findWork()
 		if edge == nil {
 			p.t.Fatal("expected true")
 		}
 		out = append(out, edge)
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		p.t.Fatal("expected false")
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -72,7 +72,7 @@ func TestPlanTest_Basic(t *testing.T) {
 	p.GetNode("mid").Dirty = true
 	p.GetNode("out").Dirty = true
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out"), &err) {
+	if !p.plan.addTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -82,7 +82,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		t.Fatalf("plan is inconsistent: %#v", p.plan)
 	}
@@ -93,16 +93,16 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if e := p.plan.FindWork(); e != nil {
+	if e := p.plan.findWork(); e != nil {
 		t.Fatalf("%#v", e)
 	}
 
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
@@ -113,7 +113,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -121,7 +121,7 @@ func TestPlanTest_Basic(t *testing.T) {
 	if p.plan.moreToDo() {
 		t.Fatal("expected false")
 	}
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected equal")
 	}
@@ -136,7 +136,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	p.GetNode("out").Dirty = true
 
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out"), &err) {
+	if !p.plan.addTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -146,25 +146,25 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid1 mid2
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected false")
 	} // done
@@ -180,7 +180,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	p.GetNode("b2").Dirty = true
 	p.GetNode("out").Dirty = true
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out"), &err) {
+	if !p.plan.addTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -190,43 +190,43 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a2
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat b1 b2
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected false")
 	} // done
@@ -242,7 +242,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	p.GetNode("out").Dirty = true
 
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out"), &err) {
+	if !p.plan.addTarget(p.GetNode("out"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -252,43 +252,43 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1 a2
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected false")
 	} // done
@@ -299,13 +299,13 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 	p.GetNode("out1").Dirty = true
 	p.GetNode("out2").Dirty = true
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out1"), &err) {
+	if !p.plan.addTarget(p.GetNode("out1"), &err) {
 		p.t.Fatal("expected true")
 	}
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
-	if !p.plan.AddTarget(p.GetNode("out2"), &err) {
+	if !p.plan.addTarget(p.GetNode("out2"), &err) {
 		p.t.Fatal("expected true")
 	}
 	if "" != err {
@@ -315,7 +315,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		p.t.Fatal("expected true")
 	}
@@ -327,16 +327,16 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 	}
 
 	// This will be false since poolcat is serialized
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		p.t.Fatal("expected true")
 	}
@@ -347,11 +347,11 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected equal")
 	}
 
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
@@ -359,7 +359,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 	if p.plan.moreToDo() {
 		p.t.Fatal("expected false")
 	}
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		p.t.Fatal("expected equal")
 	}
@@ -386,7 +386,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	p.GetNode("allTheThings").Dirty = true
 
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("allTheThings"), &err) {
+	if !p.plan.addTarget(p.GetNode("allTheThings"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -422,14 +422,14 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	}
 
 	// finish out1
-	p.plan.EdgeFinished(edges[0], EdgeSucceeded, &err)
+	p.plan.edgeFinished(edges[0], EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 	edges = edges[1:]
 
 	// out3 should be available
-	out3 := p.plan.FindWork()
+	out3 := p.plan.findWork()
 	if out3 == nil {
 		t.Fatal("expected true")
 	}
@@ -440,27 +440,27 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 
-	p.plan.EdgeFinished(out3, EdgeSucceeded, &err)
+	p.plan.edgeFinished(out3, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 
 	for _, it := range edges {
-		p.plan.EdgeFinished(it, EdgeSucceeded, &err)
+		p.plan.edgeFinished(it, EdgeSucceeded, &err)
 		if "" != err {
 			t.Fatal("expected equal")
 		}
 	}
 
-	last := p.plan.FindWork()
+	last := p.plan.findWork()
 	if last == nil {
 		t.Fatal("expected true")
 	}
@@ -468,7 +468,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan.EdgeFinished(last, EdgeSucceeded, &err)
+	p.plan.edgeFinished(last, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -476,7 +476,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	if p.plan.moreToDo() {
 		t.Fatal("expected false")
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 }
@@ -491,7 +491,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	p.GetNode("libfoo.a").Dirty = true
 	p.GetNode("all").Dirty = true
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("all"), &err) {
+	if !p.plan.addTarget(p.GetNode("all"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -507,16 +507,16 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 	if "foo.cpp" != edge.Inputs[0].Path {
@@ -528,7 +528,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -537,16 +537,16 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 	if "bar.cpp" != edge.Inputs[0].Path {
@@ -558,16 +558,16 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 	if "foo.cpp.obj" != edge.Inputs[0].Path {
@@ -579,16 +579,16 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "libfoo.a" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 	if "libfoo.a" != edge.Inputs[0].Path {
@@ -597,12 +597,12 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "all" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.EdgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected false")
 	}
@@ -617,13 +617,13 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	p.GetNode("out1").Dirty = true
 	p.GetNode("out2").Dirty = true
 	err := ""
-	if !p.plan.AddTarget(p.GetNode("out1"), &err) {
+	if !p.plan.addTarget(p.GetNode("out1"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !p.plan.AddTarget(p.GetNode("out2"), &err) {
+	if !p.plan.addTarget(p.GetNode("out2"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -633,7 +633,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected true")
 	}
 
-	edge := p.plan.FindWork()
+	edge := p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
@@ -645,16 +645,16 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	}
 
 	// This will be false since poolcat is serialized
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 
-	p.plan.EdgeFinished(edge, EdgeFailed, &err)
+	p.plan.edgeFinished(edge, EdgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
 
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge == nil {
 		t.Fatal("expected true")
 	}
@@ -665,11 +665,11 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if p.plan.FindWork() != nil {
+	if p.plan.findWork() != nil {
 		t.Fatal("expected false")
 	}
 
-	p.plan.EdgeFinished(edge, EdgeFailed, &err)
+	p.plan.edgeFinished(edge, EdgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -677,7 +677,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	if !p.plan.moreToDo() {
 		t.Fatal("expected true")
 	} // Jobs have failed
-	edge = p.plan.FindWork()
+	edge = p.plan.findWork()
 	if edge != nil {
 		t.Fatal("expected equal")
 	}
@@ -2917,14 +2917,14 @@ func TestBuildTest_StatusFormatElapsed(t *testing.T) {
 	b := NewBuildTest(t)
 	b.status.BuildStarted()
 	// Before any task is done, the elapsed time must be zero.
-	if "[%/e0.000]" != b.status.FormatProgressStatus("[%%/e%e]", 0) {
+	if "[%/e0.000]" != b.status.formatProgressStatus("[%%/e%e]", 0) {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestBuildTest_StatusFormatReplacePlaceholder(t *testing.T) {
 	b := NewBuildTest(t)
-	if "[%/s0/t0/r0/u0/f0]" != b.status.FormatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) {
+	if "[%/s0/t0/r0/u0/f0]" != b.status.formatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) {
 		t.Fatal("expected equal")
 	}
 }

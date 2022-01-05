@@ -29,7 +29,7 @@ type ManifestParserOptions struct {
 
 // Parses .ninja files.
 type ManifestParser struct {
-	Parser
+	parser
 	env     *BindingEnv
 	options ManifestParserOptions
 }
@@ -39,7 +39,7 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 		options: options,
 		env:     state.Bindings,
 	}
-	m.Parser = NewParser(state, fileReader, m)
+	m.parser = newParser(state, fileReader, m)
 	return m
 }
 
@@ -222,7 +222,7 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 			return m.lexer.Error("empty path", err)
 		}
 		defaultErr := ""
-		if !m.state.AddDefault(CanonicalizePath(path), &defaultErr) {
+		if !m.state.addDefault(CanonicalizePath(path), &defaultErr) {
 			return m.lexer.Error(defaultErr, err)
 		}
 
@@ -369,7 +369,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 		hasIndentToken = m.lexer.PeekToken(INDENT)
 	}
 
-	edge := m.state.AddEdge(rule)
+	edge := m.state.addEdge(rule)
 	edge.Env = env
 
 	poolName := edge.GetBinding("pool")
@@ -388,7 +388,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		if !m.state.AddOut(edge, path, slashBits) {
+		if !m.state.addOut(edge, path, slashBits) {
 			if m.options.ErrOnDupeEdge {
 				m.lexer.Error("multiple rules generate "+path, err)
 				return false
@@ -416,7 +416,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		m.state.AddIn(edge, path, slashBits)
+		m.state.addIn(edge, path, slashBits)
 	}
 	edge.ImplicitDeps = int32(implicit)
 	edge.OrderOnlyDeps = int32(orderOnly)
@@ -428,7 +428,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 			return m.lexer.Error("empty path", err)
 		}
 		path, slashBits := CanonicalizePathBits(path)
-		m.state.AddValidation(edge, path, slashBits)
+		m.state.addValidation(edge, path, slashBits)
 	}
 
 	if !m.options.ErrOnPhonyCycle && edge.maybePhonycycleDiagnostic() {

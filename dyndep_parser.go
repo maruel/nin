@@ -16,7 +16,7 @@ package nin
 
 // Parses dyndep files.
 type DyndepParser struct {
-	Parser
+	parser
 	dyndepFile DyndepFile
 	env        *BindingEnv
 }
@@ -25,7 +25,7 @@ func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile)
 	d := &DyndepParser{
 		dyndepFile: dyndepFile,
 	}
-	d.Parser = NewParser(state, fileReader, d)
+	d.parser = newParser(state, fileReader, d)
 	return d
 }
 

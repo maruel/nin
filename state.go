@@ -56,13 +56,13 @@ func (p *Pool) isValid() bool {
 }
 
 // true if the Pool might delay this edge
-func (p *Pool) ShouldDelayEdge() bool {
+func (p *Pool) shouldDelayEdge() bool {
 	return p.depth != 0
 }
 
 // informs this Pool that the given edge is committed to be run.
 // Pool will count this edge as using resources from this pool.
-func (p *Pool) EdgeScheduled(edge *Edge) {
+func (p *Pool) edgeScheduled(edge *Edge) {
 	if p.depth != 0 {
 		p.currentUse += edge.weight()
 	}
@@ -70,14 +70,14 @@ func (p *Pool) EdgeScheduled(edge *Edge) {
 
 // informs this Pool that the given edge is no longer runnable, and should
 // relinquish its resources back to the pool
-func (p *Pool) EdgeFinished(edge *Edge) {
+func (p *Pool) edgeFinished(edge *Edge) {
 	if p.depth != 0 {
 		p.currentUse -= edge.weight()
 	}
 }
 
 // adds the given edge to this Pool to be delayed.
-func (p *Pool) DelayEdge(edge *Edge) {
+func (p *Pool) delayEdge(edge *Edge) {
 	if p.depth == 0 {
 		panic("M-A")
 	}
@@ -85,7 +85,7 @@ func (p *Pool) DelayEdge(edge *Edge) {
 }
 
 // Pool will add zero or more edges to the readyQueue
-func (p *Pool) RetrieveReadyEdges(readyQueue *EdgeSet) {
+func (p *Pool) retrieveReadyEdges(readyQueue *EdgeSet) {
 	// TODO(maruel): Redo without using the internals.
 	p.delayed.recreate()
 	for len(p.delayed.sorted) != 0 {
@@ -98,7 +98,7 @@ func (p *Pool) RetrieveReadyEdges(readyQueue *EdgeSet) {
 			panic("M-A")
 		}
 		readyQueue.Add(edge)
-		p.EdgeScheduled(edge)
+		p.edgeScheduled(edge)
 	}
 }
 
@@ -153,8 +153,8 @@ func NewState() State {
 	return s
 }
 
-// AddEdge creates a new edge with this rule on the default pool.
-func (s *State) AddEdge(rule *Rule) *Edge {
+// addEdge creates a new edge with this rule on the default pool.
+func (s *State) addEdge(rule *Rule) *Edge {
 	edge := NewEdge()
 	edge.Rule = rule
 	edge.Pool = DefaultPool
@@ -164,6 +164,7 @@ func (s *State) AddEdge(rule *Rule) *Edge {
 	return edge
 }
 
+// GetNode creates a Node or returns the existing one.
 func (s *State) GetNode(path string, slashBits uint64) *Node {
 	node := s.Paths[path]
 	if node != nil {
@@ -174,6 +175,7 @@ func (s *State) GetNode(path string, slashBits uint64) *Node {
 	return node
 }
 
+// SpellcheckNode returns the node with the closest name.
 func (s *State) SpellcheckNode(path string) *Node {
 	const maxValidEditDistance = 3
 	minDistance := maxValidEditDistance + 1
@@ -188,13 +190,13 @@ func (s *State) SpellcheckNode(path string) *Node {
 	return result
 }
 
-func (s *State) AddIn(edge *Edge, path string, slashBits uint64) {
+func (s *State) addIn(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
 	edge.Inputs = append(edge.Inputs, node)
 	node.OutEdges = append(node.OutEdges, edge)
 }
 
-func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
+func (s *State) addOut(edge *Edge, path string, slashBits uint64) bool {
 	node := s.GetNode(path, slashBits)
 	if node.InEdge != nil {
 		return false
@@ -204,13 +206,13 @@ func (s *State) AddOut(edge *Edge, path string, slashBits uint64) bool {
 	return true
 }
 
-func (s *State) AddValidation(edge *Edge, path string, slashBits uint64) {
+func (s *State) addValidation(edge *Edge, path string, slashBits uint64) {
 	node := s.GetNode(path, slashBits)
 	edge.Validations = append(edge.Validations, node)
 	node.ValidationOutEdges = append(node.ValidationOutEdges, edge)
 }
 
-func (s *State) AddDefault(path string, err *string) bool {
+func (s *State) addDefault(path string, err *string) bool {
 	node := s.Paths[path]
 	if node == nil {
 		*err = "unknown target '" + path + "'"

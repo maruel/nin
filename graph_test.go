@@ -401,8 +401,8 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	plan := NewPlan(nil)
-	if !plan.AddTarget(g.GetNode("n2"), &err) {
+	plan := newPlan(nil)
+	if !plan.addTarget(g.GetNode("n2"), &err) {
 		t.Fatal("expected true")
 	}
 	if "" != err {

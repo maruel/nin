@@ -77,16 +77,16 @@ func (m *MissingDependencyScannerTest) CreateInitialState() {
 	depsType.AddText("gcc")
 	m.compileRule.Bindings["deps"] = depsType
 	m.generatorRule.Bindings["deps"] = depsType
-	headerEdge := m.state.AddEdge(m.generatorRule)
-	m.state.AddOut(headerEdge, "generated_header", 0)
-	compileEdge := m.state.AddEdge(m.compileRule)
-	m.state.AddOut(compileEdge, "compiled_object", 0)
+	headerEdge := m.state.addEdge(m.generatorRule)
+	m.state.addOut(headerEdge, "generated_header", 0)
+	compileEdge := m.state.addEdge(m.compileRule)
+	m.state.addOut(compileEdge, "compiled_object", 0)
 }
 
 func (m *MissingDependencyScannerTest) CreateGraphDependencyBetween(from string, to string) {
 	fromNode := m.state.Paths[from]
 	fromEdge := fromNode.InEdge
-	m.state.AddIn(fromEdge, to, 0)
+	m.state.addIn(fromEdge, to, 0)
 }
 
 func (m *MissingDependencyScannerTest) AssertMissingDependencyBetween(flaky string, generated string, rule *Rule) {
@@ -174,8 +174,8 @@ func TestMissingDependencyScannerTest_MissingDepFixedIndirect(t *testing.T) {
 	m := NewMissingDependencyScannerTest(t)
 	m.CreateInitialState()
 	// Adding an indirect dependency also fixes the issue
-	intermediateEdge := m.state.AddEdge(m.generatorRule)
-	m.state.AddOut(intermediateEdge, "intermediate", 0)
+	intermediateEdge := m.state.addEdge(m.generatorRule)
+	m.state.addOut(intermediateEdge, "intermediate", 0)
 	m.CreateGraphDependencyBetween("compiled_object", "intermediate")
 	m.CreateGraphDependencyBetween("intermediate", "generated_header")
 	m.RecordDepsLogDep("compiled_object", "generated_header")

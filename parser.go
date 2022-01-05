@@ -19,15 +19,15 @@ type Parse interface {
 }
 
 // Base class for parsers.
-type Parser struct {
+type parser struct {
 	Parse
 	state      *State
 	fileReader FileReader
 	lexer      Lexer
 }
 
-func NewParser(state *State, fileReader FileReader, p Parse) Parser {
-	return Parser{
+func newParser(state *State, fileReader FileReader, p Parse) parser {
+	return parser{
 		Parse:      p,
 		state:      state,
 		fileReader: fileReader,
@@ -35,7 +35,7 @@ func NewParser(state *State, fileReader FileReader, p Parse) Parser {
 }
 
 // Load and parse a file.
-func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
+func (p *parser) Load(filename string, err *string, parent *Lexer) bool {
 	defer metricRecord(".ninja parse")()
 	contents, err2 := p.fileReader.ReadFile(filename)
 	if err2 != nil {
@@ -50,7 +50,7 @@ func (p *Parser) Load(filename string, err *string, parent *Lexer) bool {
 
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
-func (p *Parser) ExpectToken(expected Token, err *string) bool {
+func (p *parser) ExpectToken(expected Token, err *string) bool {
 	if token := p.lexer.ReadToken(); token != expected {
 		msg := "expected " + TokenName(expected) + ", got " + TokenName(token) + tokenErrorHint(expected)
 		return p.lexer.Error(msg, err)
