@@ -97,7 +97,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	if len(depsType) != 0 {
 		deps := m.depsLog.GetDeps(node)
 		if deps != nil {
-			m.ProcessNodeDeps(node, deps.Nodes)
+			m.processNodeDeps(node, deps.Nodes)
 		}
 	} else {
 		var depfileDeps []*Node
@@ -105,12 +105,12 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 		err := ""
 		depLoader.LoadDeps(edge, &err)
 		if len(depfileDeps) != 0 {
-			m.ProcessNodeDeps(node, depfileDeps)
+			m.processNodeDeps(node, depfileDeps)
 		}
 	}
 }
 
-func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, depNodes []*Node) {
+func (m *MissingDependencyScanner) processNodeDeps(node *Node, depNodes []*Node) {
 	edge := node.InEdge
 	deplogEdges := map[*Edge]struct{}{}
 	for i := 0; i < len(depNodes); i++ {
@@ -131,7 +131,7 @@ func (m *MissingDependencyScanner) ProcessNodeDeps(node *Node, depNodes []*Node)
 	}
 	var missingDeps []*Edge
 	for de := range deplogEdges {
-		if !m.PathExistsBetween(de, edge) {
+		if !m.pathExistsBetween(de, edge) {
 			missingDeps = append(missingDeps, de)
 		}
 	}
@@ -174,7 +174,7 @@ func (m *MissingDependencyScanner) PrintStats() {
 	}
 }
 
-func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool {
+func (m *MissingDependencyScanner) pathExistsBetween(from *Edge, to *Edge) bool {
 	it, ok := m.adjacencyMap[from]
 	if ok {
 		innerIt, ok := it[to]
@@ -188,7 +188,7 @@ func (m *MissingDependencyScanner) PathExistsBetween(from *Edge, to *Edge) bool 
 	found := false
 	for i := 0; i < len(to.Inputs); i++ {
 		e := to.Inputs[i].InEdge
-		if e != nil && (e == from || m.PathExistsBetween(from, e)) {
+		if e != nil && (e == from || m.pathExistsBetween(from, e)) {
 			found = true
 			break
 		}

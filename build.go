@@ -20,11 +20,11 @@ import (
 	"time"
 )
 
-type EdgeResult bool
+type edgeResult bool
 
 const (
-	EdgeFailed    EdgeResult = false
-	EdgeSucceeded EdgeResult = true
+	EdgeFailed    edgeResult = false
+	EdgeSucceeded edgeResult = true
 )
 
 // Enumerate possible steps we want for an edge.
@@ -339,7 +339,7 @@ func (p *plan) ScheduleWork(edge *Edge, want Want) {
 // If any of the edge's outputs are dyndep bindings of their dependents,
 // this loads dynamic dependencies from the nodes' paths.
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
-func (p *plan) edgeFinished(edge *Edge, result EdgeResult, err *string) bool {
+func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 	want, ok := p.want[edge]
 	if !ok {
 		panic("M-A")
