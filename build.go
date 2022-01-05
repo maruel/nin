@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -907,12 +908,13 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 	depsType := edge.GetBinding("deps")
 	depsPrefix := edge.GetBinding("msvc_deps_prefix")
 	if depsType != "" {
-		extractErr := ""
-		if !b.extractDeps(result, depsType, depsPrefix, &depsNodes, &extractErr) && result.ExitCode == ExitSuccess {
+		var err2 error
+		depsNodes, err2 = b.extractDeps(result, depsType, depsPrefix)
+		if err2 != nil && result.ExitCode == ExitSuccess {
 			if result.Output != "" {
 				result.Output += "\n"
 			}
-			result.Output += extractErr
+			result.Output += err2.Error()
 			result.ExitCode = ExitFailure
 		}
 	}
@@ -1028,59 +1030,61 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 	return true
 }
 
-func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string, depsNodes *[]*Node, err *string) bool {
-	if depsType == "msvc" {
+func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string) ([]*Node, error) {
+	switch depsType {
+	case "msvc":
 		parser := NewCLParser()
 		output := ""
-		if !parser.Parse(result.Output, depsPrefix, &output, err) {
-			return false
+		err := ""
+		if !parser.Parse(result.Output, depsPrefix, &output, &err) {
+			return nil, errors.New(err)
 		}
 		result.Output = output
+		depsNodes := make([]*Node, 0, len(parser.includes))
 		for i := range parser.includes {
 			// ~0 is assuming that with MSVC-parsed headers, it's ok to always make
 			// all backslashes (as some of the slashes will certainly be backslashes
 			// anyway). This could be fixed if necessary with some additional
 			// complexity in IncludesNormalize.relativize.
-			*depsNodes = append(*depsNodes, b.state.GetNode(i, 0xFFFFFFFF))
+			depsNodes = append(depsNodes, b.state.GetNode(i, 0xFFFFFFFF))
 		}
-	} else if depsType == "gcc" {
+		return depsNodes, nil
+	case "gcc":
 		depfile := result.Edge.GetUnescapedDepfile()
 		if len(depfile) == 0 {
-			*err = "edge with deps=gcc but no depfile makes no sense"
-			return false
+			return nil, errors.New("edge with deps=gcc but no depfile makes no sense")
 		}
 
 		// Read depfile content. Treat a missing depfile as empty.
-		content, err2 := b.di.ReadFile(depfile)
-		if err2 != nil && !os.IsNotExist(err2) {
-			*err = err2.Error()
-			return false
+		content, err := b.di.ReadFile(depfile)
+		if err != nil && !os.IsNotExist(err) {
+			return nil, err
 		}
 		if len(content) == 0 {
-			return true
+			return nil, nil
 		}
 
 		deps := DepfileParser{}
-		if !deps.Parse(content, err) {
-			return false
+		err2 := ""
+		if !deps.Parse(content, &err2) {
+			return nil, errors.New(err2)
 		}
 
 		// XXX check depfile matches expected output.
-		//depsNodes.reserve(deps.ins.size())
-		for _, i := range deps.ins {
-			*depsNodes = append(*depsNodes, b.state.GetNode(CanonicalizePathBits(i)))
+		depsNodes := make([]*Node, len(deps.ins))
+		for i, s := range deps.ins {
+			depsNodes[i] = b.state.GetNode(CanonicalizePathBits(s))
 		}
 
 		if !Debug.KeepDepfile {
-			if err2 := b.di.RemoveFile(depfile); err2 != nil {
-				*err = err2.Error()
-				return false
+			if err := b.di.RemoveFile(depfile); err != nil {
+				return depsNodes, err
 			}
 		}
-	} else {
-		fatalf("unknown deps type '%s'", depsType)
+		return depsNodes, nil
+	default:
+		return nil, fmt.Errorf("unknown deps type '%s'", depsType)
 	}
-	return true
 }
 
 // Load the dyndep information provided by the given node.
