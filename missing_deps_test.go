@@ -73,8 +73,7 @@ func (m *MissingDependencyScannerTest) ProcessAllNodes() {
 }
 
 func (m *MissingDependencyScannerTest) CreateInitialState() {
-	depsType := &EvalString{}
-	depsType.AddText("gcc")
+	depsType := &EvalString{Parsed: []TokenListItem{{"gcc", false}}}
 	m.compileRule.Bindings["deps"] = depsType
 	m.generatorRule.Bindings["deps"] = depsType
 	headerEdge := m.state.addEdge(m.generatorRule)

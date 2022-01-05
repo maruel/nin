@@ -21,11 +21,14 @@ import (
 func TestState_Basic(t *testing.T) {
 	state := NewState()
 
-	var command EvalString
-	command.AddText("cat ")
-	command.AddSpecial("in")
-	command.AddText(" > ")
-	command.AddSpecial("out")
+	command := EvalString{
+		Parsed: []TokenListItem{
+			{"cat ", false},
+			{"in", true},
+			{" > ", false},
+			{"out", true},
+		},
+	}
 	if got := command.Serialize(); got != "[cat ][$in][ > ][$out]" {
 		t.Fatal(got)
 	}

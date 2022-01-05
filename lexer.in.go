@@ -279,7 +279,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		start = p
 		/*!re2c
 		  [^$ :\r\n|\000]+ {
-				eval.AddText(unsafeString(l.input[start: p]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start: p]), false})
 		    continue
 		  }
 		  "\r\n" {
@@ -296,16 +296,16 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		      if l.input[start] == '\n' {
 		        break
 		      }
-					eval.AddText(unsafeString(l.input[start:start+1]))
+					eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start:start+1]), false})
 		      continue
 		    }
 		  }
 		  "$$" {
-		    eval.AddText("$")
+				eval.Parsed = append(eval.Parsed, TokenListItem{"$", false})
 		    continue
 		  }
 		  "$ " {
-		    eval.AddText(" ")
+				eval.Parsed = append(eval.Parsed, TokenListItem{" ", false})
 		    continue
 		  }
 		  "$\r\n"[ ]* {
@@ -315,15 +315,15 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		    continue
 		  }
 		  "${"varname"}" {
-				eval.AddSpecial(unsafeString(l.input[start + 2: p - 1]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start + 2: p - 1]), true})
 		    continue
 		  }
 		  "$"simpleVarname {
-				eval.AddSpecial(unsafeString(l.input[start + 1: p]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start + 1: p]), true})
 		    continue
 		  }
 		  "$:" {
-		    eval.AddText(":")
+				eval.Parsed = append(eval.Parsed, TokenListItem{":", false})
 		    continue
 		  }
 		  "$". {

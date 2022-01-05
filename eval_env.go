@@ -89,14 +89,6 @@ func (e *EvalString) Evaluate(env Env) string {
 	return unsafeString(out)
 }
 
-func (e *EvalString) AddText(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, false})
-}
-
-func (e *EvalString) AddSpecial(text string) {
-	e.Parsed = append(e.Parsed, TokenListItem{text, true})
-}
-
 // Construct a human-readable representation of the parsed state,
 // for use in tests.
 func (e *EvalString) Serialize() string {

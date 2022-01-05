@@ -2188,7 +2188,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy104:
 			{
-				eval.AddText(unsafeString(l.input[start:p]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start:p]), false})
 				continue
 			}
 		yy105:
@@ -2201,7 +2201,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 					if l.input[start] == '\n' {
 						break
 					}
-					eval.AddText(unsafeString(l.input[start : start+1]))
+					eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start : start+1]), false})
 					continue
 				}
 			}
@@ -2406,13 +2406,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy118:
 			p++
 			{
-				eval.AddText(" ")
+				eval.Parsed = append(eval.Parsed, TokenListItem{" ", false})
 				continue
 			}
 		yy120:
 			p++
 			{
-				eval.AddText("$")
+				eval.Parsed = append(eval.Parsed, TokenListItem{"$", false})
 				continue
 			}
 		yy122:
@@ -2552,13 +2552,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy124:
 			{
-				eval.AddSpecial(unsafeString(l.input[start+1 : p]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start+1 : p]), true})
 				continue
 			}
 		yy125:
 			p++
 			{
-				eval.AddText(":")
+				eval.Parsed = append(eval.Parsed, TokenListItem{":", false})
 				continue
 			}
 		yy127:
@@ -2857,7 +2857,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy134:
 			p++
 			{
-				eval.AddSpecial(unsafeString(l.input[start+2 : p-1]))
+				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start+2 : p-1]), true})
 				continue
 			}
 		}
