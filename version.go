@@ -28,7 +28,7 @@ import (
 const NinjaVersion = "1.10.2.git"
 
 // Parse the major/minor components of a version string.
-func ParseVersion(version string) (int, int) {
+func parseVersion(version string) (int, int) {
 	end := strings.Index(version, ".")
 	if end == -1 {
 		end = len(version)
@@ -59,8 +59,8 @@ func keepNumbers(s string) string {
 // checkNinjaVersion checks whether a version is compatible with the current
 // Ninja version, returns an error if not.
 func checkNinjaVersion(version string) error {
-	binMajor, binMinor := ParseVersion(NinjaVersion)
-	fileMajor, fileMinor := ParseVersion(version)
+	binMajor, binMinor := parseVersion(NinjaVersion)
+	fileMajor, fileMinor := parseVersion(version)
 	if binMajor > fileMajor {
 		log.Printf("ninja executable version (%s) greater than build file ninja_required_version (%s); versions may be incompatible.", NinjaVersion, version)
 	} else if (binMajor == fileMajor && binMinor < fileMinor) || binMajor < fileMajor {

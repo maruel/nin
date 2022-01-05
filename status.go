@@ -163,7 +163,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *Edge, endTimeMillis int32, succe
 		// thousands of parallel compile commands.)
 		finalOutput := ""
 		if !s.printer.supportsColor {
-			finalOutput = StripAnsiEscapeCodes(output)
+			finalOutput = stripAnsiEscapeCodes(output)
 		} else {
 			finalOutput = output
 		}

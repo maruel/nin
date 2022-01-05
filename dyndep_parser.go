@@ -80,7 +80,7 @@ func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
 		return d.lexer.Error("expected 'ninja_dyndep_version = ...'", err)
 	}
 	version := letValue.Evaluate(d.env)
-	major, minor := ParseVersion(version)
+	major, minor := parseVersion(version)
 	if major != 1 || minor != 0 {
 		return d.lexer.Error("unsupported 'ninja_dyndep_version = "+version+"'", err)
 	}

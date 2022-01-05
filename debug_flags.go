@@ -27,7 +27,7 @@ var Debug struct {
 	KeepRsp     bool
 }
 
-func Explain(f string, i ...interface{}) {
+func explain(f string, i ...interface{}) {
 	if Debug.Explaining {
 		fmt.Fprintf(os.Stderr, "ninja explain: "+f+"\n", i...)
 	}

@@ -28,8 +28,8 @@ import (
 // The Go runtime already handles poll under the hood so this abstraction layer
 // has to be replaced; unless we realize that the Go runtime is too slow.
 
-// Subprocess is the dumbest implementation, just to get going.
-type Subprocess struct {
+// subprocess is the dumbest implementation, just to get going.
+type subprocess struct {
 	done     int32
 	exitCode int32
 	buf      string
@@ -38,21 +38,21 @@ type Subprocess struct {
 // Done queries if the process is done.
 //
 // Only used in tests.
-func (s *Subprocess) Done() bool {
+func (s *subprocess) Done() bool {
 	return atomic.LoadInt32(&s.done) != 0
 }
 
 // Finish returns the exit code. Must only to be called after the process is
 // done.
-func (s *Subprocess) Finish() ExitStatus {
+func (s *subprocess) Finish() ExitStatus {
 	return ExitStatus(s.exitCode)
 }
 
-func (s *Subprocess) GetOutput() string {
+func (s *subprocess) GetOutput() string {
 	return s.buf
 }
 
-func (s *Subprocess) run(ctx context.Context, c string, useConsole bool) {
+func (s *subprocess) run(ctx context.Context, c string, useConsole bool) {
 	ex := ""
 	var args []string
 	if runtime.GOOS == "windows" {
@@ -99,29 +99,29 @@ func (s *Subprocess) run(ctx context.Context, c string, useConsole bool) {
 	s.exitCode = int32(cmd.ProcessState.ExitCode())
 }
 
-type SubprocessSet struct {
+type subprocessSet struct {
 	ctx      context.Context
 	cancel   func()
 	wg       sync.WaitGroup
-	procDone chan *Subprocess
+	procDone chan *subprocess
 	mu       sync.Mutex
-	running  []*Subprocess
-	finished []*Subprocess
+	running  []*subprocess
+	finished []*subprocess
 }
 
-func NewSubprocessSet() *SubprocessSet {
+func NewSubprocessSet() *subprocessSet {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &SubprocessSet{
+	return &subprocessSet{
 		ctx:      ctx,
 		cancel:   cancel,
-		procDone: make(chan *Subprocess),
+		procDone: make(chan *subprocess),
 	}
 }
 
 // Clear interrupts all the children processes.
 //
 // TODO(maruel): Use a context instead.
-func (s *SubprocessSet) Clear() {
+func (s *subprocessSet) Clear() {
 	s.cancel()
 	s.wg.Wait()
 	// TODO(maruel): This is still broken, since the goroutines are stuck on
@@ -129,7 +129,7 @@ func (s *SubprocessSet) Clear() {
 }
 
 // Running returns the number of running processes.
-func (s *SubprocessSet) Running() int {
+func (s *subprocessSet) Running() int {
 	s.mu.Lock()
 	r := len(s.running)
 	s.mu.Unlock()
@@ -137,7 +137,7 @@ func (s *SubprocessSet) Running() int {
 }
 
 // Finished returns the number of processes to parse their output.
-func (s *SubprocessSet) Finished() int {
+func (s *subprocessSet) Finished() int {
 	s.mu.Lock()
 	f := len(s.finished)
 	s.mu.Unlock()
@@ -145,8 +145,8 @@ func (s *SubprocessSet) Finished() int {
 }
 
 // Add starts a new child process.
-func (s *SubprocessSet) Add(c string, useConsole bool) *Subprocess {
-	subproc := &Subprocess{}
+func (s *subprocessSet) Add(c string, useConsole bool) *subprocess {
+	subproc := &subprocess{}
 	s.wg.Add(1)
 	go s.enqueue(subproc, c, useConsole)
 	s.mu.Lock()
@@ -155,7 +155,7 @@ func (s *SubprocessSet) Add(c string, useConsole bool) *Subprocess {
 	return subproc
 }
 
-func (s *SubprocessSet) enqueue(subproc *Subprocess, c string, useConsole bool) {
+func (s *subprocessSet) enqueue(subproc *subprocess, c string, useConsole bool) {
 	subproc.run(s.ctx, c, useConsole)
 	// Do it before sending the channel because procDone is a blocking channel
 	// and the caller relies on Running() == 0 && Finished() == 0. Otherwise
@@ -165,9 +165,9 @@ func (s *SubprocessSet) enqueue(subproc *Subprocess, c string, useConsole bool) 
 }
 
 // NextFinished returns the next finished child process.
-func (s *SubprocessSet) NextFinished() *Subprocess {
+func (s *subprocessSet) NextFinished() *subprocess {
 	s.mu.Lock()
-	var subproc *Subprocess
+	var subproc *subprocess
 	if len(s.finished) != 0 {
 		// LIFO queue.
 		subproc = s.finished[len(s.finished)-1]
@@ -184,7 +184,7 @@ func (s *SubprocessSet) NextFinished() *Subprocess {
 //  - A pipe got data, returns false
 //
 // In Go, the later can't happen.
-func (s *SubprocessSet) DoWork() bool {
+func (s *subprocessSet) DoWork() bool {
 	o := false
 	for {
 		select {

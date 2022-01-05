@@ -73,7 +73,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool
 	node.DyndepPending = false
 
 	// Load the dyndep information from the file.
-	Explain("loading dyndep file '%s'", node.Path)
+	explain("loading dyndep file '%s'", node.Path)
 	if !d.LoadDyndepFile(node, ddf, err) {
 		return false
 	}

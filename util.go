@@ -420,7 +420,7 @@ func SpellcheckString(text string, words ...string) string {
 	minDistance := maxValidEditDistance + 1
 	result := ""
 	for _, i := range words {
-		distance := EditDistance(i, text, true, maxValidEditDistance)
+		distance := editDistance(i, text, true, maxValidEditDistance)
 		if distance < minDistance {
 			minDistance = distance
 			result = i
@@ -457,7 +457,7 @@ func islatinalpha(c byte) bool {
 }
 
 // Removes all Ansi escape codes (http://www.termsys.demon.co.uk/vtansi.htm).
-func StripAnsiEscapeCodes(in string) string {
+func stripAnsiEscapeCodes(in string) string {
 	if strings.IndexByte(in, '\x1B') == -1 {
 		return in
 	}
@@ -598,7 +598,7 @@ func getLoadAverage() float64 {
 
 // Elide the given string @a str with '...' in the middle if the length
 // exceeds @a width.
-func ElideMiddle(str string, width int) string {
+func elideMiddle(str string, width int) string {
 	switch width {
 	case 0:
 		return ""

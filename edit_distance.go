@@ -14,7 +14,7 @@
 
 package nin
 
-func EditDistance(s1, s2 string, allowReplacements bool, maxEditDistance int) int {
+func editDistance(s1, s2 string, allowReplacements bool, maxEditDistance int) int {
 	// The algorithm implemented below is the "classic"
 	// dynamic-programming algorithm for computing the Levenshtein
 	// distance, which is described here:

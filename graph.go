@@ -592,7 +592,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			return false
 		}
 		if node.Exists != ExistenceStatusExists {
-			Explain("%s has no in-edge and is missing", node.Path)
+			explain("%s has no in-edge and is missing", node.Path)
 		}
 		node.Dirty = node.Exists != ExistenceStatusExists
 		return true
@@ -694,7 +694,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 			// If a regular input is dirty (or missing), we're dirty.
 			// Otherwise consider mtime.
 			if i.Dirty {
-				Explain("%s is dirty", i.Path)
+				explain("%s is dirty", i.Path)
 				dirty = true
 			} else {
 				if mostRecentInput == nil || i.MTime > mostRecentInput.MTime {
@@ -805,7 +805,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.
 		if len(edge.Inputs) == 0 && output.Exists != ExistenceStatusExists {
-			Explain("output %s of phony edge with no inputs doesn't exist", output.Path)
+			explain("output %s of phony edge with no inputs doesn't exist", output.Path)
 			return true
 		}
 
@@ -823,7 +823,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 
 	// Dirty if we're missing the output.
 	if output.Exists != ExistenceStatusExists {
-		Explain("output %s doesn't exist", output.Path)
+		explain("output %s doesn't exist", output.Path)
 		return true
 	}
 
@@ -848,7 +848,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 			if usedRestat {
 				s = "restat of "
 			}
-			Explain("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, mostRecentInput.Path, outputMtime, mostRecentInput.MTime)
+			explain("%soutput %s older than most recent input %s (%x vs %x)", s, output.Path, mostRecentInput.Path, outputMtime, mostRecentInput.MTime)
 			return true
 		}
 	}
@@ -863,7 +863,7 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 				// May also be dirty due to the command changing since the last build.
 				// But if this is a generator rule, the command changing does not make us
 				// dirty.
-				Explain("command line changed for %s", output.Path)
+				explain("command line changed for %s", output.Path)
 				return true
 			}
 			if mostRecentInput != nil && entry.mtime < mostRecentInput.MTime {
@@ -871,12 +871,12 @@ func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 				// mtime of the most recent input.  This can occur even when the mtime
 				// on disk is newer if a previous run wrote to the output file but
 				// exited with an error or was interrupted.
-				Explain("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, mostRecentInput.Path, entry.mtime, mostRecentInput.MTime)
+				explain("recorded mtime of %s older than most recent input %s (%x vs %x)", output.Path, mostRecentInput.Path, entry.mtime, mostRecentInput.MTime)
 				return true
 			}
 		}
 		if entry == nil && !generator {
-			Explain("command line not found in log for %s", output.Path)
+			explain("command line not found in log for %s", output.Path)
 			return true
 		}
 	}
@@ -939,7 +939,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 	// On a missing depfile: return false and empty *err.
 	if len(content) == 0 {
-		Explain("depfile '%s' is missing", path)
+		explain("depfile '%s' is missing", path)
 		return false
 	}
 
@@ -958,7 +958,7 @@ func (i *ImplicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// mark the edge as dirty.
 	firstOutput := edge.Outputs[0]
 	if primaryOut := CanonicalizePath(depfile.outs[0]); firstOutput.Path != primaryOut {
-		Explain("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
+		explain("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
 		return false
 	}
 
@@ -1006,13 +1006,13 @@ func (i *ImplicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
 		deps = i.depsLog.GetDeps(output)
 	}
 	if deps == nil {
-		Explain("deps for '%s' are missing", output.Path)
+		explain("deps for '%s' are missing", output.Path)
 		return false
 	}
 
 	// Deps are invalid if the output is newer than the deps.
 	if output.MTime > deps.MTime {
-		Explain("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.MTime, output.MTime)
+		explain("stored deps info out of date for '%s' (%x vs %x)", output.Path, deps.MTime, output.MTime)
 		return false
 	}
 

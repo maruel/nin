@@ -179,7 +179,7 @@ func (s *State) SpellcheckNode(path string) *Node {
 	minDistance := maxValidEditDistance + 1
 	var result *Node
 	for p, node := range s.Paths {
-		distance := EditDistance(p, path, true, maxValidEditDistance)
+		distance := editDistance(p, path, true, maxValidEditDistance)
 		if distance < minDistance && node != nil {
 			minDistance = distance
 			result = node

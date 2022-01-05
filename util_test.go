@@ -264,12 +264,12 @@ func TestPathEscaping_SensibleWin32PathsAreNotNeedlesslyEscaped(t *testing.T) {
 }
 
 func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
-	stripped := StripAnsiEscapeCodes("foo\x1B")
+	stripped := stripAnsiEscapeCodes("foo\x1B")
 	if "foo" != stripped {
 		t.Fatalf("%+q", stripped)
 	}
 
-	stripped = StripAnsiEscapeCodes("foo\x1B[")
+	stripped = stripAnsiEscapeCodes("foo\x1B[")
 	if "foo" != stripped {
 		t.Fatalf("%+q", stripped)
 	}
@@ -278,7 +278,7 @@ func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
 func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
 	// An actual clang warning.
 	input := "\x1B[1maffixmgr.cxx:286:15: \x1B[0m\x1B[0;1;35mwarning: \x1B[0m\x1B[1musing the result... [-Wparentheses]\x1B[0m"
-	stripped := StripAnsiEscapeCodes(input)
+	stripped := stripAnsiEscapeCodes(input)
 	if "affixmgr.cxx:286:15: warning: using the result... [-Wparentheses]" != stripped {
 		t.Fatalf("%+q", stripped)
 	}
@@ -286,33 +286,33 @@ func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
 
 func TestElideMiddle_NothingToElide(t *testing.T) {
 	input := "Nothing to elide in this short string."
-	if input != ElideMiddle(input, 80) {
+	if input != elideMiddle(input, 80) {
 		t.Fatal("expected equal")
 	}
-	if input != ElideMiddle(input, 38) {
+	if input != elideMiddle(input, 38) {
 		t.Fatal("expected equal")
 	}
-	if "" != ElideMiddle(input, 0) {
+	if "" != elideMiddle(input, 0) {
 		t.Fatal("expected equal")
 	}
-	if "." != ElideMiddle(input, 1) {
+	if "." != elideMiddle(input, 1) {
 		t.Fatal("expected equal")
 	}
-	if ".." != ElideMiddle(input, 2) {
+	if ".." != elideMiddle(input, 2) {
 		t.Fatal("expected equal")
 	}
-	if "..." != ElideMiddle(input, 3) {
+	if "..." != elideMiddle(input, 3) {
 		t.Fatal("expected equal")
 	}
 }
 
 func TestElideMiddle_ElideInTheMiddle(t *testing.T) {
 	input := "01234567890123456789"
-	elided := ElideMiddle(input, 10)
+	elided := elideMiddle(input, 10)
 	if "012...789" != elided {
 		t.Fatal("expected equal")
 	}
-	if "01234567...23456789" != ElideMiddle(input, 19) {
+	if "01234567...23456789" != elideMiddle(input, 19) {
 		t.Fatal("expected equal")
 	}
 }

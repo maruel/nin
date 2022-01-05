@@ -22,7 +22,7 @@ import (
 	"syscall"
 )
 
-func (s *Subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
+func (s *subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: !useConsole,
 	}

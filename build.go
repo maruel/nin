@@ -41,10 +41,10 @@ const (
 	WantToFinish
 )
 
-// CommandRunner is an interface that wraps running the build
+// commandRunner is an interface that wraps running the build
 // subcommands.  This allows tests to abstract out running commands.
 // RealCommandRunner is an implementation that actually runs commands.
-type CommandRunner interface {
+type commandRunner interface {
 	CanRunMore() bool
 	StartCommand(edge *Edge) bool
 
@@ -93,19 +93,17 @@ const (
 	Verbose
 )
 
-type RunningEdgeMap map[*Edge]int32
-
 // A CommandRunner that doesn't actually run the commands.
-type DryRunCommandRunner struct {
+type dryRunCommandRunner struct {
 	finished []*Edge
 }
 
 // Overridden from CommandRunner:
-func (d *DryRunCommandRunner) CanRunMore() bool {
+func (d *dryRunCommandRunner) CanRunMore() bool {
 	return true
 }
 
-func (d *DryRunCommandRunner) StartCommand(edge *Edge) bool {
+func (d *dryRunCommandRunner) StartCommand(edge *Edge) bool {
 	// In C++ it's a queue. In Go it's a bit less efficient but it shouldn't be
 	// performance critical.
 	// TODO(maruel): Move items when cap() is significantly larger than len().
@@ -113,7 +111,7 @@ func (d *DryRunCommandRunner) StartCommand(edge *Edge) bool {
 	return true
 }
 
-func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
+func (d *dryRunCommandRunner) WaitForCommand(result *Result) bool {
 	if len(d.finished) == 0 {
 		return false
 	}
@@ -124,28 +122,28 @@ func (d *DryRunCommandRunner) WaitForCommand(result *Result) bool {
 	return true
 }
 
-func (d *DryRunCommandRunner) GetActiveEdges() []*Edge {
+func (d *dryRunCommandRunner) GetActiveEdges() []*Edge {
 	return nil
 }
 
-func (d *DryRunCommandRunner) Abort() {
+func (d *dryRunCommandRunner) Abort() {
 }
 
-type RealCommandRunner struct {
+type realCommandRunner struct {
 	config        *BuildConfig
-	subprocs      *SubprocessSet
-	subprocToEdge map[*Subprocess]*Edge
+	subprocs      *subprocessSet
+	subprocToEdge map[*subprocess]*Edge
 }
 
-func NewRealCommandRunner(config *BuildConfig) *RealCommandRunner {
-	return &RealCommandRunner{
+func NewRealCommandRunner(config *BuildConfig) *realCommandRunner {
+	return &realCommandRunner{
 		config:        config,
 		subprocs:      NewSubprocessSet(),
-		subprocToEdge: map[*Subprocess]*Edge{},
+		subprocToEdge: map[*subprocess]*Edge{},
 	}
 }
 
-func (r *RealCommandRunner) GetActiveEdges() []*Edge {
+func (r *realCommandRunner) GetActiveEdges() []*Edge {
 	var edges []*Edge
 	for _, e := range r.subprocToEdge {
 		edges = append(edges, e)
@@ -153,18 +151,18 @@ func (r *RealCommandRunner) GetActiveEdges() []*Edge {
 	return edges
 }
 
-func (r *RealCommandRunner) Abort() {
+func (r *realCommandRunner) Abort() {
 	r.subprocs.Clear()
 }
 
-func (r *RealCommandRunner) CanRunMore() bool {
+func (r *realCommandRunner) CanRunMore() bool {
 	subprocNumber := r.subprocs.Running() + r.subprocs.Finished()
 	more := subprocNumber < r.config.Parallelism
 	load := r.subprocs.Running() == 0 || r.config.MaxLoadAvg <= 0. || getLoadAverage() < r.config.MaxLoadAvg
 	return more && load
 }
 
-func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
+func (r *realCommandRunner) StartCommand(edge *Edge) bool {
 	command := edge.EvaluateCommand(false)
 	subproc := r.subprocs.Add(command, edge.Pool == ConsolePool)
 	if subproc == nil {
@@ -174,8 +172,8 @@ func (r *RealCommandRunner) StartCommand(edge *Edge) bool {
 	return true
 }
 
-func (r *RealCommandRunner) WaitForCommand(result *Result) bool {
-	var subproc *Subprocess
+func (r *realCommandRunner) WaitForCommand(result *Result) bool {
+	var subproc *subprocess
 	for {
 		subproc = r.subprocs.NextFinished()
 		if subproc != nil {
@@ -643,11 +641,11 @@ type Builder struct {
 	state         *State
 	config        *BuildConfig
 	plan          Plan
-	commandRunner CommandRunner
+	commandRunner commandRunner
 	status        Status
 
 	// Map of running edge to time the edge started running.
-	runningEdges RunningEdgeMap
+	runningEdges map[*Edge]int32
 
 	// Time the build started.
 	startTimeMillis int64
@@ -666,7 +664,7 @@ func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *
 		state:           state,
 		config:          config,
 		status:          status,
-		runningEdges:    RunningEdgeMap{},
+		runningEdges:    map[*Edge]int32{},
 		startTimeMillis: startTimeMillis,
 		di:              di,
 	}
@@ -776,7 +774,7 @@ func (b *Builder) Build(err *string) bool {
 	// Set up the command runner if we haven't done so already.
 	if b.commandRunner == nil {
 		if b.config.DryRun {
-			b.commandRunner = &DryRunCommandRunner{}
+			b.commandRunner = &dryRunCommandRunner{}
 		} else {
 			b.commandRunner = NewRealCommandRunner(b.config)
 		}
