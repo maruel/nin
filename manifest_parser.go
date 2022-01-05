@@ -381,7 +381,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		edge.Pool = pool
 	}
 
-	// TODO: edge.outputs.reserve(outs.size())
+	edge.Outputs = make([]*Node, 0, len(outs))
 	for i := range outs {
 		path := outs[i].Evaluate(env)
 		if len(path) == 0 {
@@ -409,7 +409,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	}
 	edge.ImplicitOuts = int32(implicitOuts)
 
-	// TODO: edge.inputs.reserve(ins.size())
+	edge.Inputs = make([]*Node, 0, len(ins))
 	for _, i := range ins {
 		path := i.Evaluate(env)
 		if len(path) == 0 {
@@ -421,7 +421,7 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	edge.ImplicitDeps = int32(implicit)
 	edge.OrderOnlyDeps = int32(orderOnly)
 
-	//edge.validations.reserve(validations.size());
+	edge.Validations = make([]*Node, 0, len(validations))
 	for _, v := range validations {
 		path := v.Evaluate(env)
 		if path == "" {
