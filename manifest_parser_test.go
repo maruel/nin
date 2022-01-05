@@ -1013,7 +1013,7 @@ func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
 	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
 	err := ""
 	if !parser.parseTest("include rules.ninja\nsubninja test.ninja\nbuild y : cat\n", &err) {
-		t.Fatal("expected true")
+		t.Fatal(err)
 	}
 }
 

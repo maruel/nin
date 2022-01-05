@@ -16,6 +16,7 @@ package nin
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 )
 
@@ -46,10 +47,21 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 	return m
 }
 
+// subninja is a struct used to manage parallel reading of subninja files.
+type subninja struct {
+	index    int
+	name     string
+	contents []byte
+	err      error
+}
+
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
 	m.lexer.Start(filename, input)
-	var subninjas []string
+
+	subninjas := make(chan subninja)
+	nbSubninjas := 0
+
 	for {
 		token := m.lexer.ReadToken()
 		switch token {
@@ -96,26 +108,22 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				return false
 			}
 		case SUBNINJA:
-			sub, err2 := m.parseSubninja()
-			if err2 != nil {
+			if err2 := m.parseSubninja(nbSubninjas, subninjas); err2 != nil {
 				*err = err2.Error()
 				return false
 			}
-			subninjas = append(subninjas, sub)
+			nbSubninjas++
 		case ERROR:
 			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
 			return false
+
 		case TEOF:
-			// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
-			// not create lock contention.
-			subparser := NewManifestParser(m.state, m.fileReader, m.options)
-			for _, s := range subninjas {
-				subparser.env = NewBindingEnv(m.env)
-				if !subparser.Load(s, err, &m.lexer) {
-					return false
-				}
+			if err2 := m.processSubninjaQueue(nbSubninjas, subninjas); err2 != nil {
+				*err = err2.Error()
+				return false
 			}
 			return true
+
 		case NEWLINE:
 		default:
 			*err = m.lexer.Error("unexpected " + token.String()).Error()
@@ -507,17 +515,83 @@ func (m *ManifestParser) parseInclude() error {
 	return nil
 }
 
-// parseSubninja parses a 'subninja' line and return the path to it, but
-// doesn't process it yet.
-func (m *ManifestParser) parseSubninja() (string, error) {
+// parseSubninja parses a 'subninja' line and start a goroutine that will read
+// the file and send the content to the channel, but not process it.
+func (m *ManifestParser) parseSubninja(id int, ch chan<- subninja) error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
-		return "", err
+		return err
 	}
 	path := eval.Evaluate(m.env)
 	err2 := ""
 	if !m.expectToken(NEWLINE, &err2) {
-		return "", errors.New(err2)
+		return errors.New(err2)
 	}
-	return path, nil
+
+	// Success, start the goroutine to read it asynchronously.
+	go m.readSubninjaAsync(id, path, ch)
+
+	return nil
+}
+
+func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja) {
+	c, err := m.fileReader.ReadFile(n)
+	if err != nil {
+		ch <- subninja{
+			index: id,
+			name:  n,
+			err:   m.lexer.Error("loading '" + n + "': " + err.Error()),
+		}
+	}
+	ch <- subninja{
+		index:    id,
+		name:     n,
+		contents: c,
+	}
+}
+
+// processSubninjaQueue empties the queue.
+func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error {
+	if false {
+		// Ordered flow.
+		results := make([]subninja, nb)
+		for i := 0; i < nb; i++ {
+			results[i] = <-ch
+		}
+		sort.Slice(results, func(i, j int) bool {
+			return results[i].index < results[j].index
+		})
+		for _, s := range results {
+			if s.err != nil {
+				return s.err
+			}
+		}
+		subparser := NewManifestParser(m.state, m.fileReader, m.options)
+		for _, s := range results {
+			subparser.env = NewBindingEnv(m.env)
+			err2 := ""
+			if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
+				return errors.New(err2)
+			}
+		}
+	}
+	// Out of order flow. May be incompatible?
+	var err error
+	subparser := NewManifestParser(m.state, m.fileReader, m.options)
+	for i := 0; i < nb; i++ {
+		s := <-ch
+		if err != nil {
+			continue
+		}
+		if s.err != nil {
+			err = s.err
+			continue
+		}
+		subparser.env = NewBindingEnv(m.env)
+		err2 := ""
+		if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
+			err = errors.New(err2)
+		}
+	}
+	return err
 }
