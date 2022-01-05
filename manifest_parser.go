@@ -540,7 +540,7 @@ func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja)
 		ch <- subninja{
 			index: id,
 			name:  n,
-			err:   m.lexer.Error("loading '" + n + "': " + err.Error()),
+			err:   err,
 		}
 	}
 	ch <- subninja{
@@ -563,7 +563,7 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 		})
 		for _, s := range results {
 			if s.err != nil {
-				return s.err
+				return m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			}
 		}
 		subparser := NewManifestParser(m.state, m.fileReader, m.options)
@@ -584,7 +584,7 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 			continue
 		}
 		if s.err != nil {
-			err = s.err
+			err = m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			continue
 		}
 		subparser.env = NewBindingEnv(m.env)
