@@ -739,7 +739,7 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// date outputs, etc.  Visit all outputs and determine whether they're dirty.
 	if !dirty {
 		// The C++ code conditions on this but I think there's a bug in there.
-		d.recomputeOutputsDirty(edge, mostRecentInput, &dirty)
+		dirty = d.recomputeOutputsDirty(edge, mostRecentInput)
 	}
 
 	// Finally, visit each output and update their dirty state if necessary.
@@ -807,16 +807,17 @@ func (d *DependencyScan) verifyDAG(node *Node, stack []*Node) error {
 	return errors.New(err)
 }
 
-// recomputeOutputsDirty recomputes whether any output of the edge is dirty, if
-// so sets |*dirty|.
-func (d *DependencyScan) recomputeOutputsDirty(edge *Edge, mostRecentInput *Node, outputsDirty *bool) {
+// recomputeOutputsDirty recomputes whether any output of the edge is dirty.
+//
+// Returns true if dirty.
+func (d *DependencyScan) recomputeOutputsDirty(edge *Edge, mostRecentInput *Node) bool {
 	command := edge.EvaluateCommand(true) // inclRspFile=
 	for _, o := range edge.Outputs {
 		if d.recomputeOutputDirty(edge, mostRecentInput, command, o) {
-			*outputsDirty = true
-			return
+			return true
 		}
 	}
+	return false
 }
 
 // recomputeOutputDirty recomputes whether a given single output should be
@@ -838,7 +839,7 @@ func (d *DependencyScan) recomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 			output.updatePhonyMtime(mostRecentInput.MTime)
 		}
 
-		// Phony edges are clean, nothing to do
+		// Phony edges are clean, nothing to do.
 		return false
 	}
 

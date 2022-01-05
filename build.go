@@ -249,11 +249,11 @@ func (p *plan) Reset() {
 // Add a target to our plan (including all its dependencies).
 // Returns false if we don't need to build this target; may
 // fill in |err| with an error message if there's a problem.
-func (p *plan) addTarget(target *Node, err *string) bool {
-	return p.addSubTarget(target, nil, err, nil)
+func (p *plan) addTarget(target *Node) (bool, error) {
+	return p.addSubTarget(target, nil, nil)
 }
 
-func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk map[*Edge]struct{}) bool {
+func (p *plan) addSubTarget(node *Node, dependent *Node, dyndepWalk map[*Edge]struct{}) (bool, error) {
 	edge := node.InEdge
 	if edge == nil { // Leaf node.
 		if node.Dirty {
@@ -263,13 +263,14 @@ func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 				referenced = fmt.Sprintf(", needed by '%s',", dependent.Path)
 			}
 			// TODO(maruel): Use %q for real quoting.
-			*err = fmt.Sprintf("'%s'%s missing and no known rule to make it", node.Path, referenced)
+			return false, fmt.Errorf("'%s'%s missing and no known rule to make it", node.Path, referenced)
 		}
-		return false
+		return false, nil
 	}
 
 	if edge.OutputsReady {
-		return false // Don't need to do anything.
+		// Don't need to do anything.
+		return false, nil
 	}
 
 	// If an entry in want does not already exist for edge, create an entry which
@@ -278,7 +279,8 @@ func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 	if !ok {
 		p.want[edge] = WantNothing
 	} else if len(dyndepWalk) != 0 && want == WantToFinish {
-		return false // Don't need to do anything with already-scheduled edge.
+		// Don't need to do anything with already-scheduled edge.
+		return false, nil
 	}
 
 	// If we do need to build edge and we haven't already marked it as wanted,
@@ -297,15 +299,16 @@ func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 	}
 
 	if ok {
-		return true // We've already processed the inputs.
+		// We've already processed the inputs.
+		return true, nil
 	}
 
 	for _, i := range edge.Inputs {
-		if !p.addSubTarget(i, node, err, dyndepWalk) && *err != "" {
-			return false
+		if _, err := p.addSubTarget(i, node, dyndepWalk); err != nil {
+			return false, err
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (p *plan) edgeWanted(edge *Edge) {
@@ -473,9 +476,8 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node) error {
 			// Now, this edge is dirty if any of the outputs are dirty.
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
-			outputsDirty := false
 			// The C++ code conditions on its return value but always returns true.
-			scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty)
+			outputsDirty := scan.recomputeOutputsDirty(oe, mostRecentInput)
 			if !outputsDirty {
 				for _, o := range oe.Outputs {
 					if err := p.cleanNode(scan, o); err != nil {
@@ -499,7 +501,7 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node) error {
 func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile) error {
 	// Recompute the dirty state of all our direct and indirect dependents now
 	// that our dyndep information has been loaded.
-	if err := p.refreshDyndepDependents(scan, node); err != nil {
+	if do, err := p.refreshDyndepDependents(scan, node); !do || err != nil {
 		return err
 	}
 
@@ -530,9 +532,8 @@ func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile) e
 	dyndepWalk := map[*Edge]struct{}{}
 	for _, oe := range dyndepRoots {
 		for _, i := range ddf[oe].implicitInputs {
-			err2 := ""
-			if !p.addSubTarget(i, oe.Outputs[0], &err2, dyndepWalk) && err2 != "" {
-				return errors.New(err2)
+			if _, err := p.addSubTarget(i, oe.Outputs[0], dyndepWalk); err != nil {
+				return err
 			}
 		}
 	}
@@ -559,7 +560,7 @@ func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile) e
 	return nil
 }
 
-func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) error {
+func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) (bool, error) {
 	// Collect the transitive closure of dependents and mark their edges
 	// as not yet visited by RecomputeDirty.
 	dependents := map[*Node]struct{}{}
@@ -571,16 +572,17 @@ func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) error {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
 		var validationNodes []*Node
 		if err := scan.RecomputeDirty(n, &validationNodes); err != nil {
-			return err
+			return false, err
 		}
 
 		// Add any validation nodes found during RecomputeDirty as new top level
 		// targets.
 		for _, v := range validationNodes {
 			if inEdge := v.InEdge; inEdge != nil {
-				err2 := ""
-				if !inEdge.OutputsReady && !p.addTarget(v, &err2) {
-					return errors.New(err2)
+				if !inEdge.OutputsReady {
+					if do, err := p.addTarget(v); !do || err != nil {
+						return false, err
+					}
 				}
 			}
 		}
@@ -604,7 +606,7 @@ func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) error {
 			p.edgeWanted(edge)
 		}
 	}
-	return nil
+	return true, nil
 }
 
 func (p *plan) unmarkDependents(node *Node, dependents map[*Node]struct{}) {
@@ -719,18 +721,16 @@ func (b *Builder) cleanup() {
 // addTargetName adds a target to the build, scanning dependencies.
 //
 // Returns false on error.
-func (b *Builder) addTargetName(name string, err *string) *Node {
+func (b *Builder) addTargetName(name string) (*Node, error) {
 	node := b.state.Paths[name]
 	if node == nil {
 		// TODO(maruel): Use %q for real quoting.
-		*err = fmt.Sprintf("unknown target: '%s'", name)
-		return nil
+		return nil, fmt.Errorf("unknown target: '%s'", name)
 	}
-	if _, err2 := b.AddTarget(node); err2 != nil {
-		*err = err2.Error()
-		return nil
+	if _, err := b.AddTarget(node); err != nil {
+		return nil, err
 	}
-	return node
+	return node, nil
 }
 
 // AddTarget adds a target to the build, scanning dependencies.
@@ -743,14 +743,10 @@ func (b *Builder) AddTarget(target *Node) (bool, error) {
 		return false, err
 	}
 
-	err2 := ""
 	inEdge := target.InEdge
 	if inEdge == nil || !inEdge.OutputsReady {
-		if !b.plan.addTarget(target, &err2) {
-			if err2 != "" {
-				return false, errors.New(err2)
-			}
-			return false, nil
+		if do, err := b.plan.addTarget(target); !do {
+			return false, err
 		}
 	}
 
@@ -758,11 +754,10 @@ func (b *Builder) AddTarget(target *Node) (bool, error) {
 	// targets.
 	for _, n := range validationNodes {
 		if validationInEdge := n.InEdge; validationInEdge != nil {
-			if !validationInEdge.OutputsReady && !b.plan.addTarget(n, &err2) {
-				if err2 != "" {
-					return false, errors.New(err2)
+			if !validationInEdge.OutputsReady {
+				if do, err := b.plan.addTarget(n); !do {
+					return false, err
 				}
-				return false, nil
 			}
 		}
 	}
@@ -808,7 +803,12 @@ func (b *Builder) Build() error {
 		if failuresAllowed != 0 && b.commandRunner.CanRunMore() {
 			if edge := b.plan.findWork(); edge != nil {
 				if edge.GetBinding("generator") != "" {
-					_ = b.scan.buildLog.Close()
+					if err := b.scan.buildLog.Close(); err != nil {
+						panic("M-A")
+						// New.
+						b.cleanup()
+						return err
+					}
 				}
 
 				if err := b.startEdge(edge); err != nil {
@@ -838,6 +838,7 @@ func (b *Builder) Build() error {
 			if !b.commandRunner.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
 				b.cleanup()
 				b.status.BuildFinished()
+				// TODO(maruel): This will use context.
 				return errors.New("interrupted by user")
 			}
 

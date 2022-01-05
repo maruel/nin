@@ -350,12 +350,8 @@ func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 	}
 
 	plan := newPlan(nil)
-	err := ""
-	if !plan.addTarget(g.GetNode("n2"), &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if _, err := plan.addTarget(g.GetNode("n2")); err != nil {
+		t.Fatal(err)
 	}
 
 	if 0 != plan.commandEdges {
@@ -984,7 +980,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: circ -> in -> circ" {
-		t.Fatal("expected equal")
+		t.Fatal(err)
 	}
 
 	// Verify that "out.d" was loaded exactly once despite
