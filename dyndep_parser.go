@@ -14,6 +14,8 @@
 
 package nin
 
+import "errors"
+
 // Parses dyndep files.
 type DyndepParser struct {
 	parser
@@ -76,8 +78,9 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 
 func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 	name := ""
-	letValue := EvalString{}
-	if !d.parseLet(&name, &letValue, err) {
+	letValue, err2 := d.parseLet(&name)
+	if err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 	if name != "ninja_dyndep_version" {
@@ -93,19 +96,15 @@ func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 	return true
 }
 
-func (d *DyndepParser) parseLet(key *string, value *EvalString, err *string) bool {
+func (d *DyndepParser) parseLet(key *string) (EvalString, error) {
 	if !d.lexer.ReadIdent(key) {
-		*err = d.lexer.Error("expected variable name").Error()
-		return false
+		return EvalString{}, d.lexer.Error("expected variable name")
 	}
-	if !d.expectToken(EQUALS, err) {
-		return false
+	err2 := ""
+	if !d.expectToken(EQUALS, &err2) {
+		return EvalString{}, errors.New(err2)
 	}
-	if err2 := d.lexer.ReadVarValue(value); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	return true
+	return d.lexer.readEvalString(false)
 }
 
 func (d *DyndepParser) parseEdge(err *string) bool {
@@ -113,8 +112,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	// We will record its dynamically-discovered dependency information.
 	var dyndeps *Dyndeps
 	{
-		out0 := EvalString{}
-		if err2 := d.lexer.ReadPath(&out0); err2 != nil {
+		out0, err2 := d.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -146,8 +145,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 
 	// Disallow explicit outputs.
 	{
-		var out EvalString
-		if err2 := d.lexer.ReadPath(&out); err2 != nil {
+		out, err2 := d.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -161,8 +160,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	var outs []EvalString
 	if d.lexer.PeekToken(PIPE) {
 		for {
-			var out EvalString
-			if err2 := d.lexer.ReadPath(&out); err2 != nil {
+			out, err2 := d.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false // TODO(maruel): Bug upstream.
 			}
@@ -185,8 +184,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 
 	// Disallow explicit inputs.
 	{
-		var in EvalString
-		if err2 := d.lexer.ReadPath(&in); err2 != nil {
+		in, err2 := d.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -200,8 +199,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	var ins []EvalString
 	if d.lexer.PeekToken(PIPE) {
 		for {
-			var in EvalString
-			if err2 := d.lexer.ReadPath(&in); err2 != nil {
+			in, err2 := d.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false // TODO(maruel): Bug upstream.
 			}
@@ -225,7 +224,9 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	if d.lexer.PeekToken(INDENT) {
 		key := ""
 		var val EvalString
-		if !d.parseLet(&key, &val, err) {
+		val, err2 := d.parseLet(&key)
+		if err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if key != "restat" {

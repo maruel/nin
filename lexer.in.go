@@ -93,19 +93,6 @@ type lexer struct {
 	lastToken int
 }
 
-// Read a path (complete with $escapes).
-// Returns false only on error, returned path may be empty if a delimiter
-// (space, newline) is hit.
-func (l *lexer) ReadPath(path *EvalString) error {
-	return l.readEvalString(path, true)
-}
-
-// Read the value side of a var = value line (complete with $escapes).
-// Returns false only on error.
-func (l *lexer) ReadVarValue(value *EvalString) error {
-	return l.readEvalString(value, false)
-}
-
 // Construct an error message with context.
 func (l *lexer) Error(message string) error {
 	// Compute line/column.
@@ -275,8 +262,16 @@ func (l *lexer) ReadIdent(out *string) bool {
 	return true
 }
 
-// Read a $-escaped string.
-func (l *lexer) readEvalString(eval *EvalString, path bool) error {
+// readEvalString reads a $-escaped string.
+//
+// If path is true, read a path (complete with $escapes).
+//
+// If path is false, read the value side of a var = value line (complete with
+// $escapes).
+//
+// Returned path may be empty if a delimiter (space, newline) is hit.
+func (l *lexer) readEvalString(path bool) (EvalString, error) {
+	eval := EvalString{}
 	p := l.ofs
 	q := 0
 	start := 0
@@ -333,15 +328,15 @@ func (l *lexer) readEvalString(eval *EvalString, path bool) error {
 		  }
 		  "$". {
 		    l.lastToken = start
-		    return l.Error("bad $-escape (literal $ must be written as $$)")
+		    return eval, l.Error("bad $-escape (literal $ must be written as $$)")
 		  }
 		  nul {
 		    l.lastToken = start
-		    return l.Error("unexpected EOF")
+		    return eval, l.Error("unexpected EOF")
 		  }
 		  [^] {
 		    l.lastToken = start
-		    return l.Error(l.DescribeLastError())
+		    return eval, l.Error(l.DescribeLastError())
 		  }
 		*/
 	}
@@ -351,5 +346,5 @@ func (l *lexer) readEvalString(eval *EvalString, path bool) error {
 		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
-	return nil
+	return eval, nil
 }

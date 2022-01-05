@@ -14,7 +14,10 @@
 
 package nin
 
-import "strconv"
+import (
+	"errors"
+	"strconv"
+)
 
 // ManifestParserOptions are the options when parsing a build.ninja file.
 type ManifestParserOptions struct {
@@ -71,7 +74,9 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				m.lexer.UnreadToken()
 				name := ""
 				var letValue EvalString
-				if !m.parseLet(&name, &letValue, err) {
+				letValue, err2 := m.parseLet(&name)
+				if err2 != nil {
+					*err = err2.Error()
 					return false
 				}
 				value := letValue.Evaluate(m.env)
@@ -127,8 +132,9 @@ func (m *ManifestParser) parsePool(err *string) bool {
 
 	for m.lexer.PeekToken(INDENT) {
 		key := ""
-		var value EvalString
-		if !m.parseLet(&key, &value, err) {
+		value, err2 := m.parseLet(&key)
+		if err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 
@@ -175,8 +181,9 @@ func (m *ManifestParser) parseRule(err *string) bool {
 
 	for m.lexer.PeekToken(INDENT) {
 		key := ""
-		var value EvalString
-		if !m.parseLet(&key, &value, err) {
+		value, err2 := m.parseLet(&key)
+		if err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 
@@ -206,24 +213,20 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	return true
 }
 
-func (m *ManifestParser) parseLet(key *string, value *EvalString, err *string) bool {
+func (m *ManifestParser) parseLet(key *string) (EvalString, error) {
 	if !m.lexer.ReadIdent(key) {
-		*err = m.lexer.Error("expected variable name").Error()
-		return false
+		return EvalString{}, m.lexer.Error("expected variable name")
 	}
-	if !m.expectToken(EQUALS, err) {
-		return false
+	err2 := ""
+	if !m.expectToken(EQUALS, &err2) {
+		return EvalString{}, errors.New(err2)
 	}
-	if err2 := m.lexer.ReadVarValue(value); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	return true
+	return m.lexer.readEvalString(false)
 }
 
 func (m *ManifestParser) parseDefault(err *string) bool {
-	var eval EvalString
-	if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+	eval, err2 := m.lexer.readEvalString(true)
+	if err2 != nil {
 		*err = err2.Error()
 		return false
 	}
@@ -244,8 +247,8 @@ func (m *ManifestParser) parseDefault(err *string) bool {
 			return false
 		}
 
-		eval.Parsed = nil
-		if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+		eval, err2 = m.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
@@ -258,38 +261,32 @@ func (m *ManifestParser) parseDefault(err *string) bool {
 }
 
 func (m *ManifestParser) parseEdge(err *string) bool {
-	var ins, outs, validations []EvalString
-
-	{
-		var out EvalString
-		if err2 := m.lexer.ReadPath(&out); err2 != nil {
+	var outs []EvalString
+	for {
+		ev, err2 := m.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
-		for len(out.Parsed) != 0 {
-			outs = append(outs, out)
-
-			out.Parsed = nil
-			if err2 := m.lexer.ReadPath(&out); err2 != nil {
-				*err = err2.Error()
-				return false
-			}
+		if len(ev.Parsed) == 0 {
+			break
 		}
+		outs = append(outs, ev)
 	}
 
 	// Add all implicit outs, counting how many as we go.
 	implicitOuts := 0
 	if m.lexer.PeekToken(PIPE) {
 		for {
-			var out EvalString
-			if err2 := m.lexer.ReadPath(&out); err2 != nil {
+			ev, err2 := m.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false
 			}
-			if len(out.Parsed) == 0 {
+			if len(ev.Parsed) == 0 {
 				break
 			}
-			outs = append(outs, out)
+			outs = append(outs, ev)
 			implicitOuts++
 		}
 	}
@@ -315,32 +312,33 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 		return false
 	}
 
+	var ins []EvalString
 	for {
 		// XXX should we require one path here?
-		var in EvalString
-		if err2 := m.lexer.ReadPath(&in); err2 != nil {
+		ev, err2 := m.lexer.readEvalString(true)
+		if err2 != nil {
 			*err = err2.Error()
 			return false
 		}
-		if len(in.Parsed) == 0 {
+		if len(ev.Parsed) == 0 {
 			break
 		}
-		ins = append(ins, in)
+		ins = append(ins, ev)
 	}
 
 	// Add all implicit deps, counting how many as we go.
 	implicit := 0
 	if m.lexer.PeekToken(PIPE) {
 		for {
-			var in EvalString
-			if err2 := m.lexer.ReadPath(&in); err2 != nil {
+			ev, err2 := m.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false
 			}
-			if len(in.Parsed) == 0 {
+			if len(ev.Parsed) == 0 {
 				break
 			}
-			ins = append(ins, in)
+			ins = append(ins, ev)
 			implicit++
 		}
 	}
@@ -349,31 +347,32 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	orderOnly := 0
 	if m.lexer.PeekToken(PIPE2) {
 		for {
-			var in EvalString
-			if err2 := m.lexer.ReadPath(&in); err2 != nil {
+			ev, err2 := m.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false
 			}
-			if len(in.Parsed) == 0 {
+			if len(ev.Parsed) == 0 {
 				break
 			}
-			ins = append(ins, in)
+			ins = append(ins, ev)
 			orderOnly++
 		}
 	}
 
 	// Add all validations, counting how many as we go.
+	var validations []EvalString
 	if m.lexer.PeekToken(PIPEAT) {
 		for {
-			var validation EvalString
-			if err2 := m.lexer.ReadPath(&validation); err2 != nil {
+			ev, err2 := m.lexer.readEvalString(true)
+			if err2 != nil {
 				*err = err2.Error()
 				return false
 			}
-			if len(validation.Parsed) == 0 {
+			if len(ev.Parsed) == 0 {
 				break
 			}
-			validations = append(validations, validation)
+			validations = append(validations, ev)
 		}
 	}
 
@@ -389,8 +388,9 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	}
 	for hasIndentToken {
 		key := ""
-		var val EvalString
-		if !m.parseLet(&key, &val, err) {
+		val, err2 := m.parseLet(&key)
+		if err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 
@@ -507,8 +507,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) parseFileInclude(newScope bool, err *string) bool {
-	var eval EvalString
-	if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+	eval, err2 := m.lexer.readEvalString(true)
+	if err2 != nil {
 		*err = err2.Error()
 		return false
 	}

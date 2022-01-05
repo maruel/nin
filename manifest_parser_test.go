@@ -1180,14 +1180,8 @@ func TestParserTest_DefaultStatements(t *testing.T) {
 	if 3 != len(nodes) {
 		t.Fatal("expected equal")
 	}
-	if "a" != nodes[0].Path {
-		t.Fatal("expected equal")
-	}
-	if "b" != nodes[1].Path {
-		t.Fatal("expected equal")
-	}
-	if "c" != nodes[2].Path {
-		t.Fatal("expected equal")
+	if nodes[0].Path != "a" || nodes[1].Path != "b" || nodes[2].Path != "c" {
+		t.Fatal(nodes[0].Path, nodes[1].Path, nodes[2].Path)
 	}
 }
 
