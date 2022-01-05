@@ -25,12 +25,8 @@ func newLexer(input string) lexer {
 func TestLexer_ReadVarValue(t *testing.T) {
 	lexer := newLexer("plain text $var $VaR ${x}\n")
 	eval := EvalString{}
-	err := ""
-	if !lexer.ReadVarValue(&eval, &err) {
+	if err := lexer.ReadVarValue(&eval); err != nil {
 		t.Fatalf("ReadVarValue = %v; %s", eval, err)
-	}
-	if err != "" {
-		t.Fatal(err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
@@ -43,12 +39,8 @@ func TestLexer_ReadVarValue(t *testing.T) {
 func TestLexer_ReadEvalStringEscapes(t *testing.T) {
 	lexer := newLexer("$ $$ab c$: $\ncde\n")
 	var eval EvalString
-	err := ""
-	if !lexer.ReadVarValue(&eval, &err) {
+	if err := lexer.ReadVarValue(&eval); err != nil {
 		t.Fatalf("ReadVarValue = %v; %s", eval, err)
-	}
-	if err != "" {
-		t.Fatal(err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
@@ -99,12 +91,8 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 		t.Fatal(ident)
 	}
 	eval := EvalString{}
-	err := ""
-	if !lexer.ReadVarValue(&eval, &err) {
+	if err := lexer.ReadVarValue(&eval); err != nil {
 		t.Fatal()
-	}
-	if err != "" {
-		t.Fatal(err)
 	}
 	// The C++ version of EvalString concatenates text to reduce the array slice.
 	// This is slower in Go in practice.
@@ -117,11 +105,7 @@ func TestLexer_ReadIdentCurlies(t *testing.T) {
 func TestLexer_Error(t *testing.T) {
 	lexer := newLexer("foo$\nbad $")
 	eval := EvalString{}
-	err := ""
-	if lexer.ReadVarValue(&eval, &err) {
-		t.Fatal()
-	}
-	if "input:2: bad $-escape (literal $ must be written as $$)\nbad $\n    ^ near here" != err {
+	if err := lexer.ReadVarValue(&eval); err == nil || err.Error() != "input:2: bad $-escape (literal $ must be written as $$)\nbad $\n    ^ near here" {
 		t.Fatal(err)
 	}
 }

@@ -42,7 +42,8 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 		switch token {
 		case BUILD:
 			if !haveDyndepVersion {
-				return d.lexer.Error("expected 'ninja_dyndep_version = ...'", err)
+				*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
+				return false
 			}
 			if !d.parseEdge(err) {
 				return false
@@ -50,22 +51,25 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 		case IDENT:
 			d.lexer.UnreadToken()
 			if haveDyndepVersion {
-				return d.lexer.Error("unexpected "+token.String(), err)
+				*err = d.lexer.Error("unexpected " + token.String()).Error()
+				return false
 			}
 			if !d.parseDyndepVersion(err) {
 				return false
 			}
 			haveDyndepVersion = true
 		case ERROR:
-			return d.lexer.Error(d.lexer.DescribeLastError(), err)
+			*err = d.lexer.Error(d.lexer.DescribeLastError()).Error()
 		case TEOF:
 			if !haveDyndepVersion {
-				return d.lexer.Error("expected 'ninja_dyndep_version = ...'", err)
+				*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
+				return false
 			}
 			return true
 		case NEWLINE:
 		default:
-			return d.lexer.Error("unexpected "+token.String(), err)
+			*err = d.lexer.Error("unexpected " + token.String()).Error()
+			return false
 		}
 	}
 }
@@ -77,24 +81,28 @@ func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 		return false
 	}
 	if name != "ninja_dyndep_version" {
-		return d.lexer.Error("expected 'ninja_dyndep_version = ...'", err)
+		*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
+		return false
 	}
 	version := letValue.Evaluate(d.env)
 	major, minor := parseVersion(version)
 	if major != 1 || minor != 0 {
-		return d.lexer.Error("unsupported 'ninja_dyndep_version = "+version+"'", err)
+		*err = d.lexer.Error("unsupported 'ninja_dyndep_version = " + version + "'").Error()
+		return false
 	}
 	return true
 }
 
 func (d *DyndepParser) parseLet(key *string, value *EvalString, err *string) bool {
 	if !d.lexer.ReadIdent(key) {
-		return d.lexer.Error("expected variable name", err)
+		*err = d.lexer.Error("expected variable name").Error()
+		return false
 	}
 	if !d.expectToken(EQUALS, err) {
 		return false
 	}
-	if !d.lexer.ReadVarValue(value, err) {
+	if err2 := d.lexer.ReadVarValue(value); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 	return true
@@ -106,39 +114,46 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	var dyndeps *Dyndeps
 	{
 		out0 := EvalString{}
-		if !d.lexer.ReadPath(&out0, err) {
+		if err2 := d.lexer.ReadPath(&out0); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if len(out0.Parsed) == 0 {
-			return d.lexer.Error("expected path", err)
+			*err = d.lexer.Error("expected path").Error()
+			return false
 		}
 
 		path := out0.Evaluate(d.env)
 		if len(path) == 0 {
-			return d.lexer.Error("empty path", err)
+			*err = d.lexer.Error("empty path").Error()
+			return false
 		}
 		path = CanonicalizePath(path)
 		node := d.state.Paths[path]
 		if node == nil || node.InEdge == nil {
-			return d.lexer.Error("no build statement exists for '"+path+"'", err)
+			*err = d.lexer.Error("no build statement exists for '" + path + "'").Error()
+			return false
 		}
 		edge := node.InEdge
 		_, ok := d.dyndepFile[edge]
 		dyndeps = NewDyndeps()
 		d.dyndepFile[edge] = dyndeps
 		if ok {
-			return d.lexer.Error("multiple statements for '"+path+"'", err)
+			*err = d.lexer.Error("multiple statements for '" + path + "'").Error()
+			return false
 		}
 	}
 
 	// Disallow explicit outputs.
 	{
 		var out EvalString
-		if !d.lexer.ReadPath(&out, err) {
+		if err2 := d.lexer.ReadPath(&out); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if len(out.Parsed) != 0 {
-			return d.lexer.Error("explicit outputs not supported", err)
+			*err = d.lexer.Error("explicit outputs not supported").Error()
+			return false
 		}
 	}
 
@@ -147,7 +162,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	if d.lexer.PeekToken(PIPE) {
 		for {
 			var out EvalString
-			if !d.lexer.ReadPath(&out, err) {
+			if err2 := d.lexer.ReadPath(&out); err2 != nil {
+				*err = err2.Error()
 				return false // TODO(maruel): Bug upstream.
 			}
 			if len(out.Parsed) == 0 {
@@ -163,17 +179,20 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 
 	ruleName := ""
 	if !d.lexer.ReadIdent(&ruleName) || ruleName != "dyndep" {
-		return d.lexer.Error("expected build command name 'dyndep'", err)
+		*err = d.lexer.Error("expected build command name 'dyndep'").Error()
+		return false
 	}
 
 	// Disallow explicit inputs.
 	{
 		var in EvalString
-		if !d.lexer.ReadPath(&in, err) {
+		if err2 := d.lexer.ReadPath(&in); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if len(in.Parsed) != 0 {
-			return d.lexer.Error("explicit inputs not supported", err)
+			*err = d.lexer.Error("explicit inputs not supported").Error()
+			return false
 		}
 	}
 
@@ -182,7 +201,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	if d.lexer.PeekToken(PIPE) {
 		for {
 			var in EvalString
-			if !d.lexer.ReadPath(&in, err) {
+			if err2 := d.lexer.ReadPath(&in); err2 != nil {
+				*err = err2.Error()
 				return false // TODO(maruel): Bug upstream.
 			}
 			if len(in.Parsed) == 0 {
@@ -194,7 +214,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 
 	// Disallow order-only inputs.
 	if d.lexer.PeekToken(PIPE2) {
-		return d.lexer.Error("order-only inputs not supported", err)
+		*err = d.lexer.Error("order-only inputs not supported").Error()
+		return false
 	}
 
 	if !d.expectToken(NEWLINE, err) {
@@ -208,7 +229,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 			return false
 		}
 		if key != "restat" {
-			return d.lexer.Error("binding is not 'restat'", err)
+			*err = d.lexer.Error("binding is not 'restat'").Error()
+			return false
 		}
 		value := val.Evaluate(d.env)
 		dyndeps.restat = value != ""
@@ -218,7 +240,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	for _, i := range ins {
 		path := i.Evaluate(d.env)
 		if len(path) == 0 {
-			return d.lexer.Error("empty path", err)
+			*err = d.lexer.Error("empty path").Error()
+			return false
 		}
 		n := d.state.GetNode(CanonicalizePathBits(path))
 		dyndeps.implicitInputs = append(dyndeps.implicitInputs, n)
@@ -228,7 +251,8 @@ func (d *DyndepParser) parseEdge(err *string) bool {
 	for _, i := range outs {
 		path := i.Evaluate(d.env)
 		if len(path) == 0 {
-			return d.lexer.Error("empty path", err)
+			*err = d.lexer.Error("empty path").Error()
+			return false
 		}
 		n := d.state.GetNode(CanonicalizePathBits(path))
 		dyndeps.implicitOutputs = append(dyndeps.implicitOutputs, n)

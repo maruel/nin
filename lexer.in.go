@@ -96,18 +96,18 @@ type lexer struct {
 // Read a path (complete with $escapes).
 // Returns false only on error, returned path may be empty if a delimiter
 // (space, newline) is hit.
-func (l *lexer) ReadPath(path *EvalString, err *string) bool {
-	return l.readEvalString(path, true, err)
+func (l *lexer) ReadPath(path *EvalString) error {
+	return l.readEvalString(path, true)
 }
 
 // Read the value side of a var = value line (complete with $escapes).
 // Returns false only on error.
-func (l *lexer) ReadVarValue(value *EvalString, err *string) bool {
-	return l.readEvalString(value, false, err)
+func (l *lexer) ReadVarValue(value *EvalString) error {
+	return l.readEvalString(value, false)
 }
 
 // Construct an error message with context.
-func (l *lexer) Error(message string, err *string) bool {
+func (l *lexer) Error(message string) error {
 	// Compute line/column.
 	line := 1
 	lineStart := 0
@@ -122,9 +122,8 @@ func (l *lexer) Error(message string, err *string) bool {
 		col = l.lastToken - lineStart
 	}
 
-	*err = fmt.Sprintf("%s:%d: ", l.filename, line)
-	*err += message + "\n"
 	// Add some context to the message.
+	c := ""
 	const truncateColumn = 72
 	if col > 0 && col < truncateColumn {
 		truncated := true
@@ -135,15 +134,16 @@ func (l *lexer) Error(message string, err *string) bool {
 				break
 			}
 		}
-		*err += unsafeString(l.input[lineStart : lineStart+length])
+		c = unsafeString(l.input[lineStart : lineStart+length])
 		if truncated {
-			*err += "..."
+			c += "..."
 		}
-		*err += "\n"
-		*err += strings.Repeat(" ", col)
-		*err += "^ near here"
+		c += "\n"
+		c += strings.Repeat(" ", col)
+		c += "^ near here"
 	}
-	return false
+	// TODO(maruel): There's a problem where the error is wrapped, thus the alignment doesn't work.
+	return fmt.Errorf("%s:%d: %s\n%s", l.filename, line, message, c)
 }
 
 // Start parsing some input.
@@ -276,7 +276,7 @@ func (l *lexer) ReadIdent(out *string) bool {
 }
 
 // Read a $-escaped string.
-func (l *lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
+func (l *lexer) readEvalString(eval *EvalString, path bool) error {
 	p := l.ofs
 	q := 0
 	start := 0
@@ -333,15 +333,15 @@ func (l *lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		  }
 		  "$". {
 		    l.lastToken = start
-		    return l.Error("bad $-escape (literal $ must be written as $$)", err)
+		    return l.Error("bad $-escape (literal $ must be written as $$)")
 		  }
 		  nul {
 		    l.lastToken = start
-		    return l.Error("unexpected EOF", err)
+		    return l.Error("unexpected EOF")
 		  }
 		  [^] {
 		    l.lastToken = start
-		    return l.Error(l.DescribeLastError(), err)
+		    return l.Error(l.DescribeLastError())
 		  }
 		*/
 	}
@@ -351,5 +351,5 @@ func (l *lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
-	return true
+	return nil
 }

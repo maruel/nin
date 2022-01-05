@@ -41,7 +41,7 @@ func (p *parser) Load(filename string, err *string, parent *lexer) bool {
 	if err2 != nil {
 		*err = "loading '" + filename + "': " + err2.Error()
 		if parent != nil {
-			parent.Error(string(*err), err)
+			*err = parent.Error(*err).Error()
 		}
 		return false
 	}
@@ -53,7 +53,8 @@ func (p *parser) Load(filename string, err *string, parent *lexer) bool {
 func (p *parser) expectToken(expected Token, err *string) bool {
 	if token := p.lexer.ReadToken(); token != expected {
 		msg := "expected " + expected.String() + ", got " + token.String() + tokenErrorHint(expected)
-		return p.lexer.Error(msg, err)
+		*err = p.lexer.Error(msg).Error()
+		return false
 	}
 	return true
 }

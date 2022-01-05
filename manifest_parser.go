@@ -94,12 +94,14 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				return false
 			}
 		case ERROR:
-			return m.lexer.Error(m.lexer.DescribeLastError(), err)
+			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
+			return false
 		case TEOF:
 			return true
 		case NEWLINE:
 		default:
-			return m.lexer.Error("unexpected "+token.String(), err)
+			*err = m.lexer.Error("unexpected " + token.String()).Error()
+			return false
 		}
 	}
 }
@@ -108,7 +110,8 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 func (m *ManifestParser) parsePool(err *string) bool {
 	name := ""
 	if !m.lexer.ReadIdent(&name) {
-		return m.lexer.Error("expected pool name", err)
+		*err = m.lexer.Error("expected pool name").Error()
+		return false
 	}
 
 	if !m.expectToken(NEWLINE, err) {
@@ -116,7 +119,8 @@ func (m *ManifestParser) parsePool(err *string) bool {
 	}
 
 	if m.state.Pools[name] != nil {
-		return m.lexer.Error("duplicate pool '"+name+"'", err)
+		*err = m.lexer.Error("duplicate pool '" + name + "'").Error()
+		return false
 	}
 
 	depth := -1
@@ -133,15 +137,18 @@ func (m *ManifestParser) parsePool(err *string) bool {
 			var err2 error
 			depth, err2 = strconv.Atoi(depthString)
 			if depth < 0 || err2 != nil {
-				return m.lexer.Error("invalid pool depth", err)
+				*err = m.lexer.Error("invalid pool depth").Error()
+				return false
 			}
 		} else {
-			return m.lexer.Error("unexpected variable '"+key+"'", err)
+			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
+			return false
 		}
 	}
 
 	if depth < 0 {
-		return m.lexer.Error("expected 'depth =' line", err)
+		*err = m.lexer.Error("expected 'depth =' line").Error()
+		return false
 	}
 
 	m.state.Pools[name] = NewPool(name, depth)
@@ -151,7 +158,8 @@ func (m *ManifestParser) parsePool(err *string) bool {
 func (m *ManifestParser) parseRule(err *string) bool {
 	name := ""
 	if !m.lexer.ReadIdent(&name) {
-		return m.lexer.Error("expected rule name", err)
+		*err = m.lexer.Error("expected rule name").Error()
+		return false
 	}
 
 	if !m.expectToken(NEWLINE, err) {
@@ -159,7 +167,8 @@ func (m *ManifestParser) parseRule(err *string) bool {
 	}
 
 	if m.env.Rules[name] != nil {
-		return m.lexer.Error("duplicate rule '"+name+"'", err)
+		*err = m.lexer.Error("duplicate rule '" + name + "'").Error()
+		return false
 	}
 
 	rule := NewRule(name)
@@ -176,19 +185,22 @@ func (m *ManifestParser) parseRule(err *string) bool {
 		} else {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.
-			return m.lexer.Error("unexpected variable '"+key+"'", err)
+			*err = m.lexer.Error("unexpected variable '" + key + "'").Error()
+			return false
 		}
 	}
 
 	b1, ok1 := rule.Bindings["rspfile"]
 	b2, ok2 := rule.Bindings["rspfile_content"]
 	if ok1 != ok2 || (ok1 && (len(b1.Parsed) == 0) != (len(b2.Parsed) == 0)) {
-		return m.lexer.Error("rspfile and rspfile_content need to be both specified", err)
+		*err = m.lexer.Error("rspfile and rspfile_content need to be both specified").Error()
+		return false
 	}
 
 	b, ok := rule.Bindings["command"]
 	if !ok || len(b.Parsed) == 0 {
-		return m.lexer.Error("expected 'command =' line", err)
+		*err = m.lexer.Error("expected 'command =' line").Error()
+		return false
 	}
 	m.env.Rules[rule.Name] = rule
 	return true
@@ -196,12 +208,14 @@ func (m *ManifestParser) parseRule(err *string) bool {
 
 func (m *ManifestParser) parseLet(key *string, value *EvalString, err *string) bool {
 	if !m.lexer.ReadIdent(key) {
-		return m.lexer.Error("expected variable name", err)
+		*err = m.lexer.Error("expected variable name").Error()
+		return false
 	}
 	if !m.expectToken(EQUALS, err) {
 		return false
 	}
-	if !m.lexer.ReadVarValue(value, err) {
+	if err2 := m.lexer.ReadVarValue(value); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 	return true
@@ -209,25 +223,30 @@ func (m *ManifestParser) parseLet(key *string, value *EvalString, err *string) b
 
 func (m *ManifestParser) parseDefault(err *string) bool {
 	var eval EvalString
-	if !m.lexer.ReadPath(&eval, err) {
+	if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 	if len(eval.Parsed) == 0 {
-		return m.lexer.Error("expected target name", err)
+		*err = m.lexer.Error("expected target name").Error()
+		return false
 	}
 
 	for {
 		path := eval.Evaluate(m.env)
 		if len(path) == 0 {
-			return m.lexer.Error("empty path", err)
+			*err = m.lexer.Error("empty path").Error()
+			return false
 		}
 		defaultErr := ""
 		if !m.state.addDefault(CanonicalizePath(path), &defaultErr) {
-			return m.lexer.Error(defaultErr, err)
+			*err = m.lexer.Error(defaultErr).Error()
+			return false
 		}
 
 		eval.Parsed = nil
-		if !m.lexer.ReadPath(&eval, err) {
+		if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if len(eval.Parsed) == 0 {
@@ -243,14 +262,16 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 
 	{
 		var out EvalString
-		if !m.lexer.ReadPath(&out, err) {
+		if err2 := m.lexer.ReadPath(&out); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		for len(out.Parsed) != 0 {
 			outs = append(outs, out)
 
 			out.Parsed = nil
-			if !m.lexer.ReadPath(&out, err) {
+			if err2 := m.lexer.ReadPath(&out); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 		}
@@ -261,7 +282,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	if m.lexer.PeekToken(PIPE) {
 		for {
 			var out EvalString
-			if !m.lexer.ReadPath(&out, err) {
+			if err2 := m.lexer.ReadPath(&out); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 			if len(out.Parsed) == 0 {
@@ -273,7 +295,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	}
 
 	if len(outs) == 0 {
-		return m.lexer.Error("expected path", err)
+		*err = m.lexer.Error("expected path").Error()
+		return false
 	}
 
 	if !m.expectToken(COLON, err) {
@@ -282,18 +305,21 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 
 	ruleName := ""
 	if !m.lexer.ReadIdent(&ruleName) {
-		return m.lexer.Error("expected build command name", err)
+		*err = m.lexer.Error("expected build command name").Error()
+		return false
 	}
 
 	rule := m.env.LookupRule(ruleName)
 	if rule == nil {
-		return m.lexer.Error("unknown build rule '"+ruleName+"'", err)
+		*err = m.lexer.Error("unknown build rule '" + ruleName + "'").Error()
+		return false
 	}
 
 	for {
 		// XXX should we require one path here?
 		var in EvalString
-		if !m.lexer.ReadPath(&in, err) {
+		if err2 := m.lexer.ReadPath(&in); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 		if len(in.Parsed) == 0 {
@@ -307,7 +333,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	if m.lexer.PeekToken(PIPE) {
 		for {
 			var in EvalString
-			if !m.lexer.ReadPath(&in, err) {
+			if err2 := m.lexer.ReadPath(&in); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 			if len(in.Parsed) == 0 {
@@ -323,7 +350,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	if m.lexer.PeekToken(PIPE2) {
 		for {
 			var in EvalString
-			if !m.lexer.ReadPath(&in, err) {
+			if err2 := m.lexer.ReadPath(&in); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 			if len(in.Parsed) == 0 {
@@ -338,7 +366,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	if m.lexer.PeekToken(PIPEAT) {
 		for {
 			var validation EvalString
-			if !m.lexer.ReadPath(&validation, err) {
+			if err2 := m.lexer.ReadPath(&validation); err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 			if len(validation.Parsed) == 0 {
@@ -376,7 +405,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	if poolName != "" {
 		pool := m.state.Pools[poolName]
 		if pool == nil {
-			return m.lexer.Error("unknown pool name '"+poolName+"'", err)
+			*err = m.lexer.Error("unknown pool name '" + poolName + "'").Error()
+			return false
 		}
 		edge.Pool = pool
 	}
@@ -385,12 +415,13 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	for i := range outs {
 		path := outs[i].Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer.Error("empty path", err)
+			*err = m.lexer.Error("empty path").Error()
+			return false
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		if !m.state.addOut(edge, path, slashBits) {
 			if m.options.ErrOnDupeEdge {
-				m.lexer.Error("multiple rules generate "+path, err)
+				*err = m.lexer.Error("multiple rules generate " + path).Error()
 				return false
 			}
 			if !m.options.Quiet {
@@ -413,7 +444,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	for _, i := range ins {
 		path := i.Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer.Error("empty path", err)
+			*err = m.lexer.Error("empty path").Error()
+			return false
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		m.state.addIn(edge, path, slashBits)
@@ -425,7 +457,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 	for _, v := range validations {
 		path := v.Evaluate(env)
 		if path == "" {
-			return m.lexer.Error("empty path", err)
+			*err = m.lexer.Error("empty path").Error()
+			return false
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		m.state.addValidation(edge, path, slashBits)
@@ -465,7 +498,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 			}
 		}
 		if !found {
-			return m.lexer.Error("dyndep '"+dyndep+"' is not an input", err)
+			*err = m.lexer.Error("dyndep '" + dyndep + "' is not an input").Error()
+			return false
 		}
 	}
 	return true
@@ -474,7 +508,8 @@ func (m *ManifestParser) parseEdge(err *string) bool {
 // Parse either a 'subninja' or 'include' line.
 func (m *ManifestParser) parseFileInclude(newScope bool, err *string) bool {
 	var eval EvalString
-	if !m.lexer.ReadPath(&eval, err) {
+	if err2 := m.lexer.ReadPath(&eval); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 	path := eval.Evaluate(m.env)
