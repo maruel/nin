@@ -242,25 +242,25 @@ func (e *Edge) EvaluateCommand(inclRspFile bool) string {
 
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
-	env := NewEdgeEnv(e, ShellEscape)
+	env := newEdgeEnv(e, ShellEscape)
 	return env.LookupVariable(key)
 }
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	env := NewEdgeEnv(e, DoNotEscape)
+	env := newEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("depfile")
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	env := NewEdgeEnv(e, DoNotEscape)
+	env := newEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("dyndep")
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	env := NewEdgeEnv(e, DoNotEscape)
+	env := newEdgeEnv(e, DoNotEscape)
 	return env.LookupVariable("rspfile")
 }
 
@@ -404,7 +404,7 @@ type edgeEnv struct {
 	recursive   bool
 }
 
-func NewEdgeEnv(edge *Edge, escape EscapeKind) edgeEnv {
+func newEdgeEnv(edge *Edge, escape EscapeKind) edgeEnv {
 	return edgeEnv{
 		edge:        edge,
 		escapeInOut: escape,

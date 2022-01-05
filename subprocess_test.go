@@ -29,7 +29,7 @@ func testCommand() string {
 }
 
 func NewSubprocessSetTest(t *testing.T) *subprocessSet {
-	s := NewSubprocessSet()
+	s := newSubprocessSet()
 	t.Cleanup(s.Clear)
 	return s
 }

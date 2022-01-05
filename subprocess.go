@@ -109,7 +109,7 @@ type subprocessSet struct {
 	finished []*subprocess
 }
 
-func NewSubprocessSet() *subprocessSet {
+func newSubprocessSet() *subprocessSet {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &subprocessSet{
 		ctx:      ctx,

@@ -135,10 +135,10 @@ type realCommandRunner struct {
 	subprocToEdge map[*subprocess]*Edge
 }
 
-func NewRealCommandRunner(config *BuildConfig) *realCommandRunner {
+func newRealCommandRunner(config *BuildConfig) *realCommandRunner {
 	return &realCommandRunner{
 		config:        config,
-		subprocs:      NewSubprocessSet(),
+		subprocs:      newSubprocessSet(),
 		subprocToEdge: map[*subprocess]*Edge{},
 	}
 }
@@ -766,7 +766,7 @@ func (b *Builder) Build(err *string) bool {
 		if b.config.DryRun {
 			b.commandRunner = &dryRunCommandRunner{}
 		} else {
-			b.commandRunner = NewRealCommandRunner(b.config)
+			b.commandRunner = newRealCommandRunner(b.config)
 		}
 	}
 

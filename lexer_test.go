@@ -16,8 +16,8 @@ package nin
 
 import "testing"
 
-func newLexer(input string) Lexer {
-	l := Lexer{}
+func newLexer(input string) lexer {
+	l := lexer{}
 	l.Start("input", []byte(input+"\x00"))
 	return l
 }

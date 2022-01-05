@@ -51,19 +51,19 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 		token := m.lexer.ReadToken()
 		switch token {
 		case POOL:
-			if !m.ParsePool(err) {
+			if !m.parsePool(err) {
 				return false
 			}
 		case BUILD:
-			if !m.ParseEdge(err) {
+			if !m.parseEdge(err) {
 				return false
 			}
 		case RULE:
-			if !m.ParseRule(err) {
+			if !m.parseRule(err) {
 				return false
 			}
 		case DEFAULT:
-			if !m.ParseDefault(err) {
+			if !m.parseDefault(err) {
 				return false
 			}
 		case IDENT:
@@ -71,7 +71,7 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				m.lexer.UnreadToken()
 				name := ""
 				var letValue EvalString
-				if !m.ParseLet(&name, &letValue, err) {
+				if !m.parseLet(&name, &letValue, err) {
 					return false
 				}
 				value := letValue.Evaluate(m.env)
@@ -86,11 +86,11 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				m.env.Bindings[name] = value
 			}
 		case INCLUDE:
-			if !m.ParseFileInclude(false, err) {
+			if !m.parseFileInclude(false, err) {
 				return false
 			}
 		case SUBNINJA:
-			if !m.ParseFileInclude(true, err) {
+			if !m.parseFileInclude(true, err) {
 				return false
 			}
 		case ERROR:
@@ -99,13 +99,13 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 			return true
 		case NEWLINE:
 		default:
-			return m.lexer.Error(string("unexpected ")+TokenName(token), err)
+			return m.lexer.Error("unexpected "+token.String(), err)
 		}
 	}
 }
 
 // Parse various statement types.
-func (m *ManifestParser) ParsePool(err *string) bool {
+func (m *ManifestParser) parsePool(err *string) bool {
 	name := ""
 	if !m.lexer.ReadIdent(&name) {
 		return m.lexer.Error("expected pool name", err)
@@ -124,7 +124,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 	for m.lexer.PeekToken(INDENT) {
 		key := ""
 		var value EvalString
-		if !m.ParseLet(&key, &value, err) {
+		if !m.parseLet(&key, &value, err) {
 			return false
 		}
 
@@ -148,7 +148,7 @@ func (m *ManifestParser) ParsePool(err *string) bool {
 	return true
 }
 
-func (m *ManifestParser) ParseRule(err *string) bool {
+func (m *ManifestParser) parseRule(err *string) bool {
 	name := ""
 	if !m.lexer.ReadIdent(&name) {
 		return m.lexer.Error("expected rule name", err)
@@ -167,7 +167,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 	for m.lexer.PeekToken(INDENT) {
 		key := ""
 		var value EvalString
-		if !m.ParseLet(&key, &value, err) {
+		if !m.parseLet(&key, &value, err) {
 			return false
 		}
 
@@ -194,7 +194,7 @@ func (m *ManifestParser) ParseRule(err *string) bool {
 	return true
 }
 
-func (m *ManifestParser) ParseLet(key *string, value *EvalString, err *string) bool {
+func (m *ManifestParser) parseLet(key *string, value *EvalString, err *string) bool {
 	if !m.lexer.ReadIdent(key) {
 		return m.lexer.Error("expected variable name", err)
 	}
@@ -207,7 +207,7 @@ func (m *ManifestParser) ParseLet(key *string, value *EvalString, err *string) b
 	return true
 }
 
-func (m *ManifestParser) ParseDefault(err *string) bool {
+func (m *ManifestParser) parseDefault(err *string) bool {
 	var eval EvalString
 	if !m.lexer.ReadPath(&eval, err) {
 		return false
@@ -238,7 +238,7 @@ func (m *ManifestParser) ParseDefault(err *string) bool {
 	return m.ExpectToken(NEWLINE, err)
 }
 
-func (m *ManifestParser) ParseEdge(err *string) bool {
+func (m *ManifestParser) parseEdge(err *string) bool {
 	var ins, outs, validations []EvalString
 
 	{
@@ -361,7 +361,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 	for hasIndentToken {
 		key := ""
 		var val EvalString
-		if !m.ParseLet(&key, &val, err) {
+		if !m.parseLet(&key, &val, err) {
 			return false
 		}
 
@@ -472,7 +472,7 @@ func (m *ManifestParser) ParseEdge(err *string) bool {
 }
 
 // Parse either a 'subninja' or 'include' line.
-func (m *ManifestParser) ParseFileInclude(newScope bool, err *string) bool {
+func (m *ManifestParser) parseFileInclude(newScope bool, err *string) bool {
 	var eval EvalString
 	if !m.lexer.ReadPath(&eval, err) {
 		return false

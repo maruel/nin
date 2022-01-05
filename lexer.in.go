@@ -43,7 +43,46 @@ const (
 	TEOF
 )
 
-type Lexer struct {
+// String() returns a human-readable form of a token, used in error messages.
+func (t Token) String() string {
+	switch t {
+	case ERROR:
+		return "lexing error"
+	case BUILD:
+		return "'build'"
+	case COLON:
+		return "':'"
+	case DEFAULT:
+		return "'default'"
+	case EQUALS:
+		return "'='"
+	case IDENT:
+		return "identifier"
+	case INCLUDE:
+		return "'include'"
+	case INDENT:
+		return "indent"
+	case NEWLINE:
+		return "newline"
+	case PIPE2:
+		return "'||'"
+	case PIPE:
+		return "'|'"
+	case PIPEAT:
+		return "'|@'"
+	case POOL:
+		return "'pool'"
+	case RULE:
+		return "'rule'"
+	case SUBNINJA:
+		return "'subninja'"
+	case TEOF:
+		return "eof"
+	}
+	return "" // not reached
+}
+
+type lexer struct {
 	filename string
 	input    []byte
 	// In the original C++ code, these two are char pointers and are used to do
@@ -57,18 +96,18 @@ type Lexer struct {
 // Read a path (complete with $escapes).
 // Returns false only on error, returned path may be empty if a delimiter
 // (space, newline) is hit.
-func (l *Lexer) ReadPath(path *EvalString, err *string) bool {
+func (l *lexer) ReadPath(path *EvalString, err *string) bool {
 	return l.readEvalString(path, true, err)
 }
 
 // Read the value side of a var = value line (complete with $escapes).
 // Returns false only on error.
-func (l *Lexer) ReadVarValue(value *EvalString, err *string) bool {
+func (l *lexer) ReadVarValue(value *EvalString, err *string) bool {
 	return l.readEvalString(value, false, err)
 }
 
 // Construct an error message with context.
-func (l *Lexer) Error(message string, err *string) bool {
+func (l *lexer) Error(message string, err *string) bool {
 	// Compute line/column.
 	line := 1
 	lineStart := 0
@@ -108,7 +147,7 @@ func (l *Lexer) Error(message string, err *string) bool {
 }
 
 // Start parsing some input.
-func (l *Lexer) Start(filename string, input []byte) {
+func (l *lexer) Start(filename string, input []byte) {
 	l.filename = filename
 	if input[len(input)-1] != 0 {
 		panic("Requires hack with a trailing 0 byte")
@@ -118,48 +157,9 @@ func (l *Lexer) Start(filename string, input []byte) {
 	l.lastToken = -1
 }
 
-// Return a human-readable form of a token, used in error messages.
-func TokenName(t Token) string {
-	switch t {
-	case ERROR:
-		return "lexing error"
-	case BUILD:
-		return "'build'"
-	case COLON:
-		return "':'"
-	case DEFAULT:
-		return "'default'"
-	case EQUALS:
-		return "'='"
-	case IDENT:
-		return "identifier"
-	case INCLUDE:
-		return "'include'"
-	case INDENT:
-		return "indent"
-	case NEWLINE:
-		return "newline"
-	case PIPE2:
-		return "'||'"
-	case PIPE:
-		return "'|'"
-	case PIPEAT:
-		return "'|@'"
-	case POOL:
-		return "'pool'"
-	case RULE:
-		return "'rule'"
-	case SUBNINJA:
-		return "'subninja'"
-	case TEOF:
-		return "eof"
-	}
-	return "" // not reached
-}
-
 // If the last token read was an ERROR token, provide more info
 // or the empty string.
-func (l *Lexer) DescribeLastError() string {
+func (l *lexer) DescribeLastError() string {
 	if l.lastToken != -1 {
 		switch l.input[l.lastToken] {
 		case '\t':
@@ -170,11 +170,11 @@ func (l *Lexer) DescribeLastError() string {
 }
 
 // Rewind to the last read Token.
-func (l *Lexer) UnreadToken() {
+func (l *lexer) UnreadToken() {
 	l.ofs = l.lastToken
 }
 
-func (l *Lexer) ReadToken() Token {
+func (l *lexer) ReadToken() Token {
 	p := l.ofs
 	q := 0
 	start := 0
@@ -226,7 +226,7 @@ func (l *Lexer) ReadToken() Token {
 }
 
 // If the next token is \a token, read it and return true.
-func (l *Lexer) PeekToken(token Token) bool {
+func (l *lexer) PeekToken(token Token) bool {
 	t := l.ReadToken()
 	if t == token {
 		return true
@@ -236,7 +236,7 @@ func (l *Lexer) PeekToken(token Token) bool {
 }
 
 // Skip past whitespace (called after each read token/ident/etc.).
-func (l *Lexer) eatWhitespace() {
+func (l *lexer) eatWhitespace() {
 	p := l.ofs
 	q := 0
 	for {
@@ -253,7 +253,7 @@ func (l *Lexer) eatWhitespace() {
 
 // Read a simple identifier (a rule or variable name).
 // Returns false if a name can't be read.
-func (l *Lexer) ReadIdent(out *string) bool {
+func (l *lexer) ReadIdent(out *string) bool {
 	p := l.ofs
 	start := 0
 	for {
@@ -276,7 +276,7 @@ func (l *Lexer) ReadIdent(out *string) bool {
 }
 
 // Read a $-escaped string.
-func (l *Lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
+func (l *lexer) readEvalString(eval *EvalString, path bool, err *string) bool {
 	p := l.ofs
 	q := 0
 	start := 0

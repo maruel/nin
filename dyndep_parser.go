@@ -50,7 +50,7 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 		case IDENT:
 			d.lexer.UnreadToken()
 			if haveDyndepVersion {
-				return d.lexer.Error(string("unexpected ")+TokenName(token), err)
+				return d.lexer.Error("unexpected "+token.String(), err)
 			}
 			if !d.parseDyndepVersion(err) {
 				return false
@@ -65,7 +65,7 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 			return true
 		case NEWLINE:
 		default:
-			return d.lexer.Error(string("unexpected ")+TokenName(token), err)
+			return d.lexer.Error("unexpected "+token.String(), err)
 		}
 	}
 }
