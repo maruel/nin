@@ -271,15 +271,15 @@ func (l *lexer) ReadIdent(out *string) bool {
 //
 // Returned path may be empty if a delimiter (space, newline) is hit.
 func (l *lexer) readEvalString(path bool) (EvalString, error) {
-	eval := EvalString{}
 	p := l.ofs
 	q := 0
 	start := 0
+	var parsed []TokenListItem
 	for {
 		start = p
 		/*!re2c
 		  [^$ :\r\n|\000]+ {
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start: p]), false})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start: p]), false})
 		    continue
 		  }
 		  "\r\n" {
@@ -296,16 +296,16 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		      if l.input[start] == '\n' {
 		        break
 		      }
-					eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start:start+1]), false})
+					parsed = append(parsed, TokenListItem{unsafeString(l.input[start:start+1]), false})
 		      continue
 		    }
 		  }
 		  "$$" {
-				eval.Parsed = append(eval.Parsed, TokenListItem{"$", false})
+				parsed = append(parsed, TokenListItem{"$", false})
 		    continue
 		  }
 		  "$ " {
-				eval.Parsed = append(eval.Parsed, TokenListItem{" ", false})
+				parsed = append(parsed, TokenListItem{" ", false})
 		    continue
 		  }
 		  "$\r\n"[ ]* {
@@ -315,28 +315,28 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		    continue
 		  }
 		  "${"varname"}" {
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start + 2: p - 1]), true})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start + 2: p - 1]), true})
 		    continue
 		  }
 		  "$"simpleVarname {
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start + 1: p]), true})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start + 1: p]), true})
 		    continue
 		  }
 		  "$:" {
-				eval.Parsed = append(eval.Parsed, TokenListItem{":", false})
+				parsed = append(parsed, TokenListItem{":", false})
 		    continue
 		  }
 		  "$". {
 		    l.lastToken = start
-		    return eval, l.Error("bad $-escape (literal $ must be written as $$)")
+		    return EvalString{}, l.Error("bad $-escape (literal $ must be written as $$)")
 		  }
 		  nul {
 		    l.lastToken = start
-		    return eval, l.Error("unexpected EOF")
+		    return EvalString{}, l.Error("unexpected EOF")
 		  }
 		  [^] {
 		    l.lastToken = start
-		    return eval, l.Error(l.DescribeLastError())
+		    return EvalString{}, l.Error(l.DescribeLastError())
 		  }
 		*/
 	}
@@ -346,5 +346,5 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
-	return eval, nil
+	return EvalString{Parsed: parsed}, nil
 }

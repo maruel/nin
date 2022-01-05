@@ -2131,10 +2131,10 @@ func (l *lexer) ReadIdent(out *string) bool {
 //
 // Returned path may be empty if a delimiter (space, newline) is hit.
 func (l *lexer) readEvalString(path bool) (EvalString, error) {
-	eval := EvalString{}
 	p := l.ofs
 	q := 0
 	start := 0
+	var parsed []TokenListItem
 	for {
 		start = p
 
@@ -2163,7 +2163,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			p++
 			{
 				l.lastToken = start
-				return eval, l.Error("unexpected EOF")
+				return EvalString{}, l.Error("unexpected EOF")
 			}
 		yy102:
 			p++
@@ -2188,7 +2188,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy104:
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start:p]), false})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start:p]), false})
 				continue
 			}
 		yy105:
@@ -2201,7 +2201,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 					if l.input[start] == '\n' {
 						break
 					}
-					eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start : start+1]), false})
+					parsed = append(parsed, TokenListItem{unsafeString(l.input[start : start+1]), false})
 					continue
 				}
 			}
@@ -2217,7 +2217,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy108:
 			{
 				l.lastToken = start
-				return eval, l.Error(l.DescribeLastError())
+				return EvalString{}, l.Error(l.DescribeLastError())
 			}
 		yy109:
 			p++
@@ -2379,7 +2379,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy113:
 			{
 				l.lastToken = start
-				return eval, l.Error("bad $-escape (literal $ must be written as $$)")
+				return EvalString{}, l.Error("bad $-escape (literal $ must be written as $$)")
 			}
 		yy114:
 			p++
@@ -2406,13 +2406,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy118:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{" ", false})
+				parsed = append(parsed, TokenListItem{" ", false})
 				continue
 			}
 		yy120:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{"$", false})
+				parsed = append(parsed, TokenListItem{"$", false})
 				continue
 			}
 		yy122:
@@ -2552,13 +2552,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy124:
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start+1 : p]), true})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start+1 : p]), true})
 				continue
 			}
 		yy125:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{":", false})
+				parsed = append(parsed, TokenListItem{":", false})
 				continue
 			}
 		yy127:
@@ -2857,7 +2857,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy134:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, TokenListItem{unsafeString(l.input[start+2 : p-1]), true})
+				parsed = append(parsed, TokenListItem{unsafeString(l.input[start+2 : p-1]), true})
 				continue
 			}
 		}
@@ -2869,5 +2869,5 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		l.eatWhitespace()
 	}
 	// Non-path strings end in newlines, so there's no whitespace to eat.
-	return eval, nil
+	return EvalString{Parsed: parsed}, nil
 }
