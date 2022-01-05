@@ -22,9 +22,11 @@ import (
 // Debug contains debug functionality.
 var Debug struct {
 	// Explaining enables debug print of reason while a command is run.
-	Explaining  bool
+	Explaining bool
+	// KeepDepfile enables keeping gcc-style dependency files.
 	KeepDepfile bool
-	KeepRsp     bool
+	// KeepRsp enables keeping response file after commands.
+	KeepRsp bool
 }
 
 func explain(f string, i ...interface{}) {

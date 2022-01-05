@@ -96,8 +96,8 @@ type DepsLog struct {
 // The version is stored as 4 bytes after the signature and also serves as a
 // byte order mark. Signature and version combined are 16 bytes long.
 const (
-	DepsLogFileSignature  = "# ninjadeps\n"
-	DepsLogCurrentVersion = uint32(4)
+	depsLogFileSignature  = "# ninjadeps\n"
+	depsLogCurrentVersion = uint32(4)
 )
 
 // Record size is currently limited to less than the full 32 bit, due to
@@ -247,9 +247,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	// Validate header.
 	validHeader := false
 	version := uint32(0)
-	if len(data) >= len(DepsLogFileSignature)+4 && unsafeString(data[:len(DepsLogFileSignature)]) == DepsLogFileSignature {
-		version = binary.LittleEndian.Uint32(data[len(DepsLogFileSignature):])
-		validHeader = version == DepsLogCurrentVersion
+	if len(data) >= len(depsLogFileSignature)+4 && unsafeString(data[:len(depsLogFileSignature)]) == depsLogFileSignature {
+		version = binary.LittleEndian.Uint32(data[len(depsLogFileSignature):])
+		validHeader = version == depsLogCurrentVersion
 	}
 	if !validHeader {
 		if version == 1 {
@@ -273,7 +273,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	// "data[offset+4:offset+8]".
 	// Offset is kept to keep the last successful read, to truncate in case of
 	// failure.
-	offset := int64(len(DepsLogFileSignature) + 4)
+	offset := int64(len(depsLogFileSignature) + 4)
 	data = data[offset:]
 	readFailed := false
 	uniqueDepRecordCount := 0
@@ -601,11 +601,11 @@ func (d *DepsLog) openForWriteIfNeeded() bool {
 	}
 
 	if offset == 0 {
-		if _, err := d.buf.WriteString(DepsLogFileSignature); err != nil {
+		if _, err := d.buf.WriteString(depsLogFileSignature); err != nil {
 			// TODO(maruel): Return the real error.
 			return false
 		}
-		if err := binary.Write(d.buf, binary.LittleEndian, DepsLogCurrentVersion); err != nil {
+		if err := binary.Write(d.buf, binary.LittleEndian, depsLogCurrentVersion); err != nil {
 			// TODO(maruel): Return the real error.
 			return false
 		}

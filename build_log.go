@@ -55,9 +55,9 @@ func (l *LogEntry) Serialize(w io.Writer) error {
 // out a new file and replace the existing one with it.
 
 const (
-	BuildLogFileSignature          = "# ninja log v%d\n"
-	BuildLogOldestSupportedVersion = 4
-	BuildLogCurrentVersion         = 5
+	buildLogFileSignature          = "# ninja log v%d\n"
+	buildLogOldestSupportedVersion = 4
+	buildLogCurrentVersion         = 5
 )
 
 // unsafeByteSlice converts string to a byte slice without memory allocation.
@@ -252,7 +252,7 @@ func (b *BuildLog) OpenForWriteIfNeeded() bool {
 	p, _ := b.logFile.Seek(0, os.SEEK_END)
 
 	if p == 0 {
-		if _, err := fmt.Fprintf(b.logFile, BuildLogFileSignature, BuildLogCurrentVersion); err != nil {
+		if _, err := fmt.Fprintf(b.logFile, buildLogFileSignature, buildLogCurrentVersion); err != nil {
 			return false
 		}
 	}
@@ -346,9 +346,9 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		}
 		line = line[:len(line)-1]
 		if logVersion == 0 {
-			_, _ = fmt.Sscanf(line, BuildLogFileSignature, &logVersion)
+			_, _ = fmt.Sscanf(line, buildLogFileSignature, &logVersion)
 
-			if logVersion < BuildLogOldestSupportedVersion {
+			if logVersion < buildLogOldestSupportedVersion {
 				*err = "build log version invalid, perhaps due to being too old; starting over"
 				_ = os.Remove(path)
 				// Don't report this as a failure.  An empty build log will cause
@@ -421,7 +421,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	// - if it's getting large
 	const minCompactionEntryCount = 100
 	const compactionRatio = 3
-	if logVersion < BuildLogCurrentVersion {
+	if logVersion < buildLogCurrentVersion {
 		b.needsRecompaction = true
 	} else if totalEntryCount > minCompactionEntryCount && totalEntryCount > uniqueEntryCount*compactionRatio {
 		b.needsRecompaction = true
@@ -441,7 +441,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 		return false
 	}
 
-	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
+	if _, err2 := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err2 != nil {
 		*err = err2.Error()
 		_ = f.Close()
 		return false
@@ -490,7 +490,7 @@ func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *
 		return false
 	}
 
-	if _, err2 := fmt.Fprintf(f, BuildLogFileSignature, BuildLogCurrentVersion); err2 != nil {
+	if _, err2 := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err2 != nil {
 		*err = err2.Error()
 		_ = f.Close()
 		return false
