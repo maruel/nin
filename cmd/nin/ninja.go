@@ -480,7 +480,7 @@ func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
 		return 1
 	}
 	di := nin.NewRealDiskInterface()
-	printer := nin.MissingDependencyPrinter{}
+	printer := MissingDependencyPrinter{}
 	scanner := nin.NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &di)
 	for _, it := range nodes {
 		scanner.ProcessNode(it)
