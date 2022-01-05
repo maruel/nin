@@ -17,6 +17,7 @@ package nin
 import (
 	"fmt"
 	"sort"
+	"sync"
 )
 
 // Pool is a pool for delayed edges.
@@ -123,6 +124,8 @@ var (
 
 // Global state (file status) for a single run.
 type State struct {
+	mu sync.Mutex
+
 	// Mapping of path -> Node.
 	Paths map[string]*Node
 
@@ -160,18 +163,21 @@ func (s *State) addEdge(rule *Rule) *Edge {
 	edge.Pool = DefaultPool
 	edge.Env = s.Bindings
 	edge.ID = int32(len(s.Edges))
+	s.mu.Lock()
 	s.Edges = append(s.Edges, edge)
+	s.mu.Unlock()
 	return edge
 }
 
 // GetNode creates a Node or returns the existing one.
 func (s *State) GetNode(path string, slashBits uint64) *Node {
+	s.mu.Lock()
 	node := s.Paths[path]
-	if node != nil {
-		return node
+	if node == nil {
+		node = NewNode(path, slashBits)
+		s.Paths[node.Path] = node
 	}
-	node = NewNode(path, slashBits)
-	s.Paths[node.Path] = node
+	s.mu.Unlock()
 	return node
 }
 

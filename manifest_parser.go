@@ -18,6 +18,7 @@ import (
 	"errors"
 	"sort"
 	"strconv"
+	"sync"
 )
 
 // ManifestParserOptions are the options when parsing a build.ninja file.
@@ -552,8 +553,8 @@ func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja)
 
 // processSubninjaQueue empties the queue.
 func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error {
+	// Ordered flow.
 	if false {
-		// Ordered flow.
 		results := make([]subninja, nb)
 		for i := 0; i < nb; i++ {
 			results[i] = <-ch
@@ -575,9 +576,34 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 			}
 		}
 	}
+
 	// Out of order flow. May be incompatible?
+	if false {
+		var err error
+		subparser := NewManifestParser(m.state, m.fileReader, m.options)
+		for i := 0; i < nb; i++ {
+			s := <-ch
+			if err != nil {
+				continue
+			}
+			if s.err != nil {
+				err = m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
+				continue
+			}
+			subparser.env = NewBindingEnv(m.env)
+			err2 := ""
+			if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
+				err = errors.New(err2)
+			}
+		}
+		return err
+	}
+
+	// Full concurrent flow.
 	var err error
-	subparser := NewManifestParser(m.state, m.fileReader, m.options)
+	res := make(chan string, nb)
+	wg := sync.WaitGroup{}
+	r := 0
 	for i := 0; i < nb; i++ {
 		s := <-ch
 		if err != nil {
@@ -587,10 +613,24 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 			err = m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			continue
 		}
-		subparser.env = NewBindingEnv(m.env)
-		err2 := ""
-		if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
-			err = errors.New(err2)
+		r++
+		wg.Add(1)
+		go func(n string, c []byte) {
+			defer wg.Done()
+			subparser := NewManifestParser(m.state, m.fileReader, m.options)
+			subparser.env = NewBindingEnv(m.env)
+			err2 := ""
+			subparser.parser.Parse.Parse(n, c, &err2)
+			res <- err2
+		}(s.name, s.contents)
+	}
+	wg.Wait()
+	if err == nil {
+		for i := 0; i < r; i++ {
+			if s := <-res; s != "" {
+				err = errors.New(s)
+				break
+			}
 		}
 	}
 	return err
