@@ -2156,10 +2156,13 @@ func (l *lexer) readIdent() string {
 //
 // Returned path may be empty if a delimiter (space, newline) is hit.
 func (l *lexer) readEvalString(path bool) (EvalString, error) {
-	eval := EvalString{}
+	// Do two passes, first to count the number of tokens, then to act on it. It
+	// is because some strings may contain a fairly large number of tokens,
+	// causing a fair amount of runtime.growslice() calls.
 	p := l.ofs
 	q := 0
 	start := 0
+	tokens := 0
 	for {
 		start = p
 
@@ -2188,7 +2191,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			p++
 			{
 				l.lastToken = start
-				return eval, l.Error("unexpected EOF")
+				return EvalString{}, l.Error("unexpected EOF")
 			}
 		yy102:
 			p++
@@ -2213,7 +2216,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy104:
 			{
-				eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start:p]), false})
+				tokens++
 				continue
 			}
 		yy105:
@@ -2226,7 +2229,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 					if l.input[start] == '\n' {
 						break
 					}
-					eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start : start+1]), false})
+					tokens++
 					continue
 				}
 			}
@@ -2242,7 +2245,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy108:
 			{
 				l.lastToken = start
-				return eval, l.Error(l.DescribeLastError())
+				return EvalString{}, l.Error(l.DescribeLastError())
 			}
 		yy109:
 			p++
@@ -2404,7 +2407,7 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy113:
 			{
 				l.lastToken = start
-				return eval, l.Error("bad $-escape (literal $ must be written as $$)")
+				return EvalString{}, l.Error("bad $-escape (literal $ must be written as $$)")
 			}
 		yy114:
 			p++
@@ -2431,13 +2434,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		yy118:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, EvalStringToken{" ", false})
+				tokens++
 				continue
 			}
 		yy120:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, EvalStringToken{"$", false})
+				tokens++
 				continue
 			}
 		yy122:
@@ -2577,13 +2580,13 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			}
 		yy124:
 			{
-				eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start+1 : p]), true})
+				tokens++
 				continue
 			}
 		yy125:
 			p++
 			{
-				eval.Parsed = append(eval.Parsed, EvalStringToken{":", false})
+				tokens++
 				continue
 			}
 		yy127:
@@ -2880,6 +2883,594 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 			p = q
 			goto yy113
 		yy134:
+			p++
+			{
+				tokens++
+				continue
+			}
+		}
+
+	}
+
+	// One side effect is that the string has been validated, so the second loop
+	// can skip on error checking.
+
+	eval := EvalString{Parsed: make([]TokenListItem, 0, tokens)}
+	p = l.ofs
+	q = 0
+	start = 0
+	for {
+		start = p
+
+		{
+			var yych byte
+			yych = l.input[p]
+			switch yych {
+			case 0x00:
+				goto yy138
+			case '\n':
+				fallthrough
+			case ' ':
+				fallthrough
+			case ':':
+				fallthrough
+			case '|':
+				goto yy142
+			case '\r':
+				goto yy144
+			case '$':
+				goto yy145
+			default:
+				goto yy139
+			}
+		yy138:
+		yy139:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case 0x00:
+				fallthrough
+			case '\n':
+				fallthrough
+			case '\r':
+				fallthrough
+			case ' ':
+				fallthrough
+			case '$':
+				fallthrough
+			case ':':
+				fallthrough
+			case '|':
+				goto yy141
+			default:
+				goto yy139
+			}
+		yy141:
+			{
+				eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start:p]), false})
+				continue
+			}
+		yy142:
+			p++
+			{
+				if path {
+					p = start
+					break
+				} else {
+					if l.input[start] == '\n' {
+						break
+					}
+					eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start : start+1]), false})
+					continue
+				}
+			}
+		yy144:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case '\n':
+				goto yy146
+			default:
+				goto yy138
+			}
+		yy145:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case '\n':
+				goto yy148
+			case '\r':
+				goto yy151
+			case ' ':
+				goto yy152
+			case '$':
+				goto yy154
+			case '-':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy156
+			case ':':
+				goto yy159
+			case '{':
+				goto yy161
+			default:
+				goto yy138
+			}
+		yy146:
+			p++
+			{
+				if path {
+					p = start
+				}
+				break
+			}
+		yy148:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case ' ':
+				goto yy148
+			default:
+				goto yy150
+			}
+		yy150:
+			{
+				continue
+			}
+		yy151:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case '\n':
+				goto yy162
+			default:
+				goto yy138
+			}
+		yy152:
+			p++
+			{
+				eval.Parsed = append(eval.Parsed, EvalStringToken{" ", false})
+				continue
+			}
+		yy154:
+			p++
+			{
+				eval.Parsed = append(eval.Parsed, EvalStringToken{"$", false})
+				continue
+			}
+		yy156:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case '-':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy156
+			default:
+				goto yy158
+			}
+		yy158:
+			{
+				eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start+1 : p]), true})
+				continue
+			}
+		yy159:
+			p++
+			{
+				eval.Parsed = append(eval.Parsed, EvalStringToken{":", false})
+				continue
+			}
+		yy161:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case '}':
+				goto yy138
+			default:
+				goto yy166
+			}
+		yy162:
+			p++
+			yych = l.input[p]
+			switch yych {
+			case ' ':
+				goto yy162
+			default:
+				goto yy164
+			}
+		yy164:
+			{
+				continue
+			}
+		yy165:
+			p++
+			yych = l.input[p]
+		yy166:
+			switch yych {
+			case '-':
+				fallthrough
+			case '.':
+				fallthrough
+			case '0':
+				fallthrough
+			case '1':
+				fallthrough
+			case '2':
+				fallthrough
+			case '3':
+				fallthrough
+			case '4':
+				fallthrough
+			case '5':
+				fallthrough
+			case '6':
+				fallthrough
+			case '7':
+				fallthrough
+			case '8':
+				fallthrough
+			case '9':
+				fallthrough
+			case 'A':
+				fallthrough
+			case 'B':
+				fallthrough
+			case 'C':
+				fallthrough
+			case 'D':
+				fallthrough
+			case 'E':
+				fallthrough
+			case 'F':
+				fallthrough
+			case 'G':
+				fallthrough
+			case 'H':
+				fallthrough
+			case 'I':
+				fallthrough
+			case 'J':
+				fallthrough
+			case 'K':
+				fallthrough
+			case 'L':
+				fallthrough
+			case 'M':
+				fallthrough
+			case 'N':
+				fallthrough
+			case 'O':
+				fallthrough
+			case 'P':
+				fallthrough
+			case 'Q':
+				fallthrough
+			case 'R':
+				fallthrough
+			case 'S':
+				fallthrough
+			case 'T':
+				fallthrough
+			case 'U':
+				fallthrough
+			case 'V':
+				fallthrough
+			case 'W':
+				fallthrough
+			case 'X':
+				fallthrough
+			case 'Y':
+				fallthrough
+			case 'Z':
+				fallthrough
+			case '_':
+				fallthrough
+			case 'a':
+				fallthrough
+			case 'b':
+				fallthrough
+			case 'c':
+				fallthrough
+			case 'd':
+				fallthrough
+			case 'e':
+				fallthrough
+			case 'f':
+				fallthrough
+			case 'g':
+				fallthrough
+			case 'h':
+				fallthrough
+			case 'i':
+				fallthrough
+			case 'j':
+				fallthrough
+			case 'k':
+				fallthrough
+			case 'l':
+				fallthrough
+			case 'm':
+				fallthrough
+			case 'n':
+				fallthrough
+			case 'o':
+				fallthrough
+			case 'p':
+				fallthrough
+			case 'q':
+				fallthrough
+			case 'r':
+				fallthrough
+			case 's':
+				fallthrough
+			case 't':
+				fallthrough
+			case 'u':
+				fallthrough
+			case 'v':
+				fallthrough
+			case 'w':
+				fallthrough
+			case 'x':
+				fallthrough
+			case 'y':
+				fallthrough
+			case 'z':
+				goto yy165
+			case '}':
+				goto yy167
+			default:
+				goto yy138
+			}
+		yy167:
 			p++
 			{
 				eval.Parsed = append(eval.Parsed, EvalStringToken{unsafeString(l.input[start+2 : p-1]), true})

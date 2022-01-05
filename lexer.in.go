@@ -296,10 +296,86 @@ func (l *lexer) readIdent() string {
 //
 // Returned path may be empty if a delimiter (space, newline) is hit.
 func (l *lexer) readEvalString(path bool) (EvalString, error) {
-	eval := EvalString{}
+	// Do two passes, first to count the number of tokens, then to act on it. It
+	// is because some strings may contain a fairly large number of tokens,
+	// causing a fair amount of runtime.growslice() calls.
 	p := l.ofs
 	q := 0
 	start := 0
+	tokens := 0
+	for {
+		start = p
+		/*!re2c
+		  [^$ :\r\n|\000]+ {
+				tokens++
+		    continue
+		  }
+		  "\r\n" {
+		    if path {
+		      p = start
+		    }
+		    break
+		  }
+		  [ :|\n] {
+		    if path {
+		      p = start
+		      break
+		    } else {
+		      if l.input[start] == '\n' {
+		        break
+		      }
+				tokens++
+		      continue
+		    }
+		  }
+		  "$$" {
+				tokens++
+		    continue
+		  }
+		  "$ " {
+				tokens++
+		    continue
+		  }
+		  "$\r\n"[ ]* {
+		    continue
+		  }
+		  "$\n"[ ]* {
+		    continue
+		  }
+		  "${"varname"}" {
+				tokens++
+		    continue
+		  }
+		  "$"simpleVarname {
+				tokens++
+		    continue
+		  }
+		  "$:" {
+				tokens++
+		    continue
+		  }
+		  "$". {
+		    l.lastToken = start
+		    return EvalString{}, l.Error("bad $-escape (literal $ must be written as $$)")
+		  }
+		  nul {
+		    l.lastToken = start
+		    return EvalString{}, l.Error("unexpected EOF")
+		  }
+		  [^] {
+		    l.lastToken = start
+		    return EvalString{}, l.Error(l.DescribeLastError())
+		  }
+		*/
+	}
+
+	// One side effect is that the string has been validated, so the second loop
+	// can skip on error checking.
+
+	eval := EvalString{Parsed: make([]TokenListItem, 0, tokens)}
+	p = l.ofs
+	q = 0
+	start = 0
 	for {
 		start = p
 		/*!re2c
@@ -350,18 +426,6 @@ func (l *lexer) readEvalString(path bool) (EvalString, error) {
 		  "$:" {
 				eval.Parsed = append(eval.Parsed, EvalStringToken{":", false})
 		    continue
-		  }
-		  "$". {
-		    l.lastToken = start
-		    return eval, l.Error("bad $-escape (literal $ must be written as $$)")
-		  }
-		  nul {
-		    l.lastToken = start
-		    return eval, l.Error("unexpected EOF")
-		  }
-		  [^] {
-		    l.lastToken = start
-		    return eval, l.Error(l.DescribeLastError())
 		  }
 		*/
 	}
