@@ -24,12 +24,13 @@ type Env interface {
 	LookupVariable(v string) string
 }
 
-type TokenListItem struct {
+// EvalStringToken is one token in the EvalString list of items.
+type EvalStringToken struct {
 	Value     string
 	IsSpecial bool
 }
 
-func (t *TokenListItem) String() string {
+func (t *EvalStringToken) String() string {
 	out := fmt.Sprintf("%q:", t.Value)
 	if t.IsSpecial {
 		out += "raw"
@@ -39,10 +40,11 @@ func (t *TokenListItem) String() string {
 	return out
 }
 
-// EvalString is a a tokenized string that contains variable references.
+// EvalString is a tokenized string that contains variable references.
+//
 // Can be evaluated relative to an Env.
 type EvalString struct {
-	Parsed []TokenListItem
+	Parsed []EvalStringToken
 }
 
 func (e *EvalString) String() string {
@@ -56,8 +58,8 @@ func (e *EvalString) String() string {
 	return out
 }
 
-// @return The evaluated string with variable expanded using value found in
-//         environment @a env.
+// Evaluate returns the evaluated string with variable expanded using value
+// found in environment env.
 func (e *EvalString) Evaluate(env Env) string {
 	// Warning: this function is recursive.
 	var z [64]string
@@ -89,8 +91,9 @@ func (e *EvalString) Evaluate(env Env) string {
 	return unsafeString(out)
 }
 
-// Construct a human-readable representation of the parsed state,
-// for use in tests.
+// Serialize constructs a human-readable representation of the parsed state.
+//
+// Used in tests.
 func (e *EvalString) Serialize() string {
 	result := ""
 	for _, i := range e.Parsed {
@@ -104,7 +107,9 @@ func (e *EvalString) Serialize() string {
 	return result
 }
 
-// @return The string with variables not expanded.
+// Unparse returns the string with variables not expanded.
+//
+// Used for diagnostics.
 func (e *EvalString) Unparse() string {
 	result := ""
 	for _, i := range e.Parsed {

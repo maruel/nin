@@ -22,7 +22,7 @@ func TestState_Basic(t *testing.T) {
 	state := NewState()
 
 	command := EvalString{
-		Parsed: []TokenListItem{
+		Parsed: []EvalStringToken{
 			{"cat ", false},
 			{"in", true},
 			{" > ", false},
