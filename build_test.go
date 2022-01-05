@@ -683,12 +683,25 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	}
 }
 
+type statusFake struct{}
+
+func (s *statusFake) PlanHasTotalEdges(total int)                        {}
+func (s *statusFake) BuildEdgeStarted(edge *Edge, startTimeMillis int32) {}
+func (s *statusFake) BuildEdgeFinished(edge *Edge, endTimeMillis int32, success bool, output string) {
+}
+func (s *statusFake) BuildLoadDyndeps()                    {}
+func (s *statusFake) BuildStarted()                        {}
+func (s *statusFake) BuildFinished()                       {}
+func (s *statusFake) Info(msg string, i ...interface{})    {}
+func (s *statusFake) Warning(msg string, i ...interface{}) {}
+func (s *statusFake) Error(msg string, i ...interface{})   {}
+
 type BuildTestBase struct {
 	StateTestWithBuiltinRules
 	config        BuildConfig
 	commandRunner FakeCommandRunner
 	fs            VirtualFileSystem
-	status        *StatusPrinter
+	status        Status
 }
 
 func NewBuildTestBase(t *testing.T) *BuildTestBase {
@@ -696,12 +709,10 @@ func NewBuildTestBase(t *testing.T) *BuildTestBase {
 		StateTestWithBuiltinRules: NewStateTestWithBuiltinRules(t),
 		config:                    NewBuildConfig(),
 		fs:                        NewVirtualFileSystem(),
+		status:                    &statusFake{},
 	}
 	b.config.Verbosity = Quiet
 	b.commandRunner = NewFakeCommandRunner(t, &b.fs)
-	//b.builder = NewBuilder(&b.state, &b.config, nil, nil, &b.fs, b.status, 0)
-	b.status = NewStatusPrinter(&b.config)
-	//b.builder.commandRunner = &b.commandRunner
 	b.AssertParse(&b.state, "build cat1: cat in1\nbuild cat2: cat in1 in2\nbuild cat12: cat cat1 cat2\n", ManifestParserOptions{})
 	b.fs.Create("in1", "")
 	b.fs.Create("in2", "")
@@ -2909,22 +2920,6 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestBuildTest_StatusFormatElapsed(t *testing.T) {
-	b := NewBuildTest(t)
-	b.status.BuildStarted()
-	// Before any task is done, the elapsed time must be zero.
-	if "[%/e0.000]" != b.status.formatProgressStatus("[%%/e%e]", 0) {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestBuildTest_StatusFormatReplacePlaceholder(t *testing.T) {
-	b := NewBuildTest(t)
-	if "[%/s0/t0/r0/u0/f0]" != b.status.formatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) {
 		t.Fatal("expected equal")
 	}
 }
