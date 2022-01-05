@@ -49,7 +49,7 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
 	m.lexer.Start(filename, input)
-
+	var subninjas []string
 	for {
 		token := m.lexer.ReadToken()
 		switch token {
@@ -74,38 +74,47 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 				return false
 			}
 		case IDENT:
-			{
-				m.lexer.UnreadToken()
-				name, letValue, err2 := m.parseLet()
-				if err2 != nil {
+			m.lexer.UnreadToken()
+			name, letValue, err2 := m.parseLet()
+			if err2 != nil {
+				*err = err2.Error()
+				return false
+			}
+			value := letValue.Evaluate(m.env)
+			// Check ninjaRequiredVersion immediately so we can exit
+			// before encountering any syntactic surprises.
+			if name == "ninja_required_version" {
+				if err2 := checkNinjaVersion(value); err2 != nil {
 					*err = err2.Error()
 					return false
 				}
-				value := letValue.Evaluate(m.env)
-				// Check ninjaRequiredVersion immediately so we can exit
-				// before encountering any syntactic surprises.
-				if name == "ninja_required_version" {
-					if err2 := checkNinjaVersion(value); err2 != nil {
-						*err = err2.Error()
-						return false
-					}
-				}
-				m.env.Bindings[name] = value
 			}
+			m.env.Bindings[name] = value
 		case INCLUDE:
-			if err2 := m.parseFileInclude(false); err2 != nil {
+			if err2 := m.parseInclude(); err2 != nil {
 				*err = err2.Error()
 				return false
 			}
 		case SUBNINJA:
-			if err2 := m.parseFileInclude(true); err2 != nil {
+			sub, err2 := m.parseSubninja()
+			if err2 != nil {
 				*err = err2.Error()
 				return false
 			}
+			subninjas = append(subninjas, sub)
 		case ERROR:
 			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
 			return false
 		case TEOF:
+			// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
+			// not create lock contention.
+			subparser := NewManifestParser(m.state, m.fileReader, m.options)
+			for _, s := range subninjas {
+				subparser.env = NewBindingEnv(m.env)
+				if !subparser.Load(s, err, &m.lexer) {
+					return false
+				}
+			}
 			return true
 		case NEWLINE:
 		default:
@@ -477,22 +486,15 @@ func (m *ManifestParser) parseEdge() error {
 	return nil
 }
 
-// Parse either a 'subninja' or 'include' line.
-func (m *ManifestParser) parseFileInclude(newScope bool) error {
+// parseInclude parses a 'include' line.
+func (m *ManifestParser) parseInclude() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return err
 	}
 	path := eval.Evaluate(m.env)
-
-	// TODO(maruel): Parse the file in a separate goroutine. The challenge is to
-	// not create lock contention.
 	subparser := NewManifestParser(m.state, m.fileReader, m.options)
-	if newScope {
-		subparser.env = NewBindingEnv(m.env)
-	} else {
-		subparser.env = m.env
-	}
+	subparser.env = m.env
 
 	err2 := ""
 	if !subparser.Load(path, &err2, &m.lexer) {
@@ -503,4 +505,19 @@ func (m *ManifestParser) parseFileInclude(newScope bool) error {
 		return errors.New(err2)
 	}
 	return nil
+}
+
+// parseSubninja parses a 'subninja' line and return the path to it, but
+// doesn't process it yet.
+func (m *ManifestParser) parseSubninja() (string, error) {
+	eval, err := m.lexer.readEvalString(true)
+	if err != nil {
+		return "", err
+	}
+	path := eval.Evaluate(m.env)
+	err2 := ""
+	if !m.expectToken(NEWLINE, &err2) {
+		return "", errors.New(err2)
+	}
+	return path, nil
 }
