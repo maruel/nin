@@ -56,10 +56,12 @@ go tool trace -http=:33071 trace.out
 ### Against previous commit
 
 Runs all Go benchmark on the current commit and the previous one, then compares
-with [benchstat](golang.org/x/perf/cmd/benchstat).
+with [benchstat](golang.org/x/perf/cmd/benchstat). Use
+[ba](https://github.com/maruel/pat):
 
 ```
-./bench_against.sh
+go install github.com/maruel/pat/cmd/...@latest
+ba
 ```
 
 ### Against ninja
@@ -76,7 +78,7 @@ apple-to-apple comparison.
 I wrote a small tool to post process `go tool objdump` output:
 
 ```
-go install github.com/maruel/pat/cmd/...
+go install github.com/maruel/pat/cmd/...@latest
 ```
 
 Disassemble a single function:
