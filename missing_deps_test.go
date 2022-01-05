@@ -58,7 +58,7 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 
 func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) {
 	nodeDeps := []*Node{m.state.Paths[to]}
-	m.depsLog.RecordDeps(m.state.Paths[from], 0, nodeDeps)
+	m.depsLog.recordDeps(m.state.Paths[from], 0, nodeDeps)
 }
 
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {

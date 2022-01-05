@@ -757,7 +757,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	}
 
 	builder := NewBuilder(pstate, &b.config, pbuildLog, pdepsLog, &b.fs, b.status, 0)
-	if builder.AddTargetName(target, &err) == nil {
+	if builder.addTargetName(target, &err) == nil {
 		b.t.Fatal(err)
 	}
 
@@ -983,7 +983,7 @@ func TestBuildTest_OneStep(t *testing.T) {
 	// we should rebuild the target.
 	b.Dirty("cat1")
 	err := ""
-	if b.builder.AddTargetName("cat1", &err) == nil {
+	if b.builder.addTargetName("cat1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1008,7 +1008,7 @@ func TestBuildTest_OneStep2(t *testing.T) {
 	// we should rebuild the target.
 	b.Dirty("cat1")
 	err := ""
-	if b.builder.AddTargetName("cat1", &err) == nil {
+	if b.builder.addTargetName("cat1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1030,7 +1030,7 @@ func TestBuildTest_OneStep2(t *testing.T) {
 func TestBuildTest_TwoStep(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	if b.builder.AddTargetName("cat12", &err) == nil {
+	if b.builder.addTargetName("cat12", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1061,7 +1061,7 @@ func TestBuildTest_TwoStep(t *testing.T) {
 	// and the final file.
 	b.fs.Create("in2", "")
 	b.state.Reset()
-	if b.builder.AddTargetName("cat12", &err) == nil {
+	if b.builder.addTargetName("cat12", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1091,7 +1091,7 @@ func TestBuildTest_TwoOutputs(t *testing.T) {
 	b.fs.Create("in.txt", "")
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1115,7 +1115,7 @@ func TestBuildTest_ImplicitOutput(t *testing.T) {
 	b.fs.Create("in.txt", "")
 
 	err := ""
-	if b.builder.AddTargetName("out.imp", &err) == nil {
+	if b.builder.addTargetName("out.imp", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1144,7 +1144,7 @@ func TestBuildTest_MultiOutIn(t *testing.T) {
 	b.fs.Create("in1", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1165,7 +1165,7 @@ func TestBuildTest_Chain(t *testing.T) {
 	b.fs.Create("c1", "")
 
 	err := ""
-	if b.builder.AddTargetName("c5", &err) == nil {
+	if b.builder.addTargetName("c5", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1184,7 +1184,7 @@ func TestBuildTest_Chain(t *testing.T) {
 	err = ""
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("c5", &err) == nil {
+	if b.builder.addTargetName("c5", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1200,7 +1200,7 @@ func TestBuildTest_Chain(t *testing.T) {
 	err = ""
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("c5", &err) == nil {
+	if b.builder.addTargetName("c5", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1222,7 +1222,7 @@ func TestBuildTest_MissingInput(t *testing.T) {
 	// Input is referenced by build file, but no rule for it.
 	err := ""
 	b.Dirty("in1")
-	if b.builder.AddTargetName("cat1", &err) != nil {
+	if b.builder.addTargetName("cat1", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "'in1', needed by 'cat1', missing and no known rule to make it" != err {
@@ -1234,7 +1234,7 @@ func TestBuildTest_MissingTarget(t *testing.T) {
 	b := NewBuildTest(t)
 	// Target is not referenced by build file.
 	err := ""
-	if b.builder.AddTargetName("meow", &err) != nil {
+	if b.builder.addTargetName("meow", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "unknown target: 'meow'" != err {
@@ -1247,7 +1247,7 @@ func TestBuildTest_MissingInputTarget(t *testing.T) {
 	// Target is a missing input file
 	err := ""
 	b.Dirty("in1")
-	if b.builder.AddTargetName("in1", &err) != nil {
+	if b.builder.addTargetName("in1", &err) != nil {
 		t.Fatal("unexpected success")
 	}
 	if err != "'in1' missing and no known rule to make it" {
@@ -1261,7 +1261,7 @@ func TestBuildTest_MakeDirs(t *testing.T) {
 
 	p := filepath.Join("subdir", "dir2", "file")
 	b.AssertParse(&b.state, "build "+p+": cat in1\n", ManifestParserOptions{})
-	if b.builder.AddTargetName("subdir/dir2/file", &err) == nil {
+	if b.builder.addTargetName("subdir/dir2/file", &err) == nil {
 		t.Fatal(err)
 	}
 
@@ -1289,7 +1289,7 @@ func TestBuildTest_DepFileMissing(t *testing.T) {
 	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n", ManifestParserOptions{})
 	b.fs.Create("foo.c", "")
 
-	if b.builder.AddTargetName("fo o.o", &err) == nil {
+	if b.builder.addTargetName("fo o.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1313,7 +1313,7 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 	b.fs.Create("foo.c", "")
 	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
 	b.fs.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1348,7 +1348,7 @@ func TestBuildTest_DepFileParseError(t *testing.T) {
 	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
 	b.fs.Create("foo.c", "")
 	b.fs.Create("foo.o.d", "randomtext\n")
-	if b.builder.AddTargetName("foo.o", &err) != nil {
+	if b.builder.addTargetName("foo.o", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "foo.o.d: expected ':' in depfile" != err {
@@ -1373,7 +1373,7 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 	}
 
 	b.fs.Create("b", "")
-	if b.builder.AddTargetName("a", &err) == nil {
+	if b.builder.addTargetName("a", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1400,7 +1400,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b.fs.Create("foo.c", "")
 	b.fs.Create("otherfile", "")
 	b.fs.Create("foo.o.d", "foo.o: blah.h bar.h\n")
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1458,7 +1458,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b.fs.Create("bar.h", "")
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -1480,7 +1480,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b.fs.Create("otherfile", "")
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1494,7 +1494,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b.fs.RemoveFile("bar.h")
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -1517,7 +1517,7 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	b.fs.Create("oo.h.in", "")
 
 	// foo.o and order-only dep dirty, build both.
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -1533,7 +1533,7 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	// all clean, no rebuild.
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1547,7 +1547,7 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	b.fs.RemoveFile("oo.h")
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -1567,7 +1567,7 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	b.fs.Create("oo.h.in", "")
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("foo.o", &err) == nil {
+	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -1600,7 +1600,7 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 	b.GetNode("bar.h").Dirty = true // Mark bar.h as missing.
 	// Note, different slashes from manifest.
 	b.fs.Create("gen/stuff\\things/foo.o.d", "gen\\stuff\\things\\foo.o: blah.h bar.h\n")
-	if b.builder.AddTargetName("gen/stuff/things/foo.o", &err) == nil {
+	if b.builder.addTargetName("gen/stuff/things/foo.o", &err) == nil {
 		t.Fatal(err)
 	}
 	if "" != err {
@@ -1635,7 +1635,7 @@ func TestBuildTest_Phony(t *testing.T) {
 	b.AssertParse(&b.state, "build out: cat bar.cc\nbuild all: phony out\n", ManifestParserOptions{})
 	b.fs.Create("bar.cc", "")
 
-	if b.builder.AddTargetName("all", &err) == nil {
+	if b.builder.addTargetName("all", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1664,7 +1664,7 @@ func TestBuildTest_PhonyNoWork(t *testing.T) {
 	b.fs.Create("bar.cc", "")
 	b.fs.Create("out", "")
 
-	if b.builder.AddTargetName("all", &err) == nil {
+	if b.builder.addTargetName("all", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1683,7 +1683,7 @@ func TestBuildTest_PhonySelfReference(t *testing.T) {
 	err := ""
 	b.AssertParse(&b.state, "build a: phony a\n", ManifestParserOptions{Quiet: true})
 
-	if b.builder.AddTargetName("a", &err) == nil {
+	if b.builder.addTargetName("a", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1724,37 +1724,37 @@ func PhonyUseCase(t *testing.T, i int) {
 	b.builder.commandRunner = &b.commandRunner
 
 	b.fs.Create("blank", "") // a "real" file
-	if b.builder.AddTargetName("test1", &err) == nil {
+	if b.builder.addTargetName("test1", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.AddTargetName("test2", &err) == nil {
+	if b.builder.addTargetName("test2", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.AddTargetName("test3", &err) == nil {
+	if b.builder.addTargetName("test3", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.AddTargetName("test4", &err) == nil {
+	if b.builder.addTargetName("test4", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.AddTargetName("test5", &err) == nil {
+	if b.builder.addTargetName("test5", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.AddTargetName("test6", &err) == nil {
+	if b.builder.addTargetName("test6", &err) == nil {
 		b.t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1779,7 +1779,7 @@ func PhonyUseCase(t *testing.T, i int) {
 		startTime := b.fs.now
 
 		// Build number 1
-		if b.builder.AddTargetName("test"+ci, &err) == nil {
+		if b.builder.addTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1799,7 +1799,7 @@ func PhonyUseCase(t *testing.T, i int) {
 		b.commandRunner.commandsRan = nil
 		b.fs.Tick()
 		b.fs.Create("blank", "") // a "real" file
-		if b.builder.AddTargetName("test"+ci, &err) == nil {
+		if b.builder.addTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1856,7 +1856,7 @@ func PhonyUseCase(t *testing.T, i int) {
 		b.commandRunner.commandsRan = nil
 		b.fs.Tick()
 		b.commandRunner.commandsRan = nil
-		if b.builder.AddTargetName("test"+ci, &err) == nil {
+		if b.builder.addTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1878,7 +1878,7 @@ func PhonyUseCase(t *testing.T, i int) {
 
 		b.state.Reset()
 		b.commandRunner.commandsRan = nil
-		if b.builder.AddTargetName("test"+ci, &err) == nil {
+		if b.builder.addTargetName("test"+ci, &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -1911,7 +1911,7 @@ func TestBuildTest_Fail(t *testing.T) {
 	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1937,7 +1937,7 @@ func TestBuildTest_SwallowFailures(t *testing.T) {
 	b.config.FailuresAllowed = 3
 
 	err := ""
-	if b.builder.AddTargetName("all", &err) == nil {
+	if b.builder.addTargetName("all", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1963,7 +1963,7 @@ func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
 	b.config.FailuresAllowed = 11
 
 	err := ""
-	if b.builder.AddTargetName("final", &err) == nil {
+	if b.builder.addTargetName("final", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -1989,7 +1989,7 @@ func TestBuildTest_SwallowFailuresPool(t *testing.T) {
 	b.config.FailuresAllowed = 11
 
 	err := ""
-	if b.builder.AddTargetName("final", &err) == nil {
+	if b.builder.addTargetName("final", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2037,7 +2037,7 @@ func NewBuildWithLogTest(t *testing.T) *BuildWithLogTest {
 	t.Cleanup(func() {
 		b.buildLog.Close()
 	})
-	b.builder.SetBuildLog(&b.buildLog)
+	b.builder.scan.buildLog = &b.buildLog
 	return b
 }
 
@@ -2050,7 +2050,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 
 	err := ""
 
-	if b.builder.AddTargetName("out.imp", &err) == nil {
+	if b.builder.addTargetName("out.imp", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if b.builder.AlreadyUpToDate() {
@@ -2073,7 +2073,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 
 	err := ""
 
-	if b.builder.AddTargetName("out.imp", &err) == nil {
+	if b.builder.addTargetName("out.imp", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if b.builder.AlreadyUpToDate() {
@@ -2089,10 +2089,10 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	b.builder.plan.Reset()
 
-	if b.builder.AddTargetName("out.imp", &err) == nil {
+	if b.builder.addTargetName("out.imp", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.AlreadyUpToDate() {
@@ -2115,7 +2115,7 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 
 	// Because it's not in the log, it should not be up-to-date until
 	// we build again.
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if b.builder.AlreadyUpToDate() {
@@ -2125,7 +2125,7 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
 
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -2145,7 +2145,7 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	b.fs.Create("in", "")
 
 	// Run once successfully to get out1 in the log
-	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+	if b.builder.addTargetName("out1", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 	if !b.builder.Build(&err) || err != "" {
@@ -2157,14 +2157,14 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	b.builder.plan.Reset()
 
 	b.fs.Tick()
 	b.fs.Create("in", "")
 
 	// Run again with a failure that updates the output file timestamp
-	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+	if b.builder.addTargetName("out1", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 	if b.builder.Build(&err) || err != "subcommand failed" {
@@ -2177,13 +2177,13 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	b.builder.plan.Reset()
 
 	b.fs.Tick()
 
 	// Run again, should rerun even though the output file is up to date on disk
-	if b.builder.AddTargetName("out1", &err) == nil || err != "" {
+	if b.builder.addTargetName("out1", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 	if b.builder.AlreadyUpToDate() {
@@ -2205,10 +2205,10 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
 	b.fs.Create("in", "")
 
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -2228,10 +2228,10 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
 	b.fs.Create("in", "")
 
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.Build(&err) {
@@ -2261,7 +2261,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	// otherwise, the lack of an entry in the build log will cause out3 to rebuild
 	// regardless of restat.
 	err := ""
-	if b.builder.AddTargetName("out3", &err) == nil {
+	if b.builder.addTargetName("out3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2287,7 +2287,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	b.fs.Create("in", "")
 	// "cc" touches out1, so we should build out2.  But because "true" does not
 	// touch out2, we should cancel the build of out3.
-	if b.builder.AddTargetName("out3", &err) == nil {
+	if b.builder.addTargetName("out3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2304,7 +2304,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	// that we've already built out2 with an input timestamp of 2 (from out1).
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out3", &err) == nil {
+	if b.builder.addTargetName("out3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2322,7 +2322,7 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	// if out1 changes.
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out3", &err) == nil {
+	if b.builder.addTargetName("out3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2351,7 +2351,7 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	// otherwise, the lack of an entry in the build log will cause out2 to rebuild
 	// regardless of restat.
 	err := ""
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2373,7 +2373,7 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	// Run a build, expect only the first command to run.
 	// It doesn't touch its output (due to being the "true" command), so
 	// we shouldn't run the dependent build.
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2395,7 +2395,7 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	b.fs.Create("in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out4", &err) == nil {
+	if b.builder.addTargetName("out4", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2422,7 +2422,7 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	// cleard.
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out4", &err) == nil {
+	if b.builder.addTargetName("out4", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2457,7 +2457,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
 	// Run the build, out1 and out2 get built
 	err := ""
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2487,7 +2487,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	// Trigger the build again - only out1 gets built
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2518,7 +2518,7 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 
 	err := ""
 
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if b.builder.AlreadyUpToDate() {
@@ -2534,10 +2534,10 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	b.builder.plan.Reset()
 
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if !b.builder.AlreadyUpToDate() {
@@ -2566,7 +2566,7 @@ func TestBuildDryRun_AllCommandsShown(t *testing.T) {
 	// "cc" touches out1, so we should build out2.  But because "true" does not
 	// touch out2, we should cancel the build of out3.
 	err := ""
-	if b.builder.AddTargetName("out3", &err) == nil {
+	if b.builder.addTargetName("out3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2595,19 +2595,19 @@ func TestBuildTest_RspFileSuccess(t *testing.T) {
 	b.fs.Create("in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal(err)
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
 		t.Fatal(err)
 	}
-	if b.builder.AddTargetName("out 3", &err) == nil {
+	if b.builder.addTargetName("out 3", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2662,7 +2662,7 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 	b.fs.Create("in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2722,7 +2722,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	b.fs.Create("in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2741,7 +2741,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	// 2. Build again (no change)
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2762,7 +2762,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	// Now expect the target to be rebuilt
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2788,7 +2788,7 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 
 	// An untouched output of an interrupted command should be retained.
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2800,14 +2800,14 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 	if "interrupted by user" != err {
 		t.Fatal("expected equal")
 	}
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	if mtime, err := b.fs.Stat("out1"); mtime <= 0 || err != nil {
 		t.Fatal(mtime, err)
 	}
 	err = ""
 
 	// A touched output of an interrupted command should be deleted.
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2819,7 +2819,7 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 	if "interrupted by user" != err {
 		t.Fatal("expected equal")
 	}
-	b.builder.Cleanup()
+	b.builder.cleanup()
 	if mtime, err := b.fs.Stat("out2"); mtime != 0 || err != nil {
 		t.Fatal(mtime, err)
 	}
@@ -2838,7 +2838,7 @@ func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
 	}
 
 	err := ""
-	if b.builder.AddTargetName(tooLongToStat, &err) != nil {
+	if b.builder.addTargetName(tooLongToStat, &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "stat failed" != err {
@@ -2855,7 +2855,7 @@ func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
 	// out1 should be up to date even though its input is dirty, because its
 	// order-only dependency has nothing to do.
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2869,7 +2869,7 @@ func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
 	err = ""
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2892,7 +2892,7 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 	b.Dirty("out")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2934,7 +2934,7 @@ func TestBuildTest_FailedDepsParse(t *testing.T) {
 	b.AssertParse(&b.state, "build bad_deps.o: cat in1\n  deps = gcc\n  depfile = in1.d\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("bad_deps.o", &err) == nil {
+	if b.builder.addTargetName("bad_deps.o", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -2987,7 +2987,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 	b.AssertParse(&b.state, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3029,7 +3029,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3078,7 +3078,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3127,7 +3127,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3176,7 +3176,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3227,7 +3227,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3303,7 +3303,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal(err)
 		}
 		if "" != err {
@@ -3349,7 +3349,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 		b.commandRunner.commandsRan = nil
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3402,7 +3402,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3446,7 +3446,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 		b.commandRunner.commandsRan = nil
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3492,7 +3492,7 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 	b.commandRunner.commandsRan = nil
 
 	err := ""
-	if builder.AddTargetName("out", &err) == nil {
+	if builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3519,7 +3519,7 @@ func TestBuildTest_RestatDepfileDependency(t *testing.T) {
 	b.fs.Create("header.in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -3557,7 +3557,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3597,7 +3597,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 		b.commandRunner.commandsRan = nil
-		if builder.AddTargetName("out", &err) == nil {
+		if builder.addTargetName("out", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3643,7 +3643,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("fo o.o", &err) == nil {
+		if builder.addTargetName("fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3683,7 +3683,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		edge := state.Edges[len(state.Edges)-1]
 
 		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
-		if builder.AddTargetName("fo o.o", &err) == nil {
+		if builder.addTargetName("fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3736,7 +3736,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, &buildLog, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out2", &err) == nil {
+		if builder.addTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if builder.AlreadyUpToDate() {
@@ -3775,7 +3775,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, &buildLog, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out2", &err) == nil {
+		if builder.addTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if builder.AlreadyUpToDate() {
@@ -3813,7 +3813,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, &buildLog, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("out2", &err) == nil {
+		if builder.addTargetName("out2", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if !builder.AlreadyUpToDate() {
@@ -3851,7 +3851,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
-		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
+		if builder.addTargetName("a/b/c/d/e/fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -3892,7 +3892,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		edge := state.Edges[len(state.Edges)-1]
 
 		state.GetNode("bar.h", 0).Dirty = true // Mark bar.h as missing.
-		if builder.AddTargetName("a/b/c/d/e/fo o.o", &err) == nil {
+		if builder.addTargetName("a/b/c/d/e/fo o.o", &err) == nil {
 			t.Fatal("expected true")
 		}
 		if "" != err {
@@ -4020,7 +4020,7 @@ func TestBuildTest_Console(t *testing.T) {
 	b.fs.Create("in.txt", "")
 
 	err := ""
-	if b.builder.AddTargetName("cons", &err) == nil {
+	if b.builder.addTargetName("cons", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4044,7 +4044,7 @@ func TestBuildTest_DyndepMissingAndNoRule(t *testing.T) {
 	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) != nil {
+	if b.builder.addTargetName("out", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "loading 'dd': file does not exist" != err {
@@ -4061,7 +4061,7 @@ func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
 	b.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4087,7 +4087,7 @@ func TestBuildTest_DyndepReadySyntaxError(t *testing.T) {
 	b.fs.Create("dd", "build out: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) != nil {
+	if b.builder.addTargetName("out", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err {
@@ -4104,7 +4104,7 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) != nil {
+	if b.builder.addTargetName("out", &err) != nil {
 		t.Fatal("expected false")
 	}
 	if "dependency cycle: circ -> in -> circ" != err {
@@ -4119,7 +4119,7 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4158,7 +4158,7 @@ func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
 	b.fs.Create("dd-in", "build out: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4183,7 +4183,7 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4213,7 +4213,7 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4244,10 +4244,10 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) 
 	b.fs.Create("out2", "")
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4278,10 +4278,10 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) 
 	b.fs.Create("out2", "")
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4306,7 +4306,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4333,7 +4333,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithValidation(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep |@ validation\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected success")
 	}
 	if err != "" {
@@ -4360,7 +4360,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithTransitiveValidation(t *testin
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal(err)
 	}
 	if err != "" {
@@ -4388,7 +4388,7 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4417,7 +4417,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4477,7 +4477,7 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4506,7 +4506,7 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4550,7 +4550,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4583,7 +4583,7 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	// otherwise, the lack of an entry in the build log will cause "out2" to
 	// rebuild regardless of restat.
 	err := ""
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4607,7 +4607,7 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 
 	// We touched "in", so we should build "out1".  But because "true" does not
 	// touch "out1", we should cancel the build of "out2".
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4643,10 +4643,10 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
 	// re-schedule the already-active edge.
 
 	err := ""
-	if b.builder.AddTargetName("out1", &err) == nil {
+	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4692,7 +4692,7 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
 	// file is loaded to update the build graph independently.
 
 	err := ""
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4729,7 +4729,7 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
 	// clean without dyndep info.
 
 	err := ""
-	if b.builder.AddTargetName("out2", &err) == nil {
+	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4759,7 +4759,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4789,7 +4789,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 	b.fs.Create("out", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil {
+	if b.builder.addTargetName("out", &err) == nil {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -4813,7 +4813,7 @@ func TestBuildTest_Validation(t *testing.T) {
 	b.fs.Create("in2", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4833,7 +4833,7 @@ func TestBuildTest_Validation(t *testing.T) {
 	err = ""
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4853,7 +4853,7 @@ func TestBuildTest_Validation(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4874,7 +4874,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 	b.fs.Create("in", "")
 	b.fs.Create("in2", "")
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4892,7 +4892,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4911,7 +4911,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -4949,7 +4949,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 
-		if builder.AddTargetName("out2", &err) == nil || err != "" {
+		if builder.addTargetName("out2", &err) == nil || err != "" {
 			t.Fatal(err)
 		}
 
@@ -4993,7 +4993,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		builder := NewBuilder(&state, &b.config, nil, &depsLog, &b.fs, b.status, 0)
 		builder.commandRunner = &b.commandRunner
 
-		if builder.AddTargetName("out2", &err) == nil || err != "" {
+		if builder.addTargetName("out2", &err) == nil || err != "" {
 			t.Fatal(err)
 		}
 
@@ -5021,7 +5021,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 	b.fs.Create("in2", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -5039,7 +5039,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -5058,7 +5058,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
-	if b.builder.AddTargetName("out", &err) == nil || err != "" {
+	if b.builder.addTargetName("out", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
 
@@ -5079,7 +5079,7 @@ func TestBuildTest_ValidationWithCircularDependency(t *testing.T) {
 	b.fs.Create("in", "")
 
 	err := ""
-	if b.builder.AddTargetName("out", &err) != nil {
+	if b.builder.addTargetName("out", &err) != nil {
 		t.Fatal("expected failure")
 	}
 	if err != "dependency cycle: validate -> validate_in -> validate" {

@@ -44,7 +44,7 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 			if !haveDyndepVersion {
 				return d.lexer.Error("expected 'ninja_dyndep_version = ...'", err)
 			}
-			if !d.ParseEdge(err) {
+			if !d.parseEdge(err) {
 				return false
 			}
 		case IDENT:
@@ -52,7 +52,7 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 			if haveDyndepVersion {
 				return d.lexer.Error(string("unexpected ")+TokenName(token), err)
 			}
-			if !d.ParseDyndepVersion(err) {
+			if !d.parseDyndepVersion(err) {
 				return false
 			}
 			haveDyndepVersion = true
@@ -70,10 +70,10 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 	}
 }
 
-func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
+func (d *DyndepParser) parseDyndepVersion(err *string) bool {
 	name := ""
 	letValue := EvalString{}
-	if !d.ParseLet(&name, &letValue, err) {
+	if !d.parseLet(&name, &letValue, err) {
 		return false
 	}
 	if name != "ninja_dyndep_version" {
@@ -87,7 +87,7 @@ func (d *DyndepParser) ParseDyndepVersion(err *string) bool {
 	return true
 }
 
-func (d *DyndepParser) ParseLet(key *string, value *EvalString, err *string) bool {
+func (d *DyndepParser) parseLet(key *string, value *EvalString, err *string) bool {
 	if !d.lexer.ReadIdent(key) {
 		return d.lexer.Error("expected variable name", err)
 	}
@@ -100,7 +100,7 @@ func (d *DyndepParser) ParseLet(key *string, value *EvalString, err *string) boo
 	return true
 }
 
-func (d *DyndepParser) ParseEdge(err *string) bool {
+func (d *DyndepParser) parseEdge(err *string) bool {
 	// Parse one explicit output.  We expect it to already have an edge.
 	// We will record its dynamically-discovered dependency information.
 	var dyndeps *Dyndeps
@@ -204,7 +204,7 @@ func (d *DyndepParser) ParseEdge(err *string) bool {
 	if d.lexer.PeekToken(INDENT) {
 		key := ""
 		var val EvalString
-		if !d.ParseLet(&key, &val, err) {
+		if !d.parseLet(&key, &val, err) {
 			return false
 		}
 		if key != "restat" {

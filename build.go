@@ -275,7 +275,7 @@ func (p *Plan) AddSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 		want = WantToStart
 		p.want[edge] = want
 		p.EdgeWanted(edge)
-		if len(dyndepWalk) == 0 && edge.AllInputsReady() {
+		if len(dyndepWalk) == 0 && edge.allInputsReady() {
 			p.ScheduleWork(edge, want)
 		}
 	}
@@ -403,7 +403,7 @@ func (p *Plan) NodeFinished(node *Node, err *string) bool {
 }
 
 func (p *Plan) EdgeMaybeReady(edge *Edge, want Want, err *string) bool {
-	if edge.AllInputsReady() {
+	if edge.allInputsReady() {
 		if want != WantNothing {
 			p.ScheduleWork(edge, want)
 		} else {
@@ -463,7 +463,7 @@ func (p *Plan) CleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
 			outputsDirty := false
-			if !scan.RecomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, err) {
+			if !scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, err) {
 				return false
 			}
 			if !outputsDirty {
@@ -654,11 +654,6 @@ type Builder struct {
 	scan DependencyScan
 }
 
-// Used for tests.
-func (b *Builder) SetBuildLog(log *BuildLog) {
-	b.scan.buildLog = log
-}
-
 func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface, status Status, startTimeMillis int64) *Builder {
 	b := &Builder{
 		state:           state,
@@ -675,11 +670,11 @@ func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *
 
 // TODO(maruel): Make sure it's always called where important.
 func (b *Builder) Destructor() {
-	b.Cleanup()
+	b.cleanup()
 }
 
 // Clean up after interrupted commands by deleting output files.
-func (b *Builder) Cleanup() {
+func (b *Builder) cleanup() {
 	if b.commandRunner != nil {
 		activeEdges := b.commandRunner.GetActiveEdges()
 		b.commandRunner.Abort()
@@ -715,7 +710,7 @@ func (b *Builder) Cleanup() {
 
 // Add a target to the build, scanning dependencies.
 // @return false on error.
-func (b *Builder) AddTargetName(name string, err *string) *Node {
+func (b *Builder) addTargetName(name string, err *string) *Node {
 	node := b.state.Paths[name]
 	if node == nil {
 		*err = "unknown target: '" + name + "'"
@@ -796,15 +791,15 @@ func (b *Builder) Build(err *string) bool {
 					_ = b.scan.buildLog.Close()
 				}
 
-				if !b.StartEdge(edge, err) {
-					b.Cleanup()
+				if !b.startEge(edge, err) {
+					b.cleanup()
 					b.status.BuildFinished()
 					return false
 				}
 
 				if edge.Rule == PhonyRule {
 					if !b.plan.EdgeFinished(edge, EdgeSucceeded, err) {
-						b.Cleanup()
+						b.cleanup()
 						b.status.BuildFinished()
 						return false
 					}
@@ -821,15 +816,15 @@ func (b *Builder) Build(err *string) bool {
 		if pendingCommands != 0 {
 			var result Result
 			if !b.commandRunner.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
-				b.Cleanup()
+				b.cleanup()
 				b.status.BuildFinished()
 				*err = "interrupted by user"
 				return false
 			}
 
 			pendingCommands--
-			if !b.FinishCommand(&result, err) {
-				b.Cleanup()
+			if !b.finishCommand(&result, err) {
+				b.cleanup()
 				b.status.BuildFinished()
 				return false
 			}
@@ -864,7 +859,7 @@ func (b *Builder) Build(err *string) bool {
 	return true
 }
 
-func (b *Builder) StartEdge(edge *Edge, err *string) bool {
+func (b *Builder) startEge(edge *Edge, err *string) bool {
 	defer metricRecord("StartEdge")()
 	if edge.Rule == PhonyRule {
 		return true
@@ -904,7 +899,7 @@ func (b *Builder) StartEdge(edge *Edge, err *string) bool {
 
 // Update status ninja logs following a command termination.
 // @return false if the build can not proceed further due to a fatal error.
-func (b *Builder) FinishCommand(result *Result, err *string) bool {
+func (b *Builder) finishCommand(result *Result, err *string) bool {
 	defer metricRecord("FinishCommand")()
 	edge := result.Edge
 
@@ -918,7 +913,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	depsPrefix := edge.GetBinding("msvc_deps_prefix")
 	if depsType != "" {
 		extractErr := ""
-		if !b.ExtractDeps(result, depsType, depsPrefix, &depsNodes, &extractErr) && result.ExitCode == ExitSuccess {
+		if !b.extractDeps(result, depsType, depsPrefix, &depsNodes, &extractErr) && result.ExitCode == ExitSuccess {
 			if result.Output != "" {
 				result.Output += "\n"
 			}
@@ -1028,7 +1023,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 				*err = err2.Error()
 				return false
 			}
-			if !b.scan.depsLog().RecordDeps(o, depsMtime, depsNodes) {
+			if !b.scan.depsLog().recordDeps(o, depsMtime, depsNodes) {
 				*err = "Error writing to deps log: " // + err
 				return false
 			}
@@ -1038,7 +1033,7 @@ func (b *Builder) FinishCommand(result *Result, err *string) bool {
 	return true
 }
 
-func (b *Builder) ExtractDeps(result *Result, depsType string, depsPrefix string, depsNodes *[]*Node, err *string) bool {
+func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string, depsNodes *[]*Node, err *string) bool {
 	if depsType == "msvc" {
 		parser := NewCLParser()
 		output := ""

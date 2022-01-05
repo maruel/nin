@@ -121,21 +121,21 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 	return true
 }
 
-func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
+func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	nodeCount := len(nodes)
 	// Track whether there's any new data to be recorded.
 	madeChange := false
 
 	// Assign ids to all nodes that are missing one.
 	if node.ID < 0 {
-		if !d.RecordID(node) {
+		if !d.recordID(node) {
 			return false
 		}
 		madeChange = true
 	}
 	for i := 0; i < nodeCount; i++ {
 		if nodes[i].ID < 0 {
-			if !d.RecordID(nodes[i]) {
+			if !d.recordID(nodes[i]) {
 				return false
 			}
 			madeChange = true
@@ -168,7 +168,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 		//errno = ERANGE
 		return false
 	}
-	if !d.OpenForWriteIfNeeded() {
+	if !d.openForWriteIfNeeded() {
 		return false
 	}
 	size |= 0x80000000 // Deps record: set high bit.
@@ -196,7 +196,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	for i := 0; i < nodeCount; i++ {
 		deps.Nodes[i] = nodes[i]
 	}
-	d.UpdateDeps(node.ID, deps)
+	d.updateDeps(node.ID, deps)
 
 	return true
 }
@@ -204,7 +204,7 @@ func (d *DepsLog) RecordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 func (d *DepsLog) Close() error {
 	// create the file even if nothing has been recorded
 	// TODO(maruel): Error handling.
-	d.OpenForWriteIfNeeded()
+	d.openForWriteIfNeeded()
 	var err error
 	if d.file != nil {
 		if err2 := d.buf.Flush(); err2 != nil {
@@ -329,7 +329,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			}
 
 			totalDepRecordCount++
-			if !d.UpdateDeps(outID, deps) {
+			if !d.updateDeps(outID, deps) {
 				uniqueDepRecordCount++
 			}
 		} else {
@@ -472,7 +472,7 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 			continue
 		}
 
-		if !newLog.RecordDeps(d.Nodes[oldID], deps.MTime, deps.Nodes) {
+		if !newLog.recordDeps(d.Nodes[oldID], deps.MTime, deps.Nodes) {
 			_ = newLog.Close()
 			return false
 		}
@@ -514,7 +514,7 @@ func (d *DepsLog) IsDepsEntryLiveFor(node *Node) bool {
 
 // Updates the in-memory representation.  Takes ownership of |deps|.
 // Returns true if a prior deps record was deleted.
-func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
+func (d *DepsLog) updateDeps(outID int32, deps *Deps) bool {
 	if n := int(outID) + 1 - len(d.Deps); n > 0 {
 		d.Deps = append(d.Deps, make([]*Deps, n)...)
 	}
@@ -526,7 +526,7 @@ func (d *DepsLog) UpdateDeps(outID int32, deps *Deps) bool {
 var zeroBytes [4]byte
 
 // Write a node name record, assigning it an id.
-func (d *DepsLog) RecordID(node *Node) bool {
+func (d *DepsLog) recordID(node *Node) bool {
 	if node.Path == "" {
 		panic("M-A")
 	}
@@ -539,7 +539,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 		//errno = ERANGE
 		return false
 	}
-	if !d.OpenForWriteIfNeeded() {
+	if !d.openForWriteIfNeeded() {
 		// TODO(maruel): Make it a real error.
 		return false
 	}
@@ -574,7 +574,7 @@ func (d *DepsLog) RecordID(node *Node) bool {
 
 // Should be called before using file. When false is returned, errno will
 // be set.
-func (d *DepsLog) OpenForWriteIfNeeded() bool {
+func (d *DepsLog) openForWriteIfNeeded() bool {
 	if d.filePath == "" {
 		return true
 	}

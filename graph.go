@@ -299,7 +299,7 @@ func (e *Edge) maybePhonycycleDiagnostic() bool {
 }
 
 // Return true if all inputs' in-edges are ready.
-func (e *Edge) AllInputsReady() bool {
+func (e *Edge) allInputsReady() bool {
 	for _, i := range e.Inputs {
 		if i.InEdge != nil && !i.InEdge.OutputsReady {
 			return false
@@ -397,21 +397,21 @@ const (
 )
 
 // An Env for an Edge, providing $in and $out.
-type EdgeEnv struct {
+type edgeEnv struct {
 	lookups     []string
 	edge        *Edge
 	escapeInOut EscapeKind
 	recursive   bool
 }
 
-func NewEdgeEnv(edge *Edge, escape EscapeKind) EdgeEnv {
-	return EdgeEnv{
+func NewEdgeEnv(edge *Edge, escape EscapeKind) edgeEnv {
+	return edgeEnv{
 		edge:        edge,
 		escapeInOut: escape,
 	}
 }
 
-func (e *EdgeEnv) LookupVariable(var2 string) string {
+func (e *edgeEnv) LookupVariable(var2 string) string {
 	if var2 == "in" || var2 == "in_newline" {
 		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
 		s := byte('\n')
@@ -455,7 +455,7 @@ func (e *EdgeEnv) LookupVariable(var2 string) string {
 
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
-func (e *EdgeEnv) MakePathList(span []*Node, sep byte) string {
+func (e *edgeEnv) MakePathList(span []*Node, sep byte) string {
 	var z [64]string
 	var s []string
 	if l := len(span); l <= cap(z) {
@@ -565,7 +565,7 @@ func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*N
 		stack = stack[:0]
 		newValidationNodes = newValidationNodes[:0]
 
-		if !d.RecomputeNodeDirty(node, &stack, &newValidationNodes, err) {
+		if !d.recomputeNodeDirty(node, &stack, &newValidationNodes, err) {
 			return false
 		}
 		nodes = append(nodes, newValidationNodes...)
@@ -579,7 +579,7 @@ func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*N
 	return true
 }
 
-func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validationNodes *[]*Node, err *string) bool {
+func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validationNodes *[]*Node, err *string) bool {
 	edge := node.InEdge
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
@@ -608,7 +608,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// If we encountered this edge earlier in the call stack we have a cycle.
-	if !d.VerifyDAG(node, *stack, err) {
+	if !d.verifyDAG(node, *stack, err) {
 		return false
 	}
 
@@ -633,7 +633,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
 		if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
-			if !d.RecomputeNodeDirty(edge.Dyndep, stack, validationNodes, err) {
+			if !d.recomputeNodeDirty(edge.Dyndep, stack, validationNodes, err) {
 				return false
 			}
 
@@ -679,7 +679,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	var mostRecentInput *Node
 	for j, i := range edge.Inputs {
 		// Visit this input.
-		if !d.RecomputeNodeDirty(i, stack, validationNodes, err) {
+		if !d.recomputeNodeDirty(i, stack, validationNodes, err) {
 			return false
 		}
 
@@ -707,7 +707,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// We may also be dirty due to output state: missing outputs, out of
 	// date outputs, etc.  Visit all outputs and determine whether they're dirty.
 	if !dirty {
-		if !d.RecomputeOutputsDirty(edge, mostRecentInput, &dirty, err) {
+		if !d.recomputeOutputsDirty(edge, mostRecentInput, &dirty, err) {
 			return false
 		}
 	}
@@ -738,7 +738,7 @@ func (d *DependencyScan) RecomputeNodeDirty(node *Node, stack *[]*Node, validati
 	return true
 }
 
-func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool {
+func (d *DependencyScan) verifyDAG(node *Node, stack []*Node, err *string) bool {
 	edge := node.InEdge
 	if edge == nil {
 		panic("M-A")
@@ -787,10 +787,10 @@ func (d *DependencyScan) VerifyDAG(node *Node, stack []*Node, err *string) bool 
 
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
 // Returns false on failure.
-func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, mostRecentInput *Node, outputsDirty *bool, err *string) bool {
+func (d *DependencyScan) recomputeOutputsDirty(edge *Edge, mostRecentInput *Node, outputsDirty *bool, err *string) bool {
 	command := edge.EvaluateCommand(true) // inclRspFile=
 	for _, o := range edge.Outputs {
-		if d.RecomputeOutputDirty(edge, mostRecentInput, command, o) {
+		if d.recomputeOutputDirty(edge, mostRecentInput, command, o) {
 			*outputsDirty = true
 			return true
 		}
@@ -800,7 +800,7 @@ func (d *DependencyScan) RecomputeOutputsDirty(edge *Edge, mostRecentInput *Node
 
 // Recompute whether a given single output should be marked dirty.
 // Returns true if so.
-func (d *DependencyScan) RecomputeOutputDirty(edge *Edge, mostRecentInput *Node, command string, output *Node) bool {
+func (d *DependencyScan) recomputeOutputDirty(edge *Edge, mostRecentInput *Node, command string, output *Node) bool {
 	if edge.Rule == PhonyRule {
 		// Phony edges don't write any output.  Outputs are only dirty if
 		// there are no inputs and we're missing the output.

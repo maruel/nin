@@ -74,7 +74,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool
 
 	// Load the dyndep information from the file.
 	explain("loading dyndep file '%s'", node.Path)
-	if !d.LoadDyndepFile(node, ddf, err) {
+	if !d.loadDyndepFile(node, ddf, err) {
 		return false
 	}
 
@@ -94,7 +94,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool
 
 		ddi.used = true
 		dyndeps := ddi
-		if !d.UpdateEdge(edge, dyndeps, err) {
+		if !d.updateEdge(edge, dyndeps, err) {
 			return false
 		}
 	}
@@ -110,7 +110,7 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool
 	return true
 }
 
-func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) bool {
+func (d *DyndepLoader) updateEdge(edge *Edge, dyndeps *Dyndeps, err *string) bool {
 	// Add dyndep-discovered bindings to the edge.
 	// We know the edge already has its own binding
 	// scope because it has a "dyndep" binding.
@@ -153,7 +153,7 @@ func (d *DyndepLoader) UpdateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 	return true
 }
 
-func (d *DyndepLoader) LoadDyndepFile(file *Node, ddf DyndepFile, err *string) bool {
+func (d *DyndepLoader) loadDyndepFile(file *Node, ddf DyndepFile, err *string) bool {
 	parser := NewDyndepParser(d.state, d.di, ddf)
 	return parser.Load(file.Path, err, nil)
 }

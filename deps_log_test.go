@@ -38,14 +38,14 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state1.GetNode("foo.h", 0))
 		deps = append(deps, state1.GetNode("bar.h", 0))
-		if !log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps) {
+		if !log1.recordDeps(state1.GetNode("out.o", 0), 1, deps) {
 			t.Fatal("oops")
 		}
 
 		deps = nil
 		deps = append(deps, state1.GetNode("foo.h", 0))
 		deps = append(deps, state1.GetNode("bar2.h", 0))
-		if !log1.RecordDeps(state1.GetNode("out2.o", 0), 2, deps) {
+		if !log1.recordDeps(state1.GetNode("out2.o", 0), 2, deps) {
 			t.Fatal("oops")
 		}
 
@@ -131,7 +131,7 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 			buf := fmt.Sprintf("file%d.h", i)
 			deps = append(deps, state1.GetNode(buf, 0))
 		}
-		log1.RecordDeps(state1.GetNode("out.o", 0), 1, deps)
+		log1.recordDeps(state1.GetNode("out.o", 0), 1, deps)
 
 		logDeps := log1.GetDeps(state1.GetNode("out.o", 0))
 		if numDeps != len(logDeps.Nodes) {
@@ -183,7 +183,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
 		fileSize = getFileSize(t, testFilename)
@@ -211,7 +211,7 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
 		if fileSize2 := getFileSize(t, testFilename); fileSize != fileSize2 {
@@ -242,12 +242,12 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("baz.h", 0))
-		log.RecordDeps(state.GetNode("other_out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("other_out.o", 0), 1, deps)
 
 		log.Close()
 
@@ -277,7 +277,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 		log.Close()
 
 		fileSize2 = getFileSize(t, testFilename)
@@ -508,12 +508,12 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.RecordDeps(state.GetNode("out2.o", 0), 2, deps)
+		log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
 
 		log.Close()
 	}
@@ -579,12 +579,12 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.RecordDeps(state.GetNode("out2.o", 0), 2, deps)
+		log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
 
 		log.Close()
 	}
@@ -630,7 +630,7 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.RecordDeps(state.GetNode("out2.o", 0), 3, deps)
+		log.recordDeps(state.GetNode("out2.o", 0), 3, deps)
 
 		log.Close()
 	}
@@ -668,12 +668,12 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
 	var deps []*Node
 	deps = append(deps, state.GetNode("foo.h", 0))
 	deps = append(deps, state.GetNode("bar.h", 0))
-	log.RecordDeps(state.GetNode("out.o", 0), 1, deps)
+	log.recordDeps(state.GetNode("out.o", 0), 1, deps)
 
 	deps = nil
 	deps = append(deps, state.GetNode("foo.h", 0))
 	deps = append(deps, state.GetNode("bar2.h", 0))
-	log.RecordDeps(state.GetNode("out2.o", 0), 2, deps)
+	log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
 
 	log.Close()
 
