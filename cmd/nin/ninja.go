@@ -1355,7 +1355,7 @@ func Main() int {
 
 	args := flag.Args()
 
-	status := nin.NewStatusPrinter(&config)
+	status := NewStatusPrinter(&config)
 	if opts.workingDir != "" {
 		// The formatting of this string, complete with funny quotes, is
 		// so Emacs can properly identify that the cwd has changed for

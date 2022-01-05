@@ -12,26 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nin
+package main
 
 import "testing"
 
-func TestStatusTest_StatusFormatElapsed(t *testing.T) {
-	cfg := NewBuildConfig()
-	status := NewStatusPrinter(&cfg)
+func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
+	stripped := stripAnsiEscapeCodes("foo\x1B")
+	if "foo" != stripped {
+		t.Fatalf("%+q", stripped)
+	}
 
-	status.BuildStarted()
-	// Before any task is done, the elapsed time must be zero.
-	if "[%/e0.000]" != status.formatProgressStatus("[%%/e%e]", 0) {
-		t.Fatal("expected equal")
+	stripped = stripAnsiEscapeCodes("foo\x1B[")
+	if "foo" != stripped {
+		t.Fatalf("%+q", stripped)
 	}
 }
 
-func TestStatusTest_StatusFormatReplacePlaceholder(t *testing.T) {
-	cfg := NewBuildConfig()
-	status := NewStatusPrinter(&cfg)
-
-	if "[%/s0/t0/r0/u0/f0]" != status.formatProgressStatus("[%%/s%s/t%t/r%r/u%u/f%f]", 0) {
-		t.Fatal("expected equal")
+func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
+	// An actual clang warning.
+	input := "\x1B[1maffixmgr.cxx:286:15: \x1B[0m\x1B[0;1;35mwarning: \x1B[0m\x1B[1musing the result... [-Wparentheses]\x1B[0m"
+	stripped := stripAnsiEscapeCodes(input)
+	if "affixmgr.cxx:286:15: warning: using the result... [-Wparentheses]" != stripped {
+		t.Fatalf("%+q", stripped)
 	}
 }

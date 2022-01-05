@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strings"
 	"unsafe"
 )
 
@@ -429,63 +428,9 @@ func SpellcheckString(text string, words ...string) string {
 	return result
 }
 
-/*
-// Convert the value returned by GetLastError() into a string.
-func GetLastErrorString() string {
-  err := GetLastError()
-
-  var msgBuf *char
-  FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nil, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&msgBuf, 0, nil)
-  msg := msgBuf
-  LocalFree(msgBuf)
-  return msg
-}
-
-// Calls Fatal() with a function name and GetLastErrorString.
-func Win32Fatal(function string, hint string) {
-  if hint != nil {
-    Fatal("%s: %s (%s)", function, GetLastErrorString(), hint)
-  } else {
-    Fatal("%s: %s", function, GetLastErrorString())
-  }
-}
-*/
-
 func islatinalpha(c byte) bool {
 	// isalpha() is locale-dependent.
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
-// Removes all Ansi escape codes (http://www.termsys.demon.co.uk/vtansi.htm).
-func stripAnsiEscapeCodes(in string) string {
-	if strings.IndexByte(in, '\x1B') == -1 {
-		return in
-	}
-	stripped := ""
-	//stripped.reserve(in.size())
-
-	for i := 0; i < len(in); i++ {
-		if in[i] != '\x1B' {
-			// Not an escape code.
-			stripped += string(in[i])
-			continue
-		}
-
-		// Only strip CSIs for now.
-		if i+1 >= len(in) {
-			break
-		}
-		if in[i+1] != '[' { // Not a CSI.
-			continue
-		}
-		i += 2
-
-		// Skip everything up to and including the next [a-zA-Z].
-		for i < len(in) && !islatinalpha(in[i]) {
-			i++
-		}
-	}
-	return stripped
 }
 
 /*

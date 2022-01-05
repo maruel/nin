@@ -263,27 +263,6 @@ func TestPathEscaping_SensibleWin32PathsAreNotNeedlesslyEscaped(t *testing.T) {
 	}
 }
 
-func TestStripAnsiEscapeCodes_EscapeAtEnd(t *testing.T) {
-	stripped := stripAnsiEscapeCodes("foo\x1B")
-	if "foo" != stripped {
-		t.Fatalf("%+q", stripped)
-	}
-
-	stripped = stripAnsiEscapeCodes("foo\x1B[")
-	if "foo" != stripped {
-		t.Fatalf("%+q", stripped)
-	}
-}
-
-func TestStripAnsiEscapeCodes_StripColors(t *testing.T) {
-	// An actual clang warning.
-	input := "\x1B[1maffixmgr.cxx:286:15: \x1B[0m\x1B[0;1;35mwarning: \x1B[0m\x1B[1musing the result... [-Wparentheses]\x1B[0m"
-	stripped := stripAnsiEscapeCodes(input)
-	if "affixmgr.cxx:286:15: warning: using the result... [-Wparentheses]" != stripped {
-		t.Fatalf("%+q", stripped)
-	}
-}
-
 func TestElideMiddle_NothingToElide(t *testing.T) {
 	input := "Nothing to elide in this short string."
 	if input != elideMiddle(input, 80) {
