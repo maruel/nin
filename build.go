@@ -668,12 +668,7 @@ func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *
 	return b
 }
 
-// TODO(maruel): Make sure it's always called where important.
-func (b *Builder) Destructor() {
-	b.cleanup()
-}
-
-// Clean up after interrupted commands by deleting output files.
+// cleanup cleans up after interrupted commands by deleting output files.
 func (b *Builder) cleanup() {
 	if b.commandRunner != nil {
 		activeEdges := b.commandRunner.GetActiveEdges()

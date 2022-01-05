@@ -19,7 +19,7 @@ import (
 	"syscall"
 )
 
-func (s *Subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
+func (s *subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
 	// Ignore the parsed arguments on Windows and feed back the original string.
 	// See https://pkg.go.dev/os/exec#Command for an explanation.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
