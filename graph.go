@@ -242,25 +242,37 @@ func (e *Edge) EvaluateCommand(inclRspFile bool) string {
 
 // Returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
-	env := newEdgeEnv(e, ShellEscape)
+	env := edgeEnv{
+		edge:        e,
+		escapeInOut: ShellEscape,
+	}
 	return env.LookupVariable(key)
 }
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	env := newEdgeEnv(e, DoNotEscape)
+	env := edgeEnv{
+		edge:        e,
+		escapeInOut: DoNotEscape,
+	}
 	return env.LookupVariable("depfile")
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	env := newEdgeEnv(e, DoNotEscape)
+	env := edgeEnv{
+		edge:        e,
+		escapeInOut: DoNotEscape,
+	}
 	return env.LookupVariable("dyndep")
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
-	env := newEdgeEnv(e, DoNotEscape)
+	env := edgeEnv{
+		edge:        e,
+		escapeInOut: DoNotEscape,
+	}
 	return env.LookupVariable("rspfile")
 }
 
@@ -404,58 +416,51 @@ type edgeEnv struct {
 	recursive   bool
 }
 
-func newEdgeEnv(edge *Edge, escape EscapeKind) edgeEnv {
-	return edgeEnv{
-		edge:        edge,
-		escapeInOut: escape,
-	}
-}
-
-func (e *edgeEnv) LookupVariable(var2 string) string {
-	if var2 == "in" || var2 == "in_newline" {
+func (e *edgeEnv) LookupVariable(v string) string {
+	switch v {
+	case "in":
 		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
-		s := byte('\n')
-		if var2 == "in" {
-			s = ' '
-		}
-		return e.MakePathList(e.edge.Inputs[:explicitDepsCount], s)
-	} else if var2 == "out" {
+		return makePathList(e.edge.Inputs[:explicitDepsCount], ' ', e.escapeInOut)
+	case "in_newline":
+		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
+		return makePathList(e.edge.Inputs[:explicitDepsCount], '\n', e.escapeInOut)
+	case "out":
 		explicitOutsCount := len(e.edge.Outputs) - int(e.edge.ImplicitOuts)
-		return e.MakePathList(e.edge.Outputs[:explicitOutsCount], ' ')
-	}
-
-	if e.recursive {
-		i := 0
-		for ; i < len(e.lookups); i++ {
-			if e.lookups[i] == var2 {
-				break
-			}
-		}
-		if i != len(e.lookups) {
-			cycle := ""
+		return makePathList(e.edge.Outputs[:explicitOutsCount], ' ', e.escapeInOut)
+	default:
+		if e.recursive {
+			i := 0
 			for ; i < len(e.lookups); i++ {
-				cycle += e.lookups[i] + " -> "
+				if e.lookups[i] == v {
+					break
+				}
 			}
-			cycle += var2
-			fatalf(("cycle in rule variables: " + cycle))
+			if i != len(e.lookups) {
+				cycle := ""
+				for ; i < len(e.lookups); i++ {
+					cycle += e.lookups[i] + " -> "
+				}
+				cycle += v
+				fatalf(("cycle in rule variables: " + cycle))
+			}
 		}
-	}
 
-	// See notes on BindingEnv::LookupWithFallback.
-	eval := e.edge.Rule.Bindings[var2]
-	if e.recursive && eval != nil {
-		e.lookups = append(e.lookups, var2)
-	}
+		// See notes on BindingEnv::LookupWithFallback.
+		eval := e.edge.Rule.Bindings[v]
+		if e.recursive && eval != nil {
+			e.lookups = append(e.lookups, v)
+		}
 
-	// In practice, variables defined on rules never use another rule variable.
-	// For performance, only start checking for cycles after the first lookup.
-	e.recursive = true
-	return e.edge.Env.LookupWithFallback(var2, eval, e)
+		// In practice, variables defined on rules never use another rule variable.
+		// For performance, only start checking for cycles after the first lookup.
+		e.recursive = true
+		return e.edge.Env.LookupWithFallback(v, eval, e)
+	}
 }
 
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
-func (e *edgeEnv) MakePathList(span []*Node, sep byte) string {
+func makePathList(span []*Node, sep byte, escapeInOut EscapeKind) string {
 	var z [64]string
 	var s []string
 	if l := len(span); l <= cap(z) {
@@ -467,7 +472,7 @@ func (e *edgeEnv) MakePathList(span []*Node, sep byte) string {
 	first := false
 	for i, x := range span {
 		path := x.PathDecanonicalized()
-		if e.escapeInOut == ShellEscape {
+		if escapeInOut == ShellEscape {
 			if runtime.GOOS == "windows" {
 				path = getWin32EscapedString(path)
 			} else {
