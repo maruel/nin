@@ -82,9 +82,11 @@ func (t Token) String() string {
 	return "" // not reached
 }
 
-type lexer struct {
-	filename string
-	input    []byte
+// lexerState is the offset of processing a token.
+//
+// It is meant to be saved when an error message may be printed after the
+// parsing continued.
+type lexerState struct {
 	// In the original C++ code, these two are char pointers and are used to do
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
 	// indexes. ofs starts at 0. lastToken is initially -1 to mark that it is
@@ -93,13 +95,13 @@ type lexer struct {
 	lastToken int
 }
 
-// Construct an error message with context.
-func (l *lexer) Error(message string) error {
+// error constructs an error message with context.
+func (l *lexerState) error(message, filename string, input []byte) error {
 	// Compute line/column.
 	line := 1
 	lineStart := 0
 	for p := 0; p < l.lastToken; p++ {
-		if l.input[p] == '\n' {
+		if input[p] == '\n' {
 			line++
 			lineStart = p + 1
 		}
@@ -116,12 +118,12 @@ func (l *lexer) Error(message string) error {
 		truncated := true
 		length := 0
 		for ; length < truncateColumn; length++ {
-			if l.input[lineStart+length] == 0 || l.input[lineStart+length] == '\n' {
+			if input[lineStart+length] == 0 || input[lineStart+length] == '\n' {
 				truncated = false
 				break
 			}
 		}
-		c = unsafeString(l.input[lineStart : lineStart+length])
+		c = unsafeString(input[lineStart : lineStart+length])
 		if truncated {
 			c += "..."
 		}
@@ -130,7 +132,21 @@ func (l *lexer) Error(message string) error {
 		c += "^ near here"
 	}
 	// TODO(maruel): There's a problem where the error is wrapped, thus the alignment doesn't work.
-	return fmt.Errorf("%s:%d: %s\n%s", l.filename, line, message, c)
+	return fmt.Errorf("%s:%d: %s\n%s", filename, line, message, c)
+}
+
+type lexer struct {
+	// Immutable.
+	filename string
+	input    []byte
+
+	// Mutable.
+	lexerState
+}
+
+// Error constructs an error message with context.
+func (l *lexer) Error(message string) error {
+	return l.lexerState.error(message, l.filename, l.input)
 }
 
 // Start parsing some input.

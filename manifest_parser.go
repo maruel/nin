@@ -539,7 +539,7 @@ type subninja struct {
 	name     string
 	contents []byte
 	err      error
-	lexer    lexer // lexer state when the subninja statement was parsed.
+	ls       lexerState // lexer state when the subninja statement was parsed.
 	index    int32
 }
 
@@ -557,28 +557,28 @@ func (m *ManifestParser) parseSubninja() error {
 	}
 
 	// Success, start the goroutine to read it asynchronously.
-	go readSubninjaAsync(m.fileReader, m.subninjasEnqueued, path, m.subninjas, m.lexer)
+	go readSubninjaAsync(m.fileReader, m.subninjasEnqueued, path, m.subninjas, m.lexer.lexerState)
 	m.subninjasEnqueued++
 	return nil
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subninja, lexer lexer) {
+func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subninja, ls lexerState) {
 	c, err := fileReader.ReadFile(n)
 	if err != nil {
 		ch <- subninja{
 			index: id,
 			name:  n,
 			err:   err,
-			lexer: lexer,
+			ls:    ls,
 		}
 	}
 	ch <- subninja{
 		index:    id,
 		name:     n,
 		contents: c,
-		lexer:    lexer,
+		ls:       ls,
 	}
 }
 
@@ -600,7 +600,7 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		})
 		for _, s := range results {
 			if s.err != nil {
-				return s.lexer.Error("loading '" + s.name + "': " + s.err.Error())
+				return m.error("loading '"+s.name+"': "+s.err.Error(), s.ls)
 			}
 		}
 		subparser := NewManifestParser(m.state, m.fileReader, m.options)
@@ -623,7 +623,7 @@ func (m *ManifestParser) processSubninjaQueue() error {
 			continue
 		}
 		if s.err != nil {
-			err = s.lexer.Error("loading '" + s.name + "': " + s.err.Error())
+			err = m.error("loading '"+s.name+"': "+s.err.Error(), s.ls)
 			continue
 		}
 		// Reset the binding fresh.
@@ -634,4 +634,8 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		}
 	}
 	return err
+}
+
+func (m *ManifestParser) error(msg string, ls lexerState) error {
+	return ls.error(msg, m.lexer.filename, m.lexer.input)
 }
