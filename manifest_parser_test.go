@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -484,429 +485,156 @@ func TestParserTest_ReservedWords(t *testing.T) {
 }
 
 func TestParserTest_Errors(t *testing.T) {
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("subn", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected '=', got eof\nsubn\n    ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
+	data := []struct {
+		in   string
+		want string
+	}{
+		{"subn", "input:1: expected '=', got eof\nsubn\n    ^ near here"},
 
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("foobar", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected '=', got eof\nfoobar\n      ^ near here" != err {
-			t.Fatal("expected equal")
-		}
+		{"foobar", "input:1: expected '=', got eof\nfoobar\n      ^ near here"},
+		{"x 3", "input:1: expected '=', got identifier\nx 3\n  ^ near here"},
+		{"x = 3", "input:1: unexpected EOF\nx = 3\n     ^ near here"},
+		{
+			"x = 3\ny 2",
+			"input:2: expected '=', got identifier\ny 2\n  ^ near here",
+		},
+		{
+			"x = $",
+			"input:1: bad $-escape (literal $ must be written as $$)\nx = $\n    ^ near here",
+		},
+		{
+			"x = $\n $[\n",
+			"input:2: bad $-escape (literal $ must be written as $$)\n $[\n ^ near here",
+		},
+		{
+			"x = a$\n b$\n $\n",
+			"input:4: unexpected EOF\n",
+		},
+		{
+			"build\n",
+			"input:1: expected path\nbuild\n     ^ near here",
+		},
+		{
+			"build x: y z\n",
+			"input:1: unknown build rule 'y'\nbuild x: y z\n         ^ near here",
+		},
+		{
+			"build x:: y z\n",
+			"input:1: expected build command name\nbuild x:: y z\n        ^ near here",
+		},
+		{
+			"rule cat\n  command = cat ok\nbuild x: cat $\n :\n",
+			"input:4: expected newline, got ':'\n :\n ^ near here",
+		},
+		{
+			"rule cat\n",
+			"input:2: expected 'command =' line\n",
+		},
+		{
+			"rule cat\n  command = echo\nrule cat\n  command = echo\n",
+			"input:3: duplicate rule 'cat'\nrule cat\n        ^ near here",
+		},
+		{
+			"rule cat\n  command = echo\n  rspfile = cat.rsp\n",
+			"input:4: rspfile and rspfile_content need to be both specified\n",
+		},
+		{
+			"rule cat\n  command = ${fafsd\nfoo = bar\n",
+			"input:2: bad $-escape (literal $ must be written as $$)\n  command = ${fafsd\n            ^ near here",
+		},
+		{
+			"rule cat\n  command = cat\nbuild $.: cat foo\n",
+			"input:3: bad $-escape (literal $ must be written as $$)\nbuild $.: cat foo\n      ^ near here",
+		},
+		{
+			"rule cat\n  command = cat\nbuild $: cat foo\n",
+			"input:3: expected ':', got newline ($ also escapes ':')\nbuild $: cat foo\n                ^ near here",
+		},
+		{
+			"rule %foo\n",
+			"input:1: expected rule name\nrule %foo\n     ^ near here",
+		},
+		{
+			"rule cc\n  command = foo\n  othervar = bar\n",
+			"input:3: unexpected variable 'othervar'\n  othervar = bar\n                ^ near here",
+		},
+		{
+			"rule cc\n  command = foo\nbuild $.: cc bar.cc\n",
+			"input:3: bad $-escape (literal $ must be written as $$)\nbuild $.: cc bar.cc\n      ^ near here",
+		},
+		{
+			"rule cc\n  command = foo\n  && bar",
+			"input:3: expected variable name\n  && bar\n  ^ near here",
+		},
+		{
+			"rule cc\n  command = foo\nbuild $: cc bar.cc\n",
+			"input:3: expected ':', got newline ($ also escapes ':')\nbuild $: cc bar.cc\n                  ^ near here",
+		},
+		{
+			"default\n",
+			"input:1: expected target name\ndefault\n       ^ near here",
+		},
+		{
+			"default nonexistent\n",
+			"input:1: unknown target 'nonexistent'\ndefault nonexistent\n                   ^ near here",
+		},
+		{
+			"rule r\n  command = r\nbuild b: r\ndefault b:\n",
+			"input:4: expected newline, got ':'\ndefault b:\n         ^ near here",
+		},
+		{
+			"default $a\n",
+			"input:1: empty path\ndefault $a\n          ^ near here",
+		},
+		{
+			"rule r\n  command = r\nbuild $a: r $c\n",
+			// XXX the line number is wrong; we should evaluate paths in ParseEdge
+			// as we see them, not after we've read them all!
+			"input:4: empty path\n",
+		},
+		{
+			// the indented blank line must terminate the rule
+			// this also verifies that "unexpected (token)" errors are correct
+			"rule r\n  command = r\n  \n  generator = 1\n",
+			"input:4: unexpected indent\n",
+		},
+		{
+			"pool\n",
+			"input:1: expected pool name\npool\n    ^ near here",
+		},
+		{
+			"pool foo\n",
+			"input:2: expected 'depth =' line\n",
+		},
+		{
+			"pool foo\n  depth = 4\npool foo\n",
+			"input:3: duplicate pool 'foo'\npool foo\n        ^ near here",
+		},
+		{
+			"pool foo\n  depth = -1\n",
+			"input:2: invalid pool depth\n  depth = -1\n            ^ near here",
+		},
+		{
+			"pool foo\n  bar = 1\n",
+			"input:2: unexpected variable 'bar'\n  bar = 1\n         ^ near here",
+		},
+		{
+			// Pool names are dereferenced at edge parsing time.
+			"rule run\n  command = echo\n  pool = unnamed_pool\nbuild out: run in\n",
+			"input:5: unknown pool name 'unnamed_pool'\n",
+		},
 	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x 3", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected '=', got identifier\nx 3\n  ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x = 3", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: unexpected EOF\nx = 3\n     ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x = 3\ny 2", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: expected '=', got identifier\ny 2\n  ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x = $", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: bad $-escape (literal $ must be written as $$)\nx = $\n    ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x = $\n $[\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: bad $-escape (literal $ must be written as $$)\n $[\n ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("x = a$\n b$\n $\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:4: unexpected EOF\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("build\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected path\nbuild\n     ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("build x: y z\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: unknown build rule 'y'\nbuild x: y z\n         ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("build x:: y z\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected build command name\nbuild x:: y z\n        ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = cat ok\nbuild x: cat $\n :\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:4: expected newline, got ':'\n :\n ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: expected 'command =' line\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = echo\nrule cat\n  command = echo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: duplicate rule 'cat'\nrule cat\n        ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = echo\n  rspfile = cat.rsp\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:4: rspfile and rspfile_content need to be both specified\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = ${fafsd\nfoo = bar\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: bad $-escape (literal $ must be written as $$)\n  command = ${fafsd\n            ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = cat\nbuild $.: cat foo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: bad $-escape (literal $ must be written as $$)\nbuild $.: cat foo\n      ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cat\n  command = cat\nbuild $: cat foo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: expected ':', got newline ($ also escapes ':')\nbuild $: cat foo\n                ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule %foo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected rule name\nrule %foo\n     ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cc\n  command = foo\n  othervar = bar\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: unexpected variable 'othervar'\n  othervar = bar\n                ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cc\n  command = foo\nbuild $.: cc bar.cc\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: bad $-escape (literal $ must be written as $$)\nbuild $.: cc bar.cc\n      ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cc\n  command = foo\n  && bar", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: expected variable name\n  && bar\n  ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule cc\n  command = foo\nbuild $: cc bar.cc\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: expected ':', got newline ($ also escapes ':')\nbuild $: cc bar.cc\n                  ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("default\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected target name\ndefault\n       ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("default nonexistent\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: unknown target 'nonexistent'\ndefault nonexistent\n                   ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule r\n  command = r\nbuild b: r\ndefault b:\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:4: expected newline, got ':'\ndefault b:\n         ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("default $a\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: empty path\ndefault $a\n          ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("rule r\n  command = r\nbuild $a: r $c\n", &err) {
-			t.Fatal("expected false")
-		}
-		// XXX the line number is wrong; we should evaluate paths in ParseEdge
-		// as we see them, not after we've read them all!
-		if "input:4: empty path\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		// the indented blank line must terminate the rule
-		// this also verifies that "unexpected (token)" errors are correct
-		if parser.parseTest("rule r\n  command = r\n  \n  generator = 1\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:4: unexpected indent\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("pool\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:1: expected pool name\npool\n    ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("pool foo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: expected 'depth =' line\n" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("pool foo\n  depth = 4\npool foo\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:3: duplicate pool 'foo'\npool foo\n        ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("pool foo\n  depth = -1\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: invalid pool depth\n  depth = -1\n            ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		if parser.parseTest("pool foo\n  bar = 1\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:2: unexpected variable 'bar'\n  bar = 1\n         ^ near here" != err {
-			t.Fatal("expected equal")
-		}
-	}
-
-	{
-		localState := NewState()
-		parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-		err := ""
-		// Pool names are dereferenced at edge parsing time.
-		if parser.parseTest("rule run\n  command = echo\n  pool = unnamed_pool\nbuild out: run in\n", &err) {
-			t.Fatal("expected false")
-		}
-		if "input:5: unknown pool name 'unnamed_pool'\n" != err {
-			t.Fatal("expected equal")
-		}
+	for i, line := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			localState := NewState()
+			parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
+			err := ""
+			if parser.parseTest(line.in, &err) {
+				t.Fatal("expected error")
+			} else if err != line.want {
+				t.Fatal(cmp.Diff(line.want, err))
+			}
+		})
 	}
 }
 
