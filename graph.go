@@ -251,29 +251,25 @@ func (e *Edge) GetBinding(key string) string {
 
 // Like GetBinding("depfile"), but without shell escaping.
 func (e *Edge) GetUnescapedDepfile() string {
-	env := edgeEnv{
-		edge:        e,
-		escapeInOut: DoNotEscape,
-	}
-	return env.LookupVariable("depfile")
+	return e.getUnescaped("depfile")
 }
 
 // Like GetBinding("dyndep"), but without shell escaping.
 func (e *Edge) GetUnescapedDyndep() string {
-	env := edgeEnv{
-		edge:        e,
-		escapeInOut: DoNotEscape,
-	}
-	return env.LookupVariable("dyndep")
+	return e.getUnescaped("dyndep")
 }
 
 // Like GetBinding("rspfile"), but without shell escaping.
 func (e *Edge) GetUnescapedRspfile() string {
+	return e.getUnescaped("rspfile")
+}
+
+func (e *Edge) getUnescaped(v string) string {
 	env := edgeEnv{
 		edge:        e,
 		escapeInOut: DoNotEscape,
 	}
-	return env.LookupVariable("rspfile")
+	return env.LookupVariable(v)
 }
 
 func (e *Edge) Dump(prefix string) {
