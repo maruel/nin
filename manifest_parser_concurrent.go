@@ -98,14 +98,10 @@ func (m *manifestParserConcurrent) parsePool() error {
 	if err := m.expectToken(NEWLINE); err != nil {
 		return err
 	}
+	ls := m.lexer.lexerState
+	var dls lexerState
 
-	if m.state.Pools[name] != nil {
-		// TODO(maruel): Use %q for real quoting.
-		return m.lexer.Error(fmt.Sprintf("duplicate pool '%s'", name))
-	}
-
-	depth := -1
-
+	eval := EvalString{}
 	for m.lexer.PeekToken(INDENT) {
 		key, value, err := m.parseLet()
 		if err != nil {
@@ -115,16 +111,23 @@ func (m *manifestParserConcurrent) parsePool() error {
 			// TODO(maruel): Use %q for real quoting.
 			return m.lexer.Error(fmt.Sprintf("unexpected variable '%s'", key))
 		}
-		// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
-		if depth, err = strconv.Atoi(value.Evaluate(m.env)); depth < 0 || err != nil {
-			return m.lexer.Error("invalid pool depth")
-		}
+		eval = value
+		dls = m.lexer.lexerState
 	}
-
-	if depth < 0 {
+	if len(eval.Parsed) == 0 {
 		return m.lexer.Error("expected 'depth =' line")
 	}
 
+	// Process state.
+	if m.state.Pools[name] != nil {
+		// TODO(maruel): Use %q for real quoting.
+		return m.error(fmt.Sprintf("duplicate pool '%s'", name), ls)
+	}
+	// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
+	depth, err := strconv.Atoi(eval.Evaluate(m.env))
+	if depth < 0 || err != nil {
+		return m.error("invalid pool depth", dls)
+	}
 	m.state.Pools[name] = NewPool(name, depth)
 	return nil
 }
@@ -139,12 +142,7 @@ func (m *manifestParserConcurrent) parseRule() error {
 	if err := m.expectToken(NEWLINE); err != nil {
 		return err
 	}
-
-	if m.env.Rules[name] != nil {
-		// TODO(maruel): Use %q for real quoting.
-		return m.lexer.Error(fmt.Sprintf("duplicate rule '%s'", name))
-	}
-
+	ls := m.lexer.lexerState
 	rule := NewRule(name)
 	for m.lexer.PeekToken(INDENT) {
 		key, value, err := m.parseLet()
@@ -171,6 +169,12 @@ func (m *manifestParserConcurrent) parseRule() error {
 	if !ok || len(b.Parsed) == 0 {
 		return m.lexer.Error("expected 'command =' line")
 	}
+
+	// Process state.
+	if m.env.Rules[rule.Name] != nil {
+		// TODO(maruel): Use %q for real quoting.
+		return m.error(fmt.Sprintf("duplicate rule '%s'", rule.Name), ls)
+	}
 	m.env.Rules[rule.Name] = rule
 	return nil
 }
@@ -185,36 +189,44 @@ func (m *manifestParserConcurrent) parseDefault() error {
 		return m.lexer.Error("expected target name")
 	}
 
+	evals := []*parsedEval{{eval, m.lexer.lexerState}}
 	for {
-		path := eval.Evaluate(m.env)
-		if len(path) == 0 {
-			return m.lexer.Error("empty path")
-
-		}
-		if err = m.state.addDefault(CanonicalizePath(path)); err != nil {
-			return m.lexer.Error(err.Error())
-		}
-
-		eval, err = m.lexer.readEvalString(true)
-		if err != nil {
+		if eval, err = m.lexer.readEvalString(true); err != nil {
 			return err
 		}
 		if len(eval.Parsed) == 0 {
 			break
 		}
+		evals = append(evals, &parsedEval{eval, m.lexer.lexerState})
 	}
 
-	return m.expectToken(NEWLINE)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
+	}
+
+	// Process state.
+	for i := 0; i < len(evals); i++ {
+		path := evals[i].eval.Evaluate(m.env)
+		if len(path) == 0 {
+			return m.error("empty path", evals[i].ls)
+		}
+		if err := m.state.addDefault(CanonicalizePath(path)); err != nil {
+			return m.error(err.Error(), evals[i].ls)
+		}
+	}
+	return nil
 }
 
 // parseIdent parses a generic statement as a fallback.
 func (m *manifestParserConcurrent) parseIdent() error {
 	m.lexer.UnreadToken()
-	name, letValue, err := m.parseLet()
+	name, eval, err := m.parseLet()
 	if err != nil {
 		return err
 	}
-	value := letValue.Evaluate(m.env)
+
+	// Process state.
+	value := eval.Evaluate(m.env)
 	// Check ninjaRequiredVersion immediately so we can exit
 	// before encountering any syntactic surprises.
 	if name == "ninja_required_version" {
@@ -270,11 +282,8 @@ func (m *manifestParserConcurrent) parseEdge() error {
 		return m.lexer.Error("expected build command name")
 	}
 
-	rule := m.env.LookupRule(ruleName)
-	if rule == nil {
-		// TODO(maruel): Use %q for real quoting.
-		return m.lexer.Error(fmt.Sprintf("unknown build rule '%s'", ruleName))
-	}
+	// Save the lexer for unknown rule check later.
+	lsRule := m.lexer.lexerState
 
 	var ins []EvalString
 	for {
@@ -341,19 +350,30 @@ func (m *manifestParserConcurrent) parseEdge() error {
 	}
 
 	// Bindings on edges are rare, so allocate per-edge envs only when needed.
-	hasIndentToken := m.lexer.PeekToken(INDENT)
-	env := m.env
-	if hasIndentToken {
-		env = NewBindingEnv(m.env)
-	}
-	for hasIndentToken {
+	hadIndentToken := m.lexer.PeekToken(INDENT)
+	// Accumulate the bindings for now, will process them later.
+	var bindings []*keyEval
+	for h := hadIndentToken; h; h = m.lexer.PeekToken(INDENT) {
 		key, val, err := m.parseLet()
 		if err != nil {
 			return err
 		}
+		bindings = append(bindings, &keyEval{key, val})
+	}
+	lsEnd := m.lexer.lexerState
 
-		env.Bindings[key] = val.Evaluate(m.env)
-		hasIndentToken = m.lexer.PeekToken(INDENT)
+	// Process state.
+	rule := m.env.LookupRule(ruleName)
+	if rule == nil {
+		// TODO(maruel): Use %q for real quoting.
+		return m.error(fmt.Sprintf("unknown build rule '%s'", ruleName), lsRule)
+	}
+	env := m.env
+	if hadIndentToken {
+		env = NewBindingEnv(m.env)
+	}
+	for _, i := range bindings {
+		env.Bindings[i.key] = i.eval.Evaluate(m.env)
 	}
 
 	edge := m.state.addEdge(rule)
@@ -364,7 +384,7 @@ func (m *manifestParserConcurrent) parseEdge() error {
 		pool := m.state.Pools[poolName]
 		if pool == nil {
 			// TODO(maruel): Use %q for real quoting.
-			return m.lexer.Error(fmt.Sprintf("unknown pool name '%s'", poolName))
+			return m.error(fmt.Sprintf("unknown pool name '%s'", poolName), lsEnd)
 		}
 		edge.Pool = pool
 	}
@@ -373,12 +393,12 @@ func (m *manifestParserConcurrent) parseEdge() error {
 	for i := range outs {
 		path := outs[i].Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer.Error("empty path")
+			return m.error("empty path", lsEnd)
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		if !m.state.addOut(edge, path, slashBits) {
 			if m.options.ErrOnDupeEdge {
-				return m.lexer.Error("multiple rules generate " + path)
+				return m.error("multiple rules generate "+path, lsEnd)
 			}
 			if !m.options.Quiet {
 				warningf("multiple rules generate %s. builds involving this target will not be correct; continuing anyway", path)
@@ -400,7 +420,7 @@ func (m *manifestParserConcurrent) parseEdge() error {
 	for _, i := range ins {
 		path := i.Evaluate(env)
 		if len(path) == 0 {
-			return m.lexer.Error("empty path")
+			return m.error("empty path", lsEnd)
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		m.state.addIn(edge, path, slashBits)
@@ -412,7 +432,7 @@ func (m *manifestParserConcurrent) parseEdge() error {
 	for _, v := range validations {
 		path := v.Evaluate(env)
 		if path == "" {
-			return m.lexer.Error("empty path")
+			return m.error("empty path", lsEnd)
 		}
 		path, slashBits := CanonicalizePathBits(path)
 		m.state.addValidation(edge, path, slashBits)
@@ -453,7 +473,7 @@ func (m *manifestParserConcurrent) parseEdge() error {
 		}
 		if !found {
 			// TODO(maruel): Use %q for real quoting.
-			return m.lexer.Error(fmt.Sprintf("dyndep '%s' is not an input", dyndep))
+			return m.error(fmt.Sprintf("dyndep '%s' is not an input", dyndep), lsEnd)
 		}
 	}
 	return nil
@@ -507,12 +527,13 @@ func (m *manifestParserConcurrent) parseSubninja() error {
 	if err != nil {
 		return err
 	}
-	filename := eval.Evaluate(m.env)
 	ls := m.lexer.lexerState
 	if err = m.expectToken(NEWLINE); err != nil {
 		return err
 	}
 
+	// Process state.
+	filename := eval.Evaluate(m.env)
 	if m.options.Concurrency != ParseManifestSerial {
 		// Start the goroutine to read it asynchronously. It will be processed
 		// after the main manifest.
@@ -589,4 +610,14 @@ func (m *manifestParserConcurrent) expectToken(expected Token) error {
 
 func (m *manifestParserConcurrent) error(msg string, ls lexerState) error {
 	return ls.error(msg, m.lexer.filename, m.lexer.input)
+}
+
+type parsedEval struct {
+	eval EvalString
+	ls   lexerState
+}
+
+type keyEval struct {
+	key  string
+	eval EvalString
 }

@@ -717,10 +717,6 @@ func TestParserTest_Errors(t *testing.T) {
 			"input:2: expected 'depth =' line\n",
 		},
 		{
-			"pool foo\n  depth = 4\npool foo\n",
-			"input:3: duplicate pool 'foo'\npool foo\n        ^ near here",
-		},
-		{
 			"pool foo\n  depth = -1\n",
 			"input:2: invalid pool depth\n  depth = -1\n            ^ near here",
 		},
@@ -767,6 +763,30 @@ func TestParserTest_Errors(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("pool", func(t *testing.T) {
+		for _, c := range concurrencyVals {
+			t.Run(c.String(), func(t *testing.T) {
+				p := NewParserTest(t, c)
+				opts := ParseManifestOpts{
+					Concurrency: p.Concurrency,
+				}
+				// When parsing in concurrent mode, the full pool is processed before
+				// duplication check is done.
+				in := "pool foo\n  depth = 4\npool foo\n"
+				if c == ParseManifestConcurrentParsing {
+					in = "pool foo\n  depth = 4\npool foo\n  depth = 4\n"
+				}
+				want := "input:3: duplicate pool 'foo'\npool foo\n        ^ near here"
+				if err := p.parseTest(in, opts); err == nil {
+					t.Fatal("expected error")
+				} else if err.Error() != want {
+					t.Fatal(cmp.Diff(want, err.Error()))
+				}
+			})
+		}
+	})
+
 }
 
 func TestParserTest_MultipleOutputs(t *testing.T) {
