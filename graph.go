@@ -417,44 +417,40 @@ type edgeEnv struct {
 }
 
 func (e *edgeEnv) LookupVariable(v string) string {
+	edge := e.edge
 	switch v {
 	case "in":
-		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
-		return makePathList(e.edge.Inputs[:explicitDepsCount], ' ', e.escapeInOut)
+		explicitDepsCount := len(edge.Inputs) - int(edge.ImplicitDeps) - int(edge.OrderOnlyDeps)
+		return makePathList(edge.Inputs[:explicitDepsCount], ' ', e.escapeInOut)
 	case "in_newline":
-		explicitDepsCount := len(e.edge.Inputs) - int(e.edge.ImplicitDeps) - int(e.edge.OrderOnlyDeps)
-		return makePathList(e.edge.Inputs[:explicitDepsCount], '\n', e.escapeInOut)
+		explicitDepsCount := len(edge.Inputs) - int(edge.ImplicitDeps) - int(edge.OrderOnlyDeps)
+		return makePathList(edge.Inputs[:explicitDepsCount], '\n', e.escapeInOut)
 	case "out":
-		explicitOutsCount := len(e.edge.Outputs) - int(e.edge.ImplicitOuts)
-		return makePathList(e.edge.Outputs[:explicitOutsCount], ' ', e.escapeInOut)
+		explicitOutsCount := len(edge.Outputs) - int(edge.ImplicitOuts)
+		return makePathList(edge.Outputs[:explicitOutsCount], ' ', e.escapeInOut)
 	default:
-		if e.recursive {
-			i := 0
-			for ; i < len(e.lookups); i++ {
-				if e.lookups[i] == v {
-					break
-				}
-			}
-			if i != len(e.lookups) {
+		for i := 0; i < len(e.lookups); i++ {
+			if e.lookups[i] == v {
 				cycle := ""
 				for ; i < len(e.lookups); i++ {
 					cycle += e.lookups[i] + " -> "
 				}
 				cycle += v
-				fatalf(("cycle in rule variables: " + cycle))
+				fatalf("cycle in rule variables: " + cycle)
 			}
 		}
 
-		// See notes on BindingEnv::LookupWithFallback.
-		eval := e.edge.Rule.Bindings[v]
-		if e.recursive && eval != nil {
-			e.lookups = append(e.lookups, v)
+		// See notes on BindingEnv.LookupWithFallback.
+		eval := edge.Rule.Bindings[v]
+		if e.recursive {
+			if eval != nil {
+				e.lookups = append(e.lookups, v)
+			}
+		} else {
+			// In practice, variables defined on rules never use another rule variable.
+			e.recursive = true
 		}
-
-		// In practice, variables defined on rules never use another rule variable.
-		// For performance, only start checking for cycles after the first lookup.
-		e.recursive = true
-		return e.edge.Env.LookupWithFallback(v, eval, e)
+		return edge.Env.LookupWithFallback(v, eval, e)
 	}
 }
 
