@@ -47,50 +47,46 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 	return m
 }
 
-// subninja is a struct used to manage parallel reading of subninja files.
-type subninja struct {
-	index    int
-	name     string
-	contents []byte
-	err      error
-}
-
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
 	m.lexer.Start(filename, input)
 
+	// subninja files are read as soon as the statement is parsed but they are
+	// only processed once the current file is done. This enables lower latency
+	// overall.
 	subninjas := make(chan subninja)
 	nbSubninjas := 0
 
+loop:
 	for {
 		token := m.lexer.ReadToken()
 		switch token {
 		case POOL:
 			if err2 := m.parsePool(); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 		case BUILD:
 			if err2 := m.parseEdge(); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 		case RULE:
 			if err2 := m.parseRule(); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 		case DEFAULT:
 			if err2 := m.parseDefault(); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 		case IDENT:
 			m.lexer.UnreadToken()
 			name, letValue, err2 := m.parseLet()
 			if err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 			value := letValue.Evaluate(m.env)
 			// Check ninjaRequiredVersion immediately so we can exit
@@ -98,38 +94,49 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 			if name == "ninja_required_version" {
 				if err2 := checkNinjaVersion(value); err2 != nil {
 					*err = err2.Error()
-					return false
+					break loop
 				}
 			}
 			m.env.Bindings[name] = value
 		case INCLUDE:
 			if err2 := m.parseInclude(); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 		case SUBNINJA:
 			if err2 := m.parseSubninja(nbSubninjas, subninjas); err2 != nil {
 				*err = err2.Error()
-				return false
+				break loop
 			}
 			nbSubninjas++
 		case ERROR:
 			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
-			return false
+			break loop
 
 		case TEOF:
-			if err2 := m.processSubninjaQueue(nbSubninjas, subninjas); err2 != nil {
-				*err = err2.Error()
-				return false
-			}
-			return true
+			break loop
 
 		case NEWLINE:
 		default:
 			*err = m.lexer.Error("unexpected " + token.String()).Error()
-			return false
+			break loop
 		}
 	}
+
+	// Did the loop complete because of an error?
+	if *err != "" {
+		// Do not forget to unblock the goroutines.
+		for i := 0; i < nbSubninjas; i++ {
+			<-subninjas
+		}
+		return false
+	}
+
+	// Finish the processing by parsing the subninja files.
+	if err2 := m.processSubninjaQueue(nbSubninjas, subninjas); err2 != nil {
+		*err = err2.Error()
+	}
+	return *err == ""
 }
 
 // Parse various statement types.
@@ -515,6 +522,14 @@ func (m *ManifestParser) parseInclude() error {
 	return nil
 }
 
+// subninja is a struct used to manage parallel reading of subninja files.
+type subninja struct {
+	index    int
+	name     string
+	contents []byte
+	err      error
+}
+
 // parseSubninja parses a 'subninja' line and start a goroutine that will read
 // the file and send the content to the channel, but not process it.
 func (m *ManifestParser) parseSubninja(id int, ch chan<- subninja) error {
@@ -534,6 +549,8 @@ func (m *ManifestParser) parseSubninja(id int, ch chan<- subninja) error {
 	return nil
 }
 
+// readSubninjaAsync is the goroutine that reads the subninja file in parallel
+// to the main build.ninja to reduce overall latency.
 func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja) {
 	c, err := m.fileReader.ReadFile(n)
 	if err != nil {
@@ -550,7 +567,7 @@ func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja)
 	}
 }
 
-// processSubninjaQueue empties the queue.
+// processSubninjaQueue empties the queue of subninja files to process.
 func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error {
 	if false {
 		// Ordered flow.
