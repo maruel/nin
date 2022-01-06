@@ -21,6 +21,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"sync"
 )
 
 // ExistenceStatus represents the knowledge of the file's existence.
@@ -61,16 +62,20 @@ type Node struct {
 	// All Edges that use this Node as a validation.
 	ValidationOutEdges []*Edge
 
+	// wg protects MTime and Exists.
+	wg  sync.WaitGroup
+	err error
+
 	// Possible values of MTime:
 	//   -1: file hasn't been examined
 	//   0:  we looked, and file doesn't exist
 	//   >0: actual file's mtime, or the latest mtime of its dependencies if it doesn't exist
-	MTime TimeStamp
+	mtime TimeStamp
+
+	exists ExistenceStatus
 
 	// A dense integer id for the node, assigned and used by DepsLog.
 	ID int32
-
-	Exists ExistenceStatus
 
 	// Dirty is true when the underlying file is out-of-date.
 	// But note that Edge.OutputsReady is also used in judging which
@@ -84,20 +89,49 @@ type Node struct {
 
 // NewNode returns an initialized Node.
 func NewNode(path string, slashBits uint64) *Node {
-	return &Node{
+	n := &Node{
 		Path:      path,
 		SlashBits: slashBits,
-		MTime:     -1,
 		ID:        -1,
-		Exists:    ExistenceStatusUnknown,
 	}
+	n.wg.Add(1)
+	go n.statAsync()
+	return n
+}
+
+func (n *Node) statAsync() {
+	di := NewRealDiskInterface()
+	mtime, err := di.Stat(n.Path)
+	n.mtime = mtime
+	if mtime == -1 {
+		n.err = err
+	} else if mtime == 0 {
+		n.exists = ExistenceStatusMissing
+	} else {
+		n.exists = ExistenceStatusExists
+	}
+	n.wg.Done()
+}
+
+func (n *Node) MTime() TimeStamp {
+	n.wg.Wait()
+	return n.mtime
+}
+
+func (n *Node) Exists() ExistenceStatus {
+	n.wg.Wait()
+	return n.Exists()
 }
 
 func (n *Node) statIfNecessary(di DiskInterface) error {
-	if n.Exists != ExistenceStatusUnknown {
-		return nil
-	}
-	return n.Stat(di)
+	n.wg.Wait()
+	return n.err
+	/*
+		if n.Exists != ExistenceStatusUnknown {
+			return nil
+		}
+		return n.Stat(di)
+	*/
 }
 
 // PathDecanonicalized return |Path| but use SlashBits to convert back to
@@ -106,6 +140,7 @@ func (n *Node) PathDecanonicalized() string {
 	return PathDecanonicalized(n.Path, n.SlashBits)
 }
 
+/*
 // Stat stat's the file.
 func (n *Node) Stat(di DiskInterface) error {
 	defer metricRecord("node stat")()
@@ -121,11 +156,12 @@ func (n *Node) Stat(di DiskInterface) error {
 	}
 	return nil
 }
+*/
 
 // If the file doesn't exist, set the MTime from its dependencies
 func (n *Node) updatePhonyMtime(mtime TimeStamp) {
-	if n.Exists != ExistenceStatusExists {
-		if mtime > n.MTime {
+	if n.Exists() != ExistenceStatusExists {
+		if mtime > n.MTime() {
 			n.MTime = mtime
 		}
 	}

@@ -464,7 +464,7 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node) error {
 			if end > 0 {
 				mostRecentInput = oe.Inputs[0]
 				for i := 1; i != end; i++ {
-					if oe.Inputs[i].MTime > mostRecentInput.MTime {
+					if oe.Inputs[i].MTime() > mostRecentInput.MTime() {
 						mostRecentInput = oe.Inputs[i]
 					}
 				}
@@ -703,7 +703,7 @@ func (b *Builder) cleanup() {
 				if newMtime == -1 { // Log and ignore Stat() errors.
 					b.status.Error("%s", err)
 				}
-				if depfile != "" || o.MTime != newMtime {
+				if depfile != "" || o.MTime() != newMtime {
 					if err := b.di.RemoveFile(o.Path); err != nil {
 						b.status.Error("%s", err)
 					}
@@ -963,7 +963,7 @@ func (b *Builder) finishCommand(result *Result) error {
 			if newMtime > outputMtime {
 				outputMtime = newMtime
 			}
-			if o.MTime == newMtime && restat {
+			if restat && o.MTime() == newMtime {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).
