@@ -34,14 +34,20 @@ type ManifestParserOptions struct {
 // Parses .ninja files.
 type ManifestParser struct {
 	parser
-	env     *BindingEnv
+	env *BindingEnv
+
+	// Immutable
 	options ManifestParserOptions
+
+	subninjas         chan subninja
+	subninjasEnqueued int32
 }
 
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
 	m := &ManifestParser{
-		options: options,
-		env:     state.Bindings,
+		options:   options,
+		env:       state.Bindings,
+		subninjas: make(chan subninja),
 	}
 	m.parser = newParser(state, fileReader, m)
 	return m
@@ -49,14 +55,14 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
+	// The object is reused when parsing subninjas.
+	m.subninjasEnqueued = 0
+
 	m.lexer.Start(filename, input)
 
 	// subninja files are read as soon as the statement is parsed but they are
 	// only processed once the current file is done. This enables lower latency
 	// overall.
-	subninjas := make(chan subninja)
-	nbSubninjas := 0
-
 loop:
 	for {
 		token := m.lexer.ReadToken()
@@ -82,40 +88,25 @@ loop:
 				break loop
 			}
 		case IDENT:
-			m.lexer.UnreadToken()
-			name, letValue, err2 := m.parseLet()
-			if err2 != nil {
+			if err2 := m.parseIdent(); err2 != nil {
 				*err = err2.Error()
 				break loop
 			}
-			value := letValue.Evaluate(m.env)
-			// Check ninjaRequiredVersion immediately so we can exit
-			// before encountering any syntactic surprises.
-			if name == "ninja_required_version" {
-				if err2 := checkNinjaVersion(value); err2 != nil {
-					*err = err2.Error()
-					break loop
-				}
-			}
-			m.env.Bindings[name] = value
 		case INCLUDE:
 			if err2 := m.parseInclude(); err2 != nil {
 				*err = err2.Error()
 				break loop
 			}
 		case SUBNINJA:
-			if err2 := m.parseSubninja(nbSubninjas, subninjas); err2 != nil {
+			if err2 := m.parseSubninja(); err2 != nil {
 				*err = err2.Error()
 				break loop
 			}
-			nbSubninjas++
 		case ERROR:
 			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
 			break loop
-
 		case TEOF:
 			break loop
-
 		case NEWLINE:
 		default:
 			*err = m.lexer.Error("unexpected " + token.String()).Error()
@@ -123,17 +114,20 @@ loop:
 		}
 	}
 
+	// At this point, m.env is completely immutable and can be accessed
+	// concurrently.
+
 	// Did the loop complete because of an error?
 	if *err != "" {
 		// Do not forget to unblock the goroutines.
-		for i := 0; i < nbSubninjas; i++ {
-			<-subninjas
+		for i := int32(0); i < m.subninjasEnqueued; i++ {
+			<-m.subninjas
 		}
 		return false
 	}
 
 	// Finish the processing by parsing the subninja files.
-	if err2 := m.processSubninjaQueue(nbSubninjas, subninjas); err2 != nil {
+	if err2 := m.processSubninjaQueue(); err2 != nil {
 		*err = err2.Error()
 	}
 	return *err == ""
@@ -269,6 +263,24 @@ func (m *ManifestParser) parseDefault() error {
 	if !m.expectToken(NEWLINE, &err2) {
 		return errors.New(err2)
 	}
+	return nil
+}
+
+func (m *ManifestParser) parseIdent() error {
+	m.lexer.UnreadToken()
+	name, letValue, err := m.parseLet()
+	if err != nil {
+		return err
+	}
+	value := letValue.Evaluate(m.env)
+	// Check ninjaRequiredVersion immediately so we can exit
+	// before encountering any syntactic surprises.
+	if name == "ninja_required_version" {
+		if err := checkNinjaVersion(value); err != nil {
+			return err
+		}
+	}
+	m.env.Bindings[name] = value
 	return nil
 }
 
@@ -524,15 +536,15 @@ func (m *ManifestParser) parseInclude() error {
 
 // subninja is a struct used to manage parallel reading of subninja files.
 type subninja struct {
-	index    int
 	name     string
 	contents []byte
 	err      error
+	index    int32
 }
 
 // parseSubninja parses a 'subninja' line and start a goroutine that will read
 // the file and send the content to the channel, but not process it.
-func (m *ManifestParser) parseSubninja(id int, ch chan<- subninja) error {
+func (m *ManifestParser) parseSubninja() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return err
@@ -544,14 +556,14 @@ func (m *ManifestParser) parseSubninja(id int, ch chan<- subninja) error {
 	}
 
 	// Success, start the goroutine to read it asynchronously.
-	go m.readSubninjaAsync(id, path, ch)
-
+	go m.readSubninjaAsync(m.subninjasEnqueued, path, m.subninjas)
+	m.subninjasEnqueued++
 	return nil
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja) {
+func (m *ManifestParser) readSubninjaAsync(id int32, n string, ch chan<- subninja) {
 	c, err := m.fileReader.ReadFile(n)
 	if err != nil {
 		ch <- subninja{
@@ -568,13 +580,18 @@ func (m *ManifestParser) readSubninjaAsync(id int, n string, ch chan<- subninja)
 }
 
 // processSubninjaQueue empties the queue of subninja files to process.
-func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error {
+func (m *ManifestParser) processSubninjaQueue() error {
 	if false {
 		// Ordered flow.
-		results := make([]subninja, nb)
-		for i := 0; i < nb; i++ {
-			results[i] = <-ch
+
+		// This is limited by the slowest read but has the advantage of
+		// guaranteeing order. If we find out we need ordered processing, we can
+		// execute them within the loop as we find the right ID.
+		results := make([]subninja, m.subninjasEnqueued)
+		for i := int32(0); i < m.subninjasEnqueued; i++ {
+			results[i] = <-m.subninjas
 		}
+		// At this point, all the goroutines are released.
 		sort.Slice(results, func(i, j int) bool {
 			return results[i].index < results[j].index
 		})
@@ -591,12 +608,14 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 				return errors.New(err2)
 			}
 		}
+		return nil
 	}
-	// Out of order flow. May be incompatible?
+
+	// Out of order flow. This is the faster but may be incompatible?
 	var err error
 	subparser := NewManifestParser(m.state, m.fileReader, m.options)
-	for i := 0; i < nb; i++ {
-		s := <-ch
+	for i := int32(0); i < m.subninjasEnqueued; i++ {
+		s := <-m.subninjas
 		if err != nil {
 			continue
 		}
@@ -604,6 +623,7 @@ func (m *ManifestParser) processSubninjaQueue(nb int, ch <-chan subninja) error 
 			err = m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			continue
 		}
+		// Reset the binding fresh.
 		subparser.env = NewBindingEnv(m.env)
 		err2 := ""
 		if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {

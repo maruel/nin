@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type ParserTest struct {
@@ -1014,6 +1016,41 @@ func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
 	err := ""
 	if !parser.parseTest("include rules.ninja\nsubninja test.ninja\nbuild y : cat\n", &err) {
 		t.Fatal(err)
+	}
+}
+
+func TestParserTest_SubNinjaGrandChildren(t *testing.T) {
+	// A more complicated version of TestParserTest_SubNinja.
+	p := NewParserTest(t)
+	p.fs.Create("child.ninja", "var2 = inner\nsubninja $grand\n")
+	p.fs.Create("grandchild.ninja", "build $builddir/inner: varref\n")
+	p.AssertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\ngrand = grandchild.ninja\nbuild $builddir/outer: varref\nsubninja child.ninja\nbuild $builddir/outer2: varref\n")
+
+	want := []string{"child.ninja", "grandchild.ninja"}
+	if diff := cmp.Diff(want, p.fs.filesRead); diff != "" {
+		t.Error(diff)
+	}
+	if p.state.Paths["some_dir/outer"] == nil {
+		t.Fatal("expected true")
+	}
+	// Verify our builddir setting is inherited.
+	if p.state.Paths["some_dir/inner"] == nil {
+		t.Fatal("expected true")
+	}
+
+	// The order of the edges can be non-deterministic with parallel subninja
+	// execution.
+	if 3 != len(p.state.Edges) {
+		t.Fatal("expected equal")
+	}
+	if got := p.state.Edges[0].EvaluateCommand(false); got != "varref outer" {
+		t.Fatal(got)
+	}
+	if got := p.state.Edges[1].EvaluateCommand(false); got != "varref outer" {
+		t.Fatal(got)
+	}
+	if got := p.state.Edges[2].EvaluateCommand(false); got != "varref inner" {
+		t.Fatal(got)
 	}
 }
 
