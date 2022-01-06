@@ -1394,9 +1394,14 @@ func Main() int {
 	const cycleLimit = 100
 	for cycle := 1; cycle <= cycleLimit; cycle++ {
 		ninja := newNinjaMain(ninjaCommand, &config)
+		input, err2 := ninja.di.ReadFile(opts.inputFile)
+		if err2 != nil {
+			status.Error("%s", err2)
+			return 1
+		}
 		parser := nin.NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
 		err := ""
-		if !parser.Load(opts.inputFile, &err, nil) {
+		if !parser.Parse(opts.inputFile, input, &err) {
 			status.Error("%s", err)
 			return 1
 		}

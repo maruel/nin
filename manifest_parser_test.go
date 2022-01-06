@@ -439,9 +439,8 @@ func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	err := ""
 	if parser.parseTest(kInput, &err) {
 		t.Fatal("expected false")
-	}
-	if "sub.ninja:5: multiple rules generate out1\n" != err {
-		t.Fatal("expected equal")
+	} else if err != "sub.ninja:5: multiple rules generate out1\n" {
+		t.Fatalf("%q", err)
 	}
 }
 
@@ -638,16 +637,29 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 }
 
-func TestParserTest_MissingInput(t *testing.T) {
+// New test not in C++.
+func TestParserTest_MissingIncluded(t *testing.T) {
 	p := NewParserTest(t)
 	localState := NewState()
 	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
 	err := ""
-	if parser.Load("build.ninja", &err, nil) {
+	if parser.Parse("build.ninja", []byte("include missing.ninja\n\x00"), &err) {
 		t.Fatal("expected false")
+	} else if err != "build.ninja:1: loading 'missing.ninja': file does not exist\ninclude missing.ninja\n                     ^ near here" {
+		t.Fatalf("%q", err)
 	}
-	if "loading 'build.ninja': file does not exist" != err {
-		t.Fatal(err)
+}
+
+// New test not in C++.
+func TestParserTest_MissingSubninja(t *testing.T) {
+	p := NewParserTest(t)
+	localState := NewState()
+	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
+	err := ""
+	if parser.Parse("build.ninja", []byte("subninja missing.ninja\n\x00"), &err) {
+		t.Fatal("expected false")
+	} else if err != "build.ninja:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
+		t.Fatalf("%q", err)
 	}
 }
 
@@ -803,9 +815,8 @@ func TestParserTest_BrokenInclude(t *testing.T) {
 	err := ""
 	if parser.parseTest("include include.ninja\n", &err) {
 		t.Fatal("expected false")
-	}
-	if "include.ninja:1: expected path\nbuild\n     ^ near here" != err {
-		t.Fatal("expected equal")
+	} else if err != "include.ninja:1: expected path\nbuild\n     ^ near here" {
+		t.Fatalf("%q", err)
 	}
 }
 
@@ -1088,7 +1099,11 @@ func BenchmarkLoadManifest(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		state := NewState()
 		parser := NewManifestParser(&state, &di, ManifestParserOptions{})
-		if !parser.Load("build.ninja", &errX, nil) {
+		contents, err := parser.fileReader.ReadFile("build.ninja")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if !parser.Parse("build.ninja", contents, &errX) {
 			b.Fatal("Failed to read test data: ", errX)
 		}
 		// Doing an empty build involves reading the manifest and evaluating all

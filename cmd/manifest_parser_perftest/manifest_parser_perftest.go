@@ -43,12 +43,17 @@ func WriteFakeManifests(dir string) error {
 }
 
 func LoadManifests(measureCommandEvaluation bool) int {
-	err := ""
 	di := nin.NewRealDiskInterface()
+	input, err := di.ReadFile("build.ninja")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)
+		os.Exit(1)
+	}
 	state := nin.NewState()
 	parser := nin.NewManifestParser(&state, &di, nin.ManifestParserOptions{})
-	if !parser.Load("build.ninja", &err, nil) {
-		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)
+	err2 := ""
+	if !parser.Parse("build.ninja", input, &err2) {
+		fmt.Fprintf(os.Stderr, "Failed to parse test data: %s\n", err2)
 		os.Exit(1)
 	}
 	// Doing an empty build involves reading the manifest and evaluating all

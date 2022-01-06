@@ -155,5 +155,10 @@ func (d *DyndepLoader) updateEdge(edge *Edge, dyndeps *Dyndeps, err *string) boo
 
 func (d *DyndepLoader) loadDyndepFile(file *Node, ddf DyndepFile, err *string) bool {
 	parser := NewDyndepParser(d.state, d.di, ddf)
-	return parser.Load(file.Path, err, nil)
+	contents, err2 := d.di.ReadFile(file.Path)
+	if err2 != nil {
+		*err = "loading '" + file.Path + "': " + err2.Error()
+		return false
+	}
+	return parser.Parse(file.Path, contents, err)
 }

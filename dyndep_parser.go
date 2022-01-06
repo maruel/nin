@@ -18,21 +18,38 @@ import "errors"
 
 // Parses dyndep files.
 type DyndepParser struct {
-	parser
+	// Immutable.
+	fileReader FileReader
+
+	// Mutable.
+	lexer      lexer
+	state      *State
 	dyndepFile DyndepFile
 	env        *BindingEnv
 }
 
 func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile) *DyndepParser {
-	d := &DyndepParser{
+	return &DyndepParser{
+		fileReader: fileReader,
+		state:      state,
 		dyndepFile: dyndepFile,
 	}
-	d.parser = newParser(state, fileReader, d)
-	return d
+}
+
+// If the next token is not \a expected, produce an error string
+// saying "expected foo, got bar".
+func (d *DyndepParser) expectToken(expected Token, err *string) bool {
+	if token := d.lexer.ReadToken(); token != expected {
+		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
+		*err = d.lexer.Error(msg).Error()
+		return false
+	}
+	return true
 }
 
 // Parse a file, given its contents as a string.
 func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
+	defer metricRecord(".ninja parse")()
 	d.lexer.Start(filename, input)
 
 	// Require a supported ninjaDyndepVersion value immediately so

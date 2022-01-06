@@ -16,6 +16,7 @@ package nin
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 )
@@ -33,28 +34,43 @@ type ManifestParserOptions struct {
 
 // Parses .ninja files.
 type ManifestParser struct {
-	parser
-	env *BindingEnv
-
 	// Immutable
-	options ManifestParserOptions
+	fileReader FileReader
+	options    ManifestParserOptions
 
+	// Mutable.
+	lexer             lexer
+	state             *State
+	env               *BindingEnv
 	subninjas         chan subninja
 	subninjasEnqueued int32
 }
 
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
-	m := &ManifestParser{
-		options:   options,
-		env:       state.Bindings,
-		subninjas: make(chan subninja),
+	return &ManifestParser{
+		fileReader: fileReader,
+		options:    options,
+		state:      state,
+		env:        state.Bindings,
+		subninjas:  make(chan subninja),
 	}
-	m.parser = newParser(state, fileReader, m)
-	return m
+}
+
+// If the next token is not \a expected, produce an error string
+// saying "expected foo, got bar".
+func (m *ManifestParser) expectToken(expected Token, err *string) bool {
+	if token := m.lexer.ReadToken(); token != expected {
+		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
+		*err = m.lexer.Error(msg).Error()
+		return false
+	}
+	return true
 }
 
 // Parse a file, given its contents as a string.
 func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
+	defer metricRecord(".ninja parse")()
+
 	// The object is reused when parsing subninjas.
 	m.subninjasEnqueued = 0
 
@@ -519,16 +535,24 @@ func (m *ManifestParser) parseInclude() error {
 	if err != nil {
 		return err
 	}
-	path := eval.Evaluate(m.env)
-	subparser := NewManifestParser(m.state, m.fileReader, m.options)
-	subparser.env = m.env
-
+	ls := m.lexer.lexerState
 	err2 := ""
-	if !subparser.Load(path, &err2, &m.lexer) {
+	if !m.expectToken(NEWLINE, &err2) {
 		return errors.New(err2)
 	}
 
-	if !m.expectToken(NEWLINE, &err2) {
+	// Process state.
+	path := eval.Evaluate(m.env)
+	input, err := m.fileReader.ReadFile(path)
+	if err != nil {
+		// Wrap it.
+		return ls.error(fmt.Sprintf("loading '%s': %s", path, err), m.lexer.filename, m.lexer.input)
+	}
+
+	subparser := NewManifestParser(m.state, m.fileReader, m.options)
+	subparser.env = m.env
+	if !subparser.Parse(path, input, &err2) {
+		// Do not wrap error inside the included ninja.
 		return errors.New(err2)
 	}
 	return nil
@@ -536,7 +560,7 @@ func (m *ManifestParser) parseInclude() error {
 
 // subninja is a struct used to manage parallel reading of subninja files.
 type subninja struct {
-	name     string
+	path     string
 	contents []byte
 	err      error
 	ls       lexerState // lexer state when the subninja statement was parsed.
@@ -569,14 +593,14 @@ func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subn
 	if err != nil {
 		ch <- subninja{
 			index: id,
-			name:  n,
+			path:  n,
 			err:   err,
 			ls:    ls,
 		}
 	}
 	ch <- subninja{
 		index:    id,
-		name:     n,
+		path:     n,
 		contents: c,
 		ls:       ls,
 	}
@@ -600,14 +624,16 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		})
 		for _, s := range results {
 			if s.err != nil {
-				return m.error("loading '"+s.name+"': "+s.err.Error(), s.ls)
+				// Wrap it.
+				return m.error("loading '"+s.path+"': "+s.err.Error(), s.ls)
 			}
 		}
 		subparser := NewManifestParser(m.state, m.fileReader, m.options)
 		for _, s := range results {
 			subparser.env = NewBindingEnv(m.env)
 			err2 := ""
-			if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
+			if !subparser.Parse(s.path, s.contents, &err2) {
+				// Do not wrap error inside the subninja.
 				return errors.New(err2)
 			}
 		}
@@ -623,13 +649,15 @@ func (m *ManifestParser) processSubninjaQueue() error {
 			continue
 		}
 		if s.err != nil {
-			err = m.error("loading '"+s.name+"': "+s.err.Error(), s.ls)
+			// Wrap it.
+			err = s.ls.error(fmt.Sprintf("loading '%s': %s", s.path, s.err.Error()), m.lexer.filename, m.lexer.input)
 			continue
 		}
 		// Reset the binding fresh.
 		subparser.env = NewBindingEnv(m.env)
 		err2 := ""
-		if !subparser.parser.Parse.Parse(s.name, s.contents, &err2) {
+		if !subparser.Parse(s.path, s.contents, &err2) {
+			// Do not wrap error inside the subninja.
 			err = errors.New(err2)
 		}
 	}

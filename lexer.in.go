@@ -82,6 +82,14 @@ func (t Token) String() string {
 	return "" // not reached
 }
 
+// errorHint returns a human-readable token hint, used in error messages.
+func (t Token) errorHint() string {
+	if t == COLON {
+		return " ($ also escapes ':')"
+	}
+	return ""
+}
+
 // lexerState is the offset of processing a token.
 //
 // It is meant to be saved when an error message may be printed after the
