@@ -717,9 +717,7 @@ func TestParserTest_MissingSubNinja(t *testing.T) {
 	if parser.parseTest("subninja foo.ninja\n", &err) {
 		t.Fatal("expected false")
 	}
-	// Original:
-	//if err != "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here"  {
-	if err != "input:2: loading 'foo.ninja': file does not exist\n" {
+	if err != "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here" {
 		t.Fatal(err)
 	}
 }

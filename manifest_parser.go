@@ -539,6 +539,7 @@ type subninja struct {
 	name     string
 	contents []byte
 	err      error
+	lexer    lexer // lexer state when the subninja statement was parsed.
 	index    int32
 }
 
@@ -556,26 +557,28 @@ func (m *ManifestParser) parseSubninja() error {
 	}
 
 	// Success, start the goroutine to read it asynchronously.
-	go m.readSubninjaAsync(m.subninjasEnqueued, path, m.subninjas)
+	go readSubninjaAsync(m.fileReader, m.subninjasEnqueued, path, m.subninjas, m.lexer)
 	m.subninjasEnqueued++
 	return nil
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func (m *ManifestParser) readSubninjaAsync(id int32, n string, ch chan<- subninja) {
-	c, err := m.fileReader.ReadFile(n)
+func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subninja, lexer lexer) {
+	c, err := fileReader.ReadFile(n)
 	if err != nil {
 		ch <- subninja{
 			index: id,
 			name:  n,
 			err:   err,
+			lexer: lexer,
 		}
 	}
 	ch <- subninja{
 		index:    id,
 		name:     n,
 		contents: c,
+		lexer:    lexer,
 	}
 }
 
@@ -597,7 +600,7 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		})
 		for _, s := range results {
 			if s.err != nil {
-				return m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
+				return s.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			}
 		}
 		subparser := NewManifestParser(m.state, m.fileReader, m.options)
@@ -620,7 +623,7 @@ func (m *ManifestParser) processSubninjaQueue() error {
 			continue
 		}
 		if s.err != nil {
-			err = m.lexer.Error("loading '" + s.name + "': " + s.err.Error())
+			err = s.lexer.Error("loading '" + s.name + "': " + s.err.Error())
 			continue
 		}
 		// Reset the binding fresh.
