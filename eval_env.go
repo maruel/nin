@@ -235,21 +235,3 @@ func (b *BindingEnv) LookupRule(ruleName string) *Rule {
 	}
 	return nil
 }
-
-// This is tricky.  Edges want lookup scope to go in this order:
-// 1) value set on edge itself (edge->env)
-// 2) value set on rule, with expansion in the edge's scope
-// 3) value set on enclosing scope of edge (edge->env->parent)
-// This function takes as parameters the necessary info to do (2).
-func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) string {
-	if i, ok := b.Bindings[v]; ok {
-		return i
-	}
-	if eval != nil {
-		return eval.Evaluate(env)
-	}
-	if b.Parent != nil {
-		return b.Parent.LookupVariable(v)
-	}
-	return ""
-}

@@ -454,7 +454,24 @@ func (e *edgeEnv) LookupVariable(v string) string {
 		// In practice, variables defined on rules never use another rule variable.
 		// For performance, only start checking for cycles after the first lookup.
 		e.recursive = true
-		return e.edge.Env.LookupWithFallback(v, eval, e)
+		// This is an inlined version of LookupWithFallback() in the C++ version.
+		//
+		// This is tricky.  Edges want lookup scope to go in this order:
+		// 1) value set on edge itself (edge->env)
+		// 2) value set on rule, with expansion in the edge's scope
+		// 3) value set on enclosing scope of edge (edge->env->parent)
+		// This function takes as parameters the necessary info to do (2).
+		env := e.edge.Env
+		if i, ok := env.Bindings[v]; ok {
+			return i
+		}
+		if eval != nil {
+			return eval.Evaluate(e)
+		}
+		if env.Parent != nil {
+			return env.Parent.LookupVariable(v)
+		}
+		return ""
 	}
 }
 
