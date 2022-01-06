@@ -410,10 +410,9 @@ const (
 
 // An Env for an Edge, providing $in and $out.
 type edgeEnv struct {
-	lookups     []string
+	lookups     map[string]struct{}
 	edge        *Edge
 	escapeInOut EscapeKind
-	recursive   bool
 }
 
 func (e *edgeEnv) LookupVariable(v string) string {
@@ -429,28 +428,29 @@ func (e *edgeEnv) LookupVariable(v string) string {
 		explicitOutsCount := len(edge.Outputs) - int(edge.ImplicitOuts)
 		return makePathList(edge.Outputs[:explicitOutsCount], ' ', e.escapeInOut)
 	default:
-		for i := 0; i < len(e.lookups); i++ {
-			if e.lookups[i] == v {
-				cycle := ""
+		recursive := e.lookups != nil
+		if !recursive {
+			e.lookups = map[string]struct{}{}
+		} else if _, ok := e.lookups[v]; ok {
+			cycle := ""
+			/*
 				for ; i < len(e.lookups); i++ {
 					cycle += e.lookups[i] + " -> "
 				}
-				cycle += v
-				fatalf("cycle in rule variables: " + cycle)
-			}
+			*/
+			cycle += v
+			fatalf("cycle in rule variables: " + cycle)
 		}
 
-		// See notes on BindingEnv.LookupWithFallback.
-		eval := edge.Rule.Bindings[v]
-		if e.recursive {
-			if eval != nil {
-				e.lookups = append(e.lookups, v)
-			}
-		} else {
-			// In practice, variables defined on rules never use another rule variable.
-			e.recursive = true
+		// See notes on BindingEnv::LookupWithFallback.
+		eval := e.edge.Rule.Bindings[v]
+		if recursive && eval != nil {
+			e.lookups[v] = struct{}{}
 		}
-		return edge.Env.LookupWithFallback(v, eval, e)
+
+		// In practice, variables defined on rules never use another rule variable.
+		// For performance, only start checking for cycles after the first lookup.
+		return e.edge.Env.LookupWithFallback(v, eval, e)
 	}
 }
 
