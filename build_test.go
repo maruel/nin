@@ -97,7 +97,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatalf("%#v", e)
 	}
 
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -113,7 +113,7 @@ func TestPlanTest_Basic(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -150,7 +150,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -159,7 +159,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid1 mid2
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -194,7 +194,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -203,7 +203,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -212,7 +212,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a2
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -221,7 +221,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat b1 b2
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -256,7 +256,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat in
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -265,7 +265,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -274,7 +274,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat mid
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -283,7 +283,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 	if edge == nil {
 		t.Fatal("expected true")
 	} // cat a1 a2
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -331,7 +331,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
@@ -351,7 +351,7 @@ func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
 		p.t.Fatal("expected false")
 	}
 
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		p.t.Fatal("expected equal")
 	}
@@ -422,7 +422,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	}
 
 	// finish out1
-	p.plan.edgeFinished(edges[0], EdgeSucceeded, &err)
+	p.plan.edgeFinished(edges[0], edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -444,7 +444,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan.edgeFinished(out3, EdgeSucceeded, &err)
+	p.plan.edgeFinished(out3, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -454,7 +454,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	}
 
 	for _, it := range edges {
-		p.plan.edgeFinished(it, EdgeSucceeded, &err)
+		p.plan.edgeFinished(it, edgeSucceeded, &err)
 		if "" != err {
 			t.Fatal("expected equal")
 		}
@@ -468,7 +468,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	p.plan.edgeFinished(last, EdgeSucceeded, &err)
+	p.plan.edgeFinished(last, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -507,7 +507,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -528,7 +528,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "foo.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -537,7 +537,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -558,7 +558,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "bar.cpp.obj" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -579,7 +579,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "libfoo.a" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -597,7 +597,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	if "all" != edge.Outputs[0].Path {
 		t.Fatal("expected equal")
 	}
-	p.plan.edgeFinished(edge, EdgeSucceeded, &err)
+	p.plan.edgeFinished(edge, edgeSucceeded, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -649,7 +649,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan.edgeFinished(edge, EdgeFailed, &err)
+	p.plan.edgeFinished(edge, edgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}
@@ -669,7 +669,7 @@ func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	p.plan.edgeFinished(edge, EdgeFailed, &err)
+	p.plan.edgeFinished(edge, edgeFailed, &err)
 	if "" != err {
 		t.Fatal("expected equal")
 	}

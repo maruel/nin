@@ -24,8 +24,8 @@ import (
 type edgeResult bool
 
 const (
-	EdgeFailed    edgeResult = false
-	EdgeSucceeded edgeResult = true
+	edgeFailed    edgeResult = false
+	edgeSucceeded edgeResult = true
 )
 
 // Enumerate possible steps we want for an edge.
@@ -354,7 +354,7 @@ func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 	edge.Pool.retrieveReadyEdges(p.ready)
 
 	// The rest of this function only applies to successful commands.
-	if result != EdgeSucceeded {
+	if result != edgeSucceeded {
 		return true
 	}
 
@@ -410,7 +410,7 @@ func (p *plan) edgeMaybeReady(edge *Edge, want Want, err *string) bool {
 		} else {
 			// We do not need to build this edge, but we might need to build one of
 			// its dependents.
-			if !p.edgeFinished(edge, EdgeSucceeded, err) {
+			if !p.edgeFinished(edge, edgeSucceeded, err) {
 				return false
 			}
 		}
@@ -794,7 +794,7 @@ func (b *Builder) Build(err *string) bool {
 				}
 
 				if edge.Rule == PhonyRule {
-					if !b.plan.edgeFinished(edge, EdgeSucceeded, err) {
+					if !b.plan.edgeFinished(edge, edgeSucceeded, err) {
 						b.cleanup()
 						b.status.BuildFinished()
 						return false
@@ -928,7 +928,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 
 	// The rest of this function only applies to successful commands.
 	if result.ExitCode != ExitSuccess {
-		return b.plan.edgeFinished(edge, EdgeFailed, err)
+		return b.plan.edgeFinished(edge, edgeFailed, err)
 	}
 	// Restat the edge outputs
 	outputMtime := TimeStamp(0)
@@ -991,7 +991,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 		}
 	}
 
-	if !b.plan.edgeFinished(edge, EdgeSucceeded, err) {
+	if !b.plan.edgeFinished(edge, edgeSucceeded, err) {
 		return false
 	}
 
