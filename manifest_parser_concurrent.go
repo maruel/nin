@@ -57,32 +57,23 @@ func (m *manifestParserConcurrent) parseMain(filename string, input []byte) erro
 	// For error().
 	m.manifestParserState.filename = filename
 	m.manifestParserState.input = input
-	err := m.parse(filename, input)
 
-	// At this point, m.manifestParserState.env is completely immutable and can
-	// be accessed concurrently.
-
-	// Did the loop complete because of an error?
-	if err != nil {
-		// Do not forget to unblock the goroutines.
-		for i := int32(0); i < m.manifestParserState.subninjasEnqueued; i++ {
-			<-m.manifestParserState.subninjas
-		}
-		return err
+	actions, err := m.parse(filename, input)
+	if err2 := m.process(actions); err == nil {
+		err = err2
 	}
-
-	// Finish the processing by parsing the subninja files.
-	return m.manifestParserState.processSubninjaQueue()
+	return err
 }
 
-func (m *manifestParserConcurrent) parse(filename string, input []byte) error {
+func (m *manifestParserRoutine) parse(filename string, input []byte) ([]interface{}, error) {
 	m.lexer.Start(filename, input)
 
 	// subninja files are read as soon as the statement is parsed but they are
 	// only processed once the current file is done. This enables lower latency
 	// overall.
-	var d interface{}
+	var actions []interface{}
 	var err error
+	var d interface{}
 loop:
 	for err == nil {
 		switch token := m.lexer.ReadToken(); token {
@@ -90,37 +81,37 @@ loop:
 			if d, err = m.parsePool(); err != nil {
 				break loop
 			}
-			err = m.processPool(d.(dataPool))
+			actions = append(actions, d)
 		case BUILD:
 			if d, err = m.parseEdge(); err != nil {
 				break loop
 			}
-			err = m.processEdge(d.(dataEdge))
+			actions = append(actions, d)
 		case RULE:
 			if d, err = m.parseRule(); err != nil {
 				break loop
 			}
-			err = m.processRule(d.(dataRule))
+			actions = append(actions, d)
 		case DEFAULT:
 			if d, err = m.parseDefault(); err != nil {
 				break loop
 			}
-			err = m.processDefault(d.(dataDefault))
+			actions = append(actions, d)
 		case IDENT:
 			if d, err = m.parseIdent(); err != nil {
 				break loop
 			}
-			err = m.processIdent(d.(dataIdent))
+			actions = append(actions, d)
 		case INCLUDE:
 			if d, err = m.parseInclude(); err != nil {
 				break loop
 			}
-			err = m.processInclude(d.(dataInclude))
+			actions = append(actions, d)
 		case SUBNINJA:
 			if d, err = m.parseSubninja(); err != nil {
 				break loop
 			}
-			err = m.processSubninja(d.(dataSubninja))
+			actions = append(actions, d)
 		case ERROR:
 			err = m.lexer.Error(m.lexer.DescribeLastError())
 		case TEOF:
@@ -130,7 +121,49 @@ loop:
 			err = m.lexer.Error("unexpected " + token.String())
 		}
 	}
-	return err
+	return actions, err
+}
+
+func (m *manifestParserState) process(actions []interface{}) error {
+	var err error
+	for _, a := range actions {
+		switch d := a.(type) {
+		case dataPool:
+			err = m.processPool(d)
+		case dataEdge:
+			err = m.processEdge(d)
+		case dataRule:
+			err = m.processRule(d)
+		case dataDefault:
+			err = m.processDefault(d)
+		case dataIdent:
+			err = m.processIdent(d)
+		case dataInclude:
+			// Loads the included file immediately.
+			err = m.processInclude(d)
+		case dataSubninja:
+			// Enqueues the file to read into m.subninjas.
+			err = m.processSubninja(d)
+		}
+		if err != nil {
+			break
+		}
+	}
+
+	// At this point, m.env is completely immutable and can
+	// be accessed concurrently.
+
+	// Did the loop complete because of an error?
+	if err != nil {
+		// Do not forget to unblock the goroutines.
+		for i := int32(0); i < m.subninjasEnqueued; i++ {
+			<-m.subninjas
+		}
+		return err
+	}
+
+	// Finish the processing by parsing the subninja files.
+	return m.processSubninjaQueue()
 }
 
 // parsePool parses a "pool" statement.
