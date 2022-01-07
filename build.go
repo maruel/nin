@@ -755,11 +755,12 @@ func (b *Builder) AlreadyUpToDate() bool {
 	return !b.plan.moreToDo()
 }
 
-// Run the build.  Returns false on error.
+// Run the build.
+//
 // It is an error to call this function when AlreadyUpToDate() is true.
-func (b *Builder) Build(err *string) bool {
+func (b *Builder) Build() error {
 	if b.AlreadyUpToDate() {
-		panic("M-A")
+		return errors.New("already up to date")
 	}
 
 	b.status.PlanHasTotalEdges(b.plan.commandEdges)
@@ -791,17 +792,18 @@ func (b *Builder) Build(err *string) bool {
 					_ = b.scan.buildLog.Close()
 				}
 
-				if !b.startEge(edge, err) {
+				err2 := ""
+				if !b.startEge(edge, &err2) {
 					b.cleanup()
 					b.status.BuildFinished()
-					return false
+					return errors.New(err2)
 				}
 
 				if edge.Rule == PhonyRule {
-					if !b.plan.edgeFinished(edge, edgeSucceeded, err) {
+					if !b.plan.edgeFinished(edge, edgeSucceeded, &err2) {
 						b.cleanup()
 						b.status.BuildFinished()
-						return false
+						return errors.New(err2)
 					}
 				} else {
 					pendingCommands++
@@ -818,15 +820,15 @@ func (b *Builder) Build(err *string) bool {
 			if !b.commandRunner.WaitForCommand(&result) || result.ExitCode == ExitInterrupted {
 				b.cleanup()
 				b.status.BuildFinished()
-				*err = "interrupted by user"
-				return false
+				return errors.New("interrupted by user")
 			}
 
 			pendingCommands--
-			if !b.finishCommand(&result, err) {
+			err2 := ""
+			if !b.finishCommand(&result, &err2) {
 				b.cleanup()
 				b.status.BuildFinished()
-				return false
+				return errors.New(err2)
 			}
 
 			if result.ExitCode != ExitSuccess {
@@ -843,20 +845,16 @@ func (b *Builder) Build(err *string) bool {
 		b.status.BuildFinished()
 		if failuresAllowed == 0 {
 			if b.config.FailuresAllowed > 1 {
-				*err = "subcommands failed"
-			} else {
-				*err = "subcommand failed"
+				return errors.New("subcommands failed")
 			}
+			return errors.New("subcommand failed")
 		} else if failuresAllowed < b.config.FailuresAllowed {
-			*err = "cannot make progress due to previous errors"
-		} else {
-			*err = "stuck [this is a bug]"
+			return errors.New("cannot make progress due to previous errors")
 		}
-
-		return false
+		return errors.New("stuck [this is a bug]")
 	}
 	b.status.BuildFinished()
-	return true
+	return nil
 }
 
 func (b *Builder) startEge(edge *Edge, err *string) bool {

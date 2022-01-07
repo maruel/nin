@@ -775,7 +775,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	b.commandRunner.commandsRan = nil
 	builder.commandRunner = &b.commandRunner
 	if !builder.AlreadyUpToDate() {
-		if !builder.Build(&err) {
+		if err := builder.Build(); err != nil {
 			b.t.Fatal(err)
 		}
 	}
@@ -1000,11 +1000,8 @@ func TestBuildTest_OneStep(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
-	}
-	if "" != err {
-		t.Fatal("expected equal")
 	}
 
 	wantCommands := []string{"cat in1 > cat1"}
@@ -1025,11 +1022,8 @@ func TestBuildTest_OneStep2(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 
 	wantCommands := []string{"cat in1 > cat1"}
@@ -1047,11 +1041,8 @@ func TestBuildTest_TwoStep(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1078,11 +1069,8 @@ func TestBuildTest_TwoStep(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 5 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1108,11 +1096,8 @@ func TestBuildTest_TwoOutputs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"touch out1 out2"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1132,11 +1117,8 @@ func TestBuildTest_ImplicitOutput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"touch out out.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1161,11 +1143,8 @@ func TestBuildTest_MultiOutIn(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -1182,11 +1161,8 @@ func TestBuildTest_Chain(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 4 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1220,8 +1196,8 @@ func TestBuildTest_Chain(t *testing.T) {
 	if b.builder.AlreadyUpToDate() {
 		t.Fatal("expected false")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1279,11 +1255,8 @@ func TestBuildTest_MakeDirs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantMade := map[string]struct{}{
 		"subdir":                        {},
@@ -1391,11 +1364,8 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1449,11 +1419,8 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	}
 
 	// explicit dep dirty, expect a rebuild.
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1472,11 +1439,8 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1508,11 +1472,8 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1531,11 +1492,8 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1561,11 +1519,8 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cc oo.h.in"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1581,11 +1536,8 @@ func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	if b.builder.addTargetName("foo.o", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands = []string{"cc oo.h.in"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1657,11 +1609,8 @@ func TestBuildTest_Phony(t *testing.T) {
 	if b.builder.AlreadyUpToDate() {
 		t.Fatal("expected false")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -1771,11 +1720,8 @@ func PhonyUseCase(t *testing.T, i int) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		b.t.Fatal("expected true")
-	}
-	if "" != err {
-		b.t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 
 	ci := strconv.Itoa(i)
@@ -1797,8 +1743,8 @@ func PhonyUseCase(t *testing.T, i int) {
 			t.Fatal("expected equal")
 		}
 		if !b.builder.AlreadyUpToDate() {
-			if !b.builder.Build(&err) {
-				t.Fatal("expected true")
+			if err := b.builder.Build(); err != nil {
+				t.Fatal(err)
 			}
 		}
 		if "" != err {
@@ -1822,11 +1768,8 @@ func PhonyUseCase(t *testing.T, i int) {
 		if b.builder.AlreadyUpToDate() {
 			t.Fatal("expected false")
 		}
-		if !b.builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := b.builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 		wantCommands := []string{"touch test" + ci}
 		if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1876,11 +1819,8 @@ func PhonyUseCase(t *testing.T, i int) {
 		if b.builder.AlreadyUpToDate() {
 			t.Fatal("expected false")
 		}
-		if !b.builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := b.builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 		wantCommands := []string{"touch test" + ci}
 		if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1898,11 +1838,8 @@ func PhonyUseCase(t *testing.T, i int) {
 		if b.builder.AlreadyUpToDate() {
 			t.Fatal("expected false")
 		}
-		if !b.builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := b.builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 		wantCommands = []string{"touch test" + ci}
 		if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -1929,13 +1866,12 @@ func TestBuildTest_Fail(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
+	} else if err.Error() != "subcommand failed" {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-	if "subcommand failed" != err {
 		t.Fatal("expected equal")
 	}
 }
@@ -1955,13 +1891,12 @@ func TestBuildTest_SwallowFailures(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
+	} else if err.Error() != "subcommands failed" {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-	if "subcommands failed" != err {
 		t.Fatal("expected equal")
 	}
 }
@@ -1981,13 +1916,12 @@ func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
+	} else if err.Error() != "cannot make progress due to previous errors" {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-	if "cannot make progress due to previous errors" != err {
 		t.Fatal("expected equal")
 	}
 }
@@ -2007,13 +1941,12 @@ func TestBuildTest_SwallowFailuresPool(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
+	} else if err.Error() != "cannot make progress due to previous errors" {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
-		t.Fatal("expected equal")
-	}
-	if "cannot make progress due to previous errors" != err {
 		t.Fatal("expected equal")
 	}
 }
@@ -2091,8 +2024,8 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if !b.builder.AlreadyUpToDate() {
 		t.Fatal("expected true")
@@ -2139,8 +2072,8 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 	if b.builder.addTargetName("out1", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if !b.builder.AlreadyUpToDate() {
 		t.Fatal("expected true")
@@ -2159,7 +2092,7 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	if b.builder.addTargetName("out1", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
@@ -2178,7 +2111,9 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	if b.builder.addTargetName("out1", &err) == nil || err != "" {
 		t.Fatal(err)
 	}
-	if b.builder.Build(&err) || err != "subcommand failed" {
+	if err := b.builder.Build(); err == nil {
+		t.Fatal("expected false")
+	} else if err.Error() != "subcommand failed" {
 		t.Fatal(err)
 	}
 	err = ""
@@ -2200,7 +2135,7 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	if b.builder.AlreadyUpToDate() {
 		t.Fatal("expected false")
 	}
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
@@ -2222,11 +2157,8 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2245,11 +2177,8 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 	if b.builder.addTargetName("out2", &err) == nil {
 		t.Fatal("expected true")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2278,11 +2207,8 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2304,8 +2230,8 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2339,8 +2265,8 @@ func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2368,11 +2294,8 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	b.commandRunner.commandsRan = nil
 	b.state.Reset()
@@ -2390,8 +2313,8 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2412,11 +2335,8 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2439,11 +2359,8 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2474,8 +2391,8 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 2 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2504,8 +2421,8 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2536,8 +2453,8 @@ func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if !b.builder.AlreadyUpToDate() {
 		t.Fatal("expected true")
@@ -2583,8 +2500,8 @@ func TestBuildDryRun_AllCommandsShown(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2641,8 +2558,8 @@ func TestBuildTest_RspFileSuccess(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal(b.commandRunner.commandsRan)
@@ -2694,11 +2611,10 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "subcommand failed" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "subcommand failed" {
+		t.Fatal(err)
 	}
 	wantCommand := []string{"fail"}
 	if diff := cmp.Diff(wantCommand, b.commandRunner.commandsRan); diff != "" {
@@ -2741,8 +2657,8 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	}
 
 	// 1. Build for the 1st time (-> populate log)
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommand := []string{"cat out.rsp > out"}
 	if diff := cmp.Diff(wantCommand, b.commandRunner.commandsRan); diff != "" {
@@ -2779,8 +2695,8 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if diff := cmp.Diff(wantCommand, b.commandRunner.commandsRan); diff != "" {
 		t.Fatal(diff)
@@ -2805,11 +2721,10 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "interrupted by user" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "interrupted by user" {
+		t.Fatal(err)
 	}
 	b.builder.cleanup()
 	if mtime, err := b.fs.Stat("out1"); mtime <= 0 || err != nil {
@@ -2824,11 +2739,10 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "interrupted by user" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "interrupted by user" {
+		t.Fatal(err)
 	}
 	b.builder.cleanup()
 	if mtime, err := b.fs.Stat("out2"); mtime != 0 || err != nil {
@@ -2886,11 +2800,8 @@ func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2913,11 +2824,10 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 		t.Fatal("expected false")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "subcommand failed" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "subcommand failed" {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -2940,11 +2850,10 @@ func TestBuildTest_FailedDepsParse(t *testing.T) {
 	// path to the left of the colon.
 	b.fs.Create("in1.d", "AAA BBB")
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "subcommand failed" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "subcommand failed" {
+		t.Fatal(err)
 	}
 }
 
@@ -2988,11 +2897,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"echo 'using in1' && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -3031,11 +2937,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	b.fs.Create("in.d", "out1 out2: in1 in2")
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"echo 'out1 out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -3080,11 +2983,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 		t.Fatal("expected equal")
 	}
 	b.fs.Create("in.d", "out1 out2: in1\nout1 out2: in2")
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"echo 'out1 out2: in1\\nout1 out2: in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -3129,11 +3029,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 		t.Fatal("expected equal")
 	}
 	b.fs.Create("in.d", "out1: in1 in2\nout2: in1 in2")
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"echo 'out1: in1 in2\\nout2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -3178,11 +3075,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing
 		t.Fatal("expected equal")
 	}
 	b.fs.Create("in.d", "out1: in1 in2")
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommand := []string{"echo 'out1: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommand, b.commandRunner.commandsRan); diff != "" {
@@ -3229,11 +3123,8 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 		t.Fatal("expected equal")
 	}
 	b.fs.Create("in.d", "out2: in1 in2")
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommand := []string{"echo 'out2: in1 in2' > in.d && for file in out1 out2; do cp in1 $file; done"}
 	if diff := cmp.Diff(wantCommand, b.commandRunner.commandsRan); diff != "" {
@@ -3305,11 +3196,8 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 		b.fs.Create("in1.d", "out: in2")
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		// The deps file should have been removed.
@@ -3350,11 +3238,8 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		// We should have rebuilt the output due to in2 being
@@ -3403,11 +3288,8 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		builder.commandRunner = nil
@@ -3451,11 +3333,8 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		// Recreate the deps file here because the build expects them to exist.
 		b.fs.Create("in1.d", "out: ")
 
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		// We should have rebuilt the output due to the deps being
@@ -3493,8 +3372,8 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -3520,11 +3399,8 @@ func TestBuildTest_RestatDepfileDependency(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -3559,11 +3435,8 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 		b.fs.Create("in1.d", "out: header.h")
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		depsLog.Close()
@@ -3598,11 +3471,8 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		if "" != err {
 			t.Fatal("expected equal")
 		}
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		// Rule "true" should have run again, but the build of "out" should have
@@ -3645,11 +3515,8 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 		b.fs.Create("fo o.o.d", "fo\\ o.o: blah.h bar.h\n")
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		depsLog.Close()
@@ -3738,8 +3605,8 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 			t.Fatal("expected false")
 		}
 
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 		if !builder.AlreadyUpToDate() {
 			t.Fatal("expected true")
@@ -3777,8 +3644,8 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 			t.Fatal("expected false")
 		}
 
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 		if !builder.AlreadyUpToDate() {
 			t.Fatal("expected true")
@@ -3854,11 +3721,8 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		}
 		// Note, different slashes from manifest.
 		b.fs.Create("a/b\\c\\d/e/fo o.o.d", "a\\b\\c\\d\\e\\fo\\ o.o: blah.h bar.h\n")
-		if !builder.Build(&err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := builder.Build(); err != nil {
+			t.Fatal(err)
 		}
 
 		depsLog.Close()
@@ -4021,11 +3885,8 @@ func TestBuildTest_Console(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 1 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -4062,11 +3923,8 @@ func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"touch tmp tmp.imp", "touch out out.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4126,7 +3984,7 @@ func TestBuildTest_DyndepBuild(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4160,11 +4018,10 @@ func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "dd:1: expected 'ninja_dyndep_version = ...'\n" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "dd:1: expected 'ninja_dyndep_version = ...'\n" {
+		t.Fatal(err)
 	}
 }
 
@@ -4185,11 +4042,8 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch unrelated", "touch out"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4215,11 +4069,8 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch out out.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4249,11 +4100,10 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) 
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "multiple rules generate out-twice.imp" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "multiple rules generate out-twice.imp" {
+		t.Fatal(err)
 	}
 }
 
@@ -4283,11 +4133,10 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) 
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	if "multiple rules generate out-twice.imp" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "multiple rules generate out-twice.imp" {
+		t.Fatal(err)
 	}
 }
 
@@ -4308,11 +4157,8 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch in", "touch out"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4327,19 +4173,19 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithValidation(t *testing.T) {
 	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep |@ validation\n")
 
-	err := ""
-	if b.builder.addTargetName("out", &err) == nil {
+	err2 := ""
+	if b.builder.addTargetName("out", &err2) == nil {
 		t.Fatal("expected success")
 	}
-	if err != "" {
-		t.Fatal(err)
+	if err2 != "" {
+		t.Fatal(err2)
 	}
 
-	if b.builder.Build(&err) {
-		t.Fatal("expected failure")
+	err := b.builder.Build()
+	if err == nil {
+		t.Fatal("expected false")
 	}
-
-	errFirstLine := strings.SplitN(err, "\n", 2)[0]
+	errFirstLine := strings.SplitN(err.Error(), "\n", 2)[0]
 	if "dd:2: expected newline, got '|@'" != errFirstLine {
 		t.Fatal(errFirstLine)
 	}
@@ -4362,10 +4208,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithTransitiveValidation(t *testin
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal(err)
-	}
-	if err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch in", "touch out", "touch validation"}
@@ -4389,11 +4232,8 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch tmp tmp.imp", "touch out out.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4434,11 +4274,8 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 		t.Fatal(diff)
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 
 	// Loading the dyndep file gave tmp.imp a real input edge.
@@ -4478,11 +4315,8 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "touch tmp tmp.imp", "touch out out.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4515,8 +4349,8 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	b.builder.plan.Dump()
 	*/
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 
 	/* Ugh
@@ -4552,12 +4386,11 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if b.builder.Build(&err) {
+	if err := b.builder.Build(); err == nil {
 		t.Fatal("expected false")
-	}
-	// Depending on how the pointers in ready work out, we could have
-	// discovered the cycle from either starting point.
-	if err != "dependency cycle: circ -> in -> circ" && err != "dependency cycle: in -> circ -> in" {
+	} else if err.Error() != "dependency cycle: circ -> in -> circ" && err.Error() != "dependency cycle: in -> circ -> in" {
+		// Depending on how the pointers in ready work out, we could have
+		// discovered the cycle from either starting point.
 		t.Fatal(err)
 	}
 }
@@ -4584,11 +4417,8 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd-in dd", "true", "cat out1 > out2"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4608,8 +4438,8 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands = []string{"true"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4647,11 +4477,8 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	if 3 != len(b.commandRunner.commandsRan) {
 		t.Fatal("expected equal")
@@ -4693,11 +4520,8 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd1-in dd1", "touch out1 out1.imp", "touch out2 out2.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4730,11 +4554,8 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
 	if "" != err {
 		t.Fatal("expected equal")
 	}
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd1-in dd1", "touch out1 out1.imp", "touch out2 out2.imp"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4761,11 +4582,8 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := b.builder.Build(); err != nil {
+		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd1-in dd1", "touch in", "touch tmp", "touch out"}
 	if diff := cmp.Diff(wantCommands, b.commandRunner.commandsRan); diff != "" {
@@ -4791,7 +4609,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 	wantCommands := []string{"cp dd1-in dd1", "cp dd0-in dd0", "touch in", "touch tmp", "touch out"}
@@ -4812,7 +4630,7 @@ func TestBuildTest_Validation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4832,7 +4650,7 @@ func TestBuildTest_Validation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4852,7 +4670,7 @@ func TestBuildTest_Validation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4873,7 +4691,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4891,7 +4709,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4910,7 +4728,7 @@ func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4948,7 +4766,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !builder.Build(&err) || err != "" {
+		if err := builder.Build(); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4992,7 +4810,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !builder.Build(&err) || err != "" {
+		if err := builder.Build(); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5020,7 +4838,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -5038,7 +4856,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -5057,7 +4875,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.builder.Build(&err) || err != "" {
+	if err := b.builder.Build(); err != nil {
 		t.Fatal(err)
 	}
 

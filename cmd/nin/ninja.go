@@ -193,8 +193,8 @@ func (n *ninjaMain) RebuildManifest(inputFile string, status nin.Status) (bool, 
 		return false, nil // Not an error, but we didn't rebuild.
 	}
 
-	if !builder.Build(&err2) {
-		return false, errors.New(err2)
+	if err := builder.Build(); err != nil {
+		return false, err
 	}
 
 	// The manifest was only rebuilt if it is now dirty (it may have been cleaned
@@ -1092,9 +1092,9 @@ func (n *ninjaMain) RunBuild(args []string, status nin.Status) int {
 		return 0
 	}
 
-	if !builder.Build(&err) {
+	if err := builder.Build(); err != nil {
 		status.Info("build stopped: %s.", err)
-		if strings.Contains(err, "interrupted by user") {
+		if strings.Contains(err.Error(), "interrupted by user") {
 			return 2
 		}
 		return 1
