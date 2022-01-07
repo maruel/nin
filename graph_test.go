@@ -277,8 +277,7 @@ func TestGraphTest_RootNodes(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build out1: cat in1\nbuild mid1: cat in1\nbuild out2: cat mid1\nbuild out3 out4: cat mid1\n", ManifestParserOptions{})
 
-	err := ""
-	rootNodes := g.state.RootNodes(&err)
+	rootNodes := g.state.RootNodes()
 	if 4 != len(rootNodes) {
 		t.Fatal("expected equal")
 	}
@@ -580,8 +579,7 @@ func TestGraphTest_Decanonicalize(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build out\\out1: cat src\\in1\nbuild out\\out2/out3\\out4: cat mid1\nbuild out3 out4\\foo: cat mid1\n", ManifestParserOptions{})
 
-	err := ""
-	rootNodes := g.state.RootNodes(&err)
+	rootNodes := g.state.RootNodes()
 	if 4 != len(rootNodes) {
 		t.Fatal("expected equal")
 	}

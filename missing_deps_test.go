@@ -62,12 +62,7 @@ func (m *MissingDependencyScannerTest) RecordDepsLogDep(from string, to string) 
 }
 
 func (m *MissingDependencyScannerTest) ProcessAllNodes() {
-	err := ""
-	nodes := m.state.RootNodes(&err)
-	if "" != err {
-		m.t.Fatal("expected equal")
-	}
-	for _, it := range nodes {
+	for _, it := range m.state.RootNodes() {
 		m.scanner.ProcessNode(it)
 	}
 }
@@ -213,9 +208,7 @@ func TestMissingDependencyScannerTest_CycleInGraph(t *testing.T) {
 	// The missing-deps tool doesn't deal with cycles in the graph, because
 	// there will be an error loading the graph before we get to the tool.
 	// This test is to illustrate that.
-	err := ""
-	m.state.RootNodes(&err)
-	if "" == err {
+	if len(m.state.RootNodes()) != 0 {
 		t.Fatal("expected error")
 	}
 }

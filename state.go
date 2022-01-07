@@ -222,9 +222,12 @@ func (s *State) addDefault(path string, err *string) bool {
 	return true
 }
 
-// @return the root node(s) of the graph. (Root nodes have no output edges).
-// @param error where to write the error message if somethings went wrong.
-func (s *State) RootNodes(err *string) []*Node {
+// RootNodes return the root node(s) of the graph.
+//
+// Root nodes have no output edges.
+//
+// Returns an empty slice if no root node is found.
+func (s *State) RootNodes() []*Node {
 	var rootNodes []*Node
 	// Search for nodes with no output.
 	for _, e := range s.Edges {
@@ -234,17 +237,15 @@ func (s *State) RootNodes(err *string) []*Node {
 			}
 		}
 	}
-
-	if len(s.Edges) != 0 && len(rootNodes) == 0 {
-		*err = "could not determine root nodes of build graph"
-	}
-
 	return rootNodes
 }
 
-func (s *State) DefaultNodes(err *string) []*Node {
+// DefaultNodes returns the default nodes to build.
+//
+// If none are defined, returns all the root nodes.
+func (s *State) DefaultNodes() []*Node {
 	if len(s.Defaults) == 0 {
-		return s.RootNodes(err)
+		return s.RootNodes()
 	}
 	return s.Defaults
 }

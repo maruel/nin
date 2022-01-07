@@ -926,11 +926,7 @@ func TestParserTest_DefaultDefault(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\n")
 
-	err := ""
-	if 4 != len(p.state.DefaultNodes(&err)) {
-		t.Fatal("expected equal")
-	}
-	if "" != err {
+	if 4 != len(p.state.DefaultNodes()) {
 		t.Fatal("expected equal")
 	}
 }
@@ -939,11 +935,7 @@ func TestParserTest_DefaultDefaultCycle(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat a\n")
 
-	err := ""
-	if 0 != len(p.state.DefaultNodes(&err)) {
-		t.Fatal("expected equal")
-	}
-	if "could not determine root nodes of build graph" != err {
+	if 0 != len(p.state.DefaultNodes()) {
 		t.Fatal("expected equal")
 	}
 }
@@ -952,11 +944,7 @@ func TestParserTest_DefaultStatements(t *testing.T) {
 	p := NewParserTest(t)
 	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\nthird = c\ndefault a b\ndefault $third\n")
 
-	err := ""
-	nodes := p.state.DefaultNodes(&err)
-	if "" != err {
-		t.Fatal("expected equal")
-	}
+	nodes := p.state.DefaultNodes()
 	if 3 != len(nodes) {
 		t.Fatal("expected equal")
 	}

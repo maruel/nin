@@ -264,7 +264,10 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 // CollectTarget for all command-line arguments, filling in \a targets.
 func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*nin.Node, err *string) bool {
 	if len(args) == 0 {
-		*targets = n.state.DefaultNodes(err)
+		*targets = n.state.DefaultNodes()
+		if len(*targets) == 0 {
+			*err = "could not determine root nodes of build graph"
+		}
 		return *err == ""
 	}
 
@@ -525,12 +528,10 @@ func toolTargets(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	err := ""
-	rootNodes := n.state.RootNodes(&err)
-	if len(err) == 0 {
+	if rootNodes := n.state.RootNodes(); len(rootNodes) != 0 {
 		return toolTargetsListNodes(rootNodes, depth, 0)
 	}
-	errorf("%s", err)
+	errorf("could not determine root nodes of build graph")
 	return 1
 }
 
