@@ -640,7 +640,8 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 
 			if edge.Dyndep.InEdge == nil || edge.Dyndep.InEdge.OutputsReady {
 				// The dyndep file is ready, so load it now.
-				if !d.LoadDyndeps(edge.Dyndep, DyndepFile{}, err) {
+				if err2 := d.LoadDyndeps(edge.Dyndep, DyndepFile{}); err2 != nil {
+					*err = err2.Error()
 					return false
 				}
 			}
@@ -888,8 +889,8 @@ func (d *DependencyScan) recomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 // build graph with the new information.
 //
 // The 'DyndepFile' object stores the information loaded from the dyndep file.
-func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile, err *string) bool {
-	return d.dyndepLoader.LoadDyndeps(node, ddf, err)
+func (d *DependencyScan) LoadDyndeps(node *Node, ddf DyndepFile) error {
+	return d.dyndepLoader.LoadDyndeps(node, ddf)
 }
 
 //

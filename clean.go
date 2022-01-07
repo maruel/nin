@@ -339,8 +339,7 @@ func (c *Cleaner) loadDyndeps() {
 		if e.Dyndep != nil {
 			// Capture and ignore errors loading the dyndep file.
 			// We clean as much of the graph as we know.
-			err := ""
-			c.dyndepLoader.LoadDyndeps(e.Dyndep, DyndepFile{}, &err)
+			_ = c.dyndepLoader.LoadDyndeps(e.Dyndep, DyndepFile{})
 		}
 	}
 }

@@ -318,7 +318,7 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 		fmt.Printf("%s:\n", node.Path)
 		if edge := node.InEdge; edge != nil {
 			if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
-				if !dyndepLoader.LoadDyndeps(edge.Dyndep, nin.DyndepFile{}, &err) {
+				if err := dyndepLoader.LoadDyndeps(edge.Dyndep, nin.DyndepFile{}); err != nil {
 					warningf("%s\n", err)
 				}
 			}

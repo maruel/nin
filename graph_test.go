@@ -614,14 +614,10 @@ func TestGraphTest_DyndepLoadTrivial(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if !g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal(err)
-	}
-	if "" != err {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err != nil {
 		t.Fatal(err)
 	}
 	if g.GetNode("dd").DyndepPending {
@@ -660,14 +656,10 @@ func TestGraphTest_DyndepLoadImplicit(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out1: r in || dd\n  dyndep = dd\nbuild out2: r in\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out1: dyndep | out2\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if !g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal(err)
-	}
-	if "" != err {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err != nil {
 		t.Fatal(err)
 	}
 	if g.GetNode("dd").DyndepPending {
@@ -708,14 +700,12 @@ func TestGraphTest_DyndepLoadMissingFile(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\n", ManifestParserOptions{})
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "loading 'dd': file does not exist" != err {
+	} else if err.Error() != "loading 'dd': file does not exist" {
 		t.Fatal(err)
 	}
 }
@@ -725,15 +715,13 @@ func TestGraphTest_DyndepLoadMissingEntry(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "'out' not mentioned in its dyndep file 'dd'" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "'out' not mentioned in its dyndep file 'dd'" {
+		t.Fatal(err)
 	}
 }
 
@@ -742,15 +730,13 @@ func TestGraphTest_DyndepLoadExtraEntry(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\nbuild out2: r in || dd\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out2: dyndep\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "dyndep file 'dd' mentions output 'out2' whose build statement does not have a dyndep binding for the file" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "dyndep file 'dd' mentions output 'out2' whose build statement does not have a dyndep binding for the file" {
+		t.Fatal(err)
 	}
 }
 
@@ -759,15 +745,13 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules1(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out1 | out-twice.imp: r in1\nbuild out2: r in2 || dd\n  dyndep = dd\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "multiple rules generate out-twice.imp" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "multiple rules generate out-twice.imp" {
+		t.Fatal(err)
 	}
 }
 
@@ -777,24 +761,19 @@ func TestGraphTest_DyndepLoadOutputWithMultipleRules2(t *testing.T) {
 	g.fs.Create("dd1", "ninja_dyndep_version = 1\nbuild out1 | out-twice.imp: dyndep\n")
 	g.fs.Create("dd2", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
 
-	err := ""
 	if !g.GetNode("dd1").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if !g.scan.LoadDyndeps(g.GetNode("dd1"), DyndepFile{}, &err) {
-		t.Fatal(err)
-	}
-	if "" != err {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd1"), DyndepFile{}); err != nil {
 		t.Fatal(err)
 	}
 	if !g.GetNode("dd2").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if g.scan.LoadDyndeps(g.GetNode("dd2"), DyndepFile{}, &err) {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd2"), DyndepFile{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "multiple rules generate out-twice.imp" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "multiple rules generate out-twice.imp" {
+		t.Fatal(err)
 	}
 }
 
@@ -803,14 +782,10 @@ func TestGraphTest_DyndepLoadMultiple(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out1: r in1 || dd\n  dyndep = dd\nbuild out2: r in2 || dd\n  dyndep = dd\nbuild outNot: r in3 || dd\n", ManifestParserOptions{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out1 | out1imp: dyndep | in1imp\nbuild out2: dyndep | in2imp\n  restat = 1\n")
 
-	err := ""
 	if !g.GetNode("dd").DyndepPending {
 		t.Fatal("expected true")
 	}
-	if !g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}, &err) {
-		t.Fatal(err)
-	}
-	if "" != err {
+	if err := g.scan.LoadDyndeps(g.GetNode("dd"), DyndepFile{}); err != nil {
 		t.Fatal(err)
 	}
 	if g.GetNode("dd").DyndepPending {

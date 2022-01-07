@@ -1093,7 +1093,8 @@ func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
 
 	// Load the dyndep information provided by this node.
 	ddf := DyndepFile{}
-	if !b.scan.LoadDyndeps(node, ddf, err) {
+	if err2 := b.scan.LoadDyndeps(node, ddf); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 
