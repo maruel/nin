@@ -22,8 +22,7 @@ import (
 
 func parse(t *testing.T, s string) DepfileParser {
 	p := DepfileParser{}
-	err := ""
-	if !p.Parse([]byte(s+"\x00"), &err) || err != "" {
+	if err := p.Parse([]byte(s + "\x00")); err != nil {
 		t.Fatal(err)
 	}
 	return p
@@ -478,12 +477,10 @@ func TestDepfileParserTest_MultipleRulesDifferentOutputs(t *testing.T) {
 }
 
 func TestDepfileParserTest_BuggyMP(t *testing.T) {
-	err := ""
 	p := DepfileParser{}
-	if p.Parse([]byte("foo: x y z\nx: alsoin\ny:\nz:\n\x00"), &err) {
+	if err := p.Parse([]byte("foo: x y z\nx: alsoin\ny:\nz:\n\x00")); err == nil {
 		t.Error("unexpected Parse success")
-	}
-	if "inputs may not also have inputs" != err {
+	} else if err.Error() != "inputs may not also have inputs" {
 		t.Fatal(err)
 	}
 }

@@ -71,8 +71,7 @@ func (m *ManifestParser) Parse(filename string, input []byte) error {
 	var err error
 loop:
 	for err == nil {
-		token := m.lexer.ReadToken()
-		switch token {
+		switch token := m.lexer.ReadToken(); token {
 		case POOL:
 			err = m.parsePool()
 		case BUILD:

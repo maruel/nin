@@ -17,6 +17,8 @@
 
 package nin
 
+import "errors"
+
 // DepfileParser is the parser for the dependency information emitted by gcc's
 // -M flags.
 type DepfileParser struct {
@@ -50,7 +52,7 @@ type DepfileParser struct {
 //
 // If anyone actually has depfiles that rely on the more complicated
 // behavior we can adjust this.
-func (d *DepfileParser) Parse(content []byte, err *string) bool {
+func (d *DepfileParser) Parse(content []byte) error {
 	// in: current parser input point.
 	// end: end of input.
 	// parsingTargets: whether we are parsing targets or dependencies.
@@ -225,8 +227,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 			if pos == -1 {
 				if isDependency {
 					if poisonedInput {
-						*err = "inputs may not also have inputs"
-						return false
+						return errors.New("inputs may not also have inputs")
 					}
 					// New input.
 					d.ins = append(d.ins, piece)
@@ -256,8 +257,7 @@ func (d *DepfileParser) Parse(content []byte, err *string) bool {
 		}
 	}
 	if !haveTarget {
-		*err = "expected ':' in depfile"
-		return false
+		return errors.New("expected ':' in depfile")
 	}
-	return true
+	return nil
 }

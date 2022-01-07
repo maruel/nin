@@ -1076,9 +1076,8 @@ func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string
 		}
 
 		deps := DepfileParser{}
-		err2 := ""
-		if !deps.Parse(content, &err2) {
-			return nil, errors.New(err2)
+		if err := deps.Parse(content); err != nil {
+			return nil, err
 		}
 
 		// XXX check depfile matches expected output.

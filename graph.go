@@ -973,8 +973,8 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	}
 
 	depfile := DepfileParser{}
-	if !depfile.Parse(content, err) {
-		*err = path + ": " + *err
+	if err2 := depfile.Parse(content); err2 != nil {
+		*err = path + ": " + err2.Error()
 		return false
 	}
 
