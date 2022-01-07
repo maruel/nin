@@ -71,8 +71,8 @@ func WriteTestData() error {
 
 	state := nin.NewState()
 	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{Quiet: true})
-	if !parser.Parse("input", []byte("rule cxx\n  command = "+longRuleCommand+"\x00"), &err) {
-		return errors.New(err)
+	if err := parser.Parse("input", []byte("rule cxx\n  command = "+longRuleCommand+"\x00")); err != nil {
+		return err
 	}
 
 	// Create build edges. Using ManifestParser is as fast as using the State api
@@ -83,8 +83,8 @@ func WriteTestData() error {
 		buildRules += fmt.Sprintf("build input%d.o: cxx input%d.cc\n", i, i)
 	}
 
-	if !parser.Parse("input", []byte(buildRules+"\x00"), &err) {
-		return errors.New(err)
+	if err := parser.Parse("input", []byte(buildRules+"\x00")); err != nil {
+		return err
 	}
 
 	for i := int32(0); i < kNumCommands; i++ {

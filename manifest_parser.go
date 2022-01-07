@@ -68,7 +68,7 @@ func (m *ManifestParser) expectToken(expected Token, err *string) bool {
 }
 
 // Parse a file, given its contents as a string.
-func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool {
+func (m *ManifestParser) Parse(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
 
 	// The object is reused when parsing subninjas.
@@ -79,54 +79,32 @@ func (m *ManifestParser) Parse(filename string, input []byte, err *string) bool 
 	// subninja files are read as soon as the statement is parsed but they are
 	// only processed once the current file is done. This enables lower latency
 	// overall.
+	var err error
 loop:
-	for {
+	for err == nil {
 		token := m.lexer.ReadToken()
 		switch token {
 		case POOL:
-			if err2 := m.parsePool(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parsePool()
 		case BUILD:
-			if err2 := m.parseEdge(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseEdge()
 		case RULE:
-			if err2 := m.parseRule(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseRule()
 		case DEFAULT:
-			if err2 := m.parseDefault(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseDefault()
 		case IDENT:
-			if err2 := m.parseIdent(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseIdent()
 		case INCLUDE:
-			if err2 := m.parseInclude(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseInclude()
 		case SUBNINJA:
-			if err2 := m.parseSubninja(); err2 != nil {
-				*err = err2.Error()
-				break loop
-			}
+			err = m.parseSubninja()
 		case ERROR:
-			*err = m.lexer.Error(m.lexer.DescribeLastError()).Error()
-			break loop
+			err = m.lexer.Error(m.lexer.DescribeLastError())
 		case TEOF:
 			break loop
 		case NEWLINE:
 		default:
-			*err = m.lexer.Error("unexpected " + token.String()).Error()
-			break loop
+			err = m.lexer.Error("unexpected " + token.String())
 		}
 	}
 
@@ -134,19 +112,16 @@ loop:
 	// concurrently.
 
 	// Did the loop complete because of an error?
-	if *err != "" {
+	if err != nil {
 		// Do not forget to unblock the goroutines.
 		for i := int32(0); i < m.subninjasEnqueued; i++ {
 			<-m.subninjas
 		}
-		return false
+		return err
 	}
 
 	// Finish the processing by parsing the subninja files.
-	if err2 := m.processSubninjaQueue(); err2 != nil {
-		*err = err2.Error()
-	}
-	return *err == ""
+	return m.processSubninjaQueue()
 }
 
 // Parse various statement types.
@@ -551,9 +526,9 @@ func (m *ManifestParser) parseInclude() error {
 
 	subparser := NewManifestParser(m.state, m.fileReader, m.options)
 	subparser.env = m.env
-	if !subparser.Parse(path, input, &err2) {
+	if err = subparser.Parse(path, input); err != nil {
 		// Do not wrap error inside the included ninja.
-		return errors.New(err2)
+		return err
 	}
 	return nil
 }
@@ -631,10 +606,9 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		subparser := NewManifestParser(m.state, m.fileReader, m.options)
 		for _, s := range results {
 			subparser.env = NewBindingEnv(m.env)
-			err2 := ""
-			if !subparser.Parse(s.path, s.contents, &err2) {
+			if err := subparser.Parse(s.path, s.contents); err != nil {
 				// Do not wrap error inside the subninja.
-				return errors.New(err2)
+				return err
 			}
 		}
 		return nil
@@ -655,11 +629,8 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		}
 		// Reset the binding fresh.
 		subparser.env = NewBindingEnv(m.env)
-		err2 := ""
-		if !subparser.Parse(s.path, s.contents, &err2) {
-			// Do not wrap error inside the subninja.
-			err = errors.New(err2)
-		}
+		// Do not wrap error inside the subninja.
+		err = subparser.Parse(s.path, s.contents)
 	}
 	return err
 }

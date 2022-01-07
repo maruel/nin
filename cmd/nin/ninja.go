@@ -15,6 +15,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -172,28 +173,28 @@ func guessParallelism() int {
 // Rebuild the manifest, if necessary.
 // Fills in \a err on error.
 // @return true if the manifest was rebuilt.
-func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status nin.Status) bool {
+func (n *ninjaMain) RebuildManifest(inputFile string, status nin.Status) (bool, error) {
 	path := inputFile
 	if len(path) == 0 {
-		*err = "empty path"
-		return false
+		return false, errors.New("empty path")
 	}
 	node := n.state.Paths[nin.CanonicalizePath(path)]
 	if node == nil {
-		return false
+		return false, errors.New("path not found")
 	}
 
 	builder := nin.NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
-	if !builder.AddTarget(node, err) {
-		return false
+	err2 := ""
+	if !builder.AddTarget(node, &err2) {
+		return false, errors.New(err2)
 	}
 
 	if builder.AlreadyUpToDate() {
-		return false // Not an error, but we didn't rebuild.
+		return false, nil // Not an error, but we didn't rebuild.
 	}
 
-	if !builder.Build(err) {
-		return false
+	if !builder.Build(&err2) {
+		return false, errors.New(err2)
 	}
 
 	// The manifest was only rebuilt if it is now dirty (it may have been cleaned
@@ -202,10 +203,10 @@ func (n *ninjaMain) RebuildManifest(inputFile string, err *string, status nin.St
 		// Reset the state to prevent problems like
 		// https://github.com/ninja-build/ninja/issues/874
 		n.state.Reset()
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 // Get the Node for a given command-line path, handling features like
@@ -1400,8 +1401,7 @@ func Main() int {
 			return 1
 		}
 		parser := nin.NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
-		err := ""
-		if !parser.Parse(opts.inputFile, input, &err) {
+		if err := parser.Parse(opts.inputFile, input); err != nil {
 			status.Error("%s", err)
 			return 1
 		}
@@ -1423,7 +1423,7 @@ func Main() int {
 		}
 
 		// Attempt to rebuild the manifest before building anything else
-		if ninja.RebuildManifest(opts.inputFile, &err, status) {
+		if rebuilt, err := ninja.RebuildManifest(opts.inputFile, status); rebuilt {
 			// In dryRun mode the regeneration will succeed without changing the
 			// manifest forever. Better to return immediately.
 			if config.DryRun {
@@ -1431,7 +1431,7 @@ func Main() int {
 			}
 			// Start the build over with the new manifest.
 			continue
-		} else if len(err) != 0 {
+		} else if err != nil {
 			status.Error("rebuilding '%s': %s", opts.inputFile, err)
 			return 1
 		}

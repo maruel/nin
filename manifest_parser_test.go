@@ -53,7 +53,11 @@ func (p *ParserTest) AssertParse(input string) {
 
 // parseTest parses a text string of input. Only used by tests.
 func (m *ManifestParser) parseTest(input string, err *string) bool {
-	return m.Parse("input", []byte(input+"\x00"), err)
+	if err2 := m.Parse("input", []byte(input+"\x00")); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
+	return true
 }
 
 func TestParserTest_Empty(t *testing.T) {
@@ -642,10 +646,9 @@ func TestParserTest_MissingIncluded(t *testing.T) {
 	p := NewParserTest(t)
 	localState := NewState()
 	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
-	err := ""
-	if parser.Parse("build.ninja", []byte("include missing.ninja\n\x00"), &err) {
+	if err := parser.Parse("build.ninja", []byte("include missing.ninja\n\x00")); err == nil {
 		t.Fatal("expected false")
-	} else if err != "build.ninja:1: loading 'missing.ninja': file does not exist\ninclude missing.ninja\n                     ^ near here" {
+	} else if err.Error() != "build.ninja:1: loading 'missing.ninja': file does not exist\ninclude missing.ninja\n                     ^ near here" {
 		t.Fatalf("%q", err)
 	}
 }
@@ -655,10 +658,9 @@ func TestParserTest_MissingSubninja(t *testing.T) {
 	p := NewParserTest(t)
 	localState := NewState()
 	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
-	err := ""
-	if parser.Parse("build.ninja", []byte("subninja missing.ninja\n\x00"), &err) {
+	if err := parser.Parse("build.ninja", []byte("subninja missing.ninja\n\x00")); err == nil {
 		t.Fatal("expected false")
-	} else if err != "build.ninja:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
+	} else if err.Error() != "build.ninja:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
 		t.Fatalf("%q", err)
 	}
 }
@@ -1091,7 +1093,6 @@ func BenchmarkLoadManifest(b *testing.B) {
 			b.Error(err2)
 		}
 	})
-	errX := ""
 	di := NewRealDiskInterface()
 	optimizationGuard := 0
 	b.ReportAllocs()
@@ -1103,8 +1104,8 @@ func BenchmarkLoadManifest(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		if !parser.Parse("build.ninja", contents, &errX) {
-			b.Fatal("Failed to read test data: ", errX)
+		if err = parser.Parse("build.ninja", contents); err != nil {
+			b.Fatal("Failed to read test data: ", err)
 		}
 		// Doing an empty build involves reading the manifest and evaluating all
 		// commands required for the requested targets. So include command

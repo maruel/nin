@@ -51,9 +51,8 @@ func LoadManifests(measureCommandEvaluation bool) int {
 	}
 	state := nin.NewState()
 	parser := nin.NewManifestParser(&state, &di, nin.ManifestParserOptions{})
-	err2 := ""
-	if !parser.Parse("build.ninja", input, &err2) {
-		fmt.Fprintf(os.Stderr, "Failed to parse test data: %s\n", err2)
+	if err = parser.Parse("build.ninja", input); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse test data: %s\n", err)
 		os.Exit(1)
 	}
 	// Doing an empty build involves reading the manifest and evaluating all
