@@ -480,7 +480,7 @@ func (m *ManifestParser) parseInclude() error {
 		return err
 	}
 	ls := m.lexer.lexerState
-	if err := m.expectToken(NEWLINE); err != nil {
+	if err = m.expectToken(NEWLINE); err != nil {
 		return err
 	}
 
