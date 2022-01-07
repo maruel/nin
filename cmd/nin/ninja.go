@@ -451,7 +451,7 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	di := nin.NewRealDiskInterface()
+	di := nin.RealDiskInterface{}
 	for _, it := range nodes {
 		deps := n.depsLog.GetDeps(it)
 		if deps == nil {
@@ -483,9 +483,8 @@ func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
 		errorf("%s", err)
 		return 1
 	}
-	di := nin.NewRealDiskInterface()
 	printer := MissingDependencyPrinter{}
-	scanner := nin.NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &di)
+	scanner := nin.NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &nin.RealDiskInterface{})
 	for _, it := range nodes {
 		scanner.ProcessNode(it)
 	}

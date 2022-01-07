@@ -25,20 +25,22 @@ import (
 	"syscall"
 )
 
-// Interface for reading files from disk.  See DiskInterface for details.
-// This base offers the minimum interface needed just to read files.
+// FileReader is an interface for reading files from disk.
+//
+// See DiskInterface for details. This base offers the minimum interface needed
+// just to read files.
 type FileReader interface {
 	// ReadFile reads a file and returns its content.
 	//
-	// If the content is not empty, it appends a zero byte at the end of the
-	// slice.
+	// Unlike os.ReadFile(), if the content is not empty, it appends a zero byte
+	// at the end of the slice.
 	ReadFile(path string) ([]byte, error)
 }
 
-// Interface for accessing the disk.
+// DiskInterface is an interface for accessing the disk.
 //
-// Abstract so it can be mocked out for tests.  The real implementation
-// is RealDiskInterface.
+// Abstract so it can be mocked out for tests. The real implementation is
+// RealDiskInterface.
 type DiskInterface interface {
 	FileReader
 	// Stat stat()'s a file, returning the mtime, or 0 if missing and -1 on
@@ -109,7 +111,7 @@ func statAllFilesInDir(dir string, stamps map[string]TimeStamp) error {
 	return f.Close()
 }
 
-// Create all the parent directories for path; like mkdir -p
+// MakeDirs create all the parent directories for path; like mkdir -p
 // `basename path`.
 func MakeDirs(d DiskInterface, path string) error {
 	dir := dirName(path)
@@ -133,7 +135,8 @@ func MakeDirs(d DiskInterface, path string) error {
 
 //
 
-// Implementation of DiskInterface that actually hits the disk.
+// RealDiskInterface is the implementation of DiskInterface that actually hits
+// the disk.
 type RealDiskInterface struct {
 	// Whether stat information can be cached.
 	useCache bool
@@ -143,14 +146,11 @@ type RealDiskInterface struct {
 	cache cache
 }
 
-func NewRealDiskInterface() RealDiskInterface {
-	return RealDiskInterface{}
-}
-
 // MSDN: "Naming Files, Paths, and Namespaces"
 // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
 const maxPath = 260
 
+// Stat implements DiskInterface.
 func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
 	defer metricRecord("node stat")()
 	if runtime.GOOS == "windows" {
@@ -194,14 +194,17 @@ func (r *RealDiskInterface) Stat(path string) (TimeStamp, error) {
 	return statSingleFile(path)
 }
 
+// WriteFile implements DiskInterface.
 func (r *RealDiskInterface) WriteFile(path string, contents string) error {
 	return ioutil.WriteFile(path, unsafeByteSlice(contents), 0o666)
 }
 
+// MakeDir implements DiskInterface.
 func (r *RealDiskInterface) MakeDir(path string) error {
 	return os.Mkdir(path, 0o777)
 }
 
+// ReadFile implements DiskInterface.
 func (r *RealDiskInterface) ReadFile(path string) ([]byte, error) {
 	c, err := ioutil.ReadFile(path)
 	if err == nil {
@@ -215,11 +218,14 @@ func (r *RealDiskInterface) ReadFile(path string) ([]byte, error) {
 	return nil, err
 }
 
+// RemoveFile implements DiskInterface.
 func (r *RealDiskInterface) RemoveFile(path string) error {
 	return os.Remove(path)
 }
 
-// Whether stat information can be cached.  Only has an effect on Windows.
+// AllowStatCache sets whether stat information can be cached.
+//
+// Only has an effect on Windows.
 func (r *RealDiskInterface) AllowStatCache(allow bool) {
 	if runtime.GOOS == "windows" {
 		r.useCache = allow

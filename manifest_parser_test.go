@@ -1081,7 +1081,7 @@ func BenchmarkLoadManifest(b *testing.B) {
 			b.Error(err2)
 		}
 	})
-	di := NewRealDiskInterface()
+	di := RealDiskInterface{}
 	optimizationGuard := 0
 	b.ReportAllocs()
 	b.ResetTimer()

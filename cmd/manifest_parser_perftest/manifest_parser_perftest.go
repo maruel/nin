@@ -43,7 +43,7 @@ func WriteFakeManifests(dir string) error {
 }
 
 func LoadManifests(measureCommandEvaluation bool) int {
-	di := nin.NewRealDiskInterface()
+	di := nin.RealDiskInterface{}
 	input, err := di.ReadFile("build.ninja")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to read test data: %s\n", err)

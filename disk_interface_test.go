@@ -25,7 +25,7 @@ import (
 
 func DiskInterfaceTest(t *testing.T) RealDiskInterface {
 	CreateTempDirAndEnter(t)
-	return NewRealDiskInterface()
+	return RealDiskInterface{}
 }
 
 func Touch(path string) bool {

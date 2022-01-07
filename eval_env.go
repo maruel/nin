@@ -19,7 +19,7 @@ import (
 	"sort"
 )
 
-// An interface for a scope for variable (e.g. "$foo") lookups.
+// Env is an interface for a scope for variable (e.g. "$foo") lookups.
 type Env interface {
 	LookupVariable(v string) string
 }
@@ -127,6 +127,7 @@ func (e *EvalString) Unparse() string {
 
 //
 
+// IsReservedBinding returns true if the binding name is reserved by ninja.
 func IsReservedBinding(v string) bool {
 	return v == "command" ||
 		v == "depfile" ||
@@ -141,12 +142,14 @@ func IsReservedBinding(v string) bool {
 		v == "msvc_deps_prefix"
 }
 
-// An invocable build command and associated metadata (description, etc.).
+// Rule is an invocable build command and associated metadata (description,
+// etc.).
 type Rule struct {
 	Name     string
 	Bindings map[string]*EvalString
 }
 
+// NewRule returns an initialized Rule.
 func NewRule(name string) *Rule {
 	return &Rule{
 		Name:     name,
@@ -173,7 +176,7 @@ func (r *Rule) String() string {
 
 //
 
-// An Env which contains a mapping of variables to values
+// BindingEnv is an Env which contains a mapping of variables to values
 // as well as a pointer to a parent scope.
 type BindingEnv struct {
 	Bindings map[string]string
@@ -181,6 +184,7 @@ type BindingEnv struct {
 	Parent   *BindingEnv
 }
 
+// NewBindingEnv returns an initialized BindingEnv.
 func NewBindingEnv(parent *BindingEnv) *BindingEnv {
 	return &BindingEnv{
 		Bindings: map[string]string{},
@@ -189,6 +193,7 @@ func NewBindingEnv(parent *BindingEnv) *BindingEnv {
 	}
 }
 
+// String serializes the bindings.
 func (b *BindingEnv) String() string {
 	out := "BindingEnv{"
 	if b.Parent != nil {
@@ -216,6 +221,7 @@ func (b *BindingEnv) String() string {
 	return out
 }
 
+// LookupVariable returns a variable's value.
 func (b *BindingEnv) LookupVariable(v string) string {
 	if i, ok := b.Bindings[v]; ok {
 		return i
@@ -226,6 +232,7 @@ func (b *BindingEnv) LookupVariable(v string) string {
 	return ""
 }
 
+// LookupRule returns a rule by name.
 func (b *BindingEnv) LookupRule(ruleName string) *Rule {
 	if i := b.Rules[ruleName]; i != nil {
 		return i
@@ -241,7 +248,7 @@ func (b *BindingEnv) LookupRule(ruleName string) *Rule {
 // 2) value set on rule, with expansion in the edge's scope
 // 3) value set on enclosing scope of edge (edge->env->parent)
 // This function takes as parameters the necessary info to do (2).
-func (b *BindingEnv) LookupWithFallback(v string, eval *EvalString, env Env) string {
+func (b *BindingEnv) lookupWithFallback(v string, eval *EvalString, env Env) string {
 	if i, ok := b.Bindings[v]; ok {
 		return i
 	}
