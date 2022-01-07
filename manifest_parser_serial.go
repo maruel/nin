@@ -39,7 +39,9 @@ func (m *manifestParserSerial) parse(filename string, input []byte) error {
 
 	m.subninjas = make(chan subninja)
 
-	m.lexer.Start(filename, input)
+	if err := m.lexer.Start(filename, input); err != nil {
+		return err
+	}
 
 	// subninja files are read as soon as the statement is parsed but they are
 	// only processed once the current file is done. This enables lower latency

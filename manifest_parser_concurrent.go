@@ -66,7 +66,9 @@ func (m *manifestParserConcurrent) parseMain(filename string, input []byte) erro
 }
 
 func (m *manifestParserRoutine) parse(filename string, input []byte) ([]interface{}, error) {
-	m.lexer.Start(filename, input)
+	if err := m.lexer.Start(filename, input); err != nil {
+		return nil, err
+	}
 
 	// subninja files are read as soon as the statement is parsed but they are
 	// only processed once the current file is done. This enables lower latency

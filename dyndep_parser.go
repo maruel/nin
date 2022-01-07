@@ -49,7 +49,9 @@ func (d *dyndepParser) expectToken(expected Token) error {
 // Parse a file, given its contents as a string.
 func (d *dyndepParser) parse(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
-	d.lexer.Start(filename, input)
+	if err := d.lexer.Start(filename, input); err != nil {
+		return err
+	}
 
 	// Require a supported ninjaDyndepVersion value immediately so
 	// we can exit before encountering any syntactic surprises.

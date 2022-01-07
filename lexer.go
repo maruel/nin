@@ -16,6 +16,7 @@
 package nin
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -88,6 +89,10 @@ func (t Token) errorHint() string {
 	return ""
 }
 
+// lexerOffset permits quickly toggling between int64 and int32 to measure
+// performance impact.
+type lexerOffset = int
+
 // lexerState is the offset of processing a token.
 //
 // It is meant to be saved when an error message may be printed after the
@@ -97,22 +102,22 @@ type lexerState struct {
 	// pointer arithmetics. Go doesn't allow pointer arithmetics so they are
 	// indexes. ofs starts at 0. lastToken is initially -1 to mark that it is
 	// not yet set.
-	ofs       int
-	lastToken int
+	ofs       lexerOffset
+	lastToken lexerOffset
 }
 
 // error constructs an error message with context.
 func (l *lexerState) error(message, filename string, input []byte) error {
 	// Compute line/column.
-	line := 1
-	lineStart := 0
-	for p := 0; p < l.lastToken; p++ {
+	line := lexerOffset(1)
+	lineStart := lexerOffset(0)
+	for p := lexerOffset(0); p < l.lastToken; p++ {
 		if input[p] == '\n' {
 			line++
 			lineStart = p + 1
 		}
 	}
-	col := 0
+	col := lexerOffset(0)
 	if l.lastToken != -1 {
 		col = l.lastToken - lineStart
 	}
@@ -122,7 +127,7 @@ func (l *lexerState) error(message, filename string, input []byte) error {
 	const truncateColumn = 72
 	if col > 0 && col < truncateColumn {
 		truncated := true
-		length := 0
+		length := lexerOffset(0)
 		for ; length < truncateColumn; length++ {
 			if input[lineStart+length] == 0 || input[lineStart+length] == '\n' {
 				truncated = false
@@ -134,7 +139,7 @@ func (l *lexerState) error(message, filename string, input []byte) error {
 			c += "..."
 		}
 		c += "\n"
-		c += strings.Repeat(" ", col)
+		c += strings.Repeat(" ", int(col))
 		c += "^ near here"
 	}
 	// TODO(maruel): There's a problem where the error is wrapped, thus the alignment doesn't work.
@@ -156,14 +161,18 @@ func (l *lexer) Error(message string) error {
 }
 
 // Start parsing some input.
-func (l *lexer) Start(filename string, input []byte) {
+func (l *lexer) Start(filename string, input []byte) error {
 	l.filename = filename
 	if input[len(input)-1] != 0 {
 		panic("Requires hack with a trailing 0 byte")
 	}
+	if len(input) > 0x7fffffff {
+		return errors.New("input larger than 2gb is not supported")
+	}
 	l.input = input
 	l.ofs = 0
 	l.lastToken = -1
+	return nil
 }
 
 // If the last token read was an ERROR token, provide more info
@@ -185,8 +194,8 @@ func (l *lexer) UnreadToken() {
 
 func (l *lexer) ReadToken() Token {
 	p := l.ofs
-	q := 0
-	start := 0
+	q := lexerOffset(0)
+	start := lexerOffset(0)
 	var token Token
 	for {
 		start = p
@@ -1764,7 +1773,7 @@ func (l *lexer) PeekToken(token Token) bool {
 // Skip past whitespace (called after each read token/ident/etc.).
 func (l *lexer) eatWhitespace() {
 	p := l.ofs
-	q := 0
+	q := lexerOffset(0)
 	for {
 		l.ofs = p
 
@@ -1849,7 +1858,7 @@ func (l *lexer) eatWhitespace() {
 func (l *lexer) readIdent() string {
 	out := ""
 	p := l.ofs
-	start := 0
+	start := lexerOffset(0)
 	for {
 		start = p
 
@@ -2158,8 +2167,8 @@ func (l *lexer) readIdent() string {
 func (l *lexer) readEvalString(path bool) (EvalString, error) {
 	eval := EvalString{}
 	p := l.ofs
-	q := 0
-	start := 0
+	q := lexerOffset(0)
+	start := lexerOffset(0)
 	for {
 		start = p
 
