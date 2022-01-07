@@ -86,7 +86,9 @@ func WriteTestData() error {
 	}
 
 	for i := int32(0); i < kNumCommands; i++ {
-		log.RecordCommand(state.Edges[i] /*startTime=*/, 100*i /*endTime=*/, 100*i+1 /*mtime=*/, 0)
+		if err := log.RecordCommand(state.Edges[i] /*startTime=*/, 100*i /*endTime=*/, 100*i+1 /*mtime=*/, 0); err != nil {
+			return err
+		}
 	}
 
 	return nil
