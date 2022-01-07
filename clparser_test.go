@@ -61,9 +61,8 @@ func TestCLParserTest_FilterInputFilename(t *testing.T) {
 func TestCLParserTest_ParseSimple(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-	if !parser.Parse("foo\r\nNote: inc file prefix:  foo.h\r\nbar\r\n", "Note: inc file prefix:", &output, &err) {
-		t.Fatal("expected true")
+	if err := parser.Parse("foo\r\nNote: inc file prefix:  foo.h\r\nbar\r\n", "Note: inc file prefix:", &output); err != nil {
+		t.Fatal(err)
 	}
 
 	if "foo\nbar\n" != output {
@@ -77,9 +76,8 @@ func TestCLParserTest_ParseSimple(t *testing.T) {
 func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-	if !parser.Parse("foo.cc\r\ncl: warning\r\n", "", &output, &err) {
-		t.Fatal("expected true")
+	if err := parser.Parse("foo.cc\r\ncl: warning\r\n", "", &output); err != nil {
+		t.Fatal(err)
 	}
 	if "cl: warning\n" != output {
 		t.Fatal(output)
@@ -89,9 +87,8 @@ func TestCLParserTest_ParseFilenameFilter(t *testing.T) {
 func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-	if !parser.Parse("foo.cc\r\nNote: including file: foo.h\r\nsomething something foo.cc\r\n", "", &output, &err) {
-		t.Fatal("expected true")
+	if err := parser.Parse("foo.cc\r\nNote: including file: foo.h\r\nsomething something foo.cc\r\n", "", &output); err != nil {
+		t.Fatal(err)
 	}
 	if "something something foo.cc\n" != output {
 		t.Fatal(output)
@@ -101,9 +98,8 @@ func TestCLParserTest_NoFilenameFilterAfterShowIncludes(t *testing.T) {
 func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-	if !parser.Parse("Note: including file: c:\\Program Files\\foo.h\r\nNote: including file: d:\\Microsoft Visual Studio\\bar.h\r\nNote: including file: path.h\r\n", "", &output, &err) {
-		t.Fatal("expected true")
+	if err := parser.Parse("Note: including file: c:\\Program Files\\foo.h\r\nNote: including file: d:\\Microsoft Visual Studio\\bar.h\r\nNote: including file: path.h\r\n", "", &output); err != nil {
+		t.Fatal(err)
 	}
 	// We should have dropped the first two includes because they look like
 	// system headers.
@@ -118,9 +114,8 @@ func TestCLParserTest_ParseSystemInclude(t *testing.T) {
 func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-	if !parser.Parse("Note: including file: foo.h\r\nNote: including file: bar.h\r\nNote: including file: foo.h\r\n", "", &output, &err) {
-		t.Fatal("expected true")
+	if err := parser.Parse("Note: including file: foo.h\r\nNote: including file: bar.h\r\nNote: including file: foo.h\r\n", "", &output); err != nil {
+		t.Fatal(err)
 	}
 	// We should have dropped one copy of foo.h.
 	if "" != output {
@@ -134,13 +129,11 @@ func TestCLParserTest_DuplicatedHeader(t *testing.T) {
 func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
 	parser := NewCLParser()
 	output := ""
-	err := ""
-
 	// This isn't inline in the Parse() call below because the #ifdef in
 	// a macro expansion would confuse MSVC2013's preprocessor.
-	kInput := "Note: including file: sub/./foo.h\r\nNote: including file: bar.h\r\nNote: including file: sub\\foo.h\r\n"
-	if !parser.Parse(kInput, "", &output, &err) {
-		t.Fatal("expected true")
+	input := "Note: including file: sub/./foo.h\r\nNote: including file: bar.h\r\nNote: including file: sub\\foo.h\r\n"
+	if err := parser.Parse(input, "", &output); err != nil {
+		t.Fatal(err)
 	}
 	// We should have dropped one copy of foo.h.
 	if "" != output {
@@ -267,11 +260,10 @@ const benchmarkCLParserInput = "Note: including file: C:\\Program Files (x86)\\M
 // So there's a lot of optimization to do here.
 func BenchmarkCLParser(b *testing.B) {
 	b.ReportAllocs()
-	err := ""
 	s := ""
 	for i := 0; i < b.N; i++ {
 		parser := NewCLParser()
-		if !parser.Parse(benchmarkCLParserInput, "", &s, &err) {
+		if err := parser.Parse(benchmarkCLParserInput, "", &s); err != nil {
 			b.Fatal(err)
 		}
 	}

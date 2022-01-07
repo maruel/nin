@@ -14,7 +14,10 @@
 
 package nin
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 // Visual Studio's cl.exe requires some massaging to work with Ninja;
 // for example, it emits include information on stderr in a funny
@@ -68,7 +71,7 @@ func filterInputFilename(line string) bool {
 // Parse the full output of cl, filling filteredOutput with the text that
 // should be printed (if any). Returns true on success, or false with err
 // filled. output must not be the same object as filteredObject.
-func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err *string) bool {
+func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string) error {
 	defer metricRecord("CLParser::Parse")()
 	// Loop over all lines in the output to process them.
 	start := 0
@@ -87,8 +90,9 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err 
 		if len(include) != 0 {
 			seenShowIncludes = true
 			normalized := ""
-			if !normalizer.Normalize(include, &normalized, err) {
-				return false
+			err2 := ""
+			if !normalizer.Normalize(include, &normalized, &err2) {
+				return errors.New(err2)
 			}
 			if !isSystemInclude(normalized) {
 				c.includes[normalized] = struct{}{}
@@ -110,5 +114,5 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string, err 
 		}
 		start = end
 	}
-	return true
+	return nil
 }

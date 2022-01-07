@@ -1037,9 +1037,8 @@ func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string
 	case "msvc":
 		parser := NewCLParser()
 		output := ""
-		err := ""
-		if !parser.Parse(result.Output, depsPrefix, &output, &err) {
-			return nil, errors.New(err)
+		if err := parser.Parse(result.Output, depsPrefix, &output); err != nil {
+			return nil, err
 		}
 		result.Output = output
 		depsNodes := make([]*Node, 0, len(parser.includes))
