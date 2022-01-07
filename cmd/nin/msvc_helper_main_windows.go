@@ -20,11 +20,11 @@ import (
 	"github.com/maruel/nin"
 )
 
-func MSVCHelperUsage() {
+func msvcHelperUsage() {
 	fmt.Printf("usage: ninja -t msvc [options] -- cl.exe /showIncludes /otherArgs\noptions:\n  -e ENVFILE load environment block from ENVFILE as environment\n  -o FILE    write output dependency information to FILE.d\n  -p STRING  localized prefix of msvc's /showIncludes output\n")
 }
 
-func PushPathIntoEnvironment(envBlock string) {
+func pushPathIntoEnvironment(envBlock string) {
 	panic("TODO")
 	/*
 		asStr := envBlock
@@ -39,7 +39,7 @@ func PushPathIntoEnvironment(envBlock string) {
 	*/
 }
 
-func WriteDepFileOrDie(objectPath string, parse *nin.CLParser) {
+func writeDepFileOrDie(objectPath string, parse *nin.CLParser) {
 	panic("TODO")
 	/*
 		depfilePath := objectPath + ".d"
@@ -67,7 +67,7 @@ func WriteDepFileOrDie(objectPath string, parse *nin.CLParser) {
 	*/
 }
 
-func MSVCHelperMain(arg []string) int {
+func msvcHelperMain(arg []string) int {
 	panic("TODO")
 	/*
 		outputFilename := nil
@@ -88,7 +88,7 @@ func MSVCHelperMain(arg []string) int {
 				break
 			case 'h':
 			default:
-				MSVCHelperUsage()
+				msvcHelperUsage()
 				return 0
 			}
 		}
@@ -99,7 +99,7 @@ func MSVCHelperMain(arg []string) int {
 			if err2 != nil {
 				Fatal("couldn't open %s: %s", envfile, err2)
 			}
-			PushPathIntoEnvironment(env)
+			pushPathIntoEnvironment(env)
 		}
 
 		command := GetCommandLineA()
@@ -122,7 +122,7 @@ func MSVCHelperMain(arg []string) int {
 			if !parser.Parse(output, depsPrefix, &output, &err) {
 				Fatal("%s\n", err)
 			}
-			WriteDepFileOrDie(outputFilename, parser)
+			writeDepFileOrDie(outputFilename, parser)
 		}
 
 		if len(output) == 0 {

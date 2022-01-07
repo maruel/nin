@@ -369,7 +369,7 @@ func  toolMSVC(n *ninjaMain,opts *options, args []string) int {
 	//argc++
 	//argv--
 	//optind = 0
-	return MSVCHelperMain(args)
+	return msvcHelperMain(args)
 }
 */
 
