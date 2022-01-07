@@ -385,7 +385,11 @@ func (p *plan) nodeFinished(node *Node, err *string) bool {
 		}
 		// Load the now-clean dyndep file.  This will also update the
 		// build plan and schedule any new work that is ready.
-		return p.builder.LoadDyndeps(node, err)
+		if err2 := p.builder.loadDyndeps(node); err2 != nil {
+			*err = err2.Error()
+			return false
+		}
+		return true
 	}
 
 	// See if we we want any edges from this node.
@@ -1088,23 +1092,22 @@ func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string
 }
 
 // Load the dyndep information provided by the given node.
-func (b *Builder) LoadDyndeps(node *Node, err *string) bool {
+func (b *Builder) loadDyndeps(node *Node) error {
 	b.status.BuildLoadDyndeps()
 
 	// Load the dyndep information provided by this node.
 	ddf := DyndepFile{}
-	if err2 := b.scan.LoadDyndeps(node, ddf); err2 != nil {
-		*err = err2.Error()
-		return false
+	if err := b.scan.LoadDyndeps(node, ddf); err != nil {
+		return err
 	}
 
 	// Update the build plan to account for dyndep modifications to the graph.
-	if !b.plan.dyndepsLoaded(&b.scan, node, ddf, err) {
-		return false
+	err2 := ""
+	if !b.plan.dyndepsLoaded(&b.scan, node, ddf, &err2) {
+		return errors.New(err2)
 	}
 
 	// New command edges may have been added to the plan.
 	b.status.PlanHasTotalEdges(b.plan.commandEdges)
-
-	return true
+	return nil
 }
