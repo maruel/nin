@@ -27,7 +27,7 @@ func random(low, high int) int {
 	return rand.Intn(high-low+1) + low
 }
 
-func RandomCommand() string {
+func randomCommand() string {
 	len2 := random(5, 100)
 	s := make([]byte, len2)
 	for i := 0; i < len2; i++ {
@@ -50,7 +50,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	for i := 0; i < N; i++ {
-		commands[i] = RandomCommand()
+		commands[i] = randomCommand()
 		hashes[i] = item{nin.HashCommand(commands[i]), i}
 	}
 

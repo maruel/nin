@@ -16,12 +16,12 @@ package main
 
 import "strings"
 
-func EscapeForDepfile(path string) string {
+func escapeForDepfile(path string) string {
 	// Depfiles don't escape single \.
 	return strings.ReplaceAll(path, " ", "\\ ")
 }
 
-func (c *CLWrapper) Run(command string, output *string) int {
+func (c *clWrapper) Run(command string, output *string) int {
 	panic("TODO")
 	/*
 		  SECURITY_ATTRIBUTES securityAttributes = {}

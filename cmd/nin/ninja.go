@@ -483,7 +483,7 @@ func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
 		errorf("%s", err)
 		return 1
 	}
-	printer := MissingDependencyPrinter{}
+	printer := missingDependencyPrinter{}
 	scanner := nin.NewMissingDependencyScanner(&printer, &n.depsLog, &n.state, &nin.RealDiskInterface{})
 	for _, it := range nodes {
 		scanner.ProcessNode(it)
@@ -1296,7 +1296,7 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 	return -1
 }
 
-func Main() int {
+func mainImpl() int {
 	// Use exit() instead of return in this function to avoid potentially
 	// expensive cleanup when destructing ninjaMain.
 	config := nin.NewBuildConfig()
@@ -1357,7 +1357,7 @@ func Main() int {
 
 	args := flag.Args()
 
-	status := NewStatusPrinter(&config)
+	status := newStatusPrinter(&config)
 	if opts.workingDir != "" {
 		// The formatting of this string, complete with funny quotes, is
 		// so Emacs can properly identify that the cwd has changed for

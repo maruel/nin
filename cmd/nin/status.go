@@ -24,14 +24,14 @@ import (
 
 // Implementation of the Status interface that prints the status as
 // human-readable strings to stdout
-type StatusPrinter struct {
+type statusPrinter struct {
 	config *nin.BuildConfig
 
 	startedEdges, finishedEdges, totalEdges, runningEdges int
 	timeMillis                                            int32
 
 	// Prints progress output.
-	printer LinePrinter
+	printer linePrinter
 
 	// The custom progress status format to use.
 	progressStatusFormat string
@@ -62,10 +62,10 @@ func (s *slidingRateInfo) updateRate(updateHint int, timeMillis int32) {
 	}
 }
 
-func NewStatusPrinter(config *nin.BuildConfig) *StatusPrinter {
-	s := &StatusPrinter{
+func newStatusPrinter(config *nin.BuildConfig) *statusPrinter {
+	s := &statusPrinter{
 		config:  config,
-		printer: NewLinePrinter(),
+		printer: newLinePrinter(),
 		currentRate: slidingRateInfo{
 			rate:       -1,
 			N:          config.Parallelism,
@@ -84,11 +84,11 @@ func NewStatusPrinter(config *nin.BuildConfig) *StatusPrinter {
 	return s
 }
 
-func (s *StatusPrinter) PlanHasTotalEdges(total int) {
+func (s *statusPrinter) PlanHasTotalEdges(total int) {
 	s.totalEdges = total
 }
 
-func (s *StatusPrinter) BuildEdgeStarted(edge *nin.Edge, startTimeMillis int32) {
+func (s *statusPrinter) BuildEdgeStarted(edge *nin.Edge, startTimeMillis int32) {
 	s.startedEdges++
 	s.runningEdges++
 	s.timeMillis = startTimeMillis
@@ -101,7 +101,7 @@ func (s *StatusPrinter) BuildEdgeStarted(edge *nin.Edge, startTimeMillis int32) 
 	}
 }
 
-func (s *StatusPrinter) BuildEdgeFinished(edge *nin.Edge, endTimeMillis int32, success bool, output string) {
+func (s *statusPrinter) BuildEdgeFinished(edge *nin.Edge, endTimeMillis int32, success bool, output string) {
 	s.timeMillis = endTimeMillis
 	s.finishedEdges++
 
@@ -163,7 +163,7 @@ func (s *StatusPrinter) BuildEdgeFinished(edge *nin.Edge, endTimeMillis int32, s
 	}
 }
 
-func (s *StatusPrinter) BuildLoadDyndeps() {
+func (s *statusPrinter) BuildLoadDyndeps() {
 	// The DependencyScan calls Explain() to print lines explaining why
 	// it considers a portion of the graph to be out of date.  Normally
 	// this is done before the build starts, but our caller is about to
@@ -178,13 +178,13 @@ func (s *StatusPrinter) BuildLoadDyndeps() {
 	}
 }
 
-func (s *StatusPrinter) BuildStarted() {
+func (s *statusPrinter) BuildStarted() {
 	s.startedEdges = 0
 	s.finishedEdges = 0
 	s.runningEdges = 0
 }
 
-func (s *StatusPrinter) BuildFinished() {
+func (s *statusPrinter) BuildFinished() {
 	s.printer.SetConsoleLocked(false)
 	s.printer.PrintOnNewLine("")
 }
@@ -194,7 +194,7 @@ func (s *StatusPrinter) BuildFinished() {
 // placeholders.
 // @param progressStatusFormat The format of the progress status.
 // @param status The status of the edge.
-func (s *StatusPrinter) formatProgressStatus(progressStatusFormat string, timeMillis int32) string {
+func (s *statusPrinter) formatProgressStatus(progressStatusFormat string, timeMillis int32) string {
 	out := ""
 	// TODO(maruel): Benchmark to optimize memory usage and performance
 	// especially when GC is disabled.
@@ -265,7 +265,7 @@ func (s *StatusPrinter) formatProgressStatus(progressStatusFormat string, timeMi
 	return out
 }
 
-func (s *StatusPrinter) PrintStatus(edge *nin.Edge, timeMillis int32) {
+func (s *statusPrinter) PrintStatus(edge *nin.Edge, timeMillis int32) {
 	if s.config.Verbosity == nin.Quiet || s.config.Verbosity == nin.NoStatusUpdate {
 		return
 	}
@@ -281,14 +281,14 @@ func (s *StatusPrinter) PrintStatus(edge *nin.Edge, timeMillis int32) {
 	s.printer.Print(toPrint, !forceFullCommand)
 }
 
-func (s *StatusPrinter) Warning(msg string, i ...interface{}) {
+func (s *statusPrinter) Warning(msg string, i ...interface{}) {
 	warningf(msg, i...)
 }
 
-func (s *StatusPrinter) Error(msg string, i ...interface{}) {
+func (s *statusPrinter) Error(msg string, i ...interface{}) {
 	errorf(msg, i...)
 }
 
-func (s *StatusPrinter) Info(msg string, i ...interface{}) {
+func (s *statusPrinter) Info(msg string, i ...interface{}) {
 	infof(msg, i...)
 }

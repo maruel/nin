@@ -15,16 +15,16 @@
 package main
 
 // Wraps a synchronous execution of a CL subprocess.
-type CLWrapper struct {
+type clWrapper struct {
 	envBlock string
 }
 
-func NewCLWrapper() CLWrapper {
-	return CLWrapper{}
+func newCLWrapper() clWrapper {
+	return clWrapper{}
 }
 
 // Set the environment block (as suitable for CreateProcess) to be used
 // by Run().
-func (c *CLWrapper) SetEnvBlock(envBlock string) {
+func (c *clWrapper) SetEnvBlock(envBlock string) {
 	c.envBlock = envBlock
 }

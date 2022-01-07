@@ -28,7 +28,7 @@ import (
 	"github.com/maruel/nin"
 )
 
-func WriteFakeManifests(dir string) error {
+func writeFakeManifests(dir string) error {
 	if _, err := os.Stat(filepath.Join(dir, "build.ninja")); err == nil {
 		fmt.Printf("Creating manifest data... [SKIP]\n")
 		return nil
@@ -42,7 +42,7 @@ func WriteFakeManifests(dir string) error {
 	return nil
 }
 
-func LoadManifests(measureCommandEvaluation bool) int {
+func loadManifests(measureCommandEvaluation bool) int {
 	di := nin.RealDiskInterface{}
 	input, err := di.ReadFile("build.ninja")
 	if err != nil {
@@ -81,7 +81,7 @@ func mainImpl() error {
 
 	kManifestDir := filepath.Join("build", "manifest_perftest")
 
-	if err := WriteFakeManifests(kManifestDir); err != nil {
+	if err := writeFakeManifests(kManifestDir); err != nil {
 		return fmt.Errorf("failed to write test data: %s", err)
 	}
 
@@ -94,7 +94,7 @@ func mainImpl() error {
 	var times []time.Duration
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
-		optimizationGuard := LoadManifests(!*f)
+		optimizationGuard := loadManifests(!*f)
 		delta := time.Since(start)
 		fmt.Printf("%s (hash: %x)\n", delta.Round(rnd), optimizationGuard)
 		times = append(times, delta)

@@ -24,17 +24,16 @@ import (
 
 const testFilename = "BuildLogPerfTest-tempfile"
 
-type NoDeadPaths struct {
+type noDeadPaths struct {
 }
 
-func (n *NoDeadPaths) IsPathDead(string) bool {
+func (n *noDeadPaths) IsPathDead(string) bool {
 	return false
 }
 
-func WriteTestData() error {
+func writeTestData() error {
 	log := nin.NewBuildLog()
-	noDeadPaths := NoDeadPaths{}
-	if err := log.OpenForWrite(testFilename, &noDeadPaths); err != nil {
+	if err := log.OpenForWrite(testFilename, &noDeadPaths{}); err != nil {
 		return err
 	}
 
@@ -95,7 +94,7 @@ func WriteTestData() error {
 }
 
 func mainImpl() error {
-	if err := WriteTestData(); err != nil {
+	if err := writeTestData(); err != nil {
 		return fmt.Errorf("failed to write test data: %w", err)
 	}
 

@@ -17,7 +17,7 @@ package main
 import "testing"
 
 func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
-	if EscapeForDepfile("sub\\some sdk\\foo.h") != "sub\\some\\ sdk\\foo.h" {
+	if escapeForDepfile("sub\\some sdk\\foo.h") != "sub\\some\\ sdk\\foo.h" {
 		t.Fatal("expected equal")
 	}
 }
@@ -25,7 +25,7 @@ func TestEscapeForDepfileTest_SpacesInFilename(t *testing.T) {
 func TestMSVCHelperTest_EnvBlock(t *testing.T) {
 	t.Skip("TODO")
 	envBlock := "foo=bar\x00"
-	var cl CLWrapper
+	var cl clWrapper
 	cl.SetEnvBlock(envBlock)
 	output := ""
 	cl.Run("cmd /c \"echo foo is %foo%", &output)
@@ -36,7 +36,7 @@ func TestMSVCHelperTest_EnvBlock(t *testing.T) {
 
 func TestMSVCHelperTest_NoReadOfStderr(t *testing.T) {
 	t.Skip("TODO")
-	var cl CLWrapper
+	var cl clWrapper
 	output := ""
 	cl.Run("cmd /c \"echo to stdout&& echo to stderr 1>&2", &output)
 	if output != "to stdout\r\n" {

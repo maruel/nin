@@ -22,7 +22,7 @@ import (
 
 // Prints lines of text, possibly overprinting previously printed lines
 // if the terminal supports it.
-type LinePrinter struct {
+type linePrinter struct {
 	// Whether we can do fancy terminal control codes.
 	smartTerminal bool
 
@@ -47,15 +47,15 @@ type LinePrinter struct {
 	//console *void
 }
 
-func (l *LinePrinter) isSmartTerminal() bool {
+func (l *linePrinter) isSmartTerminal() bool {
 	return l.smartTerminal
 }
-func (l *LinePrinter) setSmartTerminal(smart bool) {
+func (l *linePrinter) setSmartTerminal(smart bool) {
 	l.smartTerminal = smart
 }
 
-func NewLinePrinter() LinePrinter {
-	l := LinePrinter{
+func newLinePrinter() linePrinter {
+	l := linePrinter{
 		haveBlankLine: true,
 	}
 	/*
@@ -95,7 +95,7 @@ func NewLinePrinter() LinePrinter {
 
 // Overprints the current line. If type is ELIDE, elides toPrint to fit on
 // one line.
-func (l *LinePrinter) Print(toPrint string, elide bool) {
+func (l *linePrinter) Print(toPrint string, elide bool) {
 	if l.consoleLocked {
 		l.lineBuffer = toPrint
 		l.elide = elide
@@ -162,7 +162,7 @@ func (l *LinePrinter) Print(toPrint string, elide bool) {
 }
 
 // Print the given data to the console, or buffer it if it is locked.
-func (l *LinePrinter) PrintOrBuffer(data string) {
+func (l *linePrinter) PrintOrBuffer(data string) {
 	if l.consoleLocked {
 		l.outputBuffer += data
 	} else {
@@ -173,7 +173,7 @@ func (l *LinePrinter) PrintOrBuffer(data string) {
 }
 
 // Prints a string on a new line, not overprinting previous output.
-func (l *LinePrinter) PrintOnNewLine(toPrint string) {
+func (l *linePrinter) PrintOnNewLine(toPrint string) {
 	if l.consoleLocked && len(l.lineBuffer) != 0 {
 		l.outputBuffer += l.lineBuffer
 		l.outputBuffer += "\n"
@@ -190,7 +190,7 @@ func (l *LinePrinter) PrintOnNewLine(toPrint string) {
 
 // Lock or unlock the console.  Any output sent to the LinePrinter while the
 // console is locked will not be printed until it is unlocked.
-func (l *LinePrinter) SetConsoleLocked(locked bool) {
+func (l *linePrinter) SetConsoleLocked(locked bool) {
 	if locked == l.consoleLocked {
 		return
 	}
