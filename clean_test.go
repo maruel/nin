@@ -652,7 +652,7 @@ func (c *CleanDeadTest) IsPathDead(string) bool {
 
 func TestCleanDeadTest_CleanDead(t *testing.T) {
 	t.Skip("TODO")
-	kTestFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
 	c := NewCleanDeadTest(t)
 	state := NewState()
 	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
@@ -663,18 +663,15 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 
 	log1 := NewBuildLog()
 	err := ""
-	if !log1.OpenForWrite(kTestFilename, c, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log1.OpenForWrite(testFilename, c); err != nil {
+		t.Fatal(err)
 	}
 	log1.RecordCommand(state.Edges[0], 15, 18, 0)
 	log1.RecordCommand(state.Edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(kTestFilename, &err) != LoadSuccess {
+	if log2.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {
@@ -758,7 +755,7 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 }
 
 func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
-	kTestFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
+	testFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
 	c := NewCleanDeadTest(t)
 	state := NewState()
 	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
@@ -772,18 +769,15 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 
 	log1 := NewBuildLog()
 	err := ""
-	if !log1.OpenForWrite(kTestFilename, c, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log1.OpenForWrite(testFilename, c); err != nil {
+		t.Fatal(err)
 	}
 	log1.RecordCommand(state.Edges[0], 15, 18, 0)
 	log1.RecordCommand(state.Edges[1], 20, 25, 0)
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(kTestFilename, &err) != LoadSuccess {
+	if log2.Load(testFilename, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
 	if "" != err {

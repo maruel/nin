@@ -15,7 +15,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -35,9 +34,8 @@ func (n *NoDeadPaths) IsPathDead(string) bool {
 func WriteTestData() error {
 	log := nin.NewBuildLog()
 	noDeadPaths := NoDeadPaths{}
-	err := ""
-	if !log.OpenForWrite(testFilename, &noDeadPaths, &err) {
-		return errors.New(err)
+	if err := log.OpenForWrite(testFilename, &noDeadPaths); err != nil {
+		return err
 	}
 
 	/*

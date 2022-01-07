@@ -1006,8 +1006,8 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 	}
 
 	if b.scan.buildLog != nil {
-		if !b.scan.buildLog.RecordCommand(edge, startTimeMillis, endTimeMillis, outputMtime) {
-			*err = "Error writing to build log: " // + err
+		if err2 := b.scan.buildLog.RecordCommand(edge, startTimeMillis, endTimeMillis, outputMtime); err2 != nil {
+			*err = "Error writing to build log: " + err2.Error()
 			return false
 		}
 	}

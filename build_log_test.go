@@ -45,11 +45,8 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 	defer log1.Close()
 	err := ""
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	if !log1.OpenForWrite(testFilename, b, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log1.OpenForWrite(testFilename, b); err != nil {
+		t.Fatal(err)
 	}
 	log1.RecordCommand(b.state.Edges[0], 15, 18, 0)
 	log1.RecordCommand(b.state.Edges[1], 20, 25, 0)
@@ -92,17 +89,13 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	b := NewBuildLogTest(t)
 	// Bump when the version is changed.
-	kExpectedVersion := []byte("# ninja log v5\n")
+	expectedVersion := []byte("# ninja log v5\n")
 
 	log := NewBuildLog()
 	defer log.Close()
-	err := ""
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	if !log.OpenForWrite(testFilename, b, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log.OpenForWrite(testFilename, b); err != nil {
+		t.Fatal(err)
 	}
 	log.Close()
 
@@ -110,16 +103,13 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	if err2 != nil {
 		t.Fatal(err2)
 	}
-	if !bytes.Equal(kExpectedVersion, contents) {
+	if !bytes.Equal(expectedVersion, contents) {
 		t.Fatal(string(contents))
 	}
 
 	// Opening the file anew shouldn't add a second version string.
-	if !log.OpenForWrite(testFilename, b, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log.OpenForWrite(testFilename, b); err != nil {
+		t.Fatal(err)
 	}
 	log.Close()
 
@@ -127,7 +117,7 @@ func TestBuildLogTest_FirstWriteAddsSignature(t *testing.T) {
 	if err2 != nil {
 		t.Fatal(err2)
 	}
-	if !bytes.Equal(kExpectedVersion, contents) {
+	if !bytes.Equal(expectedVersion, contents) {
 		t.Fatal(string(contents))
 	}
 }
@@ -165,12 +155,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 	{
 		log1 := NewBuildLog()
 		defer log1.Close()
-		err := ""
-		if !log1.OpenForWrite(testFilename, b, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log1.OpenForWrite(testFilename, b); err != nil {
+			t.Fatal(err)
 		}
 		log1.RecordCommand(b.state.Edges[0], 15, 18, 0)
 		log1.RecordCommand(b.state.Edges[1], 20, 25, 0)
@@ -183,11 +169,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 		log2 := NewBuildLog()
 		defer log2.Close()
 		err := ""
-		if !log2.OpenForWrite(testFilename, b, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log2.OpenForWrite(testFilename, b); err != nil {
+			t.Fatal(err)
 		}
 		log2.RecordCommand(b.state.Edges[0], 15, 18, 0)
 		log2.RecordCommand(b.state.Edges[1], 20, 25, 0)
@@ -357,22 +340,16 @@ func TestBuildLogTest_Restat(t *testing.T) {
 
 	// TODO(maruel): The original test case is broken.
 	testDiskInterface := TestDiskInterface{t}
-	if !log.Restat(testFilename, &testDiskInterface, []string{"out2"}, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log.Restat(testFilename, &testDiskInterface, []string{"out2"}); err != nil {
+		t.Fatal(err)
 	}
 	e = log.Entries["out"]
 	if 3 != e.mtime {
 		t.Fatal(e.mtime)
 	} // unchanged, since the filter doesn't match
 
-	if !log.Restat(testFilename, &testDiskInterface, nil, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log.Restat(testFilename, &testDiskInterface, nil); err != nil {
+		t.Fatal(err)
 	}
 	e = log.Entries["out"]
 	if 4 != e.mtime {
@@ -491,11 +468,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log1 := NewBuildLog()
 		defer log1.Close()
-		if !log1.OpenForWrite(testFilename, b, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log1.OpenForWrite(testFilename, b); err != nil {
+			t.Fatal(err)
 		}
 		// Record the same edge several times, to trigger recompaction
 		// the next time the log is opened.
@@ -526,8 +500,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 			t.Fatal("expected true")
 		}
 		// ...and force a recompaction.
-		if !log2.OpenForWrite(testFilename, b, &err) {
-			t.Fatal("expected true")
+		if err := log2.OpenForWrite(testFilename, b); err != nil {
+			t.Fatal(err)
 		}
 		log2.Close()
 	}

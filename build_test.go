@@ -743,10 +743,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 		if s := buildLog.Load(logPath, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", logPath, s, err)
 		}
-		if !buildLog.OpenForWrite(logPath, b, &err) {
-			b.t.Fatal(err)
-		}
-		if "" != err {
+		if err := buildLog.OpenForWrite(logPath, b); err != nil {
 			b.t.Fatal(err)
 		}
 		pbuildLog = &buildLog
@@ -2871,9 +2868,6 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 	err := ""
 	if !b.log.OpenForWrite("ninja_deps", &err) {
 		t.Fatal(err)
-	}
-	if "" != err {
-		t.Fatal("expected equal")
 	}
 	t.Cleanup(func() {
 		if err2 := b.log.Close(); err2 != nil {

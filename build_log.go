@@ -169,12 +169,12 @@ func NewBuildLog() BuildLog {
 	return BuildLog{Entries: map[string]*LogEntry{}}
 }
 
-// Prepares writing to the log file without actually opening it - that will
-// happen when/if it's needed
-func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) bool {
+// OpenForWrite prepares writing to the log file without actually opening it -
+// that will happen when/if it's needed.
+func (b *BuildLog) OpenForWrite(path string, user BuildLogUser) error {
 	if b.needsRecompaction {
-		if !b.Recompact(path, user, err) {
-			return false
+		if err := b.Recompact(path, user); err != nil {
+			return err
 		}
 	}
 
@@ -182,12 +182,13 @@ func (b *BuildLog) OpenForWrite(path string, user BuildLogUser, err *string) boo
 		panic("oops")
 	}
 	b.logFilePath = path
-	// we don't actually open the file right now, but will
-	// do so on the first write attempt
-	return true
+	// We don't actually open the file right now, but will
+	// do so on the first write attempt.
+	return nil
 }
 
-func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime TimeStamp) bool {
+// RecordCommand records an edge.
+func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime TimeStamp) error {
 	command := edge.EvaluateCommand(true)
 	commandHash := HashCommand(command)
 	for _, out := range edge.Outputs {
@@ -205,41 +206,38 @@ func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime Tim
 		logEntry.endTime = endTime
 		logEntry.mtime = mtime
 
-		if !b.OpenForWriteIfNeeded() {
-			return false
+		if err := b.openForWriteIfNeeded(); err != nil {
+			return err
 		}
 		if b.logFile != nil {
-			if err2 := logEntry.Serialize(b.logFile); err2 != nil {
-				return false
+			if err := logEntry.Serialize(b.logFile); err != nil {
+				return err
 			}
-			/* TODO(maruel): Too expensive.
-			if err := b.logFile_Sync(); err != nil {
-				return false
-			}
-			*/
+			// The C++ code does an fsync on the handle but the Go version doesn't
+			// buffer so it is unnecessary.
 		}
 	}
-	return true
+	return nil
 }
 
 func (b *BuildLog) Close() error {
-	b.OpenForWriteIfNeeded() // create the file even if nothing has been recorded
+	err := b.openForWriteIfNeeded() // create the file even if nothing has been recorded
 	if b.logFile != nil {
 		_ = b.logFile.Close()
 	}
 	b.logFile = nil
-	return nil
+	return err
 }
 
-// Should be called before using logFile. When false is returned, errno
-// will be set.
-func (b *BuildLog) OpenForWriteIfNeeded() bool {
+// openForWriteIfNeeded should be called before using logFile.
+func (b *BuildLog) openForWriteIfNeeded() error {
 	if b.logFile != nil || b.logFilePath == "" {
-		return true
+		return nil
 	}
-	b.logFile, _ = os.OpenFile(b.logFilePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o0666)
+	var err error
+	b.logFile, err = os.OpenFile(b.logFilePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o0666)
 	if b.logFile == nil {
-		return false
+		return err
 	}
 	/*if setvbuf(b.logFile, nil, _IOLBF, BUFSIZ) != 0 {
 		return false
@@ -247,16 +245,20 @@ func (b *BuildLog) OpenForWriteIfNeeded() bool {
 	SetCloseOnExec(fileno(b.logFile))
 	*/
 
+	// TODO(maruel): Confirm, I'm pretty sure it's not true on Go.
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
-	p, _ := b.logFile.Seek(0, os.SEEK_END)
-
+	p, err := b.logFile.Seek(0, os.SEEK_END)
+	if err != nil {
+		return err
+	}
 	if p == 0 {
+		// If the file was empty, write the header.
 		if _, err := fmt.Fprintf(b.logFile, buildLogFileSignature, buildLogCurrentVersion); err != nil {
-			return false
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
 /*
@@ -317,6 +319,8 @@ func (l *LineReader) ReadLine(lineStart *char*, lineEnd *char*) bool {
 */
 
 // Load the on-disk log.
+//
+// It can return a warning with success and an error.
 func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	defer metricRecord(".ninja_log load")()
 	file, err2 := ioutil.ReadFile(path)
@@ -430,21 +434,21 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 	return LoadSuccess
 }
 
-// Rewrite the known log entries, throwing away old data.
-func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
+// Recompact rewrites the known log entries, throwing away old data.
+func (b *BuildLog) Recompact(path string, user BuildLogUser) error {
 	defer metricRecord(".ninja_log recompact")()
 	_ = b.Close()
+	// TODO(maruel): Instead of truncating, overwrite the data, then adjust the
+	// size.
 	tempPath := path + ".recompact"
-	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
+	f, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o666)
 	if f == nil {
-		*err = err2.Error()
-		return false
+		return err
 	}
 
-	if _, err2 := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err2 != nil {
-		*err = err2.Error()
+	if _, err := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err != nil {
 		_ = f.Close()
-		return false
+		return err
 	}
 
 	var deadOutputs []string
@@ -455,10 +459,9 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 			continue
 		}
 
-		if err2 := entry.Serialize(f); err2 != nil {
-			*err = err2.Error()
+		if err := entry.Serialize(f); err != nil {
 			_ = f.Close()
-			return false
+			return err
 		}
 	}
 
@@ -467,36 +470,33 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser, err *string) bool {
 	}
 
 	_ = f.Close()
-	if err2 := os.Remove(path); err2 != nil {
-		*err = err2.Error()
-		return false
+	if err := os.Remove(path); err != nil {
+		return err
 	}
 
-	if err2 := os.Rename(tempPath, path); err2 != nil {
-		*err = err2.Error()
-		return false
+	if err := os.Rename(tempPath, path); err != nil {
+		return err
 	}
-	return true
+	return err
 }
 
-// Restat all outputs in the log
-func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *string) bool {
+// Restat recompacts but stat()'s all outputs in the log.
+func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string) error {
 	defer metricRecord(".ninja_log restat")()
 	_ = b.Close()
 	tempPath := path + ".restat"
-	f, err2 := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY, 0o666)
+	f, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY, 0o666)
 	if f == nil {
-		*err = err2.Error()
-		return false
+		return err
 	}
 
-	if _, err2 := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err2 != nil {
-		*err = err2.Error()
+	if _, err := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err != nil {
 		_ = f.Close()
-		return false
+		return err
 	}
 	for _, i := range b.Entries {
 		skip := len(outputs) > 0
+		// TODO(maruel): Sort plus binary search or create a map[string]struct{}?
 		for j := 0; j < len(outputs); j++ {
 			if i.output == outputs[j] {
 				skip = false
@@ -504,32 +504,24 @@ func (b *BuildLog) Restat(path string, di DiskInterface, outputs []string, err *
 			}
 		}
 		if !skip {
-			mtime, err2 := di.Stat(i.output)
+			mtime, err := di.Stat(i.output)
 			if mtime == -1 {
-				*err = err2.Error()
 				_ = f.Close()
-				return false
+				return err
 			}
 			i.mtime = mtime
 		}
 
-		if err2 := i.Serialize(f); err2 != nil {
-			*err = err2.Error()
+		if err := i.Serialize(f); err != nil {
 			_ = f.Close()
-			return false
+			return err
 		}
 	}
 
 	_ = f.Close()
-	if err2 := os.Remove(path); err2 != nil {
-		*err = err2.Error()
-		return false
+	if err := os.Remove(path); err != nil {
+		return err
 	}
 
-	if err2 := os.Rename(tempPath, path); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-
-	return true
+	return os.Rename(tempPath, path)
 }

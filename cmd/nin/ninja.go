@@ -817,13 +817,13 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 		err = ""
 	}
 
-	if !n.buildLog.Restat(logPath, &n.di, args, &err) {
+	if err := n.buildLog.Restat(logPath, &n.di, args); err != nil {
 		errorf("failed recompaction: %s", err)
 		return nin.ExitFailure
 	}
 
 	if !n.config.DryRun {
-		if !n.buildLog.OpenForWrite(logPath, n, &err) {
+		if err := n.buildLog.OpenForWrite(logPath, n); err != nil {
 			errorf("opening build log: %s", err)
 			return nin.ExitFailure
 		}
@@ -976,15 +976,16 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 		if status == nin.LoadNotFound {
 			return true
 		}
-		success := n.buildLog.Recompact(logPath, n, &err)
-		if !success {
+
+		if err := n.buildLog.Recompact(logPath, n); err != nil {
 			errorf("failed recompaction: %s", err)
+			return false
 		}
-		return success
+		return true
 	}
 
 	if !n.config.DryRun {
-		if !n.buildLog.OpenForWrite(logPath, n, &err) {
+		if err := n.buildLog.OpenForWrite(logPath, n); err != nil {
 			errorf("opening build log: %s", err)
 			return false
 		}
