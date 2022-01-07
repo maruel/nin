@@ -15,7 +15,6 @@
 package nin
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -55,17 +54,6 @@ func NewManifestParser(state *State, fileReader FileReader, options ManifestPars
 		env:        state.Bindings,
 		subninjas:  make(chan subninja),
 	}
-}
-
-// If the next token is not \a expected, produce an error string
-// saying "expected foo, got bar".
-func (m *ManifestParser) expectToken(expected Token, err *string) bool {
-	if token := m.lexer.ReadToken(); token != expected {
-		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
-		*err = m.lexer.Error(msg).Error()
-		return false
-	}
-	return true
 }
 
 // Parse a file, given its contents as a string.
@@ -132,9 +120,8 @@ func (m *ManifestParser) parsePool() error {
 		return m.lexer.Error("expected pool name")
 	}
 
-	err2 := ""
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	if m.state.Pools[name] != nil {
@@ -171,9 +158,8 @@ func (m *ManifestParser) parseRule() error {
 		return m.lexer.Error("expected rule name")
 	}
 
-	err2 := ""
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	if m.env.Rules[name] != nil {
@@ -209,19 +195,6 @@ func (m *ManifestParser) parseRule() error {
 	return nil
 }
 
-func (m *ManifestParser) parseLet() (string, EvalString, error) {
-	key := m.lexer.readIdent()
-	if key == "" {
-		return "", EvalString{}, m.lexer.Error("expected variable name")
-	}
-	err2 := ""
-	if !m.expectToken(EQUALS, &err2) {
-		return "", EvalString{}, errors.New(err2)
-	}
-	ev, err := m.lexer.readEvalString(false)
-	return key, ev, err
-}
-
 func (m *ManifestParser) parseDefault() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
@@ -251,11 +224,7 @@ func (m *ManifestParser) parseDefault() error {
 		}
 	}
 
-	err2 := ""
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
-	}
-	return nil
+	return m.expectToken(NEWLINE)
 }
 
 func (m *ManifestParser) parseIdent() error {
@@ -309,9 +278,8 @@ func (m *ManifestParser) parseEdge() error {
 		return m.lexer.Error("expected path")
 	}
 
-	err2 := ""
-	if !m.expectToken(COLON, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(COLON); err != nil {
+		return err
 	}
 
 	ruleName := m.lexer.readIdent()
@@ -384,8 +352,8 @@ func (m *ManifestParser) parseEdge() error {
 		}
 	}
 
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	// Bindings on edges are rare, so allocate per-edge envs only when needed.
@@ -512,9 +480,8 @@ func (m *ManifestParser) parseInclude() error {
 		return err
 	}
 	ls := m.lexer.lexerState
-	err2 := ""
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	// Process state.
@@ -522,7 +489,7 @@ func (m *ManifestParser) parseInclude() error {
 	input, err := m.fileReader.ReadFile(path)
 	if err != nil {
 		// Wrap it.
-		return ls.error(fmt.Sprintf("loading '%s': %s", path, err), m.lexer.filename, m.lexer.input)
+		return m.error(fmt.Sprintf("loading '%s': %s", path, err), ls)
 	}
 
 	subparser := NewManifestParser(m.state, m.fileReader, m.options)
@@ -551,9 +518,8 @@ func (m *ManifestParser) parseSubninja() error {
 		return err
 	}
 	path := eval.Evaluate(m.env)
-	err2 := ""
-	if !m.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err := m.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	// Success, start the goroutine to read it asynchronously.
@@ -625,7 +591,7 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		}
 		if s.err != nil {
 			// Wrap it.
-			err = s.ls.error(fmt.Sprintf("loading '%s': %s", s.path, s.err.Error()), m.lexer.filename, m.lexer.input)
+			err = m.error(fmt.Sprintf("loading '%s': %s", s.path, s.err.Error()), s.ls)
 			continue
 		}
 		// Reset the binding fresh.
@@ -634,6 +600,30 @@ func (m *ManifestParser) processSubninjaQueue() error {
 		err = subparser.Parse(s.path, s.contents)
 	}
 	return err
+}
+
+func (m *ManifestParser) parseLet() (string, EvalString, error) {
+	eval := EvalString{}
+	key := m.lexer.readIdent()
+	if key == "" {
+		return key, eval, m.lexer.Error("expected variable name")
+	}
+	var err error
+	if err = m.expectToken(EQUALS); err == nil {
+		eval, err = m.lexer.readEvalString(false)
+	}
+	return key, eval, err
+}
+
+// expectToken produces an error string if the next token is not expected.
+//
+// The error says "expected foo, got bar".
+func (m *ManifestParser) expectToken(expected Token) error {
+	if token := m.lexer.ReadToken(); token != expected {
+		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
+		return m.lexer.Error(msg)
+	}
+	return nil
 }
 
 func (m *ManifestParser) error(msg string, ls lexerState) error {
