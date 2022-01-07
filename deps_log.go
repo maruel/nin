@@ -23,12 +23,13 @@ import (
 	"os"
 )
 
-// Reading (startup-time) interface.
+// Deps is the reading (startup-time) struct.
 type Deps struct {
 	MTime TimeStamp
 	Nodes []*Node
 }
 
+// NewDeps returns an initialized Deps.
 func NewDeps(mtime TimeStamp, nodeCount int) *Deps {
 	return &Deps{
 		MTime: mtime,
@@ -104,7 +105,8 @@ const (
 // internal buffers having to have this size.
 const maxRecordSize = (1 << 19) - 1
 
-// Writing (build-time) interface.
+// OpenForWrite prepares writing to the log file without actually opening it -
+// that will happen when/if it's needed.
 func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 	if d.needsRecompaction {
 		if !d.Recompact(path, err) {
@@ -201,6 +203,7 @@ func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 	return true
 }
 
+// Close closes the file handle.
 func (d *DepsLog) Close() error {
 	// create the file even if nothing has been recorded
 	// TODO(maruel): Error handling.
@@ -411,6 +414,9 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	return LoadSuccess
 }
 
+// GetDeps returns the Deps for this node ID.
+//
+// Silently ignore invalid node ID.
 func (d *DepsLog) GetDeps(node *Node) *Deps {
 	// Abort if the node has no id (never referenced in the deps) or if
 	// there's no deps recorded for the node.
@@ -420,6 +426,9 @@ func (d *DepsLog) GetDeps(node *Node) *Deps {
 	return d.Deps[node.ID]
 }
 
+// GetFirstReverseDepsNode returns something?
+//
+// TODO(maruel): Understand better.
 func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 	for id := 0; id < len(d.Deps); id++ {
 		deps := d.Deps[id]
@@ -435,7 +444,7 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 	return nil
 }
 
-// Rewrite the known log entries, throwing away old data.
+// Recompact rewrites the known log entries, throwing away old data.
 func (d *DepsLog) Recompact(path string, err *string) bool {
 	defer metricRecord(".ninja_deps recompact")()
 
@@ -496,7 +505,8 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 	return true
 }
 
-// Returns if the deps entry for a node is still reachable from the manifest.
+// IsDepsEntryLiveFor returns if the deps entry for a node is still reachable
+// from the manifest.
 //
 // The deps log can contain deps entries for files that were built in the
 // past but are no longer part of the manifest.  This function returns if

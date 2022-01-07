@@ -863,7 +863,7 @@ func TestParserTest_ImplicitOutput(t *testing.T) {
 	if len(edge.Outputs) != 2 {
 		t.Fatal("expected equal")
 	}
-	if !edge.IsImplicitOut(1) {
+	if !edge.isImplicitOut(1) {
 		t.Fatal("expected true")
 	}
 }
@@ -876,7 +876,7 @@ func TestParserTest_ImplicitOutputEmpty(t *testing.T) {
 	if len(edge.Outputs) != 1 {
 		t.Fatal("expected equal")
 	}
-	if edge.IsImplicitOut(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
 }
@@ -889,13 +889,13 @@ func TestParserTest_ImplicitOutputDupe(t *testing.T) {
 	if len(edge.Outputs) != 3 {
 		t.Fatal("expected equal")
 	}
-	if edge.IsImplicitOut(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
-	if edge.IsImplicitOut(1) {
+	if edge.isImplicitOut(1) {
 		t.Fatal("expected false")
 	}
-	if !edge.IsImplicitOut(2) {
+	if !edge.isImplicitOut(2) {
 		t.Fatal("expected true")
 	}
 }
@@ -908,7 +908,7 @@ func TestParserTest_ImplicitOutputDupes(t *testing.T) {
 	if len(edge.Outputs) != 1 {
 		t.Fatal("expected equal")
 	}
-	if edge.IsImplicitOut(0) {
+	if edge.isImplicitOut(0) {
 		t.Fatal("expected false")
 	}
 }

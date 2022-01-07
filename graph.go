@@ -22,19 +22,22 @@ import (
 	"sort"
 )
 
+// ExistenceStatus represents the knowledge of the file's existence.
 type ExistenceStatus int32
 
 const (
-	// The file hasn't been examined.
+	// ExistenceStatusUnknown means the file hasn't been examined.
 	ExistenceStatusUnknown ExistenceStatus = iota
-	// The file doesn't exist. MTime will be the latest mtime of its dependencies.
+	// ExistenceStatusMissing means the file doesn't exist. MTime will be the
+	// latest mtime of its dependencies.
 	ExistenceStatusMissing
-	// The path is an actual file. MTime will be the file's mtime.
+	// ExistenceStatusExists means the path is an actual file. MTime will be the
+	// file's mtime.
 	ExistenceStatusExists
 )
 
-// Information about a node in the dependency graph: the file, whether
-// it's dirty, mtime, etc.
+// Node represents information about a node in the dependency graph: the file,
+// whether it's dirty, mtime, etc.
 type Node struct {
 	// Immutable.
 
@@ -78,6 +81,7 @@ type Node struct {
 	DyndepPending bool
 }
 
+// NewNode returns an initialized Node.
 func NewNode(path string, slashBits uint64) *Node {
 	return &Node{
 		Path:      path,
@@ -88,7 +92,6 @@ func NewNode(path string, slashBits uint64) *Node {
 	}
 }
 
-// Return false on error.
 func (n *Node) statIfNecessary(di DiskInterface) error {
 	if n.Exists != ExistenceStatusUnknown {
 		return nil
@@ -96,12 +99,13 @@ func (n *Node) statIfNecessary(di DiskInterface) error {
 	return n.Stat(di)
 }
 
-// Get |Path| but use SlashBits to convert back to original slash styles.
+// PathDecanonicalized return |Path| but use SlashBits to convert back to
+// original slash styles.
 func (n *Node) PathDecanonicalized() string {
 	return PathDecanonicalized(n.Path, n.SlashBits)
 }
 
-// Return false on error.
+// Stat stat's the file.
 func (n *Node) Stat(di DiskInterface) error {
 	defer metricRecord("node stat")()
 	mtime, err := di.Stat(n.Path)
@@ -126,6 +130,7 @@ func (n *Node) updatePhonyMtime(mtime TimeStamp) {
 	}
 }
 
+// Dump prints out Node's details to stdout.
 func (n *Node) Dump(prefix string) {
 	s := ""
 	if n.Exists != ExistenceStatusExists {
@@ -158,15 +163,17 @@ func (n *Node) Dump(prefix string) {
 
 //
 
+// VisitMark is a market to determine if an edge is visited.
 type VisitMark int32
 
+// Valid VisitMark values.
 const (
 	VisitNone VisitMark = iota
 	VisitInStack
 	VisitDone
 )
 
-// An edge in the dependency graph; links between Nodes using Rules.
+// Edge is an edge in the dependency graph; links between Nodes using Rules.
 type Edge struct {
 	Inputs      []*Node
 	Outputs     []*Node
@@ -202,6 +209,7 @@ type Edge struct {
 	GeneratedByDepLoader bool
 }
 
+// NewEdge returns an initialized Edge.
 func NewEdge() *Edge {
 	return &Edge{
 		Rule:   nil,
@@ -216,17 +224,26 @@ func NewEdge() *Edge {
 func (e *Edge) weight() int {
 	return 1
 }
+
+// IsImplicit returns if the inputs at the specified index is implicit and not
+// for ordering only.
 func (e *Edge) IsImplicit(index int) bool {
 	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)-int(e.ImplicitDeps) && !e.IsOrderOnly(index)
 }
+
+// IsOrderOnly returns if the input at the specified index is only used for
+// ordering.
 func (e *Edge) IsOrderOnly(index int) bool {
 	return index >= len(e.Inputs)-int(e.OrderOnlyDeps)
 }
-func (e *Edge) IsImplicitOut(index int) bool {
+
+// isImplicitOut is only used in unit tests.
+func (e *Edge) isImplicitOut(index int) bool {
 	return index >= len(e.Outputs)-int(e.ImplicitOuts)
 }
 
-// Expand all variables in a command and return it as a string.
+// EvaluateCommand expands all variables in a command and return it as a string.
+//
 // If inclRspFile is enabled, the string will also contain the
 // full contents of a response file (if applicable)
 func (e *Edge) EvaluateCommand(inclRspFile bool) string {
@@ -240,42 +257,46 @@ func (e *Edge) EvaluateCommand(inclRspFile bool) string {
 	return command
 }
 
-// Returns the shell-escaped value of |key|.
+// GetBinding returns the shell-escaped value of |key|.
 func (e *Edge) GetBinding(key string) string {
 	env := edgeEnv{
 		edge:        e,
-		escapeInOut: ShellEscape,
+		escapeInOut: shellEscape,
 	}
 	return env.LookupVariable(key)
 }
 
-// Like GetBinding("depfile"), but without shell escaping.
+// GetUnescapedDepfile returns like GetBinding("depfile"), but without shell
+// escaping.
 func (e *Edge) GetUnescapedDepfile() string {
 	env := edgeEnv{
 		edge:        e,
-		escapeInOut: DoNotEscape,
+		escapeInOut: doNotEscape,
 	}
 	return env.LookupVariable("depfile")
 }
 
-// Like GetBinding("dyndep"), but without shell escaping.
+// GetUnescapedDyndep returns like GetBinding("dyndep"), but without shell
+// escaping.
 func (e *Edge) GetUnescapedDyndep() string {
 	env := edgeEnv{
 		edge:        e,
-		escapeInOut: DoNotEscape,
+		escapeInOut: doNotEscape,
 	}
 	return env.LookupVariable("dyndep")
 }
 
-// Like GetBinding("rspfile"), but without shell escaping.
+// GetUnescapedRspfile returns like GetBinding("rspfile"), but without shell
+// escaping.
 func (e *Edge) GetUnescapedRspfile() string {
 	env := edgeEnv{
 		edge:        e,
-		escapeInOut: DoNotEscape,
+		escapeInOut: doNotEscape,
 	}
 	return env.LookupVariable("rspfile")
 }
 
+// Dump prints the Edge details to stdout.
 func (e *Edge) Dump(prefix string) {
 	fmt.Printf("%s[ ", prefix)
 	for _, i := range e.Inputs {
@@ -401,18 +422,18 @@ func (e *EdgeSet) recreate() {
 
 //
 
-type EscapeKind bool
+type escapeKind bool
 
 const (
-	ShellEscape EscapeKind = false
-	DoNotEscape EscapeKind = true
+	shellEscape escapeKind = false
+	doNotEscape escapeKind = true
 )
 
 // An Env for an Edge, providing $in and $out.
 type edgeEnv struct {
 	lookups     []string
 	edge        *Edge
-	escapeInOut EscapeKind
+	escapeInOut escapeKind
 	recursive   bool
 }
 
@@ -456,7 +477,7 @@ func (e *edgeEnv) LookupVariable(v string) string {
 
 // Given a span of Nodes, construct a list of paths suitable for a command
 // line.
-func makePathList(span []*Node, sep byte, escapeInOut EscapeKind) string {
+func makePathList(span []*Node, sep byte, escapeInOut escapeKind) string {
 	var z [64]string
 	var s []string
 	if l := len(span); l <= cap(z) {
@@ -468,7 +489,7 @@ func makePathList(span []*Node, sep byte, escapeInOut EscapeKind) string {
 	first := false
 	for i, x := range span {
 		path := x.PathDecanonicalized()
-		if escapeInOut == ShellEscape {
+		if escapeInOut == shellEscape {
 			if runtime.GOOS == "windows" {
 				path = getWin32EscapedString(path)
 			} else {
@@ -501,6 +522,9 @@ func makePathList(span []*Node, sep byte, escapeInOut EscapeKind) string {
 	return unsafeString(out)
 }
 
+// PathDecanonicalized does the reverse process of CanonicalizePath().
+//
+// Only does anything on Windows.
 func PathDecanonicalized(path string, slashBits uint64) string {
 	if runtime.GOOS != "windows" {
 		return path
@@ -533,6 +557,7 @@ type DependencyScan struct {
 	dyndepLoader DyndepLoader
 }
 
+// NewDependencyScan returns an initialized DependencyScan.
 func NewDependencyScan(state *State, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface) DependencyScan {
 	return DependencyScan{
 		buildLog:     buildLog,
@@ -887,7 +912,7 @@ func (d *DependencyScan) recomputeOutputDirty(edge *Edge, mostRecentInput *Node,
 	return false
 }
 
-// Load a dyndep file from the given node's path and update the
+// LoadDyndeps loads a dyndep file from the given node's path and update the
 // build graph with the new information.
 //
 // The 'DyndepFile' object stores the information loaded from the dyndep file.

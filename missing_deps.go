@@ -16,10 +16,13 @@ package nin
 
 import "fmt"
 
+// MissingDependencyScannerDelegate is a callback when a missing dependency is
+// found.
 type MissingDependencyScannerDelegate interface {
 	OnMissingDep(node *Node, path string, generator *Rule)
 }
 
+// MissingDependencyScanner is a scanner for missing dependencies.
 type MissingDependencyScanner struct {
 	delegate            MissingDependencyScannerDelegate
 	depsLog             *DepsLog
@@ -34,6 +37,7 @@ type MissingDependencyScanner struct {
 	adjacencyMap map[*Edge]map[*Edge]bool
 }
 
+// HadMissingDeps return true if there were any missing dependencies found.
 func (m *MissingDependencyScanner) HadMissingDeps() bool {
 	return len(m.nodesMissingDeps) != 0
 }
@@ -62,6 +66,7 @@ func (n *nodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns
 
 //
 
+// NewMissingDependencyScanner returns an initialized MissingDependencyScanner.
 func NewMissingDependencyScanner(delegate MissingDependencyScannerDelegate, depsLog *DepsLog, state *State, di DiskInterface) MissingDependencyScanner {
 	return MissingDependencyScanner{
 		delegate:         delegate,
@@ -76,6 +81,9 @@ func NewMissingDependencyScanner(delegate MissingDependencyScannerDelegate, deps
 	}
 }
 
+// ProcessNode does something?
+//
+// TODO(maruel): Figure out.
 func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	if node == nil {
 		return
@@ -162,6 +170,7 @@ func (m *MissingDependencyScanner) processNodeDeps(node *Node, depNodes []*Node)
 	}
 }
 
+// PrintStats prints statistics to stdout.
 func (m *MissingDependencyScanner) PrintStats() {
 	fmt.Printf("Processed %d nodes.\n", len(m.seen))
 	if m.HadMissingDeps() {

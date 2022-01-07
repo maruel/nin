@@ -21,7 +21,8 @@ import (
 	"strings"
 )
 
-// Runs the process of creating GraphViz .dot file output.
+// GraphViz is the object to initialize the parameters to create GraphViz .dot
+// file output.
 type GraphViz struct {
 	out          io.Writer
 	dyndepLoader DyndepLoader
@@ -29,6 +30,7 @@ type GraphViz struct {
 	visitedEdges map[*Edge]struct{}
 }
 
+// NewGraphViz returns an initialized GraphViz.
 func NewGraphViz(state *State, di DiskInterface) GraphViz {
 	return GraphViz{
 		out:          os.Stdout,
@@ -38,6 +40,7 @@ func NewGraphViz(state *State, di DiskInterface) GraphViz {
 	}
 }
 
+// AddTarget adds a node to include in the graph.
 func (g *GraphViz) AddTarget(node *Node) {
 	if _, ok := g.visitedNodes[node]; ok {
 		return
@@ -89,6 +92,7 @@ func (g *GraphViz) AddTarget(node *Node) {
 	}
 }
 
+// Start prints out the header.
 func (g *GraphViz) Start() {
 	fmt.Fprintf(g.out, "digraph ninja {\n")
 	fmt.Fprintf(g.out, "rankdir=\"LR\"\n")
@@ -96,6 +100,7 @@ func (g *GraphViz) Start() {
 	fmt.Fprintf(g.out, "edge [fontsize=10]\n")
 }
 
+// Finish prints out the footer.
 func (g *GraphViz) Finish() {
 	fmt.Fprintf(g.out, "}\n")
 }
