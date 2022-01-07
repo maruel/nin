@@ -16,7 +16,7 @@ package nin
 
 import "errors"
 
-// Parses dyndep files.
+// DyndepParser parses dyndep files.
 type DyndepParser struct {
 	// Immutable.
 	fileReader FileReader
@@ -28,6 +28,7 @@ type DyndepParser struct {
 	env        *BindingEnv
 }
 
+// NewDyndepParser returns an initialized DyndepParser.
 func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile) *DyndepParser {
 	return &DyndepParser{
 		fileReader: fileReader,
@@ -142,7 +143,7 @@ func (d *DyndepParser) parseEdge() error {
 	if _, ok := d.dyndepFile[edge]; ok {
 		return d.lexer.Error("multiple statements for '" + path + "'")
 	}
-	dyndeps = NewDyndeps()
+	dyndeps = &Dyndeps{}
 	d.dyndepFile[edge] = dyndeps
 
 	// Disallow explicit outputs.

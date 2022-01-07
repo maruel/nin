@@ -26,6 +26,7 @@ import (
 	"unsafe"
 )
 
+// LogEntry is an entry in BuildLog.
 type LogEntry struct {
 	output      string
 	commandHash uint64
@@ -34,7 +35,7 @@ type LogEntry struct {
 	mtime       TimeStamp
 }
 
-// Used by tests.
+// Equal compares two LogEntry.
 func (l *LogEntry) Equal(r *LogEntry) bool {
 	return l.output == r.output && l.commandHash == r.commandHash &&
 		l.startTime == r.startTime && l.endTime == r.endTime &&
@@ -143,18 +144,21 @@ func HashCommand(command string) uint64 {
 
 //
 
-// Can answer questions about the manifest for the BuildLog.
+// BuildLogUser answers questions about the manifest for the BuildLog.
 type BuildLogUser interface {
 	IsPathDead(s string) bool
 }
 
-// Store a log of every command ran for every build.
+// BuildLog stores a log of every command ran for every build.
+//
 // It has a few uses:
 //
-// 1) (hashes of) command lines for existing output files, so we know
-//    when we need to rebuild due to the command changing
-// 2) timing information, perhaps for generating reports
-// 3) restat information
+// 1) (hashes of) command lines for existing output files, so we know when we
+// need to rebuild due to the command changing.
+//
+// 2) timing information, perhaps for generating reports.
+//
+// 3) restat information.
 type BuildLog struct {
 	Entries           map[string]*LogEntry
 	logFile           *os.File
@@ -165,6 +169,7 @@ type BuildLog struct {
 // Note: the C++ version uses ExternalStringHashMap<LogEntry*> for
 // BuildLog.entries.
 
+// NewBuildLog returns an initialized BuidLog.
 func NewBuildLog() BuildLog {
 	return BuildLog{Entries: map[string]*LogEntry{}}
 }
@@ -220,6 +225,7 @@ func (b *BuildLog) RecordCommand(edge *Edge, startTime, endTime int32, mtime Tim
 	return nil
 }
 
+// Close closes the file handle.
 func (b *BuildLog) Close() error {
 	err := b.openForWriteIfNeeded() // create the file even if nothing has been recorded
 	if b.logFile != nil {

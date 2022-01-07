@@ -32,7 +32,7 @@ type ManifestParserOptions struct {
 	Quiet bool
 }
 
-// Parses .ninja files.
+// ManifestParser parses .ninja files.
 type ManifestParser struct {
 	// Immutable
 	fileReader FileReader
@@ -46,6 +46,7 @@ type ManifestParser struct {
 	subninjasEnqueued int32
 }
 
+// NewManifestParser returns an initialized ManifestParser.
 func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
 	return &ManifestParser{
 		fileReader: fileReader,

@@ -19,6 +19,7 @@ import (
 	"os"
 )
 
+// Cleaner cleans a build directory.
 type Cleaner struct {
 	state             *State
 	config            *BuildConfig
@@ -30,6 +31,7 @@ type Cleaner struct {
 	status            int
 }
 
+// NewCleaner returns an initialized cleaner.
 func NewCleaner(state *State, config *BuildConfig, di DiskInterface) *Cleaner {
 	return &Cleaner{
 		state:        state,
@@ -113,9 +115,11 @@ func (c *Cleaner) printFooter() {
 	fmt.Printf("%d files.\n", c.cleanedFilesCount)
 }
 
-// Clean all built files, except for files created by generator rules.
-// @param generator If set, also clean files created by generator rules.
-// @return non-zero if an error occurs.
+// CleanAll cleans all built files, except for files created by generator rules.
+//
+// If generator is set, also clean files created by generator rules.
+//
+// Return non-zero if an error occurs.
 func (c *Cleaner) CleanAll(generator bool) int {
 	c.Reset()
 	c.printHeader()
@@ -139,9 +143,10 @@ func (c *Cleaner) CleanAll(generator bool) int {
 	return c.status
 }
 
-// Clean the files produced by previous builds that are no longer in the
-// manifest.
-// @return non-zero if an error occurs.
+// CleanDead cleans the files produced by previous builds that are no longer in
+// the manifest.
+//
+// Returns non-zero if an error occurs.
 func (c *Cleaner) CleanDead(entries map[string]*LogEntry) int {
 	c.Reset()
 	c.printHeader()
@@ -221,8 +226,9 @@ func (c *Cleaner) cleanTarget(target string) int {
 	return c.status
 }
 
-// Clean the given target @a targets.
-// @return non-zero if an error occurs.
+// CleanTargets cleans the given target targets.
+//
+// Return non-zero if an error occurs.
 func (c *Cleaner) CleanTargets(targets []string) int {
 	// TODO(maruel): Not unit tested.
 	c.Reset()
@@ -265,10 +271,9 @@ func (c *Cleaner) doCleanRule(rule *Rule) {
 	}
 }
 
-// Clean the file produced by the given @a rule.
-// @return non-zero if an error occurs.
-// Clean all the file built with the given rule @a rule.
-// @return non-zero if an error occurs.
+// CleanRule cleans the file produced by the given rule.
+//
+// Returns non-zero if an error occurs.
 func (c *Cleaner) CleanRule(rule *Rule) int {
 	c.Reset()
 	c.printHeader()
@@ -278,10 +283,9 @@ func (c *Cleaner) CleanRule(rule *Rule) int {
 	return c.status
 }
 
-// Clean the file produced by the given @a rule.
-// @return non-zero if an error occurs.
-// Clean all the file built with the given rule @a rule.
-// @return non-zero if an error occurs.
+// CleanRuleName cleans the file produced by the given rule.
+//
+// Returns non-zero if an error occurs.
 func (c *Cleaner) CleanRuleName(rule string) int {
 	if rule == "" {
 		panic("oops")
@@ -298,8 +302,9 @@ func (c *Cleaner) CleanRuleName(rule string) int {
 	return c.status
 }
 
-// Clean the file produced by the given @a rules.
-// @return non-zero if an error occurs.
+// CleanRules cleans the file produced by the given rules.
+//
+// Returns non-zero if an error occurs.
 func (c *Cleaner) CleanRules(rules []string) int {
 	// TODO(maruel): Not unit tested.
 	if len(rules) == 0 {
@@ -325,6 +330,7 @@ func (c *Cleaner) CleanRules(rules []string) int {
 	return c.status
 }
 
+// Reset reinitializes the cleaner stats.
 func (c *Cleaner) Reset() {
 	c.status = 0
 	c.cleanedFilesCount = 0

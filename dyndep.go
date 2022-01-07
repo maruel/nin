@@ -19,16 +19,12 @@ import (
 	"fmt"
 )
 
-// Store dynamically-discovered dependency information for one edge.
+// Dyndeps stores dynamically-discovered dependency information for one edge.
 type Dyndeps struct {
 	used            bool
 	restat          bool
 	implicitInputs  []*Node
 	implicitOutputs []*Node
-}
-
-func NewDyndeps() *Dyndeps {
-	return &Dyndeps{}
 }
 
 func (d *Dyndeps) String() string {
@@ -49,10 +45,9 @@ func (d *Dyndeps) String() string {
 	return out + "}"
 }
 
-// Store data loaded from one dyndep file.  Map from an edge
-// to its dynamically-discovered dependency information.
-// This is a struct rather than a typedef so that we can
-// forward-declare it in other headers.
+// DyndepFile stores data loaded from one dyndep file.
+//
+// Map from an edge to its dynamically-discovered dependency information.
 type DyndepFile map[*Edge]*Dyndeps
 
 // DyndepLoader loads dynamically discovered dependencies, as
@@ -62,6 +57,7 @@ type DyndepLoader struct {
 	di    DiskInterface
 }
 
+// NewDyndepLoader returns an initialized DyndepLoader.
 func NewDyndepLoader(state *State, di DiskInterface) DyndepLoader {
 	return DyndepLoader{
 		state: state,

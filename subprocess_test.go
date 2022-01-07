@@ -28,7 +28,7 @@ func testCommand() string {
 	return "ls /"
 }
 
-func NewSubprocessSetTest(t *testing.T) *subprocessSet {
+func newSubprocessSetTest(t *testing.T) *subprocessSet {
 	s := newSubprocessSet()
 	t.Cleanup(s.Clear)
 	return s
@@ -36,7 +36,7 @@ func NewSubprocessSetTest(t *testing.T) *subprocessSet {
 
 // Run a command that fails and emits to stderr.
 func TestSubprocessTest_BadCommandStderr(t *testing.T) {
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	cmd := "bash -c foo"
 	if runtime.GOOS == "windows" {
 		cmd = "cmd /c ninja_no_such_command"
@@ -66,7 +66,7 @@ func TestSubprocessTest_BadCommandStderr(t *testing.T) {
 
 // Run a command that does not exist
 func TestSubprocessTest_NoSuchCommand(t *testing.T) {
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("ninja_no_such_command", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -102,7 +102,7 @@ func TestSubprocessTest_InterruptChild(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("kill -INT $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -123,7 +123,7 @@ func TestSubprocessTest_InterruptParent(t *testing.T) {
 		t.Skip("can't run on Windows")
 	}
 	t.Skip("TODO")
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	c := make(chan os.Signal, 1)
 	go func() {
 		<-c
@@ -149,7 +149,7 @@ func TestSubprocessTest_InterruptChildWithSigTerm(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("kill -TERM $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -170,7 +170,7 @@ func TestSubprocessTest_InterruptParentWithSigTerm(t *testing.T) {
 		t.Skip("can't run on Windows")
 	}
 	t.Skip("TODO")
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("kill -TERM $PPID ; sleep 1", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -189,7 +189,7 @@ func TestSubprocessTest_InterruptChildWithSigHup(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("kill -HUP $$", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -210,7 +210,7 @@ func TestSubprocessTest_InterruptParentWithSigHup(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("can't run on Windows")
 	}
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("kill -HUP $PPID ; sleep 1", false)
 	if nil == subproc {
 		t.Fatal("expected different")
@@ -237,7 +237,7 @@ func TestSubprocessTest_Console(t *testing.T) {
 			t.Skip("need a real console to run this test")
 		}
 	*/
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	// useConsole = true
 	subproc := subprocs.Add("test -t 0 -a -t 1 -a -t 2", true)
 	if nil == subproc {
@@ -254,7 +254,7 @@ func TestSubprocessTest_Console(t *testing.T) {
 }
 
 func TestSubprocessTest_SetWithSingle(t *testing.T) {
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add(testCommand(), false)
 	if subproc == nil {
 		t.Fatal("expected different")
@@ -284,7 +284,7 @@ func TestSubprocessTest_SetWithMulti(t *testing.T) {
 		commands = append(commands, "id -u", "pwd")
 	}
 
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	for i := 0; i < 3; i++ {
 		processes[i] = subprocs.Add(commands[i], false)
 		if processes[i] == nil {
@@ -342,7 +342,7 @@ func TestSubprocessTest_SetWithLots(t *testing.T) {
 	subprocessTestFixUlimit(t, numProcs)
 	cmd := "/bin/echo"
 
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	var procs []*subprocess
 	for i := 0; i < numProcs; i++ {
 		subproc := subprocs.Add(cmd, false)
@@ -375,7 +375,7 @@ func TestSubprocessTest_ReadStdin(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Has to be ported")
 	}
-	subprocs := NewSubprocessSetTest(t)
+	subprocs := newSubprocessSetTest(t)
 	subproc := subprocs.Add("cat -", false)
 	for !subproc.Done() {
 		subprocs.DoWork()

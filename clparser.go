@@ -19,14 +19,16 @@ import (
 	"strings"
 )
 
-// Visual Studio's cl.exe requires some massaging to work with Ninja;
-// for example, it emits include information on stderr in a funny
-// format when building with /showIncludes.  This class parses this
-// output.
+// CLParser parses Visual Studio's cl.exe dependency output.
+//
+// It requires some massaging to work with Ninja; for example, it emits include
+// information on stderr in a funny format when building with /showIncludes.
+// This class parses this output.
 type CLParser struct {
 	includes map[string]struct{}
 }
 
+// NewCLParser returns an initialized CLParser.
 func NewCLParser() CLParser {
 	return CLParser{includes: map[string]struct{}{}}
 }
