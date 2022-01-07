@@ -446,7 +446,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser) error {
 		return err
 	}
 
-	if _, err := fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err != nil {
+	if _, err = fmt.Fprintf(f, buildLogFileSignature, buildLogCurrentVersion); err != nil {
 		_ = f.Close()
 		return err
 	}
@@ -459,7 +459,7 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser) error {
 			continue
 		}
 
-		if err := entry.Serialize(f); err != nil {
+		if err = entry.Serialize(f); err != nil {
 			_ = f.Close()
 			return err
 		}
@@ -470,11 +470,11 @@ func (b *BuildLog) Recompact(path string, user BuildLogUser) error {
 	}
 
 	_ = f.Close()
-	if err := os.Remove(path); err != nil {
+	if err = os.Remove(path); err != nil {
 		return err
 	}
 
-	if err := os.Rename(tempPath, path); err != nil {
+	if err = os.Rename(tempPath, path); err != nil {
 		return err
 	}
 	return err
