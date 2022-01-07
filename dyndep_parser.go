@@ -48,7 +48,7 @@ func (d *DyndepParser) expectToken(expected Token, err *string) bool {
 }
 
 // Parse a file, given its contents as a string.
-func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
+func (d *DyndepParser) Parse(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
 	d.lexer.Start(filename, input)
 
@@ -61,36 +61,30 @@ func (d *DyndepParser) Parse(filename string, input []byte, err *string) bool {
 		switch token {
 		case BUILD:
 			if !haveDyndepVersion {
-				*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
-				return false
+				return d.lexer.Error("expected 'ninja_dyndep_version = ...'")
 			}
-			if err2 := d.parseEdge(); err2 != nil {
-				*err = err2.Error()
-				return false
+			if err := d.parseEdge(); err != nil {
+				return err
 			}
 		case IDENT:
 			d.lexer.UnreadToken()
 			if haveDyndepVersion {
-				*err = d.lexer.Error("unexpected " + token.String()).Error()
-				return false
+				return d.lexer.Error("unexpected " + token.String())
 			}
-			if err2 := d.parseDyndepVersion(); err2 != nil {
-				*err = err2.Error()
-				return false
+			if err := d.parseDyndepVersion(); err != nil {
+				return err
 			}
 			haveDyndepVersion = true
 		case ERROR:
-			*err = d.lexer.Error(d.lexer.DescribeLastError()).Error()
+			return d.lexer.Error(d.lexer.DescribeLastError())
 		case TEOF:
 			if !haveDyndepVersion {
-				*err = d.lexer.Error("expected 'ninja_dyndep_version = ...'").Error()
-				return false
+				return d.lexer.Error("expected 'ninja_dyndep_version = ...'")
 			}
-			return true
+			return nil
 		case NEWLINE:
 		default:
-			*err = d.lexer.Error("unexpected " + token.String()).Error()
-			return false
+			return d.lexer.Error("unexpected " + token.String())
 		}
 	}
 }

@@ -160,5 +160,9 @@ func (d *DyndepLoader) loadDyndepFile(file *Node, ddf DyndepFile, err *string) b
 		*err = "loading '" + file.Path + "': " + err2.Error()
 		return false
 	}
-	return parser.Parse(file.Path, contents, err)
+	if err2 := parser.Parse(file.Path, contents); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
+	return true
 }

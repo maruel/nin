@@ -60,7 +60,11 @@ func (d *DyndepParserTest) AssertParse(input string) {
 
 // parseText parses a text string of input. Only used in tests.
 func (d *DyndepParser) parseTest(input string, err *string) bool {
-	return d.Parse("input", []byte(input+"\x00"), err)
+	if err2 := d.Parse("input", []byte(input+"\x00")); err2 != nil {
+		*err = err2.Error()
+		return false
+	}
+	return true
 }
 
 func TestDyndepParserTest_Empty(t *testing.T) {
