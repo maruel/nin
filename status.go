@@ -17,7 +17,7 @@ package nin
 // TODO(maruel): Create a Status (or LinePrinter?) for test cases that
 // redirect to testing.T.Log().
 
-// Abstract interface to object that tracks the status of a build:
+// Status is the interface that tracks the status of a build:
 // completion fraction, printing updates.
 type Status interface {
 	PlanHasTotalEdges(total int)

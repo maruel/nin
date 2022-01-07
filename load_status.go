@@ -14,8 +14,10 @@
 
 package nin
 
+// LoadStatus is the return code when loading a build log or a deps log.
 type LoadStatus int32
 
+// Valid LoadStatus values.
 const (
 	LoadError LoadStatus = iota
 	LoadSuccess

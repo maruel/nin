@@ -546,11 +546,13 @@ func (d *DependencyScan) depsLog() *DepsLog {
 	return d.depLoader.depsLog
 }
 
-// Update the |dirty| state of the given node by transitively inspecting their
-// input edges.
+// RecomputeDirty update the |dirty| state of the given Node by transitively
+// inspecting their input edges.
+//
 // Examine inputs, outputs, and command lines to judge whether an edge
 // needs to be re-run, and update OutputsReady and each outputs' Dirty
 // state accordingly.
+//
 // Appends any validation nodes found to the nodes parameter.
 // Returns false on failure.
 func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*Node, err *string) bool {

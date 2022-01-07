@@ -21,8 +21,9 @@ import (
 	"strings"
 )
 
-// The version number of the current Ninja release.  This will always
-// be "git" on trunk.
+// NinjaVersion is the version number of the current Ninja release.
+//
+// This will always be "git" on trunk.
 //
 // TODO(maruel): Figure out our versioning convention.
 const NinjaVersion = "1.10.2.git"

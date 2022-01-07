@@ -28,17 +28,18 @@ const (
 	edgeSucceeded edgeResult = true
 )
 
-// Enumerate possible steps we want for an edge.
+// Want enumerates possible steps we want for an edge.
 type Want int32
 
 const (
-	// We do not want to build the edge, but we might want to build one of
-	// its dependents.
+	// WantNothing means we do not want to build the edge, but we might want to
+	// build one of its dependents.
 	WantNothing Want = iota
-	// We want to build the edge, but have not yet scheduled it.
+	// WantToStart means we want to build the edge, but have not yet scheduled
+	// it.
 	WantToStart
-	// We want to build the edge, have scheduled it, and are waiting
-	// for it to complete.
+	// WantToFinish means we want to build the edge, have scheduled it, and are
+	// waiting for it to complete.
 	WantToFinish
 )
 
@@ -77,6 +78,7 @@ type BuildConfig struct {
 	MaxLoadAvg float64
 }
 
+// NewBuildConfig returns the default build configuration.
 func NewBuildConfig() BuildConfig {
 	return BuildConfig{
 		Verbosity:       Normal,
@@ -85,12 +87,17 @@ func NewBuildConfig() BuildConfig {
 	}
 }
 
+// Verbosity controls the verbosity of the status updates.
 type Verbosity int32
 
 const (
-	Quiet          Verbosity = iota // No output -- used when testing.
-	NoStatusUpdate                  // just regular output but suppress status update
-	Normal                          // regular output and status update
+	// Quiet means no output -- used when testing.
+	Quiet Verbosity = iota
+	// NoStatusUpdate means just regular output but suppress status update.
+	NoStatusUpdate
+	// Normal provides regular output and status update.
+	Normal
+	// Verbose prints out commands executed.
 	Verbose
 )
 
@@ -659,6 +666,7 @@ type Builder struct {
 	scan DependencyScan
 }
 
+// NewBuilder returns an initialized Builder.
 func NewBuilder(state *State, config *BuildConfig, buildLog *BuildLog, depsLog *DepsLog, di DiskInterface, status Status, startTimeMillis int64) *Builder {
 	b := &Builder{
 		state:           state,
@@ -708,8 +716,9 @@ func (b *Builder) cleanup() {
 	}
 }
 
-// Add a target to the build, scanning dependencies.
-// @return false on error.
+// addTargetName adds a target to the build, scanning dependencies.
+//
+// Returns false on error.
 func (b *Builder) addTargetName(name string, err *string) *Node {
 	node := b.state.Paths[name]
 	if node == nil {
@@ -722,8 +731,9 @@ func (b *Builder) addTargetName(name string, err *string) *Node {
 	return node
 }
 
-// Add a target to the build, scanning dependencies.
-// @return false on error.
+// AddTarget adds a target to the build, scanning dependencies.
+//
+// Returns false on error.
 func (b *Builder) AddTarget(target *Node, err *string) bool {
 	var validationNodes []*Node
 	if !b.scan.RecomputeDirty(target, &validationNodes, err) {
@@ -750,12 +760,12 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	return true
 }
 
-// Returns true if the build targets are already up to date.
+// AlreadyUpToDate returns true if the build targets are already up to date.
 func (b *Builder) AlreadyUpToDate() bool {
 	return !b.plan.moreToDo()
 }
 
-// Run the build.
+// Build runs the build.
 //
 // It is an error to call this function when AlreadyUpToDate() is true.
 func (b *Builder) Build() error {

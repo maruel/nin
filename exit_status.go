@@ -14,8 +14,10 @@
 
 package nin
 
+// ExitStatus is well known process exit code.
 type ExitStatus = int
 
+// Well know process exit codes.
 const (
 	ExitSuccess ExitStatus = iota
 	ExitFailure

@@ -14,6 +14,8 @@
 
 package nin
 
+// TimeStamp is the timestamp of a file.
+//
 // When considering file modification times we only care to compare
 // them against one another -- we never convert them to an absolute
 // real time.  On POSIX we use timespec (seconds&nanoseconds since epoch)

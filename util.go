@@ -60,7 +60,7 @@ func isPathSeparator(c byte) bool {
 	return c == '/' || c == '\\'
 }
 
-// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+// CanonicalizePath canonicalizes a path like "foo/../bar.h" into just "bar.h".
 func CanonicalizePath(path string) string {
 	// TODO(maruel): Call site should be the lexers, so that it's done as a
 	// single pass.
@@ -168,7 +168,8 @@ func CanonicalizePath(path string) string {
 	return unsafeString(p)
 }
 
-// Canonicalize a path like "foo/../bar.h" into just "bar.h".
+// CanonicalizePathBits canonicalizes a path like "foo/../bar.h" into just
+// "bar.h".
 //
 // Returns a bits set starting from lowest for a backslash that was
 // normalized to a forward slash. (only used on Windows)
@@ -411,8 +412,10 @@ func ReadFile(path string, contents *string, err *string) int {
 }
 */
 
-// Given a misspelled string and a list of correct spellings, returns
-// the closest match or "" if there is no close enough match.
+// SpellcheckString provides the closest match to a misspelled string, given a
+// list of correct spellings.
+//
+// Returns "" if there is no close enough match.
 func SpellcheckString(text string, words ...string) string {
 	const maxValidEditDistance = 3
 

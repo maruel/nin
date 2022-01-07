@@ -42,6 +42,7 @@ type Pool struct {
 // Note about Pool.delayed: The C++ code checks for Edge.weight() before
 // checking for the id. In practice weight is hardcoded to 1!
 
+// NewPool returns an initialized Pool.
 func NewPool(name string, depth int) *Pool {
 	return &Pool{
 		Name:    name,
@@ -113,6 +114,7 @@ func (p *Pool) Dump() {
 	}
 }
 
+// Well known default pools and rules.
 var (
 	DefaultPool = NewPool("", 0)
 	ConsolePool = NewPool("console", 1)
@@ -121,7 +123,7 @@ var (
 
 //
 
-// Global state (file status) for a single run.
+// State is the global state (file status) for a single run.
 type State struct {
 	// Mapping of path -> Node.
 	Paths map[string]*Node

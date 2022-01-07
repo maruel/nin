@@ -97,8 +97,10 @@ func (m *MetricsCollection) Report() {
 	}
 }
 
-// Get the current time as relative to some epoch.
+// GetTimeMillis gets the current time as relative to some epoch.
+//
 // Epoch varies between platforms; only useful for measuring elapsed time.
 func GetTimeMillis() int64 {
+	// TODO(maruel): Standardize on time.Time.
 	return time.Now().UnixMilli()
 }
