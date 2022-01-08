@@ -58,6 +58,7 @@ func (c *Cleaner) fileExists(path string) bool {
 }
 
 func (c *Cleaner) report(path string) {
+	// TODO(maruel): Move this out to the caller.
 	c.cleanedFilesCount++
 	if c.isVerbose() {
 		fmt.Printf("Remove %s\n", path)

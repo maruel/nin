@@ -14,8 +14,6 @@
 
 package nin
 
-import "errors"
-
 // DyndepParser parses dyndep files.
 type DyndepParser struct {
 	// Immutable.
@@ -39,13 +37,11 @@ func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile)
 
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
-func (d *DyndepParser) expectToken(expected Token, err *string) bool {
+func (d *DyndepParser) expectToken(expected Token) error {
 	if token := d.lexer.ReadToken(); token != expected {
-		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
-		*err = d.lexer.Error(msg).Error()
-		return false
+		return d.lexer.Error("expected " + expected.String() + ", got " + token.String() + expected.errorHint())
 	}
-	return true
+	return nil
 }
 
 // Parse a file, given its contents as a string.
@@ -108,14 +104,13 @@ func (d *DyndepParser) parseDyndepVersion() error {
 
 func (d *DyndepParser) parseLet() (string, EvalString, error) {
 	key := d.lexer.readIdent()
+	eval := EvalString{}
+	var err error
 	if key == "" {
-		return "", EvalString{}, d.lexer.Error("expected variable name")
+		err = d.lexer.Error("expected variable name")
+	} else if err = d.expectToken(EQUALS); err == nil {
+		eval, err = d.lexer.readEvalString(false)
 	}
-	err2 := ""
-	if !d.expectToken(EQUALS, &err2) {
-		return "", EvalString{}, errors.New(err2)
-	}
-	eval, err := d.lexer.readEvalString(false)
 	return key, eval, err
 }
 
@@ -170,9 +165,8 @@ func (d *DyndepParser) parseEdge() error {
 		}
 	}
 
-	err2 := ""
-	if !d.expectToken(COLON, &err2) {
-		return errors.New(err2)
+	if err = d.expectToken(COLON); err != nil {
+		return err
 	}
 
 	if ruleName := d.lexer.readIdent(); ruleName == "" || ruleName != "dyndep" {
@@ -208,8 +202,8 @@ func (d *DyndepParser) parseEdge() error {
 		return d.lexer.Error("order-only inputs not supported")
 	}
 
-	if !d.expectToken(NEWLINE, &err2) {
-		return errors.New(err2)
+	if err = d.expectToken(NEWLINE); err != nil {
+		return err
 	}
 
 	if d.lexer.PeekToken(INDENT) {
