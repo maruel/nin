@@ -1009,9 +1009,8 @@ func (b *Builder) finishCommand(result *Result) error {
 	// Delete any left over response file.
 	rspfile := edge.GetUnescapedRspfile()
 	if rspfile != "" && !Debug.KeepRsp {
-		if err := b.di.RemoveFile(rspfile); err != nil {
-			// Ignore the error for now.
-		}
+		// Ignore the error for now.
+		_ = b.di.RemoveFile(rspfile)
 	}
 
 	if b.scan.buildLog != nil {
