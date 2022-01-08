@@ -46,6 +46,7 @@ func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
 // Short way to get a Node by its path from state.
 func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 	if strings.ContainsAny(path, "/\\") {
+		s.t.Helper()
 		s.t.Fatal(path)
 	}
 	return s.state.GetNode(path, 0)
@@ -56,6 +57,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
 	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
+		s.t.Helper()
 		s.t.Fatal(err)
 	}
 	verifyGraph(s.t, state)
@@ -63,6 +65,7 @@ func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts
 
 func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 	if HashCommand(expected) != actual {
+		s.t.Helper()
 		s.t.Fatalf("want %08x; got %08x", expected, actual)
 	}
 }

@@ -41,6 +41,7 @@ func NewParserTest(t *testing.T) ParserTest {
 
 func (p *ParserTest) assertParse(input string) {
 	if err := p.parseTest(input, ManifestParserOptions{Quiet: true}); err != nil {
+		p.t.Helper()
 		p.t.Fatal(err)
 	}
 	verifyGraph(p.t, &p.state)
@@ -604,6 +605,22 @@ func TestParserTest_Errors(t *testing.T) {
 			"rule run\n  command = echo\n  pool = unnamed_pool\nbuild out: run in\n",
 			"input:5: unknown pool name 'unnamed_pool'\n",
 		},
+		// New test not in C++.
+		{
+			// MissingIncluded
+			"include missing.ninja\n",
+			"input:1: loading 'missing.ninja': file does not exist\ninclude missing.ninja\n                     ^ near here",
+		},
+		{
+			// MissingSubninja
+			"subninja missing.ninja\n",
+			"input:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here",
+		},
+		{
+			// DyndepNotInput
+			"rule touch\n  command = touch $out\nbuild result: touch\n  dyndep = notin\n",
+			"input:5: dyndep 'notin' is not an input\n",
+		},
 	}
 	for i, line := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -617,34 +634,14 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 }
 
-// New test not in C++.
-func TestParserTest_MissingIncluded(t *testing.T) {
-	p := NewParserTest(t)
-	localState := NewState()
-	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
-	if err := parser.Parse("build.ninja", []byte("include missing.ninja\n\x00")); err == nil {
-		t.Fatal("expected false")
-	} else if err.Error() != "build.ninja:1: loading 'missing.ninja': file does not exist\ninclude missing.ninja\n                     ^ near here" {
-		t.Fatalf("%q", err)
-	}
-}
-
-// New test not in C++.
-func TestParserTest_MissingSubninja(t *testing.T) {
-	p := NewParserTest(t)
-	if err := p.parseTest("subninja missing.ninja\n", ManifestParserOptions{}); err == nil {
-		t.Fatal("expected false")
-	} else if err.Error() != "input:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
-		t.Fatalf("%q", err)
-	}
-}
-
 func TestParserTest_MultipleOutputs(t *testing.T) {
+	// The original C++ test uses a local state, not clear why.
 	p := NewParserTest(t)
 	p.assertParse("rule cc\n  command = foo\n  depfile = bar\nbuild a.o b.o: cc c.cc\n")
 }
 
 func TestParserTest_MultipleOutputsWithDeps(t *testing.T) {
+	// The original C++ test uses a local state, not clear why.
 	p := NewParserTest(t)
 	p.assertParse("rule cc\n  command = foo\n  deps = gcc\nbuild a.o b.o: cc c.cc\n")
 }
@@ -681,15 +678,6 @@ func TestParserTest_SubNinja(t *testing.T) {
 	}
 	if got := p.state.Edges[2].EvaluateCommand(false); got != "varref inner" {
 		t.Fatal(got)
-	}
-}
-
-func TestParserTest_MissingSubNinja(t *testing.T) {
-	p := NewParserTest(t)
-	if err := p.parseTest("subninja foo.ninja\n", ManifestParserOptions{}); err == nil {
-		t.Fatal("expected false")
-	} else if err.Error() != "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here" {
-		t.Fatal(err)
 	}
 }
 
@@ -917,15 +905,6 @@ func TestParserTest_DyndepNotSpecified(t *testing.T) {
 	}
 }
 
-func TestParserTest_DyndepNotInput(t *testing.T) {
-	p := NewParserTest(t)
-	if err := p.parseTest("rule touch\n  command = touch $out\nbuild result: touch\n  dyndep = notin\n", ManifestParserOptions{}); err == nil {
-		t.Fatal("expected false")
-	} else if err.Error() != "input:5: dyndep 'notin' is not an input\n" {
-		t.Fatal(err)
-	}
-}
-
 func TestParserTest_DyndepExplicitInput(t *testing.T) {
 	p := NewParserTest(t)
 	p.assertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n  dyndep = in\n")
@@ -1013,16 +992,17 @@ func BenchmarkLoadManifest(b *testing.B) {
 		}
 	})
 	di := RealDiskInterface{}
+	// Don't benchmark the initial file read.
+	contents, err := di.ReadFile("build.ninja")
+	if err != nil {
+		b.Fatal(err)
+	}
 	optimizationGuard := 0
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state := NewState()
 		parser := NewManifestParser(&state, &di, ManifestParserOptions{})
-		contents, err := parser.fileReader.ReadFile("build.ninja")
-		if err != nil {
-			b.Fatal(err)
-		}
 		if err = parser.Parse("build.ninja", contents); err != nil {
 			b.Fatal("Failed to read test data: ", err)
 		}
