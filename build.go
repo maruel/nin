@@ -904,7 +904,7 @@ func (b *Builder) startEdge(edge *Edge) error {
 	// start command computing and run it
 	if !b.commandRunner.StartCommand(edge) {
 		// TODO(maruel): Use %q for real quoting.
-		return fmt.Errorf("command '%s' failed.", edge.EvaluateCommand(len(rspfile) != 0))
+		return fmt.Errorf("command '%s' failed", edge.EvaluateCommand(len(rspfile) != 0))
 	}
 	return nil
 }
