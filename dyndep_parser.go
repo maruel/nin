@@ -14,6 +14,8 @@
 
 package nin
 
+import "fmt"
+
 // dyndepParser parses dyndep files.
 type dyndepParser struct {
 	// Mutable.
@@ -132,11 +134,13 @@ func (d *dyndepParser) parseEdge() error {
 	path = CanonicalizePath(path)
 	node := d.state.Paths[path]
 	if node == nil || node.InEdge == nil {
-		return d.lexer.Error("no build statement exists for '" + path + "'")
+		// TODO(maruel): Use %q for real quoting.
+		return d.lexer.Error(fmt.Sprintf("no build statement exists for '%s'", path))
 	}
 	edge := node.InEdge
 	if _, ok := d.dyndepFile[edge]; ok {
-		return d.lexer.Error("multiple statements for '" + path + "'")
+		// TODO(maruel): Use %q for real quoting.
+		return d.lexer.Error(fmt.Sprintf("multiple statements for '%s'", path))
 	}
 	dyndeps = &Dyndeps{}
 	d.dyndepFile[edge] = dyndeps

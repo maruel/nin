@@ -90,7 +90,8 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile) error {
 
 		ddi, ok := ddf[edge]
 		if !ok {
-			return errors.New("'" + edge.Outputs[0].Path + "' not mentioned in its dyndep file '" + node.Path + "'")
+			// TODO(maruel): Use %q for real quoting.
+			return fmt.Errorf("'%s' not mentioned in its dyndep file '%s'", edge.Outputs[0].Path, node.Path)
 		}
 
 		ddi.used = true
@@ -103,7 +104,8 @@ func (d *DyndepLoader) LoadDyndeps(node *Node, ddf DyndepFile) error {
 	// Reject extra outputs in dyndep file.
 	for edge, oe := range ddf {
 		if !oe.used {
-			return errors.New("dyndep file '" + node.Path + "' mentions output '" + edge.Outputs[0].Path + "' whose build statement does not have a dyndep binding for the file")
+			// TODO(maruel): Use %q for real quoting.
+			return fmt.Errorf("dyndep file '%s' mentions output '%s' whose build statement does not have a dyndep binding for the file", node.Path, edge.Outputs[0].Path)
 		}
 	}
 	return nil

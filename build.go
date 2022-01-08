@@ -257,9 +257,11 @@ func (p *plan) addSubTarget(node *Node, dependent *Node, err *string, dyndepWalk
 		if node.Dirty {
 			referenced := ""
 			if dependent != nil {
-				referenced = ", needed by '" + dependent.Path + "',"
+				// TODO(maruel): Use %q for real quoting.
+				referenced = fmt.Sprintf(", needed by '%s',", dependent.Path)
 			}
-			*err = "'" + node.Path + "'" + referenced + " missing and no known rule to make it"
+			// TODO(maruel): Use %q for real quoting.
+			*err = fmt.Sprintf("'%s'%s missing and no known rule to make it", node.Path, referenced)
 		}
 		return false
 	}
@@ -722,7 +724,8 @@ func (b *Builder) cleanup() {
 func (b *Builder) addTargetName(name string, err *string) *Node {
 	node := b.state.Paths[name]
 	if node == nil {
-		*err = "unknown target: '" + name + "'"
+		// TODO(maruel): Use %q for real quoting.
+		*err = fmt.Sprintf("unknown target: '%s'", name)
 		return nil
 	}
 	if !b.AddTarget(node, err) {
@@ -899,7 +902,8 @@ func (b *Builder) startEge(edge *Edge, err *string) bool {
 
 	// start command computing and run it
 	if !b.commandRunner.StartCommand(edge) {
-		*err = "command '" + edge.EvaluateCommand(len(rspfile) != 0) + "' failed."
+		// TODO(maruel): Use %q for real quoting.
+		*err = fmt.Sprintf("command '%s' failed.", edge.EvaluateCommand(len(rspfile) != 0))
 		return false
 	}
 	return true

@@ -124,7 +124,8 @@ func (m *manifestParser) parsePool() error {
 	}
 
 	if m.state.Pools[name] != nil {
-		return m.lexer.Error("duplicate pool '" + name + "'")
+		// TODO(maruel): Use %q for real quoting.
+		return m.lexer.Error(fmt.Sprintf("duplicate pool '%s'", name))
 	}
 
 	depth := -1
@@ -135,7 +136,8 @@ func (m *manifestParser) parsePool() error {
 			return err
 		}
 		if key != "depth" {
-			return m.lexer.Error("unexpected variable '" + key + "'")
+			// TODO(maruel): Use %q for real quoting.
+			return m.lexer.Error(fmt.Sprintf("unexpected variable '%s'", key))
 		}
 		// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
 		if depth, err = strconv.Atoi(value.Evaluate(m.env)); depth < 0 || err != nil {
@@ -162,7 +164,8 @@ func (m *manifestParser) parseRule() error {
 	}
 
 	if m.env.Rules[name] != nil {
-		return m.lexer.Error("duplicate rule '" + name + "'")
+		// TODO(maruel): Use %q for real quoting.
+		return m.lexer.Error(fmt.Sprintf("duplicate rule '%s'", name))
 	}
 
 	rule := NewRule(name)
@@ -175,7 +178,8 @@ func (m *manifestParser) parseRule() error {
 		if !IsReservedBinding(key) {
 			// Die on other keyvals for now; revisit if we want to add a
 			// scope here.
-			return m.lexer.Error("unexpected variable '" + key + "'")
+			// TODO(maruel): Use %q for real quoting.
+			return m.lexer.Error(fmt.Sprintf("unexpected variable '%s'", key))
 		}
 		rule.Bindings[key] = &value
 	}
@@ -288,7 +292,8 @@ func (m *manifestParser) parseEdge() error {
 
 	rule := m.env.LookupRule(ruleName)
 	if rule == nil {
-		return m.lexer.Error("unknown build rule '" + ruleName + "'")
+		// TODO(maruel): Use %q for real quoting.
+		return m.lexer.Error(fmt.Sprintf("unknown build rule '%s'", ruleName))
 	}
 
 	var ins []EvalString
@@ -378,7 +383,8 @@ func (m *manifestParser) parseEdge() error {
 	if poolName != "" {
 		pool := m.state.Pools[poolName]
 		if pool == nil {
-			return m.lexer.Error("unknown pool name '" + poolName + "'")
+			// TODO(maruel): Use %q for real quoting.
+			return m.lexer.Error(fmt.Sprintf("unknown pool name '%s'", poolName))
 		}
 		edge.Pool = pool
 	}
@@ -466,7 +472,8 @@ func (m *manifestParser) parseEdge() error {
 			}
 		}
 		if !found {
-			return m.lexer.Error("dyndep '" + dyndep + "' is not an input")
+			// TODO(maruel): Use %q for real quoting.
+			return m.lexer.Error(fmt.Sprintf("dyndep '%s' is not an input", dyndep))
 		}
 	}
 	return nil

@@ -217,7 +217,8 @@ func (s *State) addValidation(edge *Edge, path string, slashBits uint64) {
 func (s *State) addDefault(path string, err *string) bool {
 	node := s.Paths[path]
 	if node == nil {
-		*err = "unknown target '" + path + "'"
+		// TODO(maruel): Use %q for real quoting.
+		*err = fmt.Sprintf("unknown target '%s'", path)
 		return false
 	}
 	s.Defaults = append(s.Defaults, node)

@@ -232,7 +232,8 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 			if len(node.OutEdges) == 0 {
 				revDeps := n.depsLog.GetFirstReverseDepsNode(node)
 				if revDeps == nil {
-					*err = "'" + path + "' has no out edge"
+					// TODO(maruel): Use %q for real quoting.
+					*err = fmt.Sprintf("'%s' has no out edge", path)
 					return nil
 				}
 				node = revDeps
@@ -247,7 +248,8 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 		}
 		return node
 	}
-	*err = "unknown target '" + nin.PathDecanonicalized(path, slashBits) + "'"
+	// TODO(maruel): Use %q for real quoting.
+	*err = fmt.Sprintf("unknown target '%s'", nin.PathDecanonicalized(path, slashBits))
 	if path == "clean" {
 		*err += ", did you mean 'nin -t clean'?"
 	} else if path == "help" {
@@ -255,7 +257,8 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 	} else {
 		suggestion := n.state.SpellcheckNode(path)
 		if suggestion != nil {
-			*err += ", did you mean '" + suggestion.Path + "'?"
+			// TODO(maruel): Use %q for real quoting.
+			*err += fmt.Sprintf(", did you mean '%s'?", suggestion.Path)
 		}
 	}
 	return nil

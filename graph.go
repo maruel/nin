@@ -963,11 +963,13 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	// Read depfile content.  Treat a missing depfile as empty.
 	content, err2 := i.di.ReadFile(path)
 	if err2 != nil && !os.IsNotExist(err2) {
-		*err = "loading '" + path + "': " + err2.Error()
+		// TODO(maruel): Use %q for real quoting.
+		*err = fmt.Sprintf("loading '%s': %s", path, err2)
 		return false
 	}
 	// On a missing depfile: return false and empty *err.
 	if len(content) == 0 {
+		// TODO(maruel): Use %q for real quoting.
 		explain("depfile '%s' is missing", path)
 		return false
 	}
@@ -1001,7 +1003,8 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 			}
 		}
 		if !found {
-			*err = path + ": depfile mentions '" + o + "' as an output, but no such output was declared"
+			// TODO(maruel): Use %q for real quoting.
+			*err = fmt.Sprintf("%s: depfile mentions '%s' as an output, but no such output was declared", path, o)
 			return false
 		}
 	}
