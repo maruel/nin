@@ -74,12 +74,14 @@ func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filen
 		return m.parse(filename, input)
 	}
 	m := manifestParserConcurrent{
-		fr:      fr,
-		options: options,
-		state:   state,
-		env:     state.Bindings,
+		manifestParserState: manifestParserState{
+			state:   state,
+			env:     state.Bindings,
+			options: options,
+			fr:      fr,
+		},
 	}
-	return m.parse(filename, input)
+	return m.parseMain(filename, input)
 }
 
 // subninja is a struct used to manage parallel reading of subninja files.
