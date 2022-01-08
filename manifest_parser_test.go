@@ -39,35 +39,26 @@ func NewParserTest(t *testing.T) ParserTest {
 	}
 }
 
-func (p *ParserTest) AssertParse(input string) {
-	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{Quiet: true})
-	err := ""
-	if !parser.parseTest(input, &err) {
+func (p *ParserTest) assertParse(input string) {
+	if err := p.parseTest(input, ManifestParserOptions{Quiet: true}); err != nil {
 		p.t.Fatal(err)
 	}
-	if "" != err {
-		p.t.Fatal(err)
-	}
-	VerifyGraph(p.t, &p.state)
+	verifyGraph(p.t, &p.state)
 }
 
-// parseTest parses a text string of input. Only used by tests.
-func (m *ManifestParser) parseTest(input string, err *string) bool {
-	if err2 := m.Parse("input", []byte(input+"\x00")); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	return true
+func (p *ParserTest) parseTest(input string, opts ManifestParserOptions) error {
+	parser := NewManifestParser(&p.state, &p.fs, opts)
+	return parser.Parse("input", []byte(input+"\x00"))
 }
 
 func TestParserTest_Empty(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("")
+	p.assertParse("")
 }
 
 func TestParserTest_Rules(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\n\nrule date\n  command = date > $out\n\nbuild result: cat in_1.cc in-2.O\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\n\nrule date\n  command = date > $out\n\nbuild result: cat in_1.cc in-2.O\n")
 
 	if 3 != len(p.state.Bindings.Rules) {
 		t.Fatal("expected equal")
@@ -87,12 +78,12 @@ func TestParserTest_Rules(t *testing.T) {
 func TestParserTest_RuleAttributes(t *testing.T) {
 	p := NewParserTest(t)
 	// Check that all of the allowed rule attributes are parsed ok.
-	p.AssertParse("rule cat\n  command = a\n  depfile = a\n  deps = a\n  description = a\n  generator = a\n  restat = a\n  rspfile = a\n  rspfile_content = a\n")
+	p.assertParse("rule cat\n  command = a\n  depfile = a\n  deps = a\n  description = a\n  generator = a\n  restat = a\n  rspfile = a\n  rspfile_content = a\n")
 }
 
 func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("  #indented comment\nrule cat\n  command = cat $in > $out\n  #generator = 1\n  restat = 1 # comment\n  #comment\nbuild result: cat in_1.cc in-2.O\n  #comment\n")
+	p.assertParse("  #indented comment\nrule cat\n  command = cat $in > $out\n  #generator = 1\n  restat = 1 # comment\n  #comment\nbuild result: cat in_1.cc in-2.O\n  #comment\n")
 
 	if 2 != len(p.state.Bindings.Rules) {
 		t.Fatal("expected equal")
@@ -113,7 +104,7 @@ func TestParserTest_IgnoreIndentedComments(t *testing.T) {
 func TestParserTest_IgnoreIndentedBlankLines(t *testing.T) {
 	p := NewParserTest(t)
 	// the indented blanks used to cause parse errors
-	p.AssertParse("  \nrule cat\n  command = cat $in > $out\n  \nbuild result: cat in_1.cc in-2.O\n  \nvariable=1\n")
+	p.assertParse("  \nrule cat\n  command = cat $in > $out\n  \nbuild result: cat in_1.cc in-2.O\n  \nvariable=1\n")
 
 	// the variable must be in the top level environment
 	if "1" != p.state.Bindings.LookupVariable("variable") {
@@ -123,7 +114,7 @@ func TestParserTest_IgnoreIndentedBlankLines(t *testing.T) {
 
 func TestParserTest_ResponseFiles(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\n\nbuild out: cat_rsp in\n  rspfile=out.rsp\n")
+	p.assertParse("rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\n\nbuild out: cat_rsp in\n  rspfile=out.rsp\n")
 
 	if 2 != len(p.state.Bindings.Rules) {
 		t.Fatal("expected equal")
@@ -148,7 +139,7 @@ func TestParserTest_ResponseFiles(t *testing.T) {
 
 func TestParserTest_InNewline(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat_rsp\n  command = cat $in_newline > $out\n\nbuild out: cat_rsp in in2\n  rspfile=out.rsp\n")
+	p.assertParse("rule cat_rsp\n  command = cat $in_newline > $out\n\nbuild out: cat_rsp in in2\n  rspfile=out.rsp\n")
 
 	if 2 != len(p.state.Bindings.Rules) {
 		t.Fatal("expected equal")
@@ -172,7 +163,7 @@ func TestParserTest_InNewline(t *testing.T) {
 
 func TestParserTest_Variables(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("l = one-letter-test\nrule link\n  command = ld $l $extra $with_under -o $out $in\n\nextra = -pthread\nwith_under = -under\nbuild a: link b c\nnested1 = 1\nnested2 = $nested1/2\nbuild supernested: link x\n  extra = $nested2/3\n")
+	p.assertParse("l = one-letter-test\nrule link\n  command = ld $l $extra $with_under -o $out $in\n\nextra = -pthread\nwith_under = -under\nbuild a: link b c\nnested1 = 1\nnested2 = $nested1/2\nbuild supernested: link x\n  extra = $nested2/3\n")
 
 	if 2 != len(p.state.Edges) {
 		t.Fatalf("%v", p.state.Edges)
@@ -193,7 +184,7 @@ func TestParserTest_Variables(t *testing.T) {
 
 func TestParserTest_VariableScope(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("foo = bar\nrule cmd\n  command = cmd $foo $in $out\n\nbuild inner: cmd a\n  foo = baz\nbuild outer: cmd b\n\n") // Extra newline after build line tickles a regression.
+	p.assertParse("foo = bar\nrule cmd\n  command = cmd $foo $in $out\n\nbuild inner: cmd a\n  foo = baz\nbuild outer: cmd b\n\n") // Extra newline after build line tickles a regression.
 
 	if 2 != len(p.state.Edges) {
 		t.Fatal("expected equal")
@@ -208,7 +199,7 @@ func TestParserTest_VariableScope(t *testing.T) {
 
 func TestParserTest_Continuation(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule link\n  command = foo bar $\n    baz\n\nbuild a: link c $\n d e f\n")
+	p.assertParse("rule link\n  command = foo bar $\n    baz\n\nbuild a: link c $\n d e f\n")
 
 	if 2 != len(p.state.Bindings.Rules) {
 		t.Fatal("expected equal")
@@ -227,7 +218,7 @@ func TestParserTest_Continuation(t *testing.T) {
 
 func TestParserTest_Backslash(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("foo = bar\\baz\nfoo2 = bar\\ baz\n")
+	p.assertParse("foo = bar\\baz\nfoo2 = bar\\ baz\n")
 	if "bar\\baz" != p.state.Bindings.LookupVariable("foo") {
 		t.Fatal("expected equal")
 	}
@@ -238,7 +229,7 @@ func TestParserTest_Backslash(t *testing.T) {
 
 func TestParserTest_Comment(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("# this is a comment\nfoo = not # a comment\n")
+	p.assertParse("# this is a comment\nfoo = not # a comment\n")
 	if "not # a comment" != p.state.Bindings.LookupVariable("foo") {
 		t.Fatal("expected equal")
 	}
@@ -246,7 +237,7 @@ func TestParserTest_Comment(t *testing.T) {
 
 func TestParserTest_Dollars(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n")
+	p.assertParse("rule foo\n  command = ${out}bar$$baz$$$\nblah\nx = $$dollar\nbuild $x: foo y\n")
 	if "$dollar" != p.state.Bindings.LookupVariable("x") {
 		t.Fatal("expected equal")
 	}
@@ -261,7 +252,7 @@ func TestParserTest_Dollars(t *testing.T) {
 
 func TestParserTest_EscapeSpaces(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule spaces\n  command = something\nbuild foo$ bar: spaces $$one two$$$ three\n")
+	p.assertParse("rule spaces\n  command = something\nbuild foo$ bar: spaces $$one two$$$ three\n")
 	if p.state.Paths["foo bar"] == nil {
 		t.Fatal("expected true")
 	}
@@ -281,7 +272,7 @@ func TestParserTest_EscapeSpaces(t *testing.T) {
 
 func TestParserTest_CanonicalizeFile(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in/1 in//2\nbuild in/1: cat\nbuild in/2: cat\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in/1 in//2\nbuild in/1: cat\nbuild in/2: cat\n")
 
 	if p.state.Paths["in/1"] == nil {
 		t.Fatal("expected true")
@@ -302,7 +293,7 @@ func TestParserTest_CanonicalizeFileBackslashes(t *testing.T) {
 		t.Skip("windows only")
 	}
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in\\1 in\\\\2\nbuild in\\1: cat\nbuild in\\2: cat\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in\\1 in\\\\2\nbuild in\\1: cat\nbuild in\\2: cat\n")
 
 	node := p.state.Paths["in/1"]
 	if node == nil {
@@ -328,7 +319,7 @@ func TestParserTest_CanonicalizeFileBackslashes(t *testing.T) {
 
 func TestParserTest_PathVariables(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\ndir = out\nbuild $dir/exe: cat src\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\ndir = out\nbuild $dir/exe: cat src\n")
 
 	if p.state.Paths["$dir/exe"] != nil {
 		t.Fatal("expected false")
@@ -340,7 +331,7 @@ func TestParserTest_PathVariables(t *testing.T) {
 
 func TestParserTest_CanonicalizePaths(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\n")
 
 	if p.state.Paths["./out.o"] != nil {
 		t.Fatal("expected false")
@@ -361,7 +352,7 @@ func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
 		t.Skip("windows only")
 	}
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\nbuild .\\out2.o: cat .\\bar/baz\\..\\foo.cc\nbuild .\\out3.o: cat .\\bar\\baz\\..\\foo3.cc\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild ./out.o: cat ./bar/baz/../foo.cc\nbuild .\\out2.o: cat .\\bar/baz\\..\\foo.cc\nbuild .\\out3.o: cat .\\bar\\baz\\..\\foo3.cc\n")
 
 	if p.state.Paths["./out.o"] != nil {
 		t.Fatal("expected false")
@@ -408,49 +399,42 @@ func TestParserTest_CanonicalizePathsBackslashes(t *testing.T) {
 
 func TestParserTest_DuplicateEdgeWithMultipleOutputs(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
-	// AssertParse() checks that the generated build graph is self-consistent.
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
+	// assertParse() checks that the generated build graph is self-consistent.
 	// That's all the checking that this test needs.
 }
 
 func TestParserTest_NoDeadPointerFromDuplicateEdge(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in\nbuild out: cat in\n")
-	// AssertParse() checks that the generated build graph is self-consistent.
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild out: cat in\nbuild out: cat in\n")
+	// assertParse() checks that the generated build graph is self-consistent.
 	// That's all the checking that this test needs.
 }
 
 func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 	p := NewParserTest(t)
-	kInput := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
-	parserOpts := ManifestParserOptions{ErrOnDupeEdge: true}
-	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
-	err := ""
-	if parser.parseTest(kInput, &err) {
+	input := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
+	if err := p.parseTest(input, ManifestParserOptions{ErrOnDupeEdge: true}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "input:5: multiple rules generate out1\n" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "input:5: multiple rules generate out1\n" {
+		t.Fatal(err)
 	}
 }
 
 func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
-	kInput := "subninja sub.ninja\n"
-	parserOpts := ManifestParserOptions{ErrOnDupeEdge: true}
-	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
-	err := ""
-	if parser.parseTest(kInput, &err) {
+	input := "subninja sub.ninja\n"
+	if err := p.parseTest(input, ManifestParserOptions{ErrOnDupeEdge: true}); err == nil {
 		t.Fatal("expected false")
-	} else if err != "sub.ninja:5: multiple rules generate out1\n" {
+	} else if err.Error() != "sub.ninja:5: multiple rules generate out1\n" {
 		t.Fatalf("%q", err)
 	}
 }
 
 func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("build a: phony a\n")
+	p.assertParse("build a: phony a\n")
 
 	node := p.state.Paths["a"]
 	edge := node.InEdge
@@ -461,15 +445,9 @@ func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
 
 func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	p := NewParserTest(t)
-	kInput := "build a: phony a\n"
-	parserOpts := ManifestParserOptions{ErrOnPhonyCycle: true}
-	parser := NewManifestParser(&p.state, &p.fs, parserOpts)
-	err := ""
-	if !parser.parseTest(kInput, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	input := "build a: phony a\n"
+	if err := p.parseTest(input, ManifestParserOptions{ErrOnPhonyCycle: true}); err != nil {
+		t.Fatal(err)
 	}
 
 	node := p.state.Paths["a"]
@@ -484,7 +462,7 @@ func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 
 func TestParserTest_ReservedWords(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule build\n  command = rule run $out\nbuild subninja: build include default foo.cc\ndefault subninja\n")
+	p.assertParse("rule build\n  command = rule run $out\nbuild subninja: build include default foo.cc\ndefault subninja\n")
 }
 
 func TestParserTest_Errors(t *testing.T) {
@@ -629,13 +607,11 @@ func TestParserTest_Errors(t *testing.T) {
 	}
 	for i, line := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			localState := NewState()
-			parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-			err := ""
-			if parser.parseTest(line.in, &err) {
+			p := NewParserTest(t)
+			if err := p.parseTest(line.in, ManifestParserOptions{}); err == nil {
 				t.Fatal("expected error")
-			} else if err != line.want {
-				t.Fatal(cmp.Diff(line.want, err))
+			} else if err.Error() != line.want {
+				t.Fatal(cmp.Diff(line.want, err.Error()))
 			}
 		})
 	}
@@ -656,43 +632,27 @@ func TestParserTest_MissingIncluded(t *testing.T) {
 // New test not in C++.
 func TestParserTest_MissingSubninja(t *testing.T) {
 	p := NewParserTest(t)
-	localState := NewState()
-	parser := NewManifestParser(&localState, &p.fs, ManifestParserOptions{})
-	if err := parser.Parse("build.ninja", []byte("subninja missing.ninja\n\x00")); err == nil {
+	if err := p.parseTest("subninja missing.ninja\n", ManifestParserOptions{}); err == nil {
 		t.Fatal("expected false")
-	} else if err.Error() != "build.ninja:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
+	} else if err.Error() != "input:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here" {
 		t.Fatalf("%q", err)
 	}
 }
 
 func TestParserTest_MultipleOutputs(t *testing.T) {
-	localState := NewState()
-	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest("rule cc\n  command = foo\n  depfile = bar\nbuild a.o b.o: cc c.cc\n", &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
+	p := NewParserTest(t)
+	p.assertParse("rule cc\n  command = foo\n  depfile = bar\nbuild a.o b.o: cc c.cc\n")
 }
 
 func TestParserTest_MultipleOutputsWithDeps(t *testing.T) {
-	localState := NewState()
-	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest("rule cc\n  command = foo\n  deps = gcc\nbuild a.o b.o: cc c.cc\n", &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
-	}
+	p := NewParserTest(t)
+	p.assertParse("rule cc\n  command = foo\n  deps = gcc\nbuild a.o b.o: cc c.cc\n")
 }
 
 func TestParserTest_SubNinja(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("test.ninja", "var2 = inner\nbuild $builddir/inner: varref\n")
-	p.AssertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\nbuild $builddir/outer: varref\nsubninja test.ninja\nbuild $builddir/outer2: varref\n")
+	p.assertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\nbuild $builddir/outer: varref\nsubninja test.ninja\nbuild $builddir/outer2: varref\n")
 	if 1 != len(p.fs.filesRead) {
 		t.Fatal("expected equal")
 	}
@@ -726,12 +686,9 @@ func TestParserTest_SubNinja(t *testing.T) {
 
 func TestParserTest_MissingSubNinja(t *testing.T) {
 	p := NewParserTest(t)
-	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
-	err := ""
-	if parser.parseTest("subninja foo.ninja\n", &err) {
+	if err := p.parseTest("subninja foo.ninja\n", ManifestParserOptions{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if err != "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here" {
+	} else if err.Error() != "input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here" {
 		t.Fatal(err)
 	}
 }
@@ -740,11 +697,7 @@ func TestParserTest_DuplicateRuleInDifferentSubninjas(t *testing.T) {
 	p := NewParserTest(t)
 	// Test that rules are scoped to subninjas.
 	p.fs.Create("test.ninja", "rule cat\n  command = cat\n")
-	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest("rule cat\n  command = cat\nsubninja test.ninja\n", &err) {
-		t.Fatal("expected true")
-	}
+	p.assertParse("rule cat\n  command = cat\nsubninja test.ninja\n")
 }
 
 func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
@@ -752,11 +705,7 @@ func TestParserTest_DuplicateRuleInDifferentSubninjasWithInclude(t *testing.T) {
 	// Test that rules are scoped to subninjas even with includes.
 	p.fs.Create("rules.ninja", "rule cat\n  command = cat\n")
 	p.fs.Create("test.ninja", "include rules.ninja\nbuild x : cat\n")
-	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest("include rules.ninja\nsubninja test.ninja\nbuild y : cat\n", &err) {
-		t.Fatal(err)
-	}
+	p.assertParse("include rules.ninja\nsubninja test.ninja\nbuild y : cat\n")
 }
 
 func TestParserTest_SubNinjaGrandChildren(t *testing.T) {
@@ -764,7 +713,7 @@ func TestParserTest_SubNinjaGrandChildren(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("child.ninja", "var2 = inner\nsubninja $grand\n")
 	p.fs.Create("grandchild.ninja", "build $builddir/inner: varref\n")
-	p.AssertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\ngrand = grandchild.ninja\nbuild $builddir/outer: varref\nsubninja child.ninja\nbuild $builddir/outer2: varref\n")
+	p.assertParse("builddir = some_dir/\nrule varref\n  command = varref $var2\nvar2 = outer\ngrand = grandchild.ninja\nbuild $builddir/outer: varref\nsubninja child.ninja\nbuild $builddir/outer2: varref\n")
 
 	want := []string{"child.ninja", "grandchild.ninja"}
 	if diff := cmp.Diff(want, p.fs.filesRead); diff != "" {
@@ -797,7 +746,7 @@ func TestParserTest_SubNinjaGrandChildren(t *testing.T) {
 func TestParserTest_Include(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("include.ninja", "var2 = inner\n")
-	p.AssertParse("var2 = outer\ninclude include.ninja\n")
+	p.assertParse("var2 = outer\ninclude include.ninja\n")
 
 	if 1 != len(p.fs.filesRead) {
 		t.Fatal("expected equal")
@@ -813,18 +762,16 @@ func TestParserTest_Include(t *testing.T) {
 func TestParserTest_BrokenInclude(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("include.ninja", "build\n")
-	parser := NewManifestParser(&p.state, &p.fs, ManifestParserOptions{})
-	err := ""
-	if parser.parseTest("include include.ninja\n", &err) {
+	if err := p.parseTest("include include.ninja\n", ManifestParserOptions{}); err == nil {
 		t.Fatal("expected false")
-	} else if err != "include.ninja:1: expected path\nbuild\n     ^ near here" {
+	} else if err.Error() != "include.ninja:1: expected path\nbuild\n     ^ near here" {
 		t.Fatalf("%q", err)
 	}
 }
 
 func TestParserTest_Implicit(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar | baz\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar | baz\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if !edge.IsImplicit(1) {
@@ -834,7 +781,7 @@ func TestParserTest_Implicit(t *testing.T) {
 
 func TestParserTest_OrderOnly(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar || baz\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar || baz\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if !edge.IsOrderOnly(1) {
@@ -844,7 +791,7 @@ func TestParserTest_OrderOnly(t *testing.T) {
 
 func TestParserTest_Validations(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar |@ baz\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo: cat bar |@ baz\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if len(edge.Validations) != 1 {
@@ -857,7 +804,7 @@ func TestParserTest_Validations(t *testing.T) {
 
 func TestParserTest_ImplicitOutput(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo | imp: cat bar\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo | imp: cat bar\n")
 
 	edge := p.state.Paths["imp"].InEdge
 	if len(edge.Outputs) != 2 {
@@ -870,7 +817,7 @@ func TestParserTest_ImplicitOutput(t *testing.T) {
 
 func TestParserTest_ImplicitOutputEmpty(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo | : cat bar\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo | : cat bar\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if len(edge.Outputs) != 1 {
@@ -883,7 +830,7 @@ func TestParserTest_ImplicitOutputEmpty(t *testing.T) {
 
 func TestParserTest_ImplicitOutputDupe(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo baz | foo baq foo: cat bar\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo baz | foo baq foo: cat bar\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if len(edge.Outputs) != 3 {
@@ -902,7 +849,7 @@ func TestParserTest_ImplicitOutputDupe(t *testing.T) {
 
 func TestParserTest_ImplicitOutputDupes(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild foo foo foo | foo foo foo foo: cat bar\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild foo foo foo | foo foo foo foo: cat bar\n")
 
 	edge := p.state.Paths["foo"].InEdge
 	if len(edge.Outputs) != 1 {
@@ -915,16 +862,12 @@ func TestParserTest_ImplicitOutputDupes(t *testing.T) {
 
 func TestParserTest_NoExplicitOutput(t *testing.T) {
 	p := NewParserTest(t)
-	parser := NewManifestParser(&p.state, nil, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest("rule cat\n  command = cat $in > $out\nbuild | imp : cat bar\n", &err) {
-		t.Fatal("expected true")
-	}
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild | imp : cat bar\n")
 }
 
 func TestParserTest_DefaultDefault(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\n")
 
 	if 4 != len(p.state.DefaultNodes()) {
 		t.Fatal("expected equal")
@@ -933,7 +876,7 @@ func TestParserTest_DefaultDefault(t *testing.T) {
 
 func TestParserTest_DefaultDefaultCycle(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat a\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild a: cat a\n")
 
 	if 0 != len(p.state.DefaultNodes()) {
 		t.Fatal("expected equal")
@@ -942,7 +885,7 @@ func TestParserTest_DefaultDefaultCycle(t *testing.T) {
 
 func TestParserTest_DefaultStatements(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\nthird = c\ndefault a b\ndefault $third\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild a: cat foo\nbuild b: cat foo\nbuild c: cat foo\nbuild d: cat foo\nthird = c\ndefault a b\ndefault $third\n")
 
 	nodes := p.state.DefaultNodes()
 	if 3 != len(nodes) {
@@ -955,28 +898,19 @@ func TestParserTest_DefaultStatements(t *testing.T) {
 
 func TestParserTest_UTF8(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule utf8\n  command = true\n  description = compilaci\xC3\xB3\n")
+	p.assertParse("rule utf8\n  command = true\n  description = compilaci\xC3\xB3\n")
 }
 
 func TestParserTest_CRLF(t *testing.T) {
-	localState := NewState()
-	parser := NewManifestParser(&localState, nil, ManifestParserOptions{})
-	err := ""
-
-	if !parser.parseTest("# comment with crlf\r\n", &err) {
-		t.Fatal("expected true")
-	}
-	if !parser.parseTest("foo = foo\nbar = bar\r\n", &err) {
-		t.Fatal("expected true")
-	}
-	if !parser.parseTest("pool link_pool\r\n  depth = 15\r\n\r\nrule xyz\r\n  command = something$expand \r\n  description = YAY!\r\n", &err) {
-		t.Fatal("expected true")
-	}
+	p := NewParserTest(t)
+	p.assertParse("# comment with crlf\r\n")
+	p.assertParse("foo = foo\nbar = bar\r\n")
+	p.assertParse("pool link_pool\r\n  depth = 15\r\n\r\nrule xyz\r\n  command = something$expand \r\n  description = YAY!\r\n")
 }
 
 func TestParserTest_DyndepNotSpecified(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n")
 	edge := p.state.GetNode("result", 0).InEdge
 	if edge.Dyndep != nil {
 		t.Fatal("expected false")
@@ -984,20 +918,17 @@ func TestParserTest_DyndepNotSpecified(t *testing.T) {
 }
 
 func TestParserTest_DyndepNotInput(t *testing.T) {
-	lstate := NewState()
-	parser := NewManifestParser(&lstate, nil, ManifestParserOptions{})
-	err := ""
-	if parser.parseTest("rule touch\n  command = touch $out\nbuild result: touch\n  dyndep = notin\n", &err) {
+	p := NewParserTest(t)
+	if err := p.parseTest("rule touch\n  command = touch $out\nbuild result: touch\n  dyndep = notin\n", ManifestParserOptions{}); err == nil {
 		t.Fatal("expected false")
-	}
-	if "input:5: dyndep 'notin' is not an input\n" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "input:5: dyndep 'notin' is not an input\n" {
+		t.Fatal(err)
 	}
 }
 
 func TestParserTest_DyndepExplicitInput(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n  dyndep = in\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in\n  dyndep = in\n")
 	edge := p.state.GetNode("result", 0).InEdge
 	if edge.Dyndep == nil {
 		t.Fatal("expected true")
@@ -1012,7 +943,7 @@ func TestParserTest_DyndepExplicitInput(t *testing.T) {
 
 func TestParserTest_DyndepImplicitInput(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in | dd\n  dyndep = dd\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in | dd\n  dyndep = dd\n")
 	edge := p.state.GetNode("result", 0).InEdge
 	if edge.Dyndep == nil {
 		t.Fatal("expected true")
@@ -1027,7 +958,7 @@ func TestParserTest_DyndepImplicitInput(t *testing.T) {
 
 func TestParserTest_DyndepOrderOnlyInput(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in || dd\n  dyndep = dd\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\nbuild result: cat in || dd\n  dyndep = dd\n")
 	edge := p.state.GetNode("result", 0).InEdge
 	if edge.Dyndep == nil {
 		t.Fatal("expected true")
@@ -1042,7 +973,7 @@ func TestParserTest_DyndepOrderOnlyInput(t *testing.T) {
 
 func TestParserTest_DyndepRuleInput(t *testing.T) {
 	p := NewParserTest(t)
-	p.AssertParse("rule cat\n  command = cat $in > $out\n  dyndep = $in\nbuild result: cat in\n")
+	p.assertParse("rule cat\n  command = cat $in > $out\n  dyndep = $in\nbuild result: cat in\n")
 	edge := p.state.GetNode("result", 0).InEdge
 	if edge.Dyndep == nil {
 		t.Fatal("expected true")

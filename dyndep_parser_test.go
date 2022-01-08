@@ -42,23 +42,11 @@ func (d *DyndepParserTest) parseTest(input string) error {
 	return ParseDyndep(&d.state, d.dyndepFile, "input", []byte(input+"\x00"))
 }
 
-func assertParseManifest(t *testing.T, input string, state *State) {
-	parser := NewManifestParser(state, nil, ManifestParserOptions{})
-	err := ""
-	if !parser.parseTest(input, &err) {
-		t.Fatal(err)
-	}
-	if "" != err {
-		t.Fatal(err)
-	}
-	VerifyGraph(t, state)
-}
-
 func (d *DyndepParserTest) AssertParse(input string) {
 	if err := d.parseTest(input); err != nil {
 		d.t.Fatal(err)
 	}
-	VerifyGraph(d.t, &d.state)
+	verifyGraph(d.t, &d.state)
 }
 
 func TestDyndepParserTest_Empty(t *testing.T) {

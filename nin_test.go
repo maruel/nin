@@ -53,16 +53,12 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 
 func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
 	parser := NewManifestParser(state, nil, opts)
-	err := ""
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
-	if !parser.parseTest(input, &err) {
+	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
 		s.t.Fatal(err)
 	}
-	if err != "" {
-		s.t.Fatal(err)
-	}
-	VerifyGraph(s.t, state)
+	verifyGraph(s.t, state)
 }
 
 func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
@@ -71,7 +67,17 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 	}
 }
 
-func VerifyGraph(t *testing.T, state *State) {
+func assertParseManifest(t *testing.T, input string, state *State) {
+	parser := NewManifestParser(state, nil, ManifestParserOptions{})
+	// In unit tests, inject the terminating 0 byte. In real code, it is injected
+	// by RealDiskInterface.ReadFile.
+	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
+		t.Fatal(err)
+	}
+	verifyGraph(t, state)
+}
+
+func verifyGraph(t *testing.T, state *State) {
 	for _, e := range state.Edges {
 		if len(e.Outputs) == 0 {
 			t.Fatal("all edges need at least one output")
