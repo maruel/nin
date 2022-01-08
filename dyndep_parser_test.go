@@ -14,7 +14,10 @@
 
 package nin
 
-import "testing"
+import (
+	"strconv"
+	"testing"
+)
 
 type DyndepParserTest struct {
 	t          *testing.T
@@ -125,289 +128,133 @@ func TestDyndepParserTest_BlankLineVersionCRLF(t *testing.T) {
 	d.AssertParse("\r\nninja_dyndep_version = 1\r\n")
 }
 
-func TestDyndepParserTest_VersionUnexpectedEOF(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1.0"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
+func TestDyndepParserTest_Errors(t *testing.T) {
+	data := []struct {
+		in   string
+		want string
+	}{
+		{
+			// VersionUnexpectedEOF
+			"ninja_dyndep_version = 1.0",
+			"input:1: unexpected EOF\nninja_dyndep_version = 1.0\n                          ^ near here",
+		},
+		{
+			// UnsupportedVersion0
+			"ninja_dyndep_version = 0\n",
+			"input:1: unsupported 'ninja_dyndep_version = 0'\nninja_dyndep_version = 0\n                        ^ near here",
+		},
+		{
+			// UnsupportedVersion1_1
+			"ninja_dyndep_version = 1.1\n",
+			"input:1: unsupported 'ninja_dyndep_version = 1.1'\nninja_dyndep_version = 1.1\n                          ^ near here",
+		},
+		{
+			// DuplicateVersion
+			"ninja_dyndep_version = 1\nninja_dyndep_version = 1\n",
+			"input:2: unexpected identifier\n",
+		},
+		{
+			// MissingVersionOtherVar
+			"not_ninja_dyndep_version = 1\n",
+			"input:1: expected 'ninja_dyndep_version = ...'\nnot_ninja_dyndep_version = 1\n                            ^ near here",
+		},
+		{
+			// MissingVersionBuild
+			"build out: dyndep\n",
+			"input:1: expected 'ninja_dyndep_version = ...'\n",
+		},
+		{
+			// UnexpectedEqual
+			"= 1\n",
+			"input:1: unexpected '='\n",
+		},
+		{
+			// UnexpectedIndent
+			" = 1\n",
+			"input:1: unexpected indent\n",
+		},
+		{
+			// OutDuplicate
+			"ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out: dyndep\n",
+			"input:3: multiple statements for 'out'\nbuild out: dyndep\n         ^ near here",
+		},
+		{
+			// OutDuplicateThroughOther
+			"ninja_dyndep_version = 1\nbuild out: dyndep\nbuild otherout: dyndep\n",
+			"input:3: multiple statements for 'otherout'\nbuild otherout: dyndep\n              ^ near here",
+		},
+		{
+			// NoOutEOF
+			"ninja_dyndep_version = 1\nbuild",
+			"input:2: unexpected EOF\nbuild\n     ^ near here",
+		},
+		{
+			// NoOutColon
+			"ninja_dyndep_version = 1\nbuild :\n",
+			"input:2: expected path\nbuild :\n      ^ near here",
+		},
+		{
+			// OutNoStatement
+			"ninja_dyndep_version = 1\nbuild missing: dyndep\n",
+			"input:2: no build statement exists for 'missing'\nbuild missing: dyndep\n             ^ near here",
+		},
+		{
+			// OutEOF
+			"ninja_dyndep_version = 1\nbuild out",
+			"input:2: unexpected EOF\nbuild out\n         ^ near here",
+		},
+		{
+			// OutNoRule
+			"ninja_dyndep_version = 1\nbuild out:",
+			"input:2: expected build command name 'dyndep'\nbuild out:\n          ^ near here",
+		},
+		{
+			// OutBadRule
+			"ninja_dyndep_version = 1\nbuild out: touch",
+			"input:2: expected build command name 'dyndep'\nbuild out: touch\n           ^ near here",
+		},
+		{
+			// BuildEOF
+			"ninja_dyndep_version = 1\nbuild out: dyndep",
+			"input:2: unexpected EOF\nbuild out: dyndep\n                 ^ near here",
+		},
+		{
+			// ExplicitOut
+			"ninja_dyndep_version = 1\nbuild out exp: dyndep\n",
+			"input:2: explicit outputs not supported\nbuild out exp: dyndep\n             ^ near here",
+		},
+		{
+			// ExplicitIn
+			"ninja_dyndep_version = 1\nbuild out: dyndep exp\n",
+			"input:2: explicit inputs not supported\nbuild out: dyndep exp\n                     ^ near here",
+		},
+		{
+			// OrderOnlyIn
+			"ninja_dyndep_version = 1\nbuild out: dyndep ||\n",
+			"input:2: order-only inputs not supported\nbuild out: dyndep ||\n                  ^ near here",
+		},
+		{
+			// BadBinding
+			"ninja_dyndep_version = 1\nbuild out: dyndep\n  not_restat = 1\n",
+			"input:3: binding is not 'restat'\n  not_restat = 1\n                ^ near here",
+		},
+		{
+			// RestatTwice
+			"ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n  restat = 1\n",
+			"input:4: unexpected indent\n",
+		},
 	}
-	if "input:1: unexpected EOF\nninja_dyndep_version = 1.0\n                          ^ near here" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_UnsupportedVersion0(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 0\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: unsupported 'ninja_dyndep_version = 0'\nninja_dyndep_version = 0\n                        ^ near here" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_UnsupportedVersion1_1(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1.1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: unsupported 'ninja_dyndep_version = 1.1'\nninja_dyndep_version = 1.1\n                          ^ near here" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_DuplicateVersion(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nninja_dyndep_version = 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: unexpected identifier\n" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_MissingVersionOtherVar(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "not_ninja_dyndep_version = 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: expected 'ninja_dyndep_version = ...'\nnot_ninja_dyndep_version = 1\n                            ^ near here" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_MissingVersionBuild(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "build out: dyndep\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: expected 'ninja_dyndep_version = ...'\n" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_UnexpectedEqual(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "= 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: unexpected '='\n" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_UnexpectedIndent(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := " = 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:1: unexpected indent\n" != err {
-		t.Fatal("expected equal")
-	}
-}
-
-func TestDyndepParserTest_OutDuplicate(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild out: dyndep\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:3: multiple statements for 'out'\nbuild out: dyndep\n         ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OutDuplicateThroughOther(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild otherout: dyndep\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:3: multiple statements for 'otherout'\nbuild otherout: dyndep\n              ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_NoOutEOF(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: unexpected EOF\nbuild\n     ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_NoOutColon(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild :\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: expected path\nbuild :\n      ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OutNoStatement(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild missing: dyndep\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: no build statement exists for 'missing'\nbuild missing: dyndep\n             ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OutEOF(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: unexpected EOF\nbuild out\n         ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OutNoRule(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out:"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: expected build command name 'dyndep'\nbuild out:\n          ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OutBadRule(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: touch"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: expected build command name 'dyndep'\nbuild out: touch\n           ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_BuildEOF(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal("expected false")
-	}
-	if "input:2: unexpected EOF\nbuild out: dyndep\n                 ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_ExplicitOut(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out exp: dyndep\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal(err)
-	}
-	if "input:2: explicit outputs not supported\nbuild out exp: dyndep\n             ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_ExplicitIn(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep exp\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal(err)
-	}
-	if "input:2: explicit inputs not supported\nbuild out: dyndep exp\n                     ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_OrderOnlyIn(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep ||\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal(err)
-	}
-	if "input:2: order-only inputs not supported\nbuild out: dyndep ||\n                  ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_BadBinding(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\n  not_restat = 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal(err)
-	}
-	if "input:3: binding is not 'restat'\n  not_restat = 1\n                ^ near here" != err {
-		t.Fatal(err)
-	}
-}
-
-func TestDyndepParserTest_RestatTwice(t *testing.T) {
-	d := NewDyndepParserTest(t)
-	kInput := "ninja_dyndep_version = 1\nbuild out: dyndep\n  restat = 1\n  restat = 1\n"
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
-		t.Fatal(err)
-	}
-	if "input:4: unexpected indent\n" != err {
-		t.Fatal(err)
+	for i, l := range data {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			d := NewDyndepParserTest(t)
+			parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
+			err := ""
+			if parser.parseTest(l.in, &err) {
+				t.Fatal("expected error")
+			} else if err != l.want {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
