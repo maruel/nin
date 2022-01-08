@@ -450,6 +450,8 @@ func (e *edgeEnv) LookupVariable(v string) string {
 		explicitOutsCount := len(edge.Outputs) - int(edge.ImplicitOuts)
 		return makePathList(edge.Outputs[:explicitOutsCount], ' ', e.escapeInOut)
 	default:
+		// TODO(maruel): Remove here and move to a post parsing evaluation in a
+		// separate goroutine.
 		for i := 0; i < len(e.lookups); i++ {
 			if e.lookups[i] == v {
 				cycle := ""

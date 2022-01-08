@@ -49,13 +49,6 @@ func errorf(msg string, s ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-// Log an informational message.
-func infof(msg string, s ...interface{}) {
-	fmt.Fprintf(os.Stdout, "nin: ")
-	fmt.Fprintf(os.Stdout, msg, s...)
-	fmt.Fprintf(os.Stdout, "\n")
-}
-
 func isPathSeparator(c byte) bool {
 	return c == '/' || c == '\\'
 }
