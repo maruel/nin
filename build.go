@@ -393,12 +393,9 @@ func (p *plan) nodeFinished(node *Node) error {
 		if p.builder == nil {
 			return errors.New("dyndep requires Plan to have a Builder")
 		}
-		// Load the now-clean dyndep file.  This will also update the
+		// Load the now-clean dyndep file. This will also update the
 		// build plan and schedule any new work that is ready.
-		if err := p.builder.loadDyndeps(node); err != nil {
-			return err
-		}
-		return nil
+		return p.builder.loadDyndeps(node)
 	}
 
 	// See if we we want any edges from this node.
@@ -433,7 +430,7 @@ func (p *plan) edgeMaybeReady(edge *Edge, want Want) error {
 
 // Clean the given node during the build.
 // Return false on error.
-func (p *plan) cleanNode(scan *DependencyScan, node *Node, err *string) bool {
+func (p *plan) cleanNode(scan *DependencyScan, node *Node) error {
 	node.Dirty = false
 
 	for _, oe := range node.OutEdges {
@@ -477,13 +474,14 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
 			outputsDirty := false
-			if !scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, err) {
-				return false
+			err2 := ""
+			if !scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, &err2) {
+				return errors.New(err2)
 			}
 			if !outputsDirty {
 				for _, o := range oe.Outputs {
-					if !p.cleanNode(scan, o, err) {
-						return false
+					if err := p.cleanNode(scan, o); err != nil {
+						return err
 					}
 				}
 
@@ -495,16 +493,16 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node, err *string) bool {
 			}
 		}
 	}
-	return true
+	return nil
 }
 
-// Update the build plan to account for modifications made to the graph
-// by information loaded from a dyndep file.
-func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, err *string) bool {
+// dyndepsLoaded updates the build plan to account for modifications made to
+// the graph by information loaded from a dyndep file.
+func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile) error {
 	// Recompute the dirty state of all our direct and indirect dependents now
 	// that our dyndep information has been loaded.
-	if !p.RefreshDyndepDependents(scan, node, err) {
-		return false
+	if err := p.refreshDyndepDependents(scan, node); err != nil {
+		return err
 	}
 
 	// We loaded dyndep information for those outEdges of the dyndep node that
@@ -534,8 +532,9 @@ func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 	dyndepWalk := map[*Edge]struct{}{}
 	for _, oe := range dyndepRoots {
 		for _, i := range ddf[oe].implicitInputs {
-			if !p.addSubTarget(i, oe.Outputs[0], err, dyndepWalk) && *err != "" {
-				return false
+			err2 := ""
+			if !p.addSubTarget(i, oe.Outputs[0], &err2, dyndepWalk) && err2 != "" {
+				return errors.New(err2)
 			}
 		}
 	}
@@ -555,15 +554,14 @@ func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		if !ok {
 			continue
 		}
-		if err2 := p.edgeMaybeReady(wi, want); err2 != nil {
-			*err = err2.Error()
-			return false
+		if err := p.edgeMaybeReady(wi, want); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-func (p *plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *string) bool {
+func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) error {
 	// Collect the transitive closure of dependents and mark their edges
 	// as not yet visited by RecomputeDirty.
 	dependents := map[*Node]struct{}{}
@@ -574,16 +572,17 @@ func (p *plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 	for n := range dependents {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
 		var validationNodes []*Node
-		if !scan.RecomputeDirty(n, &validationNodes, err) {
-			return false
+		err2 := ""
+		if !scan.RecomputeDirty(n, &validationNodes, &err2) {
+			return errors.New(err2)
 		}
 
 		// Add any validation nodes found during RecomputeDirty as new top level
 		// targets.
 		for _, v := range validationNodes {
 			if inEdge := v.InEdge; inEdge != nil {
-				if !inEdge.OutputsReady && !p.addTarget(v, err) {
-					return false
+				if !inEdge.OutputsReady && !p.addTarget(v, &err2) {
+					return errors.New(err2)
 				}
 			}
 		}
@@ -607,7 +606,7 @@ func (p *plan) RefreshDyndepDependents(scan *DependencyScan, node *Node, err *st
 			p.edgeWanted(edge)
 		}
 	}
-	return true
+	return nil
 }
 
 func (p *plan) unmarkDependents(node *Node, dependents map[*Node]struct{}) {
@@ -961,9 +960,8 @@ func (b *Builder) finishCommand(result *Result) error {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).
-				err2 := ""
-				if !b.plan.cleanNode(&b.scan, o, &err2) {
-					return errors.New(err2)
+				if err := b.plan.cleanNode(&b.scan, o); err != nil {
+					return err
 				}
 				nodeCleaned = true
 			}
@@ -1104,9 +1102,8 @@ func (b *Builder) loadDyndeps(node *Node) error {
 	}
 
 	// Update the build plan to account for dyndep modifications to the graph.
-	err2 := ""
-	if !b.plan.dyndepsLoaded(&b.scan, node, ddf, &err2) {
-		return errors.New(err2)
+	if err := b.plan.dyndepsLoaded(&b.scan, node, ddf); err != nil {
+		return err
 	}
 
 	// New command edges may have been added to the plan.
