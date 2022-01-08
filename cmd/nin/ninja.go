@@ -184,9 +184,8 @@ func (n *ninjaMain) RebuildManifest(inputFile string, status nin.Status) (bool, 
 	}
 
 	builder := nin.NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
-	err2 := ""
-	if !builder.AddTarget(node, &err2) {
-		return false, errors.New(err2)
+	if dirty, err := builder.AddTarget(node); !dirty {
+		return false, err
 	}
 
 	if builder.AlreadyUpToDate() {
@@ -1077,8 +1076,8 @@ func (n *ninjaMain) RunBuild(args []string, status nin.Status) int {
 
 	builder := nin.NewBuilder(&n.state, n.config, &n.buildLog, &n.depsLog, &n.di, status, n.startTimeMillis)
 	for i := 0; i < len(targets); i++ {
-		if !builder.AddTarget(targets[i], &err) {
-			if len(err) != 0 {
+		if dirty, err := builder.AddTarget(targets[i]); !dirty {
+			if err != nil {
 				status.Error("%s", err)
 				return 1
 			}

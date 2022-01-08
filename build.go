@@ -728,7 +728,8 @@ func (b *Builder) addTargetName(name string, err *string) *Node {
 		*err = fmt.Sprintf("unknown target: '%s'", name)
 		return nil
 	}
-	if !b.AddTarget(node, err) {
+	if _, err2 := b.AddTarget(node); err2 != nil {
+		*err = err2.Error()
 		return nil
 	}
 	return node
@@ -736,17 +737,25 @@ func (b *Builder) addTargetName(name string, err *string) *Node {
 
 // AddTarget adds a target to the build, scanning dependencies.
 //
-// Returns false on error.
-func (b *Builder) AddTarget(target *Node, err *string) bool {
+// Returns true if the target is dirty. Returns false and no error if the
+// target is up to date.
+func (b *Builder) AddTarget(target *Node) (bool, error) {
 	var validationNodes []*Node
-	if !b.scan.RecomputeDirty(target, &validationNodes, err) {
-		return false
+	err2 := ""
+	if !b.scan.RecomputeDirty(target, &validationNodes, &err2) {
+		if err2 != "" {
+			return false, errors.New(err2)
+		}
+		return false, nil
 	}
 
 	inEdge := target.InEdge
 	if inEdge == nil || !inEdge.OutputsReady {
-		if !b.plan.addTarget(target, err) {
-			return false
+		if !b.plan.addTarget(target, &err2) {
+			if err2 != "" {
+				return false, errors.New(err2)
+			}
+			return false, nil
 		}
 	}
 
@@ -754,13 +763,15 @@ func (b *Builder) AddTarget(target *Node, err *string) bool {
 	// targets.
 	for _, n := range validationNodes {
 		if validationInEdge := n.InEdge; validationInEdge != nil {
-			if !validationInEdge.OutputsReady && !b.plan.addTarget(n, err) {
-				return false
+			if !validationInEdge.OutputsReady && !b.plan.addTarget(n, &err2) {
+				if err2 != "" {
+					return false, errors.New(err2)
+				}
+				return false, nil
 			}
 		}
 	}
-
-	return true
+	return true, nil
 }
 
 // AlreadyUpToDate returns true if the build targets are already up to date.
