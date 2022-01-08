@@ -39,7 +39,7 @@ func (b *BuildLogTest) IsPathDead(s string) bool {
 
 func TestBuildLogTest_WriteRead(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 
 	log1 := NewBuildLog()
 	defer log1.Close()
@@ -149,7 +149,7 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 
 func TestBuildLogTest_Truncate(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 
 	{
@@ -410,7 +410,7 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 
 func TestBuildLogTest_MultiTargetEdge(t *testing.T) {
 	b := NewBuildLogTest(t)
-	b.AssertParse(&b.state, "build out out.d: cat\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out out.d: cat\n", ParseManifestOpts{})
 
 	log := NewBuildLog()
 	defer log.Close()
@@ -461,7 +461,7 @@ func NewBuildLogRecompactTest(t *testing.T) *BuildLogRecompactTest {
 
 func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	b := NewBuildLogRecompactTest(t)
-	b.AssertParse(&b.state, "build out: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in\nbuild out2: cat in\n", ParseManifestOpts{})
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	err := ""
 

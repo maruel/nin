@@ -19,8 +19,8 @@ import (
 	"strconv"
 )
 
-// ManifestParserOptions are the options when parsing a build.ninja file.
-type ManifestParserOptions struct {
+// ParseManifestOpts are the options when parsing a build.ninja file.
+type ParseManifestOpts struct {
 	// ErrOnDupeEdge causes duplicate rules for one target to print an error,
 	// otherwise warns.
 	ErrOnDupeEdge bool
@@ -30,11 +30,11 @@ type ManifestParserOptions struct {
 	Quiet bool
 }
 
-// ManifestParser parses .ninja files.
-type ManifestParser struct {
+// manifestParser parses .ninja files.
+type manifestParser struct {
 	// Immutable
 	fr      FileReader
-	options ManifestParserOptions
+	options ParseManifestOpts
 
 	// Mutable.
 	lexer             lexer
@@ -44,22 +44,23 @@ type ManifestParser struct {
 	subninjasEnqueued int32
 }
 
-// NewManifestParser returns an initialized ManifestParser.
-func NewManifestParser(state *State, fr FileReader, options ManifestParserOptions) *ManifestParser {
-	return &ManifestParser{
+// ParseManifest parses a manifest file (i.e. build.ninja).
+//
+// The input must contain a trailing terminating zero byte.
+func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filename string, input []byte) error {
+	m := manifestParser{
 		fr:      fr,
 		options: options,
 		state:   state,
 		env:     state.Bindings,
 	}
+	return m.parse(filename, input)
 }
 
-// Parse a file, given its contents as a string.
-func (m *ManifestParser) Parse(filename string, input []byte) error {
+// parse parses a file, given its contents as a string.
+func (m *manifestParser) parse(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
 
-	// The object is reused when parsing subninjas.
-	m.subninjasEnqueued = 0
 	m.subninjas = make(chan subninja)
 
 	m.lexer.Start(filename, input)
@@ -112,7 +113,7 @@ loop:
 }
 
 // Parse various statement types.
-func (m *ManifestParser) parsePool() error {
+func (m *manifestParser) parsePool() error {
 	name := m.lexer.readIdent()
 	if name == "" {
 		return m.lexer.Error("expected pool name")
@@ -150,7 +151,7 @@ func (m *ManifestParser) parsePool() error {
 	return nil
 }
 
-func (m *ManifestParser) parseRule() error {
+func (m *manifestParser) parseRule() error {
 	name := m.lexer.readIdent()
 	if name == "" {
 		return m.lexer.Error("expected rule name")
@@ -193,7 +194,7 @@ func (m *ManifestParser) parseRule() error {
 	return nil
 }
 
-func (m *ManifestParser) parseDefault() error {
+func (m *manifestParser) parseDefault() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return err
@@ -225,7 +226,7 @@ func (m *ManifestParser) parseDefault() error {
 	return m.expectToken(NEWLINE)
 }
 
-func (m *ManifestParser) parseIdent() error {
+func (m *manifestParser) parseIdent() error {
 	m.lexer.UnreadToken()
 	name, letValue, err := m.parseLet()
 	if err != nil {
@@ -243,7 +244,7 @@ func (m *ManifestParser) parseIdent() error {
 	return nil
 }
 
-func (m *ManifestParser) parseEdge() error {
+func (m *manifestParser) parseEdge() error {
 	var outs []EvalString
 	for {
 		ev, err := m.lexer.readEvalString(true)
@@ -472,7 +473,7 @@ func (m *ManifestParser) parseEdge() error {
 }
 
 // parseInclude parses a 'include' line.
-func (m *ManifestParser) parseInclude() error {
+func (m *manifestParser) parseInclude() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return err
@@ -490,9 +491,17 @@ func (m *ManifestParser) parseInclude() error {
 		return m.error(fmt.Sprintf("loading '%s': %s", path, err), ls)
 	}
 
-	subparser := NewManifestParser(m.state, m.fr, m.options)
-	subparser.env = m.env
-	if err = subparser.Parse(path, input); err != nil {
+	// Manually construct the object instead of using ParseManifest(), because
+	// m.env may not equal to m.state.Bindings. This happens when the include
+	// statement is inside a subninja.
+	subparser := manifestParser{
+		fr:      m.fr,
+		options: m.options,
+		state:   m.state,
+		env:     m.env,
+	}
+	// Recursively parse the input into the current state.
+	if err = subparser.parse(path, input); err != nil {
 		// Do not wrap error inside the included ninja.
 		return err
 	}
@@ -509,7 +518,7 @@ type subninja struct {
 
 // parseSubninja parses a 'subninja' line and start a goroutine that will read
 // the file and send the content to the channel, but not process it.
-func (m *ManifestParser) parseSubninja() error {
+func (m *manifestParser) parseSubninja() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return err
@@ -544,10 +553,9 @@ func readSubninjaAsync(fr FileReader, n string, ch chan<- subninja, ls lexerStat
 }
 
 // processSubninjaQueue empties the queue of subninja files to process.
-func (m *ManifestParser) processSubninjaQueue() error {
+func (m *manifestParser) processSubninjaQueue() error {
 	// Out of order flow. This is the faster but may be incompatible?
 	var err error
-	subparser := NewManifestParser(m.state, m.fr, m.options)
 	for i := int32(0); i < m.subninjasEnqueued; i++ {
 		s := <-m.subninjas
 		if err != nil {
@@ -558,15 +566,21 @@ func (m *ManifestParser) processSubninjaQueue() error {
 			err = m.error(fmt.Sprintf("loading '%s': %s", s.path, s.err.Error()), s.ls)
 			continue
 		}
-		// Reset the binding fresh.
-		subparser.env = NewBindingEnv(m.env)
+		subparser := manifestParser{
+			fr:      m.fr,
+			options: m.options,
+			state:   m.state,
+			// Reset the binding fresh with a temporary one that will not affect the
+			// root one.
+			env: NewBindingEnv(m.env),
+		}
 		// Do not wrap error inside the subninja.
-		err = subparser.Parse(s.path, s.contents)
+		err = subparser.parse(s.path, s.contents)
 	}
 	return err
 }
 
-func (m *ManifestParser) parseLet() (string, EvalString, error) {
+func (m *manifestParser) parseLet() (string, EvalString, error) {
 	eval := EvalString{}
 	key := m.lexer.readIdent()
 	if key == "" {
@@ -582,7 +596,7 @@ func (m *ManifestParser) parseLet() (string, EvalString, error) {
 // expectToken produces an error string if the next token is not expected.
 //
 // The error says "expected foo, got bar".
-func (m *ManifestParser) expectToken(expected Token) error {
+func (m *manifestParser) expectToken(expected Token) error {
 	if token := m.lexer.ReadToken(); token != expected {
 		msg := "expected " + expected.String() + ", got " + token.String() + expected.errorHint()
 		return m.lexer.Error(msg)
@@ -590,6 +604,6 @@ func (m *ManifestParser) expectToken(expected Token) error {
 	return nil
 }
 
-func (m *ManifestParser) error(msg string, ls lexerState) error {
+func (m *manifestParser) error(msg string, ls lexerState) error {
 	return ls.error(msg, m.lexer.filename, m.lexer.input)
 }

@@ -40,16 +40,15 @@ func NewParserTest(t *testing.T) ParserTest {
 }
 
 func (p *ParserTest) assertParse(input string) {
-	if err := p.parseTest(input, ManifestParserOptions{Quiet: true}); err != nil {
+	if err := p.parseTest(input, ParseManifestOpts{Quiet: true}); err != nil {
 		p.t.Helper()
 		p.t.Fatal(err)
 	}
 	verifyGraph(p.t, &p.state)
 }
 
-func (p *ParserTest) parseTest(input string, opts ManifestParserOptions) error {
-	parser := NewManifestParser(&p.state, &p.fs, opts)
-	return parser.Parse("input", []byte(input+"\x00"))
+func (p *ParserTest) parseTest(input string, opts ParseManifestOpts) error {
+	return ParseManifest(&p.state, &p.fs, opts, "input", []byte(input+"\x00"))
 }
 
 func TestParserTest_Empty(t *testing.T) {
@@ -415,7 +414,7 @@ func TestParserTest_NoDeadPointerFromDuplicateEdge(t *testing.T) {
 func TestParserTest_DuplicateEdgeWithMultipleOutputsError(t *testing.T) {
 	p := NewParserTest(t)
 	input := "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n"
-	if err := p.parseTest(input, ManifestParserOptions{ErrOnDupeEdge: true}); err == nil {
+	if err := p.parseTest(input, ParseManifestOpts{ErrOnDupeEdge: true}); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "input:5: multiple rules generate out1\n" {
 		t.Fatal(err)
@@ -426,7 +425,7 @@ func TestParserTest_DuplicateEdgeInIncludedFile(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("sub.ninja", "rule cat\n  command = cat $in > $out\nbuild out1 out2: cat in1\nbuild out1: cat in2\nbuild final: cat out1\n")
 	input := "subninja sub.ninja\n"
-	if err := p.parseTest(input, ManifestParserOptions{ErrOnDupeEdge: true}); err == nil {
+	if err := p.parseTest(input, ParseManifestOpts{ErrOnDupeEdge: true}); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "sub.ninja:5: multiple rules generate out1\n" {
 		t.Fatalf("%q", err)
@@ -447,7 +446,7 @@ func TestParserTest_PhonySelfReferenceIgnored(t *testing.T) {
 func TestParserTest_PhonySelfReferenceKept(t *testing.T) {
 	p := NewParserTest(t)
 	input := "build a: phony a\n"
-	if err := p.parseTest(input, ManifestParserOptions{ErrOnPhonyCycle: true}); err != nil {
+	if err := p.parseTest(input, ParseManifestOpts{ErrOnPhonyCycle: true}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -625,7 +624,7 @@ func TestParserTest_Errors(t *testing.T) {
 	for i, line := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			p := NewParserTest(t)
-			if err := p.parseTest(line.in, ManifestParserOptions{}); err == nil {
+			if err := p.parseTest(line.in, ParseManifestOpts{}); err == nil {
 				t.Fatal("expected error")
 			} else if err.Error() != line.want {
 				t.Fatal(cmp.Diff(line.want, err.Error()))
@@ -750,7 +749,7 @@ func TestParserTest_Include(t *testing.T) {
 func TestParserTest_BrokenInclude(t *testing.T) {
 	p := NewParserTest(t)
 	p.fs.Create("include.ninja", "build\n")
-	if err := p.parseTest("include include.ninja\n", ManifestParserOptions{}); err == nil {
+	if err := p.parseTest("include include.ninja\n", ParseManifestOpts{}); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "include.ninja:1: expected path\nbuild\n     ^ near here" {
 		t.Fatalf("%q", err)
@@ -1002,8 +1001,7 @@ func BenchmarkLoadManifest(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state := NewState()
-		parser := NewManifestParser(&state, &di, ManifestParserOptions{})
-		if err = parser.Parse("build.ninja", contents); err != nil {
+		if err = ParseManifest(&state, &di, ParseManifestOpts{}, "build.ninja", contents); err != nil {
 			b.Fatal("Failed to read test data: ", err)
 		}
 		// Doing an empty build involves reading the manifest and evaluating all

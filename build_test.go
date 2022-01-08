@@ -68,7 +68,7 @@ func (p *PlanTest) FindWorkSorted(count int) []*Edge {
 
 func TestPlanTest_Basic(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "build out: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 	p.GetNode("mid").Dirty = true
 	p.GetNode("out").Dirty = true
 	err := ""
@@ -130,7 +130,7 @@ func TestPlanTest_Basic(t *testing.T) {
 // Test that two outputs from one rule can be handled as inputs to the next.
 func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "build out: cat mid1 mid2\nbuild mid1 mid2: cat in\n", ParseManifestOpts{})
 	p.GetNode("mid1").Dirty = true
 	p.GetNode("mid2").Dirty = true
 	p.GetNode("out").Dirty = true
@@ -173,7 +173,7 @@ func TestPlanTest_DoubleOutputDirect(t *testing.T) {
 // Test that two outputs from one rule can eventually be routed to another.
 func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "build out: cat b1 b2\nbuild b1: cat a1\nbuild b2: cat a2\nbuild a1 a2: cat in\n", ParseManifestOpts{})
 	p.GetNode("a1").Dirty = true
 	p.GetNode("a2").Dirty = true
 	p.GetNode("b1").Dirty = true
@@ -235,7 +235,7 @@ func TestPlanTest_DoubleOutputIndirect(t *testing.T) {
 // Test that two edges from one output can both execute.
 func TestPlanTest_DoubleDependent(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "build out: cat a1 a2\nbuild a1: cat mid\nbuild a2: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 	p.GetNode("mid").Dirty = true
 	p.GetNode("a1").Dirty = true
 	p.GetNode("a2").Dirty = true
@@ -295,7 +295,7 @@ func TestPlanTest_DoubleDependent(t *testing.T) {
 }
 
 func (p *PlanTest) TestPoolWithDepthOne(testCase string) {
-	p.AssertParse(&p.state, testCase, ManifestParserOptions{})
+	p.AssertParse(&p.state, testCase, ParseManifestOpts{})
 	p.GetNode("out1").Dirty = true
 	p.GetNode("out2").Dirty = true
 	err := ""
@@ -377,7 +377,7 @@ func TestPlanTest_ConsolePool(t *testing.T) {
 
 func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "pool foobar\n  depth = 2\npool bazbin\n  depth = 2\nrule foocat\n  command = cat $in > $out\n  pool = foobar\nrule bazcat\n  command = cat $in > $out\n  pool = bazbin\nbuild out1: foocat in\nbuild out2: foocat in\nbuild out3: foocat in\nbuild outb1: bazcat in\nbuild outb2: bazcat in\nbuild outb3: bazcat in\n  pool =\nbuild allTheThings: cat out1 out2 out3 outb1 outb2 outb3\n", ParseManifestOpts{})
 	// Mark all the out* nodes dirty
 	for i := 0; i < 3; i++ {
 		p.GetNode(fmt.Sprintf("out%d", i+1)).Dirty = true
@@ -483,7 +483,7 @@ func TestPlanTest_PoolsWithDepthTwo(t *testing.T) {
 
 func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "pool compile\n  depth = 1\nrule gen_foo\n  command = touch foo.cpp\nrule gen_bar\n  command = touch bar.cpp\nrule echo\n  command = echo $out > $out\nbuild foo.cpp.obj: echo foo.cpp || foo.cpp\n  pool = compile\nbuild bar.cpp.obj: echo bar.cpp || bar.cpp\n  pool = compile\nbuild libfoo.a: echo foo.cpp.obj bar.cpp.obj\nbuild foo.cpp: gen_foo\nbuild bar.cpp: gen_bar\nbuild all: phony libfoo.a\n", ParseManifestOpts{})
 	p.GetNode("foo.cpp").Dirty = true
 	p.GetNode("foo.cpp.obj").Dirty = true
 	p.GetNode("bar.cpp").Dirty = true
@@ -613,7 +613,7 @@ func TestPlanTest_PoolWithRedundantEdges(t *testing.T) {
 
 func TestPlanTest_PoolWithFailingEdge(t *testing.T) {
 	p := NewPlanTest(t)
-	p.AssertParse(&p.state, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n", ManifestParserOptions{})
+	p.AssertParse(&p.state, "pool foobar\n  depth = 1\nrule poolcat\n  command = cat $in > $out\n  pool = foobar\nbuild out1: poolcat in\nbuild out2: poolcat in\n", ParseManifestOpts{})
 	p.GetNode("out1").Dirty = true
 	p.GetNode("out2").Dirty = true
 	err := ""
@@ -713,7 +713,7 @@ func NewBuildTestBase(t *testing.T) *BuildTestBase {
 	}
 	b.config.Verbosity = Quiet
 	b.commandRunner = NewFakeCommandRunner(t, &b.fs)
-	b.AssertParse(&b.state, "build cat1: cat in1\nbuild cat2: cat in1 in2\nbuild cat12: cat cat1 cat2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build cat1: cat in1\nbuild cat2: cat in1 in2\nbuild cat12: cat cat1 cat2\n", ParseManifestOpts{})
 	b.fs.Create("in1", "")
 	b.fs.Create("in2", "")
 	return b
@@ -733,7 +733,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 		pstate = &localState
 	}
 	b.AddCatRule(pstate)
-	b.AssertParse(pstate, manifest, ManifestParserOptions{})
+	b.AssertParse(pstate, manifest, ParseManifestOpts{})
 
 	err := ""
 	var pbuildLog *BuildLog
@@ -1082,7 +1082,7 @@ func TestBuildTest_TwoStep(t *testing.T) {
 
 func TestBuildTest_TwoOutputs(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out1 out2: touch in.txt\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out1 out2: touch in.txt\n", ParseManifestOpts{})
 
 	b.fs.Create("in.txt", "")
 
@@ -1104,7 +1104,7 @@ func TestBuildTest_TwoOutputs(t *testing.T) {
 
 func TestBuildTest_ImplicitOutput(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nbuild out | out.imp: touch in.txt\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nbuild out | out.imp: touch in.txt\n", ParseManifestOpts{})
 	b.fs.Create("in.txt", "")
 
 	err := ""
@@ -1127,7 +1127,7 @@ func TestBuildTest_ImplicitOutput(t *testing.T) {
 //   https://github.com/ninja-build/ninja/issues/148
 func TestBuildTest_MultiOutIn(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild in1 otherfile: touch in\nbuild out: touch in | in1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild in1 otherfile: touch in\nbuild out: touch in | in1\n", ParseManifestOpts{})
 
 	b.fs.Create("in", "")
 	b.fs.Tick()
@@ -1147,7 +1147,7 @@ func TestBuildTest_MultiOutIn(t *testing.T) {
 
 func TestBuildTest_Chain(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build c2: cat c1\nbuild c3: cat c2\nbuild c4: cat c3\nbuild c5: cat c4\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build c2: cat c1\nbuild c3: cat c2\nbuild c4: cat c3\nbuild c5: cat c4\n", ParseManifestOpts{})
 
 	b.fs.Create("c1", "")
 
@@ -1244,7 +1244,7 @@ func TestBuildTest_MakeDirs(t *testing.T) {
 	err := ""
 
 	p := filepath.Join("subdir", "dir2", "file")
-	b.AssertParse(&b.state, "build "+p+": cat in1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build "+p+": cat in1\n", ParseManifestOpts{})
 	if b.builder.addTargetName("subdir/dir2/file", &err) == nil {
 		t.Fatal(err)
 	}
@@ -1267,7 +1267,7 @@ func TestBuildTest_MakeDirs(t *testing.T) {
 func TestBuildTest_DepFileMissing(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild fo$ o.o: cc foo.c\n", ParseManifestOpts{})
 	b.fs.Create("foo.c", "")
 
 	if b.builder.addTargetName("fo o.o", &err) == nil {
@@ -1288,7 +1288,7 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
 	origEdges := len(b.state.Edges)
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ParseManifestOpts{})
 	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("foo.c", "")
@@ -1326,7 +1326,7 @@ func TestBuildTest_DepFileOK(t *testing.T) {
 func TestBuildTest_DepFileParseError(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c\n", ParseManifestOpts{})
 	b.fs.Create("foo.c", "")
 	b.fs.Create("foo.o.d", "randomtext\n")
 	if b.builder.addTargetName("foo.o", &err) != nil {
@@ -1340,7 +1340,7 @@ func TestBuildTest_DepFileParseError(t *testing.T) {
 func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild c: touch\nbuild b: touch || c\nbuild a: touch | b || c\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild c: touch\nbuild b: touch || c\nbuild a: touch | b || c\n", ParseManifestOpts{})
 
 	cOut := b.GetNode("c").OutEdges
 	if 2 != len(cOut) {
@@ -1372,7 +1372,7 @@ func TestBuildTest_EncounterReadyTwice(t *testing.T) {
 func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c || otherfile\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild foo.o: cc foo.c || otherfile\n", ParseManifestOpts{})
 	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("foo.c", "")
@@ -1480,7 +1480,7 @@ func TestBuildTest_OrderOnlyDeps(t *testing.T) {
 func TestBuildTest_RebuildOrderOnlyDeps(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\nrule true\n  command = true\nbuild oo.h: cc oo.h.in\nbuild foo.o: cc foo.c || oo.h\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\nrule true\n  command = true\nbuild oo.h: cc oo.h.in\nbuild foo.o: cc foo.c || oo.h\n", ParseManifestOpts{})
 
 	b.fs.Create("foo.c", "")
 	b.fs.Create("oo.h.in", "")
@@ -1553,7 +1553,7 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 	if origEdges != 3 {
 		t.Fatal(origEdges)
 	}
-	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild gen/stuff\\things/foo.o: cc x\\y/z\\foo.c\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc $in\n  depfile = $out.d\nbuild gen/stuff\\things/foo.o: cc x\\y/z\\foo.c\n", ParseManifestOpts{})
 	edge := b.state.Edges[len(b.state.Edges)-1]
 
 	b.fs.Create("x/y/z/foo.c", "")
@@ -1592,7 +1592,7 @@ func TestBuildTest_DepFileCanonicalize(t *testing.T) {
 func TestBuildTest_Phony(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "build out: cat bar.cc\nbuild all: phony out\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat bar.cc\nbuild all: phony out\n", ParseManifestOpts{})
 	b.fs.Create("bar.cc", "")
 
 	if b.builder.addTargetName("all", &err) == nil {
@@ -1617,7 +1617,7 @@ func TestBuildTest_Phony(t *testing.T) {
 func TestBuildTest_PhonyNoWork(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "build out: cat bar.cc\nbuild all: phony out\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat bar.cc\nbuild all: phony out\n", ParseManifestOpts{})
 	b.fs.Create("bar.cc", "")
 	b.fs.Create("out", "")
 
@@ -1638,7 +1638,7 @@ func TestBuildTest_PhonyNoWork(t *testing.T) {
 func TestBuildTest_PhonySelfReference(t *testing.T) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "build a: phony a\n", ManifestParserOptions{Quiet: true})
+	b.AssertParse(&b.state, "build a: phony a\n", ParseManifestOpts{Quiet: true})
 
 	if b.builder.addTargetName("a", &err) == nil {
 		t.Fatal("expected true")
@@ -1674,7 +1674,7 @@ func TestBuildTest_PhonySelfReference(t *testing.T) {
 func PhonyUseCase(t *testing.T, i int) {
 	b := NewBuildTest(t)
 	err := ""
-	b.AssertParse(&b.state, "rule touch\n command = touch $out\nbuild notreal: phony blank\nbuild phony1: phony notreal\nbuild phony2: phony\nbuild phony3: phony blank\nbuild phony4: phony notreal\nbuild phony5: phony\nbuild phony6: phony blank\n\nbuild test1: touch phony1\nbuild test2: touch phony2\nbuild test3: touch phony3\nbuild test4: touch phony4\nbuild test5: touch phony5\nbuild test6: touch phony6\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n command = touch $out\nbuild notreal: phony blank\nbuild phony1: phony notreal\nbuild phony2: phony\nbuild phony3: phony blank\nbuild phony4: phony notreal\nbuild phony5: phony\nbuild phony6: phony blank\n\nbuild test1: touch phony1\nbuild test2: touch phony2\nbuild test3: touch phony3\nbuild test4: touch phony4\nbuild test5: touch phony5\nbuild test6: touch phony6\n", ParseManifestOpts{})
 
 	// Set up test.
 	b.builder.commandRunner = nil // BuildTest owns the CommandRunner
@@ -1853,7 +1853,7 @@ func TestBuildTest_PhonyUseCase(t *testing.T) {
 
 func TestBuildTest_Fail(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -1875,7 +1875,7 @@ func TestBuildTest_Fail(t *testing.T) {
 
 func TestBuildTest_SwallowFailures(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild all: phony out1 out2 out3\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild all: phony out1 out2 out3\n", ParseManifestOpts{})
 
 	// Swallow two failures, die on the third.
 	b.config.FailuresAllowed = 3
@@ -1900,7 +1900,7 @@ func TestBuildTest_SwallowFailures(t *testing.T) {
 
 func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule fail\n  command = fail\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ParseManifestOpts{})
 
 	// Swallow ten failures; we should stop before building final.
 	b.config.FailuresAllowed = 11
@@ -1925,7 +1925,7 @@ func TestBuildTest_SwallowFailuresLimit(t *testing.T) {
 
 func TestBuildTest_SwallowFailuresPool(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "pool failpool\n  depth = 1\nrule fail\n  command = fail\n  pool = failpool\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "pool failpool\n  depth = 1\nrule fail\n  command = fail\n  pool = failpool\nbuild out1: fail\nbuild out2: fail\nbuild out3: fail\nbuild final: cat out1 out2 out3\n", ParseManifestOpts{})
 
 	// Swallow ten failures; we should stop before building final.
 	b.config.FailuresAllowed = 11
@@ -1984,7 +1984,7 @@ func NewBuildWithLogTest(t *testing.T) *BuildWithLogTest {
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\n  generator = 1\nbuild out.imp: touch | in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\n  generator = 1\nbuild out.imp: touch | in\n", ParseManifestOpts{})
 	b.fs.Create("out.imp", "")
 	b.fs.Tick()
 	b.fs.Create("in", "")
@@ -2005,7 +2005,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate(t *testing.T) {
 
 func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule touch-implicit-dep-out\n  command = touch $test_dependency ; sleep 1 ; touch $out\n  generator = 1\nbuild out.imp: touch-implicit-dep-out | inimp inimp2\n  test_dependency = inimp\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch-implicit-dep-out\n  command = touch $test_dependency ; sleep 1 ; touch $out\n  generator = 1\nbuild out.imp: touch-implicit-dep-out | inimp inimp2\n  test_dependency = inimp\n", ParseManifestOpts{})
 	b.fs.Create("inimp", "")
 	b.fs.Create("out.imp", "")
 	b.fs.Tick()
@@ -2046,7 +2046,7 @@ func TestBuildWithLogTest_ImplicitGeneratedOutOfDate2(t *testing.T) {
 
 func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule cc\n  command = cc\nbuild out1: cc in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc\nbuild out1: cc in\n", ParseManifestOpts{})
 
 	// Create input/output that would be considered up to date when
 	// not considering the command line hash.
@@ -2079,7 +2079,7 @@ func TestBuildWithLogTest_NotInLogButOnDisk(t *testing.T) {
 
 func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule touch-fail-tick2\n  command = touch-fail-tick2\nbuild out1: touch-fail-tick2 in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch-fail-tick2\n  command = touch-fail-tick2\nbuild out1: touch-fail-tick2 in\n", ParseManifestOpts{})
 
 	err := ""
 
@@ -2142,7 +2142,7 @@ func TestBuildWithLogTest_RebuildAfterFailure(t *testing.T) {
 
 func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule touch\n  command = touch\nbuild out1: touch\nbuild out2: touch in\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch\nbuild out1: touch\nbuild out2: touch in\n", ParseManifestOpts{})
 
 	err := ""
 
@@ -2184,7 +2184,7 @@ func TestBuildWithLogTest_RebuildWithNoInputs(t *testing.T) {
 
 func TestBuildWithLogTest_RestatTest(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ParseManifestOpts{})
 
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
@@ -2276,7 +2276,7 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 	// exist before the rule was run, consider that behavior equivalent
 	// to a rule that doesn't modify its existent output file.
 
-	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ParseManifestOpts{})
 
 	b.fs.Create("in", "")
 	b.fs.Create("out2", "")
@@ -2320,7 +2320,7 @@ func TestBuildWithLogTest_RestatMissingFile(t *testing.T) {
 
 func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule touch\n  command = touch\nbuild out1: true in\nbuild out2 out3: touch out1\nbuild out4: touch out2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule touch\n  command = touch\nbuild out1: true in\nbuild out2 out3: touch out1\nbuild out4: touch out2\n", ParseManifestOpts{})
 
 	// Create the necessary files
 	b.fs.Create("in", "")
@@ -2368,7 +2368,7 @@ func TestBuildWithLogTest_RestatSingleDependentOutputDirty(t *testing.T) {
 // https://github.com/ninja-build/ninja/issues/295
 func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule true\n  command = true\n  depfile = $out.d\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\n  depfile = $out.d\n  restat = 1\nrule cc\n  command = cc\nbuild out1: true in\nbuild out2: cc out1\n", ParseManifestOpts{})
 
 	// Create all necessary files
 	b.fs.Create("in", "")
@@ -2437,7 +2437,7 @@ func TestBuildWithLogTest_RestatMissingInput(t *testing.T) {
 
 func TestBuildWithLogTest_GeneratedPlainDepfileMtime(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule generate-depfile\n  command = touch $out ; echo \"$out: $test_dependency\" > $depfile\nbuild out: generate-depfile\n  test_dependency = inimp\n  depfile = out.d\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule generate-depfile\n  command = touch $out ; echo \"$out: $test_dependency\" > $depfile\nbuild out: generate-depfile\n  test_dependency = inimp\n  depfile = out.d\n", ParseManifestOpts{})
 	b.fs.Create("inimp", "")
 	b.fs.Tick()
 
@@ -2478,7 +2478,7 @@ func NewBuildDryRunTest(t *testing.T) *BuildWithLogTest {
 
 func TestBuildDryRun_AllCommandsShown(t *testing.T) {
 	b := NewBuildDryRunTest(t)
-	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nrule cc\n  command = cc\n  restat = 1\nbuild out1: cc in\nbuild out2: true out1\nbuild out3: cat out2\n", ParseManifestOpts{})
 
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
@@ -2509,7 +2509,7 @@ func TestBuildDryRun_AllCommandsShown(t *testing.T) {
 // successful execution.
 func TestBuildTest_RspFileSuccess(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nrule cat_rsp_out\n  command = cat $rspfile > $out\n  rspfile = $out.rsp\n  rspfile_content = $long_command\nbuild out1: cat in\nbuild out2: cat_rsp in\n  rspfile = out 2.rsp\n  long_command = Some very long command\nbuild out$ 3: cat_rsp_out in\n  long_command = Some very long command\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nrule cat_rsp_out\n  command = cat $rspfile > $out\n  rspfile = $out.rsp\n  rspfile_content = $long_command\nbuild out1: cat in\nbuild out2: cat_rsp in\n  rspfile = out 2.rsp\n  long_command = Some very long command\nbuild out$ 3: cat_rsp_out in\n  long_command = Some very long command\n", ParseManifestOpts{})
 
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
@@ -2580,7 +2580,7 @@ func TestBuildTest_RspFileSuccess(t *testing.T) {
 // Test that RSP file is created but not removed for commands, which fail
 func TestBuildTest_RspFileFailure(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule fail\n  command = fail\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: fail in\n  rspfile = out.rsp\n  long_command = Another very long command\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule fail\n  command = fail\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: fail in\n  rspfile = out.rsp\n  long_command = Another very long command\n", ParseManifestOpts{})
 
 	b.fs.Create("out", "")
 	b.fs.Tick()
@@ -2639,7 +2639,7 @@ func TestBuildTest_RspFileFailure(t *testing.T) {
 // command line, i.e. triggers a rebuild if changed
 func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 	b := NewBuildWithLogTest(t)
-	b.AssertParse(&b.state, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cat_rsp\n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $long_command\nbuild out: cat_rsp in\n  rspfile = out.rsp\n  long_command = Original very long command\n", ParseManifestOpts{})
 
 	b.fs.Create("out", "")
 	b.fs.Tick()
@@ -2702,7 +2702,7 @@ func TestBuildWithLogTest_RspFileCmdLineChange(t *testing.T) {
 
 func TestBuildTest_InterruptCleanup(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule interrupt\n  command = interrupt\nrule touch-interrupt\n  command = touch-interrupt\nbuild out1: interrupt in1\nbuild out2: touch-interrupt in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule interrupt\n  command = interrupt\nrule touch-interrupt\n  command = touch-interrupt\nbuild out1: interrupt in1\nbuild out2: touch-interrupt in2\n", ParseManifestOpts{})
 
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
@@ -2750,7 +2750,7 @@ func TestBuildTest_InterruptCleanup(t *testing.T) {
 func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
 	b := NewBuildTest(t)
 	tooLongToStat := strings.Repeat("i", 400)
-	b.AssertParse(&b.state, ("build " + tooLongToStat + ": cat in\n"), ManifestParserOptions{})
+	b.AssertParse(&b.state, ("build " + tooLongToStat + ": cat in\n"), ParseManifestOpts{})
 	b.fs.Create("in", "")
 
 	// This simulates a stat failure:
@@ -2770,7 +2770,7 @@ func TestBuildTest_StatFailureAbortsBuild(t *testing.T) {
 
 func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build nonexistent: phony\nbuild out1: cat || nonexistent\nbuild out2: cat nonexistent\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build nonexistent: phony\nbuild out1: cat || nonexistent\nbuild out2: cat nonexistent\n", ParseManifestOpts{})
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
 
@@ -2807,7 +2807,7 @@ func TestBuildTest_PhonyWithNoInputs(t *testing.T) {
 
 func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule cc\n  command = cc\n  deps = gcc\nbuild out: cc\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cc\n  command = cc\n  deps = gcc\nbuild out: cc\n", ParseManifestOpts{})
 	b.Dirty("out")
 
 	err := ""
@@ -2833,7 +2833,7 @@ func TestBuildTest_DepsGccWithEmptyDepfileErrorsOut(t *testing.T) {
 
 func TestBuildTest_FailedDepsParse(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build bad_deps.o: cat in1\n  deps = gcc\n  depfile = in1.d\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build bad_deps.o: cat in1\n  deps = gcc\n  depfile = in1.d\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("bad_deps.o", &err) == nil {
@@ -2882,7 +2882,7 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 // Test a MSVC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 	b := NewBuildWithQueryDepsLogTest(t)
-	b.AssertParse(&b.state, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_msvc\n    command = echo 'using $in' && for file in $out; do cp $in $$file; done\n    deps = msvc\n    msvc_deps_prefix = using \nbuild out1 out2: cp_multi_msvc in1\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -2921,7 +2921,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileMSVC(t *testing.T) {
 // Test a GCC-style deps log with multiple outputs.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 	b := NewBuildWithQueryDepsLogTest(t)
-	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -2967,7 +2967,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOneLine(t *testing.T) {
 // Test a GCC-style deps log with multiple outputs using a line per input.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing.T) {
 	b := NewBuildWithQueryDepsLogTest(t)
-	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo '$out: in1\\n$out: in2' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -3013,7 +3013,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineInput(t *testing
 // Test a GCC-style deps log with multiple outputs using a line per output.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testing.T) {
 	b := NewBuildWithQueryDepsLogTest(t)
-	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in\\nout2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -3059,7 +3059,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCMultiLineOutput(t *testin
 // Test a GCC-style deps log with multiple outputs mentioning only the main output.
 func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlyMainOutput(t *testing.T) {
 	b := NewBuildWithQueryDepsLogTest(t)
-	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out1: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -3107,7 +3107,7 @@ func TestBuildWithQueryDepsLogTest_TwoOutputsDepFileGCCOnlySecondaryOutput(t *te
 	b := NewBuildWithQueryDepsLogTest(t)
 	// Note: This ends up short-circuiting the node creation due to the primary
 	// output not being present, but it should still work.
-	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule cp_multi_gcc\n    command = echo 'out2: $in' > in.d && for file in $out; do cp in1 $$file; done\n    deps = gcc\n    depfile = in.d\nbuild out1 out2: cp_multi_gcc in1 in2\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out1", &err) == nil {
@@ -3169,7 +3169,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 	{
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
@@ -3207,7 +3207,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 	{
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Touch the file only mentioned in the deps.
 		b.fs.Tick()
@@ -3262,7 +3262,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
@@ -3303,7 +3303,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 	{
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3351,7 +3351,7 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 
 	state := NewState()
 	b.AddCatRule(&state)
-	b.AssertParse(&state, manifest, ManifestParserOptions{})
+	b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 	// The deps log is NULL in dry runs.
 	b.config.DryRun = true
@@ -3379,7 +3379,7 @@ func TestBuildWithDepsLogTest_DepsIgnoredInDryRun(t *testing.T) {
 // Check that a restat rule generating a header cancels compilations correctly.
 func TestBuildTest_RestatDepfileDependency(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nbuild header.h: true header.in\nbuild out: cat in1\n  depfile = in1.d\n", ManifestParserOptions{}) // Would be "write if out-of-date" in reality
+	b.AssertParse(&b.state, "rule true\n  command = true\n  restat = 1\nbuild header.h: true header.in\nbuild out: cat in1\n  depfile = in1.d\n", ParseManifestOpts{}) // Would be "write if out-of-date" in reality
 
 	b.fs.Create("header.h", "")
 	b.fs.Create("in1.d", "out: header.h")
@@ -3408,7 +3408,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 	{
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
@@ -3440,7 +3440,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 	{
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Touch the input of the restat rule.
 		b.fs.Tick()
@@ -3488,7 +3488,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
@@ -3519,7 +3519,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3579,7 +3579,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3615,7 +3615,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3653,7 +3653,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3693,7 +3693,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
@@ -3725,7 +3725,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 
 	{
 		state := NewState()
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
@@ -3868,7 +3868,7 @@ func TestBuildTest_WrongOutputInDepfileCausesRebuild(t *testing.T) {
 
 func TestBuildTest_Console(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "rule console\n  command = console\n  pool = console\nbuild cons: console in.txt\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule console\n  command = console\n  pool = console\nbuild cons: console in.txt\n", ParseManifestOpts{})
 
 	b.fs.Create("in.txt", "")
 
@@ -3891,7 +3891,7 @@ func TestBuildTest_DyndepMissingAndNoRule(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that we can diagnose when a dyndep file is missing and
 	// has no rule to build it.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 
 	err := ""
 	if b.builder.addTargetName("out", &err) != nil {
@@ -3907,7 +3907,7 @@ func TestBuildTest_DyndepReadyImplicitConnection(t *testing.T) {
 	// Verify that a dyndep file can be loaded immediately to discover
 	// that one edge has an implicit output that is also an implicit
 	// input of another edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
@@ -3930,7 +3930,7 @@ func TestBuildTest_DyndepReadySyntaxError(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be loaded immediately to discover
 	// and reject a syntax error in it.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd", "build out: dyndep\n")
 
 	err := ""
@@ -3946,7 +3946,7 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be loaded immediately to discover
 	// and reject a circular dependency.
-	b.AssertParse(&b.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\nbuild in: r circ\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule r\n  command = unused\nbuild out: r in || dd\n  dyndep = dd\nbuild in: r circ\n", ParseManifestOpts{})
 	b.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out | circ: dyndep\n")
 	b.fs.Create("out", "")
 
@@ -3962,7 +3962,7 @@ func TestBuildTest_DyndepReadyCircular(t *testing.T) {
 func TestBuildTest_DyndepBuild(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover nothing.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\n")
 
 	err := ""
@@ -4001,7 +4001,7 @@ func TestBuildTest_DyndepBuildSyntaxError(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// and reject a syntax error in it.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "build out: dyndep\n")
 
 	err := ""
@@ -4023,7 +4023,7 @@ func TestBuildTest_DyndepBuildUnrelatedOutput(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can have dependents that do not specify
 	// it as their dyndep binding.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild unrelated: touch || dd\nbuild out: touch unrelated || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild unrelated: touch || dd\nbuild out: touch unrelated || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\n")
 	b.fs.Tick()
 	b.fs.Create("out", "")
@@ -4049,7 +4049,7 @@ func TestBuildTest_DyndepBuildDiscoverNewOutput(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch in || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch in || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("in", "")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep\n")
 	b.fs.Tick()
@@ -4076,7 +4076,7 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules1(t *testing.T) 
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge that is already the output of another edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out1 | out-twice.imp: touch in\nbuild out2: touch in || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out1 | out-twice.imp: touch in\nbuild out2: touch in || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("in", "")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out2 | out-twice.imp: dyndep\n")
 	b.fs.Tick()
@@ -4106,7 +4106,7 @@ func TestBuildTest_DyndepBuildDiscoverNewOutputWithMultipleRules2(t *testing.T) 
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new output of an edge that is already the output of another
 	// edge also discovered by dyndep.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || dd1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ManifestParserOptions{}) // make order predictable for test
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || dd1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ParseManifestOpts{}) // make order predictable for test
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
 	b.fs.Create("dd1-in", "ninja_dyndep_version = 1\nbuild out1 | out-twice.imp: dyndep\n")
@@ -4138,7 +4138,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInput(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new input to an edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild in: touch\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild in: touch\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep | in\n")
 	b.fs.Tick()
 	b.fs.Create("out", "")
@@ -4164,7 +4164,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithValidation(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file cannot contain the |@ validation
 	// syntax.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep |@ validation\n")
 
 	err2 := ""
@@ -4189,7 +4189,7 @@ func TestBuildTest_DyndepBuildDiscoverNewInputWithTransitiveValidation(t *testin
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// a new input to an edge that has a validation edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild in: touch |@ validation\nbuild validation: touch in out\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild in: touch |@ validation\nbuild validation: touch in out\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep | in\n")
 	b.fs.Tick()
 	b.fs.Create("out", "")
@@ -4216,7 +4216,7 @@ func TestBuildTest_DyndepBuildDiscoverImplicitConnection(t *testing.T) {
 	// Verify that a dyndep file can be built and loaded to discover
 	// that one edge has an implicit output that is also an implicit
 	// input of another edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep | tmp.imp\nbuild tmp | tmp.imp: dyndep\n")
 
 	err := ""
@@ -4241,7 +4241,7 @@ func TestBuildTest_DyndepBuildDiscoverOutputAndDepfileInput(t *testing.T) {
 	// Verify that a dyndep file can be built and loaded to discover
 	// that one edge has an implicit output that is also reported by
 	// a depfile as an input of another edge.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: cp tmp\n  depfile = out.d\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: cp tmp\n  depfile = out.d\n", ParseManifestOpts{})
 	b.fs.Create("out.d", "out: tmp.imp\n")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n")
 
@@ -4297,7 +4297,7 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdge(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge is actually wanted due to a missing implicit output.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch tmp || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch tmp || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("tmp", "")
 	b.fs.Create("out", "")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out: dyndep\nbuild tmp | tmp.imp: dyndep\n")
@@ -4323,7 +4323,7 @@ func TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge and a dependent are actually wanted.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch tmp\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild tmp: touch || dd\n  dyndep = dd\nbuild out: touch tmp\n", ParseManifestOpts{})
 	b.fs.Create("tmp", "")
 	b.fs.Create("out", "")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild tmp | tmp.imp: dyndep\n")
@@ -4367,7 +4367,7 @@ func TestBuildTest_DyndepBuildDiscoverCircular(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// and reject a circular dependency.
-	b.AssertParse(&b.state, "rule r\n  command = unused\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: r in || dd\n  depfile = out.d\n  dyndep = dd\nbuild in: r || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule r\n  command = unused\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out: r in || dd\n  depfile = out.d\n  dyndep = dd\nbuild in: r || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	b.fs.Create("out.d", "out: inimp\n")
 	b.fs.Create("dd-in", "ninja_dyndep_version = 1\nbuild out | circ: dyndep\nbuild in: dyndep | circ\n")
 	b.fs.Create("out", "")
@@ -4393,7 +4393,7 @@ func TestBuildWithLogTest_DyndepBuildDiscoverRestat(t *testing.T) {
 	b := NewBuildWithLogTest(t)
 	// Verify that a dyndep file can be built and loaded to discover
 	// that an edge has a restat binding.
-	b.AssertParse(&b.state, "rule true\n  command = true\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out1: true in || dd\n  dyndep = dd\nbuild out2: cat out1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule true\n  command = true\nrule cp\n  command = cp $in $out\nbuild dd: cp dd-in\nbuild out1: true in || dd\n  dyndep = dd\nbuild out2: cat out1\n", ParseManifestOpts{})
 
 	b.fs.Create("out1", "")
 	b.fs.Create("out2", "")
@@ -4446,7 +4446,7 @@ func TestBuildTest_DyndepBuildDiscoverScheduledEdge(t *testing.T) {
 	// Verify that a dyndep file can be built and loaded to discover a
 	// new input that itself is an output from an edge that has already
 	// been scheduled but not finished.  We should not re-schedule it.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild out1 | out1.imp: touch\nbuild zdd: cp zdd-in\n  verify_active_edge = out1\nbuild out2: cp out1 || zdd\n  dyndep = zdd\n", ManifestParserOptions{}) // verify out1 is active when zdd is finished
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild out1 | out1.imp: touch\nbuild zdd: cp zdd-in\n  verify_active_edge = out1\nbuild out2: cp out1 || zdd\n  dyndep = zdd\n", ParseManifestOpts{}) // verify out1 is active when zdd is finished
 	b.fs.Create("zdd-in", "ninja_dyndep_version = 1\nbuild out2: dyndep | out1.imp\n")
 
 	// Enable concurrent builds so that we can load the dyndep file
@@ -4491,7 +4491,7 @@ func TestBuildTest_DyndepTwoLevelDirect(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a clean dyndep file can depend on a dirty dyndep file
 	// and be loaded properly after the dirty one is built and loaded.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1 | out1.imp: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || dd1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ManifestParserOptions{}) // direct order-only dep on dd1
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1 | out1.imp: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || dd1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ParseManifestOpts{}) // direct order-only dep on dd1
 	b.fs.Create("out1.imp", "")
 	b.fs.Create("out2", "")
 	b.fs.Create("out2.imp", "")
@@ -4528,7 +4528,7 @@ func TestBuildTest_DyndepTwoLevelIndirect(t *testing.T) {
 	// Verify that dyndep files can add to an edge new implicit inputs that
 	// correspond to implicit outputs added to other edges by other dyndep
 	// files on which they (order-only) depend.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || out1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ManifestParserOptions{}) // indirect order-only dep on dd1
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out $out.imp\nrule cp\n  command = cp $in $out\nbuild dd1: cp dd1-in\nbuild out1: touch || dd1\n  dyndep = dd1\nbuild dd2: cp dd2-in || out1\nbuild out2: touch || dd2\n  dyndep = dd2\n", ParseManifestOpts{}) // indirect order-only dep on dd1
 	b.fs.Create("out1.imp", "")
 	b.fs.Create("out2", "")
 	b.fs.Create("out2.imp", "")
@@ -4561,7 +4561,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredReady(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can discover a new input whose
 	// edge also has a dyndep file that is ready to load immediately.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd0: cp dd0-in\nbuild dd1: cp dd1-in\nbuild in: touch\nbuild tmp: touch || dd0\n  dyndep = dd0\nbuild out: touch || dd1\n  dyndep = dd1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd0: cp dd0-in\nbuild dd1: cp dd1-in\nbuild in: touch\nbuild tmp: touch || dd0\n  dyndep = dd0\nbuild out: touch || dd1\n  dyndep = dd1\n", ParseManifestOpts{})
 	b.fs.Create("dd1-in", "ninja_dyndep_version = 1\nbuild out: dyndep | tmp\n")
 	b.fs.Create("dd0-in", "")
 	b.fs.Create("dd0", "ninja_dyndep_version = 1\nbuild tmp: dyndep | in\n")
@@ -4589,7 +4589,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 	b := NewBuildTest(t)
 	// Verify that a dyndep file can discover a new input whose
 	// edge also has a dyndep file that needs to be built.
-	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd0: cp dd0-in\nbuild dd1: cp dd1-in\nbuild in: touch\nbuild tmp: touch || dd0\n  dyndep = dd0\nbuild out: touch || dd1\n  dyndep = dd1\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "rule touch\n  command = touch $out\nrule cp\n  command = cp $in $out\nbuild dd0: cp dd0-in\nbuild dd1: cp dd1-in\nbuild in: touch\nbuild tmp: touch || dd0\n  dyndep = dd0\nbuild out: touch || dd1\n  dyndep = dd1\n", ParseManifestOpts{})
 	b.fs.Create("dd1-in", "ninja_dyndep_version = 1\nbuild out: dyndep | tmp\n")
 	b.fs.Create("dd0-in", "ninja_dyndep_version = 1\nbuild tmp: dyndep | in\n")
 	b.fs.Tick()
@@ -4614,7 +4614,7 @@ func TestBuildTest_DyndepTwoLevelDiscoveredDirty(t *testing.T) {
 
 func TestBuildTest_Validation(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat in2\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat in2\n", ParseManifestOpts{})
 
 	b.fs.Create("in", "")
 	b.fs.Create("in2", "")
@@ -4676,7 +4676,7 @@ func TestBuildTest_Validation(t *testing.T) {
 
 func TestBuildTest_ValidationDependsOnOutput(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat in2 | out\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat in2 | out\n", ParseManifestOpts{})
 
 	b.fs.Create("in", "")
 	b.fs.Create("in2", "")
@@ -4745,7 +4745,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		if !depsLog.OpenForWrite("ninja_deps", &err) || err != "" {
@@ -4787,7 +4787,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 
 		state := NewState()
 		b.AddCatRule(&state)
-		b.AssertParse(&state, manifest, ManifestParserOptions{})
+		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
@@ -4823,7 +4823,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 
 func TestBuildTest_ValidationCircular(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build out: cat in |@ out2\nbuild out2: cat in2 |@ out\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in |@ out2\nbuild out2: cat in2 |@ out\n", ParseManifestOpts{})
 	b.fs.Create("in", "")
 	b.fs.Create("in2", "")
 
@@ -4881,7 +4881,7 @@ func TestBuildTest_ValidationCircular(t *testing.T) {
 
 func TestBuildTest_ValidationWithCircularDependency(t *testing.T) {
 	b := NewBuildTest(t)
-	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat validate_in | out\nbuild validate_in: cat validate\n", ManifestParserOptions{})
+	b.AssertParse(&b.state, "build out: cat in |@ validate\nbuild validate: cat validate_in | out\nbuild validate_in: cat validate\n", ParseManifestOpts{})
 
 	b.fs.Create("in", "")
 

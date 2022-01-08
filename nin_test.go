@@ -40,7 +40,7 @@ func NewStateTestWithBuiltinRules(t *testing.T) StateTestWithBuiltinRules {
 // Add a "cat" rule to \a state.  Used by some tests; it's
 // otherwise done by the ctor to state.
 func (s *StateTestWithBuiltinRules) AddCatRule(state *State) {
-	s.AssertParse(state, "rule cat\n  command = cat $in > $out\n", ManifestParserOptions{})
+	s.AssertParse(state, "rule cat\n  command = cat $in > $out\n", ParseManifestOpts{})
 }
 
 // Short way to get a Node by its path from state.
@@ -52,11 +52,10 @@ func (s *StateTestWithBuiltinRules) GetNode(path string) *Node {
 	return s.state.GetNode(path, 0)
 }
 
-func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ManifestParserOptions) {
-	parser := NewManifestParser(state, nil, opts)
+func (s *StateTestWithBuiltinRules) AssertParse(state *State, input string, opts ParseManifestOpts) {
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
-	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
+	if err := ParseManifest(state, nil, opts, "input", []byte(input+"\x00")); err != nil {
 		s.t.Helper()
 		s.t.Fatal(err)
 	}
@@ -71,10 +70,9 @@ func (s *StateTestWithBuiltinRules) AssertHash(expected string, actual uint64) {
 }
 
 func assertParseManifest(t *testing.T, input string, state *State) {
-	parser := NewManifestParser(state, nil, ManifestParserOptions{})
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
-	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
+	if err := ParseManifest(state, nil, ParseManifestOpts{}, "input", []byte(input+"\x00")); err != nil {
 		t.Helper()
 		t.Fatal(err)
 	}

@@ -39,7 +39,7 @@ func NewCleanTest(t *testing.T) *CleanTest {
 
 func TestCleanTest_CleanAll(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -88,7 +88,7 @@ func TestCleanTest_CleanAll(t *testing.T) {
 
 func TestCleanTest_CleanAllDryRun(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -138,7 +138,7 @@ func TestCleanTest_CleanAllDryRun(t *testing.T) {
 
 func TestCleanTest_CleanTarget(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -187,7 +187,7 @@ func TestCleanTest_CleanTarget(t *testing.T) {
 
 func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build in1: cat src1\nbuild out1: cat in1\nbuild in2: cat src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -237,7 +237,7 @@ func TestCleanTest_CleanTargetDryRun(t *testing.T) {
 
 func TestCleanTest_CleanRule(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cat_e\n  command = cat -e $in > $out\nbuild in1: cat_e src1\nbuild out1: cat in1\nbuild in2: cat_e src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cat_e\n  command = cat -e $in > $out\nbuild in1: cat_e src1\nbuild out1: cat in1\nbuild in2: cat_e src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -286,7 +286,7 @@ func TestCleanTest_CleanRule(t *testing.T) {
 
 func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cat_e\n  command = cat -e $in > $out\nbuild in1: cat_e src1\nbuild out1: cat in1\nbuild in2: cat_e src2\nbuild out2: cat in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cat_e\n  command = cat -e $in > $out\nbuild in1: cat_e src1\nbuild out1: cat in1\nbuild in2: cat_e src2\nbuild out2: cat in2\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2", "")
@@ -336,7 +336,7 @@ func TestCleanTest_CleanRuleDryRun(t *testing.T) {
 
 func TestCleanTest_CleanRuleGenerator(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule regen\n  command = cat $in > $out\n  generator = 1\nbuild out1: cat in1\nbuild out2: regen in2\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule regen\n  command = cat $in > $out\n  generator = 1\nbuild out1: cat in1\nbuild out2: regen in2\n", ParseManifestOpts{})
 	c.fs.Create("out1", "")
 	c.fs.Create("out2", "")
 
@@ -367,7 +367,7 @@ func TestCleanTest_CleanRuleGenerator(t *testing.T) {
 
 func TestCleanTest_CleanDepFile(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ParseManifestOpts{})
 	c.fs.Create("out1", "")
 	c.fs.Create("out1.d", "")
 
@@ -385,7 +385,7 @@ func TestCleanTest_CleanDepFile(t *testing.T) {
 
 func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ParseManifestOpts{})
 	c.fs.Create("out1", "")
 	c.fs.Create("out1.d", "")
 
@@ -403,7 +403,7 @@ func TestCleanTest_CleanDepFileOnCleanTarget(t *testing.T) {
 
 func TestCleanTest_CleanDepFileOnCleanRule(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  depfile = $out.d\nbuild out1: cc in1\n", ParseManifestOpts{})
 	c.fs.Create("out1", "")
 	c.fs.Create("out1.d", "")
 
@@ -423,7 +423,7 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
 	c := NewCleanTest(t)
 	// Verify that a dyndep file can be loaded to discover a new output
 	// to be cleaned.
-	c.AssertParse(&c.state, "build out: cat in || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build out: cat in || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	c.fs.Create("in", "")
 	c.fs.Create("dd", "ninja_dyndep_version = 1\nbuild out | out.imp: dyndep\n")
 	c.fs.Create("out", "")
@@ -455,7 +455,7 @@ func TestCleanTest_CleanDyndep(t *testing.T) {
 func TestCleanTest_CleanDyndepMissing(t *testing.T) {
 	c := NewCleanTest(t)
 	// Verify that a missing dyndep file is tolerated.
-	c.AssertParse(&c.state, "build out: cat in || dd\n  dyndep = dd\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build out: cat in || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	c.fs.Create("in", "")
 	c.fs.Create("out", "")
 	c.fs.Create("out.imp", "")
@@ -485,7 +485,7 @@ func TestCleanTest_CleanDyndepMissing(t *testing.T) {
 
 func TestCleanTest_CleanRspFile(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  rspfile = $rspfile\n  rspfile_content=$in\nbuild out1: cc in1\n  rspfile = cc1.rsp\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cc\n  command = cc $in > $out\n  rspfile = $rspfile\n  rspfile_content=$in\nbuild out1: cc in1\n  rspfile = cc1.rsp\n", ParseManifestOpts{})
 	c.fs.Create("out1", "")
 	c.fs.Create("cc1.rsp", "")
 
@@ -503,7 +503,7 @@ func TestCleanTest_CleanRspFile(t *testing.T) {
 
 func TestCleanTest_CleanRsp(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cat_rsp \n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\nbuild in1: cat src1\nbuild out1: cat in1\nbuild in2: cat_rsp src2\n  rspfile=in2.rsp\nbuild out2: cat_rsp in2\n  rspfile=out2.rsp\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cat_rsp \n  command = cat $rspfile > $out\n  rspfile = $rspfile\n  rspfile_content = $in\nbuild in1: cat src1\nbuild out1: cat in1\nbuild in2: cat_rsp src2\n  rspfile=in2.rsp\nbuild out2: cat_rsp in2\n  rspfile=out2.rsp\n", ParseManifestOpts{})
 	c.fs.Create("in1", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("in2.rsp", "")
@@ -561,7 +561,7 @@ func TestCleanTest_CleanRsp(t *testing.T) {
 
 func TestCleanTest_CleanFailure(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build dir: cat src1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build dir: cat src1\n", ParseManifestOpts{})
 	c.fs.MakeDir("dir")
 	cleaner := NewCleaner(&c.state, &c.config, &c.fs)
 	if 0 == cleaner.CleanAll(false) {
@@ -571,7 +571,7 @@ func TestCleanTest_CleanFailure(t *testing.T) {
 
 func TestCleanTest_CleanPhony(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "build phony: phony t1 t2\nbuild t1: cat\nbuild t2: cat\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build phony: phony t1 t2\nbuild t1: cat\nbuild t2: cat\n", ParseManifestOpts{})
 
 	c.fs.Create("phony", "")
 	c.fs.Create("t1", "")
@@ -606,7 +606,7 @@ func TestCleanTest_CleanPhony(t *testing.T) {
 
 func TestCleanTest_CleanDepFileAndRspFileWithSpaces(t *testing.T) {
 	c := NewCleanTest(t)
-	c.AssertParse(&c.state, "rule cc_dep\n  command = cc $in > $out\n  depfile = $out.d\nrule cc_rsp\n  command = cc $in > $out\n  rspfile = $out.rsp\n  rspfile_content = $in\nbuild out$ 1: cc_dep in$ 1\nbuild out$ 2: cc_rsp in$ 1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "rule cc_dep\n  command = cc $in > $out\n  depfile = $out.d\nrule cc_rsp\n  command = cc $in > $out\n  rspfile = $out.rsp\n  rspfile_content = $in\nbuild out$ 1: cc_dep in$ 1\nbuild out$ 2: cc_rsp in$ 1\n", ParseManifestOpts{})
 	c.fs.Create("out 1", "")
 	c.fs.Create("out 2", "")
 	c.fs.Create("out 1.d", "")
@@ -655,8 +655,8 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
 	c := NewCleanDeadTest(t)
 	state := NewState()
-	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
-	c.AssertParse(&c.state, "build out2: cat in\n", ManifestParserOptions{})
+	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ParseManifestOpts{})
+	c.AssertParse(&c.state, "build out2: cat in\n", ParseManifestOpts{})
 	c.fs.Create("in", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("out2", "")
@@ -758,11 +758,11 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "CleanTest-tempfile")
 	c := NewCleanDeadTest(t)
 	state := NewState()
-	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ManifestParserOptions{})
+	c.AssertParse(&state, "rule cat\n  command = cat $in > $out\nbuild out1: cat in\nbuild out2: cat in\n", ParseManifestOpts{})
 	// This manifest does not build out1 anymore, but makes
 	// it an implicit input. CleanDead should detect this
 	// and preserve it.
-	c.AssertParse(&c.state, "build out2: cat in | out1\n", ManifestParserOptions{})
+	c.AssertParse(&c.state, "build out2: cat in | out1\n", ParseManifestOpts{})
 	c.fs.Create("in", "")
 	c.fs.Create("out1", "")
 	c.fs.Create("out2", "")

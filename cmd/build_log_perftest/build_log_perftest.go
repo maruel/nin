@@ -58,7 +58,7 @@ func writeTestData() error {
 	  Based on this, write 30000 many 4 kB long command lines.
 	*/
 
-	// ManifestParser is the only object allowed to create Rules.
+	// ParseManifest() is the only function allowed to create Rules.
 	kRuleSize := 4000
 	longRuleCommand := "gcc "
 	for i := 0; len(longRuleCommand) < kRuleSize; i++ {
@@ -67,20 +67,22 @@ func writeTestData() error {
 	longRuleCommand += "$in -o $out\n"
 
 	state := nin.NewState()
-	parser := nin.NewManifestParser(&state, nil, nin.ManifestParserOptions{Quiet: true})
-	if err := parser.Parse("input", []byte("rule cxx\n  command = "+longRuleCommand+"\x00")); err != nil {
+	opts := nin.ParseManifestOpts{Quiet: true}
+	input := []byte("rule cxx\n  command = " + longRuleCommand + "\x00")
+	if err := nin.ParseManifest(&state, nil, opts, "input", input); err != nil {
 		return err
 	}
 
-	// Create build edges. Using ManifestParser is as fast as using the State api
-	// for edge creation, so just use that.
+	// Create build edges. Using ParseManifest() is as fast as using the State
+	// api for edge creation, so just use that.
 	kNumCommands := int32(30000)
 	buildRules := ""
 	for i := int32(0); i < kNumCommands; i++ {
 		buildRules += fmt.Sprintf("build input%d.o: cxx input%d.cc\n", i, i)
 	}
 
-	if err := parser.Parse("input", []byte(buildRules+"\x00")); err != nil {
+	input = []byte(buildRules + "\x00")
+	if err := nin.ParseManifest(&state, nil, opts, "input", input); err != nil {
 		return err
 	}
 

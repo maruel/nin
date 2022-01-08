@@ -44,7 +44,7 @@ type options struct {
 	tool *tool
 
 	// build.ninja parsing options.
-	parserOpts nin.ManifestParserOptions
+	parserOpts nin.ParseManifestOpts
 
 	cpuprofile string
 	memprofile string
@@ -1401,8 +1401,7 @@ func mainImpl() int {
 			status.Error("%s", err2)
 			return 1
 		}
-		parser := nin.NewManifestParser(&ninja.state, &ninja.di, opts.parserOpts)
-		if err := parser.Parse(opts.inputFile, input); err != nil {
+		if err := nin.ParseManifest(&ninja.state, &ninja.di, opts.parserOpts, opts.inputFile, input); err != nil {
 			status.Error("%s", err)
 			return 1
 		}

@@ -349,7 +349,7 @@ func NewStatTest(t *testing.T) *StatTest {
 
 func TestStatTest_Simple(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state, "build out: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat in\n", ParseManifestOpts{})
 
 	out := s.GetNode("out")
 	if err := out.Stat(s); err != nil {
@@ -372,7 +372,7 @@ func TestStatTest_Simple(t *testing.T) {
 
 func TestStatTest_TwoStep(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 
 	out := s.GetNode("out")
 	if err := out.Stat(s); err != nil {
@@ -404,7 +404,7 @@ func TestStatTest_TwoStep(t *testing.T) {
 
 func TestStatTest_Tree(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid1 mid2\nbuild mid1: cat in11 in12\nbuild mid2: cat in21 in22\n", ParseManifestOpts{})
 
 	out := s.GetNode("out")
 	if err := out.Stat(s); err != nil {
@@ -430,7 +430,7 @@ func TestStatTest_Tree(t *testing.T) {
 
 func TestStatTest_Middle(t *testing.T) {
 	s := NewStatTest(t)
-	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ManifestParserOptions{})
+	s.AssertParse(&s.state, "build out: cat mid\nbuild mid: cat in\n", ParseManifestOpts{})
 
 	s.mtimes["in"] = 1
 	s.mtimes["mid"] = 0 // missing

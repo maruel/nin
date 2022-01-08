@@ -50,8 +50,7 @@ func loadManifests(measureCommandEvaluation bool) int {
 		os.Exit(1)
 	}
 	state := nin.NewState()
-	parser := nin.NewManifestParser(&state, &di, nin.ManifestParserOptions{})
-	if err = parser.Parse("build.ninja", input); err != nil {
+	if err := nin.ParseManifest(&state, &di, nin.ParseManifestOpts{}, "build.ninja", input); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to parse test data: %s\n", err)
 		os.Exit(1)
 	}
