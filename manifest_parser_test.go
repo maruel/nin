@@ -613,8 +613,8 @@ func TestParserTest_Errors(t *testing.T) {
 		},
 		{
 			// MissingSubninja
-			"subninja missing.ninja\n",
-			"input:1: loading 'missing.ninja': file does not exist\nsubninja missing.ninja\n                      ^ near here",
+			"subninja foo.ninja\n",
+			"input:1: loading 'foo.ninja': file does not exist\nsubninja foo.ninja\n                  ^ near here",
 		},
 		{
 			// DyndepNotInput
@@ -983,7 +983,7 @@ func BenchmarkLoadManifest(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	if err := os.Chdir(manifestDir); err != nil {
+	if err = os.Chdir(manifestDir); err != nil {
 		b.Fatal(err)
 	}
 	b.Cleanup(func() {

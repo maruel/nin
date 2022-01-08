@@ -75,6 +75,7 @@ func assertParseManifest(t *testing.T, input string, state *State) {
 	// In unit tests, inject the terminating 0 byte. In real code, it is injected
 	// by RealDiskInterface.ReadFile.
 	if err := parser.Parse("input", []byte(input+"\x00")); err != nil {
+		t.Helper()
 		t.Fatal(err)
 	}
 	verifyGraph(t, state)

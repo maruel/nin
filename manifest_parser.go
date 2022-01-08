@@ -16,7 +16,6 @@ package nin
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 )
 
@@ -34,8 +33,8 @@ type ManifestParserOptions struct {
 // ManifestParser parses .ninja files.
 type ManifestParser struct {
 	// Immutable
-	fileReader FileReader
-	options    ManifestParserOptions
+	fr      FileReader
+	options ManifestParserOptions
 
 	// Mutable.
 	lexer             lexer
@@ -46,13 +45,12 @@ type ManifestParser struct {
 }
 
 // NewManifestParser returns an initialized ManifestParser.
-func NewManifestParser(state *State, fileReader FileReader, options ManifestParserOptions) *ManifestParser {
+func NewManifestParser(state *State, fr FileReader, options ManifestParserOptions) *ManifestParser {
 	return &ManifestParser{
-		fileReader: fileReader,
-		options:    options,
-		state:      state,
-		env:        state.Bindings,
-		subninjas:  make(chan subninja),
+		fr:      fr,
+		options: options,
+		state:   state,
+		env:     state.Bindings,
 	}
 }
 
@@ -62,6 +60,7 @@ func (m *ManifestParser) Parse(filename string, input []byte) error {
 
 	// The object is reused when parsing subninjas.
 	m.subninjasEnqueued = 0
+	m.subninjas = make(chan subninja)
 
 	m.lexer.Start(filename, input)
 
@@ -485,13 +484,13 @@ func (m *ManifestParser) parseInclude() error {
 
 	// Process state.
 	path := eval.Evaluate(m.env)
-	input, err := m.fileReader.ReadFile(path)
+	input, err := m.fr.ReadFile(path)
 	if err != nil {
 		// Wrap it.
 		return m.error(fmt.Sprintf("loading '%s': %s", path, err), ls)
 	}
 
-	subparser := NewManifestParser(m.state, m.fileReader, m.options)
+	subparser := NewManifestParser(m.state, m.fr, m.options)
 	subparser.env = m.env
 	if err = subparser.Parse(path, input); err != nil {
 		// Do not wrap error inside the included ninja.
@@ -506,7 +505,6 @@ type subninja struct {
 	contents []byte
 	err      error
 	ls       lexerState // lexer state when the subninja statement was parsed.
-	index    int32
 }
 
 // parseSubninja parses a 'subninja' line and start a goroutine that will read
@@ -522,25 +520,23 @@ func (m *ManifestParser) parseSubninja() error {
 	}
 
 	// Success, start the goroutine to read it asynchronously.
-	go readSubninjaAsync(m.fileReader, m.subninjasEnqueued, path, m.subninjas, m.lexer.lexerState)
+	go readSubninjaAsync(m.fr, path, m.subninjas, m.lexer.lexerState)
 	m.subninjasEnqueued++
 	return nil
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subninja, ls lexerState) {
-	c, err := fileReader.ReadFile(n)
+func readSubninjaAsync(fr FileReader, n string, ch chan<- subninja, ls lexerState) {
+	c, err := fr.ReadFile(n)
 	if err != nil {
 		ch <- subninja{
-			index: id,
-			path:  n,
-			err:   err,
-			ls:    ls,
+			path: n,
+			err:  err,
+			ls:   ls,
 		}
 	}
 	ch <- subninja{
-		index:    id,
 		path:     n,
 		contents: c,
 		ls:       ls,
@@ -549,40 +545,9 @@ func readSubninjaAsync(fileReader FileReader, id int32, n string, ch chan<- subn
 
 // processSubninjaQueue empties the queue of subninja files to process.
 func (m *ManifestParser) processSubninjaQueue() error {
-	if false {
-		// Ordered flow.
-
-		// This is limited by the slowest read but has the advantage of
-		// guaranteeing order. If we find out we need ordered processing, we can
-		// execute them within the loop as we find the right ID.
-		results := make([]subninja, m.subninjasEnqueued)
-		for i := int32(0); i < m.subninjasEnqueued; i++ {
-			results[i] = <-m.subninjas
-		}
-		// At this point, all the goroutines are released.
-		sort.Slice(results, func(i, j int) bool {
-			return results[i].index < results[j].index
-		})
-		for _, s := range results {
-			if s.err != nil {
-				// Wrap it.
-				return m.error("loading '"+s.path+"': "+s.err.Error(), s.ls)
-			}
-		}
-		subparser := NewManifestParser(m.state, m.fileReader, m.options)
-		for _, s := range results {
-			subparser.env = NewBindingEnv(m.env)
-			if err := subparser.Parse(s.path, s.contents); err != nil {
-				// Do not wrap error inside the subninja.
-				return err
-			}
-		}
-		return nil
-	}
-
 	// Out of order flow. This is the faster but may be incompatible?
 	var err error
-	subparser := NewManifestParser(m.state, m.fileReader, m.options)
+	subparser := NewManifestParser(m.state, m.fr, m.options)
 	for i := int32(0); i < m.subninjasEnqueued; i++ {
 		s := <-m.subninjas
 		if err != nil {
