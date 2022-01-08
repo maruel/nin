@@ -517,8 +517,8 @@ func (m *manifestParser) parseInclude() error {
 
 // subninja is a struct used to manage parallel reading of subninja files.
 type subninja struct {
-	path     string
-	contents []byte
+	filename string
+	input    []byte
 	err      error
 	ls       lexerState // lexer state when the subninja statement was parsed.
 }
@@ -547,14 +547,14 @@ func readSubninjaAsync(fr FileReader, n string, ch chan<- subninja, ls lexerStat
 	c, err := fr.ReadFile(n)
 	if err != nil {
 		ch <- subninja{
-			path: n,
-			err:  err,
-			ls:   ls,
+			filename: n,
+			err:      err,
+			ls:       ls,
 		}
 	}
 	ch <- subninja{
-		path:     n,
-		contents: c,
+		filename: n,
+		input:    c,
 		ls:       ls,
 	}
 }
@@ -570,7 +570,7 @@ func (m *manifestParser) processSubninjaQueue() error {
 		}
 		if s.err != nil {
 			// Wrap it.
-			err = m.error(fmt.Sprintf("loading '%s': %s", s.path, s.err.Error()), s.ls)
+			err = m.error(fmt.Sprintf("loading '%s': %s", s.filename, s.err.Error()), s.ls)
 			continue
 		}
 		subparser := manifestParser{
@@ -582,7 +582,7 @@ func (m *manifestParser) processSubninjaQueue() error {
 			env: NewBindingEnv(m.env),
 		}
 		// Do not wrap error inside the subninja.
-		err = subparser.parse(s.path, s.contents)
+		err = subparser.parse(s.filename, s.input)
 	}
 	return err
 }
