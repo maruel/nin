@@ -229,7 +229,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	fileSize := 0
 	{
 		state := NewState()
-		assertParse(t, manifest, &state)
+		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
 		err := ""
 		if !log.OpenForWrite(testFilename, &err) {
@@ -261,7 +261,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	fileSize2 := 0
 	{
 		state := NewState()
-		assertParse(t, manifest, &state)
+		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {
@@ -292,7 +292,7 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 	fileSize3 := 0
 	{
 		state := NewState()
-		assertParse(t, manifest, &state)
+		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
 		err := ""
 		if log.Load(testFilename, &state, &err) != LoadSuccess {

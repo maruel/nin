@@ -152,10 +152,9 @@ func (d *DyndepLoader) updateEdge(edge *Edge, dyndeps *Dyndeps) error {
 }
 
 func (d *DyndepLoader) loadDyndepFile(file *Node, ddf DyndepFile) error {
-	parser := NewDyndepParser(d.state, d.di, ddf)
 	contents, err := d.di.ReadFile(file.Path)
 	if err != nil {
 		return fmt.Errorf("loading '%s': %w", file.Path, err)
 	}
-	return parser.Parse(file.Path, contents)
+	return ParseDyndep(d.state, ddf, file.Path, contents)
 }

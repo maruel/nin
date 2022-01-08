@@ -14,11 +14,8 @@
 
 package nin
 
-// DyndepParser parses dyndep files.
-type DyndepParser struct {
-	// Immutable.
-	fileReader FileReader
-
+// dyndepParser parses dyndep files.
+type dyndepParser struct {
 	// Mutable.
 	lexer      lexer
 	state      *State
@@ -26,18 +23,21 @@ type DyndepParser struct {
 	env        *BindingEnv
 }
 
-// NewDyndepParser returns an initialized DyndepParser.
-func NewDyndepParser(state *State, fileReader FileReader, dyndepFile DyndepFile) *DyndepParser {
-	return &DyndepParser{
-		fileReader: fileReader,
+// ParseDyndep parses a dyndep file provided as an input with null terminated
+// string.
+//
+// It updates state and dyndepFile.
+func ParseDyndep(state *State, dyndepFile DyndepFile, filename string, input []byte) error {
+	d := dyndepParser{
 		state:      state,
 		dyndepFile: dyndepFile,
 	}
+	return d.parse(filename, input)
 }
 
 // If the next token is not \a expected, produce an error string
 // saying "expected foo, got bar".
-func (d *DyndepParser) expectToken(expected Token) error {
+func (d *dyndepParser) expectToken(expected Token) error {
 	if token := d.lexer.ReadToken(); token != expected {
 		return d.lexer.Error("expected " + expected.String() + ", got " + token.String() + expected.errorHint())
 	}
@@ -45,7 +45,7 @@ func (d *DyndepParser) expectToken(expected Token) error {
 }
 
 // Parse a file, given its contents as a string.
-func (d *DyndepParser) Parse(filename string, input []byte) error {
+func (d *dyndepParser) parse(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
 	d.lexer.Start(filename, input)
 
@@ -86,7 +86,7 @@ func (d *DyndepParser) Parse(filename string, input []byte) error {
 	}
 }
 
-func (d *DyndepParser) parseDyndepVersion() error {
+func (d *dyndepParser) parseDyndepVersion() error {
 	name, letValue, err := d.parseLet()
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (d *DyndepParser) parseDyndepVersion() error {
 	return nil
 }
 
-func (d *DyndepParser) parseLet() (string, EvalString, error) {
+func (d *dyndepParser) parseLet() (string, EvalString, error) {
 	key := d.lexer.readIdent()
 	eval := EvalString{}
 	var err error
@@ -114,7 +114,7 @@ func (d *DyndepParser) parseLet() (string, EvalString, error) {
 	return key, eval, err
 }
 
-func (d *DyndepParser) parseEdge() error {
+func (d *dyndepParser) parseEdge() error {
 	// Parse one explicit output.  We expect it to already have an edge.
 	// We will record its dynamically-discovered dependency information.
 	var dyndeps *Dyndeps

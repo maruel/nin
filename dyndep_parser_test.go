@@ -20,24 +20,29 @@ import (
 )
 
 type DyndepParserTest struct {
-	t          *testing.T
-	state      State
-	fs         VirtualFileSystem
+	t     *testing.T
+	state State
+	//fs         VirtualFileSystem
 	dyndepFile DyndepFile
 }
 
 func NewDyndepParserTest(t *testing.T) *DyndepParserTest {
 	d := &DyndepParserTest{
-		t:          t,
-		state:      NewState(),
-		fs:         NewVirtualFileSystem(),
+		t:     t,
+		state: NewState(),
+		//fs:         NewVirtualFileSystem(),
 		dyndepFile: DyndepFile{},
 	}
-	assertParse(t, "rule touch\n  command = touch $out\nbuild out otherout: touch\n", &d.state)
+	assertParseManifest(t, "rule touch\n  command = touch $out\nbuild out otherout: touch\n", &d.state)
 	return d
 }
 
-func assertParse(t *testing.T, input string, state *State) {
+// parseTest parses a text string of input. Only used in tests.
+func (d *DyndepParserTest) parseTest(input string) error {
+	return ParseDyndep(&d.state, d.dyndepFile, "input", []byte(input+"\x00"))
+}
+
+func assertParseManifest(t *testing.T, input string, state *State) {
 	parser := NewManifestParser(state, nil, ManifestParserOptions{})
 	err := ""
 	if !parser.parseTest(input, &err) {
@@ -50,36 +55,18 @@ func assertParse(t *testing.T, input string, state *State) {
 }
 
 func (d *DyndepParserTest) AssertParse(input string) {
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if !parser.parseTest(input, &err) {
-		d.t.Fatal(err)
-	}
-	if "" != err {
+	if err := d.parseTest(input); err != nil {
 		d.t.Fatal(err)
 	}
 	VerifyGraph(d.t, &d.state)
 }
 
-// parseText parses a text string of input. Only used in tests.
-func (d *DyndepParser) parseTest(input string, err *string) bool {
-	if err2 := d.Parse("input", []byte(input+"\x00")); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	return true
-}
-
 func TestDyndepParserTest_Empty(t *testing.T) {
 	d := NewDyndepParserTest(t)
-	kInput := ""
-	parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-	err := ""
-	if parser.parseTest(kInput, &err) {
+	if err := d.parseTest(""); err == nil {
 		t.Fatal("expected false")
-	}
-	if "input:1: expected 'ninja_dyndep_version = ...'\n" != err {
-		t.Fatal("expected equal")
+	} else if err.Error() != "input:1: expected 'ninja_dyndep_version = ...'\n" {
+		t.Fatal(err)
 	}
 }
 
@@ -247,11 +234,9 @@ func TestDyndepParserTest_Errors(t *testing.T) {
 	for i, l := range data {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			d := NewDyndepParserTest(t)
-			parser := NewDyndepParser(&d.state, &d.fs, d.dyndepFile)
-			err := ""
-			if parser.parseTest(l.in, &err) {
+			if err := d.parseTest(l.in); err == nil {
 				t.Fatal("expected error")
-			} else if err != l.want {
+			} else if err.Error() != l.want {
 				t.Fatal(err)
 			}
 		})
@@ -488,7 +473,7 @@ func TestDyndepParserTest_OtherOutput(t *testing.T) {
 
 func TestDyndepParserTest_MultipleEdges(t *testing.T) {
 	d := NewDyndepParserTest(t)
-	assertParse(t, "build out2: touch\n", &d.state)
+	assertParseManifest(t, "build out2: touch\n", &d.state)
 	if 2 != len(d.state.Edges) {
 		t.Fatal("expected equal")
 	}
