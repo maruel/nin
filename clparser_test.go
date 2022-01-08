@@ -140,7 +140,7 @@ func TestCLParserTest_DuplicatedHeaderPathConverted(t *testing.T) {
 		t.Fatal("expected equal")
 	}
 	if 2 != len(parser.includes) {
-		t.Fatal("expected equal")
+		t.Fatal(parser.includes)
 	}
 }
 

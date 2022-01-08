@@ -19,12 +19,6 @@ package nin
 
 import "path/filepath"
 
-func internalGetFullPathName(fileName string, buffer *string, err *string) bool {
-	b, err2 := filepath.Abs(fileName)
-	if err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	*buffer = b
-	return true
+func internalGetFullPathName(fileName string) (string, error) {
+	return filepath.Abs(fileName)
 }

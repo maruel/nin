@@ -15,6 +15,7 @@
 package nin
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -25,16 +26,12 @@ type includesNormalize struct {
 	splitRelativeTo []string
 }
 
-func newIncludesNormalize(relativeTo string) includesNormalize {
-	err := ""
-	relativeTo = absPath(relativeTo, &err)
-	if err != "" {
-		fatalf("Initializing IncludesNormalize(): %s", err)
-	}
+func newIncludesNormalize(relativeTo string) (includesNormalize, error) {
+	relativeTo, err := absPath(relativeTo)
 	return includesNormalize{
 		relativeTo:      relativeTo,
 		splitRelativeTo: strings.Split(relativeTo, "/"),
-	}
+	}, err
 }
 
 // Return true if paths a and b are on the same windows drive.
@@ -61,20 +58,20 @@ func sameDriveFast(a string, b string) bool {
 }
 
 // Return true if paths a and b are on the same Windows drive.
-func sameDrive(a string, b string, err *string) bool {
+func sameDrive(a, b string) (bool, error) {
 	if sameDriveFast(a, b) {
-		return true
+		return true, nil
 	}
 
-	aAbsolute := ""
-	bAbsolute := ""
-	if !internalGetFullPathName(a, &aAbsolute, err) {
-		return false
+	aAbsolute, err := internalGetFullPathName(a)
+	if err != nil {
+		return false, err
 	}
-	if !internalGetFullPathName(b, &bAbsolute, err) {
-		return false
+	bAbsolute, err := internalGetFullPathName(b)
+	if err != nil {
+		return false, err
 	}
-	return getDrive(aAbsolute) == getDrive(bAbsolute)
+	return getDrive(aAbsolute) == getDrive(bAbsolute), nil
 }
 
 func getDrive(s string) string {
@@ -114,22 +111,18 @@ func isFullPathName(s string) bool {
 }
 
 // Internal utilities made available for testing, maybe useful otherwise.
-func absPath(s string, err *string) string {
+func absPath(s string) (string, error) {
 	if isFullPathName(s) {
-		return strings.ReplaceAll(s, "\\", "/")
+		return strings.ReplaceAll(s, "\\", "/"), nil
 	}
-
-	result := ""
-	if !internalGetFullPathName(s, &result, err) {
-		return ""
-	}
-	return strings.ReplaceAll(result, "\\", "/")
+	result, err := internalGetFullPathName(s)
+	return strings.ReplaceAll(result, "\\", "/"), err
 }
 
-func relativize(path string, startList []string, err *string) string {
-	absPath := absPath(path, err)
-	if len(*err) != 0 {
-		return ""
+func relativize(path string, startList []string) (string, error) {
+	absPath, err := absPath(path)
+	if err != nil {
+		return "", err
 	}
 	pathList := strings.Split(absPath, "/")
 	i := 0
@@ -143,8 +136,7 @@ func relativize(path string, startList []string, err *string) string {
 		}
 	}
 
-	var relList []string
-	//relList.reserve(len(startList) - i + len(pathList) - i)
+	relList := make([]string, 0, len(pathList)-i)
 	for j := 0; j < len(startList)-i; j++ {
 		relList = append(relList, "..")
 	}
@@ -152,32 +144,30 @@ func relativize(path string, startList []string, err *string) string {
 		relList = append(relList, pathList[j])
 	}
 	if len(relList) == 0 {
-		return "."
+		return ".", nil
 	}
-	return strings.Join(relList, "/")
+	return strings.Join(relList, "/"), nil
 }
 
-/// Normalize by fixing slashes style, fixing redundant .. and . and makes the
-/// path |input| relative to |this->relativeTo| and store to |result|.
-func (i *includesNormalize) Normalize(input string, result *string, err *string) bool {
+// Normalize by fixing slashes style, fixing redundant .. and . and makes the
+// path input relative to relativeTo.
+func (i *includesNormalize) Normalize(input string) (string, error) {
 	len2 := len(input)
 	if len2 >= maxPath {
-		*err = "path too long"
-		return false
+		return "", errors.New("path too long")
 	}
 	cp := CanonicalizePath(input)
-	absInput := absPath(cp, err)
-	if len(*err) != 0 {
-		return false
+	absInput, err := absPath(cp)
+	if err != nil {
+		return "", err
 	}
 
-	if !sameDrive(absInput, i.relativeTo, err) {
-		if len(*err) != 0 {
-			return false
-		}
-		*result = cp
-		return true
+	same, err := sameDrive(absInput, i.relativeTo)
+	if err != nil {
+		return "", err
 	}
-	*result = relativize(absInput, i.splitRelativeTo, err)
-	return len(*err) == 0
+	if !same {
+		return cp, nil
+	}
+	return relativize(absInput, i.splitRelativeTo)
 }

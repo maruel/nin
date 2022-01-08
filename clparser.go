@@ -15,7 +15,6 @@
 package nin
 
 import (
-	"errors"
 	"strings"
 )
 
@@ -78,7 +77,10 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string) erro
 	// Loop over all lines in the output to process them.
 	start := 0
 	seenShowIncludes := false
-	normalizer := newIncludesNormalize(".")
+	normalizer, err := newIncludesNormalize(".")
+	if err != nil {
+		return err
+	}
 	for start < len(output) {
 		end := strings.IndexAny(output[start:], "\r\n")
 		if end == -1 {
@@ -91,10 +93,9 @@ func (c *CLParser) Parse(output, depsPrefix string, filteredOutput *string) erro
 		include := filterShowIncludes(line, depsPrefix)
 		if len(include) != 0 {
 			seenShowIncludes = true
-			normalized := ""
-			err2 := ""
-			if !normalizer.Normalize(include, &normalized, &err2) {
-				return errors.New(err2)
+			normalized, err := normalizer.Normalize(include)
+			if err != nil {
+				return err
 			}
 			if !isSystemInclude(normalized) {
 				c.includes[normalized] = struct{}{}
