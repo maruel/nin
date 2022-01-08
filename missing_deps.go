@@ -110,8 +110,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	} else {
 		var depfileDeps []*Node
 		depLoader := newNodeStoringImplicitDepLoader(m.state, m.depsLog, m.di, depfileDeps)
-		err := ""
-		depLoader.LoadDeps(edge, &err)
+		_, _ = depLoader.LoadDeps(edge)
 		if len(depfileDeps) != 0 {
 			m.processNodeDeps(node, depfileDeps)
 		}

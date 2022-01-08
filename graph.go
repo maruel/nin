@@ -16,6 +16,7 @@ package nin
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -688,8 +689,9 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.  Load discovered deps.
 		edge.DepsLoaded = true
-		if !d.depLoader.LoadDeps(edge, err) {
-			if len(*err) != 0 {
+		if found, err2 := d.depLoader.LoadDeps(edge); !found {
+			if err2 != nil {
+				*err = err2.Error()
 				return false
 			}
 			// Failed to load dependency info: rebuild to regenerate it.
@@ -940,51 +942,49 @@ func newImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) impl
 	}
 }
 
-// Load implicit dependencies for \a edge.
-// @return false on error (without filling \a err if info is just missing
-//                          or out of date).
-func (i *implicitDepLoader) LoadDeps(edge *Edge, err *string) bool {
+// LoadDeps loads implicit dependencies for edge.
+//
+// Returns false if info is just missing or out of date.
+func (i *implicitDepLoader) LoadDeps(edge *Edge) (bool, error) {
 	depsType := edge.GetBinding("deps")
 	if len(depsType) != 0 {
-		return i.LoadDepsFromLog(edge, err)
+		return i.LoadDepsFromLog(edge), nil
 	}
 
 	depfile := edge.GetUnescapedDepfile()
 	if len(depfile) != 0 {
-		return i.LoadDepFile(edge, depfile, err)
+		return i.LoadDepFile(edge, depfile)
 	}
 
 	// No deps to load.
-	return true
+	return true, nil
 }
 
-// Load implicit dependencies for \a edge from a depfile attribute.
-// @return false on error (without filling \a err if info is just missing).
-func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bool {
+// LoadDepFile loads implicit dependencies for edge from a depfile attribute.
+//
+// Returns false if info is just missing or on error.
+func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string) (bool, error) {
 	defer metricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
-	content, err2 := i.di.ReadFile(path)
-	if err2 != nil && !os.IsNotExist(err2) {
+	content, err := i.di.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
 		// TODO(maruel): Use %q for real quoting.
-		*err = fmt.Sprintf("loading '%s': %s", path, err2)
-		return false
+		return false, fmt.Errorf("loading '%s': %w", path, err)
 	}
-	// On a missing depfile: return false and empty *err.
+	// On a missing depfile: return false and empty error.
 	if len(content) == 0 {
 		// TODO(maruel): Use %q for real quoting.
 		explain("depfile '%s' is missing", path)
-		return false
+		return false, nil
 	}
 
 	depfile := DepfileParser{}
-	if err2 := depfile.Parse(content); err2 != nil {
-		*err = path + ": " + err2.Error()
-		return false
+	if err := depfile.Parse(content); err != nil {
+		return false, fmt.Errorf("%s: %w", path, err)
 	}
 
 	if len(depfile.outs) == 0 {
-		*err = path + ": no outputs declared"
-		return false
+		return false, errors.New(path + ": no outputs declared")
 	}
 
 	// Check that this depfile matches the edge's output, if not return false to
@@ -992,7 +992,7 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 	firstOutput := edge.Outputs[0]
 	if primaryOut := CanonicalizePath(depfile.outs[0]); firstOutput.Path != primaryOut {
 		explain("expected depfile '%s' to mention '%s', got '%s'", path, firstOutput.Path, primaryOut)
-		return false
+		return false, nil
 	}
 
 	// Ensure that all mentioned outputs are outputs of the edge.
@@ -1006,16 +1006,17 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string, err *string) bo
 		}
 		if !found {
 			// TODO(maruel): Use %q for real quoting.
-			*err = fmt.Sprintf("%s: depfile mentions '%s' as an output, but no such output was declared", path, o)
-			return false
+			return false, fmt.Errorf("%s: depfile mentions '%s' as an output, but no such output was declared", path, o)
 		}
 	}
-	return i.ProcessDepfileDeps(edge, depfile.ins, err)
+	return i.ProcessDepfileDeps(edge, depfile.ins), nil
 }
 
-// Process loaded implicit dependencies for \a edge and update the graph
-// @return false on error (without filling \a err if info is just missing)
-func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
+// ProcessDepfileDeps processes loaded implicit dependencies for edge and
+// update the graph.
+//
+// Returns false with info is just missing.
+func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string) bool {
 	// Preallocate space in edge.Inputs to be filled in below.
 	implicitDep := i.preallocateSpace(edge, len(depfileIns))
 
@@ -1030,9 +1031,10 @@ func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, 
 	return true
 }
 
-// Load implicit dependencies for \a edge from the DepsLog.
-// @return false on error (without filling \a err if info is just missing).
-func (i *implicitDepLoader) LoadDepsFromLog(edge *Edge, err *string) bool {
+// LoadDepsFromLog loads implicit dependencies for edge from the DepsLog.
+//
+// Returns false if info is missing.
+func (i *implicitDepLoader) LoadDepsFromLog(edge *Edge) bool {
 	// NOTE: deps are only supported for single-target edges.
 	output := edge.Outputs[0]
 	var deps *Deps
