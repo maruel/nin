@@ -352,9 +352,7 @@ func (p *plan) ScheduleWork(edge *Edge, want Want) {
 //
 // If any of the edge's outputs are dyndep bindings of their dependents, this
 // loads dynamic dependencies from the nodes' paths.
-//
-// Returns 'false' if loading dyndep info fails and 'true' otherwise.
-func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
+func (p *plan) edgeFinished(edge *Edge, result edgeResult) error {
 	directlyWanted := p.want[edge] != WantNothing
 
 	// See if this job frees up any delayed jobs.
@@ -365,7 +363,7 @@ func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 
 	// The rest of this function only applies to successful commands.
 	if result != edgeSucceeded {
-		return true
+		return nil
 	}
 
 	if directlyWanted {
@@ -376,11 +374,11 @@ func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 
 	// Check off any nodes we were waiting for with this edge.
 	for _, o := range edge.Outputs {
-		if !p.nodeFinished(o, err) {
-			return false
+		if err := p.nodeFinished(o); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
 // nodeFinished updates plan with knowledge that the given node is up to date.
@@ -389,19 +387,18 @@ func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 // loads dynamic dependencies from the node's path.
 //
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
-func (p *plan) nodeFinished(node *Node, err *string) bool {
+func (p *plan) nodeFinished(node *Node) error {
 	// If this node provides dyndep info, load it now.
 	if node.DyndepPending {
 		if p.builder == nil {
-			panic("dyndep requires Plan to have a Builder")
+			return errors.New("dyndep requires Plan to have a Builder")
 		}
 		// Load the now-clean dyndep file.  This will also update the
 		// build plan and schedule any new work that is ready.
-		if err2 := p.builder.loadDyndeps(node); err2 != nil {
-			*err = err2.Error()
-			return false
+		if err := p.builder.loadDyndeps(node); err != nil {
+			return err
 		}
-		return true
+		return nil
 	}
 
 	// See if we we want any edges from this node.
@@ -412,26 +409,26 @@ func (p *plan) nodeFinished(node *Node, err *string) bool {
 		}
 
 		// See if the edge is now ready.
-		if !p.edgeMaybeReady(oe, want, err) {
-			return false
+		if err := p.edgeMaybeReady(oe, want); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-func (p *plan) edgeMaybeReady(edge *Edge, want Want, err *string) bool {
+func (p *plan) edgeMaybeReady(edge *Edge, want Want) error {
 	if edge.allInputsReady() {
 		if want != WantNothing {
 			p.ScheduleWork(edge, want)
 		} else {
 			// We do not need to build this edge, but we might need to build one of
 			// its dependents.
-			if !p.edgeFinished(edge, edgeSucceeded, err) {
-				return false
+			if err := p.edgeFinished(edge, edgeSucceeded); err != nil {
+				return err
 			}
 		}
 	}
-	return true
+	return nil
 }
 
 // Clean the given node during the build.
@@ -558,7 +555,8 @@ func (p *plan) dyndepsLoaded(scan *DependencyScan, node *Node, ddf DyndepFile, e
 		if !ok {
 			continue
 		}
-		if !p.edgeMaybeReady(wi, want, err) {
+		if err2 := p.edgeMaybeReady(wi, want); err2 != nil {
+			*err = err2.Error()
 			return false
 		}
 	}
@@ -815,11 +813,10 @@ func (b *Builder) Build() error {
 				}
 
 				if edge.Rule == PhonyRule {
-					err2 := ""
-					if !b.plan.edgeFinished(edge, edgeSucceeded, &err2) {
+					if err := b.plan.edgeFinished(edge, edgeSucceeded); err != nil {
 						b.cleanup()
 						b.status.BuildFinished()
-						return errors.New(err2)
+						return err
 					}
 				} else {
 					pendingCommands++
@@ -840,11 +837,10 @@ func (b *Builder) Build() error {
 			}
 
 			pendingCommands--
-			err2 := ""
-			if !b.finishCommand(&result, &err2) {
+			if err := b.finishCommand(&result); err != nil {
 				b.cleanup()
 				b.status.BuildFinished()
-				return errors.New(err2)
+				return err
 			}
 
 			if result.ExitCode != ExitSuccess {
@@ -909,9 +905,10 @@ func (b *Builder) startEdge(edge *Edge) error {
 	return nil
 }
 
-// Update status ninja logs following a command termination.
-// @return false if the build can not proceed further due to a fatal error.
-func (b *Builder) finishCommand(result *Result, err *string) bool {
+// finishCommand updates status ninja logs following a command termination.
+//
+// Return an error if the build can not proceed further due to a fatal error.
+func (b *Builder) finishCommand(result *Result) error {
 	defer metricRecord("FinishCommand")()
 	edge := result.Edge
 
@@ -924,13 +921,13 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 	depsType := edge.GetBinding("deps")
 	depsPrefix := edge.GetBinding("msvc_deps_prefix")
 	if depsType != "" {
-		var err2 error
-		depsNodes, err2 = b.extractDeps(result, depsType, depsPrefix)
-		if err2 != nil && result.ExitCode == ExitSuccess {
+		var err error
+		depsNodes, err = b.extractDeps(result, depsType, depsPrefix)
+		if err != nil && result.ExitCode == ExitSuccess {
 			if result.Output != "" {
 				result.Output += "\n"
 			}
-			result.Output += err2.Error()
+			result.Output += err.Error()
 			result.ExitCode = ExitFailure
 		}
 	}
@@ -944,7 +941,7 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 
 	// The rest of this function only applies to successful commands.
 	if result.ExitCode != ExitSuccess {
-		return b.plan.edgeFinished(edge, edgeFailed, err)
+		return b.plan.edgeFinished(edge, edgeFailed)
 	}
 	// Restat the edge outputs
 	outputMtime := TimeStamp(0)
@@ -953,10 +950,9 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 		nodeCleaned := false
 
 		for _, o := range edge.Outputs {
-			newMtime, err2 := b.di.Stat(o.Path)
+			newMtime, err := b.di.Stat(o.Path)
 			if newMtime == -1 {
-				*err = err2.Error()
-				return false
+				return err
 			}
 			if newMtime > outputMtime {
 				outputMtime = newMtime
@@ -965,8 +961,9 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 				// The rule command did not change the output.  Propagate the clean
 				// state through the build graph.
 				// Note that this also applies to nonexistent outputs (mtime == 0).
-				if !b.plan.cleanNode(&b.scan, o, err) {
-					return false
+				err2 := ""
+				if !b.plan.cleanNode(&b.scan, o, &err2) {
+					return errors.New(err2)
 				}
 				nodeCleaned = true
 			}
@@ -977,10 +974,9 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 			// If any output was cleaned, find the most recent mtime of any
 			// (existing) non-order-only input or the depfile.
 			for _, i := range edge.Inputs[:len(edge.Inputs)-int(edge.OrderOnlyDeps)] {
-				inputMtime, err2 := b.di.Stat(i.Path)
+				inputMtime, err := b.di.Stat(i.Path)
 				if inputMtime == -1 {
-					*err = err2.Error()
-					return false
+					return err
 				}
 				if inputMtime > restatMtime {
 					restatMtime = inputMtime
@@ -989,10 +985,9 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 
 			depfile := edge.GetUnescapedDepfile()
 			if restatMtime != 0 && depsType == "" && depfile != "" {
-				depfileMtime, err2 := b.di.Stat(depfile)
+				depfileMtime, err := b.di.Stat(depfile)
 				if depfileMtime == -1 {
-					*err = err2.Error()
-					return false
+					return err
 				}
 				if depfileMtime > restatMtime {
 					restatMtime = depfileMtime
@@ -1007,43 +1002,41 @@ func (b *Builder) finishCommand(result *Result, err *string) bool {
 		}
 	}
 
-	if !b.plan.edgeFinished(edge, edgeSucceeded, err) {
-		return false
+	if err := b.plan.edgeFinished(edge, edgeSucceeded); err != nil {
+		return err
 	}
 
 	// Delete any left over response file.
 	rspfile := edge.GetUnescapedRspfile()
 	if rspfile != "" && !Debug.KeepRsp {
-		if err2 := b.di.RemoveFile(rspfile); err2 != nil {
-			*err = err2.Error()
+		if err := b.di.RemoveFile(rspfile); err != nil {
+			// Ignore the error for now.
 		}
 	}
 
 	if b.scan.buildLog != nil {
-		if err2 := b.scan.buildLog.RecordCommand(edge, startTimeMillis, endTimeMillis, outputMtime); err2 != nil {
-			*err = "Error writing to build log: " + err2.Error()
-			return false
+		if err := b.scan.buildLog.RecordCommand(edge, startTimeMillis, endTimeMillis, outputMtime); err != nil {
+			return fmt.Errorf("error writing to build log: %w", err)
 		}
 	}
 
 	if depsType != "" && !b.config.DryRun {
 		if len(edge.Outputs) == 0 {
-			panic("should have been rejected by parser")
+			return errors.New("should have been rejected by parser")
 		}
 		for _, o := range edge.Outputs {
-			depsMtime, err2 := b.di.Stat(o.Path)
+			depsMtime, err := b.di.Stat(o.Path)
 			if depsMtime == -1 {
-				*err = err2.Error()
-				return false
+				return err
 			}
 			if !b.scan.depsLog().recordDeps(o, depsMtime, depsNodes) {
-				*err = "Error writing to deps log: " // + err
-				return false
+				// TODO(maruel): + err
+				return fmt.Errorf("error writing to deps log: ")
 			}
 		}
 	}
 
-	return true
+	return nil
 }
 
 func (b *Builder) extractDeps(result *Result, depsType string, depsPrefix string) ([]*Node, error) {
