@@ -236,7 +236,9 @@ func newPlan(builder *Builder) plan {
 	}
 }
 
-// Reset state.  Clears want and ready sets.
+// Reset state. Clears want and ready sets.
+//
+// Only used in unit tests.
 func (p *plan) Reset() {
 	p.commandEdges = 0
 	p.wantedEdges = 0
@@ -345,16 +347,15 @@ func (p *plan) ScheduleWork(edge *Edge, want Want) {
 	}
 }
 
-// Mark an edge as done building (whether it succeeded or failed).
-// If any of the edge's outputs are dyndep bindings of their dependents,
-// this loads dynamic dependencies from the nodes' paths.
+// edgeFinished marks an edge as done building (whether it succeeded or
+// failed).
+//
+// If any of the edge's outputs are dyndep bindings of their dependents, this
+// loads dynamic dependencies from the nodes' paths.
+//
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
-	want, ok := p.want[edge]
-	if !ok {
-		panic("M-A")
-	}
-	directlyWanted := want != WantNothing
+	directlyWanted := p.want[edge] != WantNothing
 
 	// See if this job frees up any delayed jobs.
 	if directlyWanted {
@@ -382,9 +383,11 @@ func (p *plan) edgeFinished(edge *Edge, result edgeResult, err *string) bool {
 	return true
 }
 
-// Update plan with knowledge that the given node is up to date.
+// nodeFinished updates plan with knowledge that the given node is up to date.
+//
 // If the node is a dyndep binding on any of its dependents, this
 // loads dynamic dependencies from the node's path.
+//
 // Returns 'false' if loading dyndep info fails and 'true' otherwise.
 func (p *plan) nodeFinished(node *Node, err *string) bool {
 	// If this node provides dyndep info, load it now.
@@ -805,14 +808,14 @@ func (b *Builder) Build() error {
 					_ = b.scan.buildLog.Close()
 				}
 
-				err2 := ""
-				if !b.startEge(edge, &err2) {
+				if err := b.startEdge(edge); err != nil {
 					b.cleanup()
 					b.status.BuildFinished()
-					return errors.New(err2)
+					return err
 				}
 
 				if edge.Rule == PhonyRule {
+					err2 := ""
 					if !b.plan.edgeFinished(edge, edgeSucceeded, &err2) {
 						b.cleanup()
 						b.status.BuildFinished()
@@ -870,10 +873,10 @@ func (b *Builder) Build() error {
 	return nil
 }
 
-func (b *Builder) startEge(edge *Edge, err *string) bool {
+func (b *Builder) startEdge(edge *Edge) error {
 	defer metricRecord("StartEdge")()
 	if edge.Rule == PhonyRule {
-		return true
+		return nil
 	}
 	startTimeMillis := int32(time.Now().UnixMilli() - b.startTimeMillis)
 	b.runningEdges[edge] = startTimeMillis
@@ -883,9 +886,8 @@ func (b *Builder) startEge(edge *Edge, err *string) bool {
 	// Create directories necessary for outputs.
 	// XXX: this will block; do we care?
 	for _, o := range edge.Outputs {
-		if err2 := MakeDirs(b.di, o.Path); err2 != nil {
-			*err = err2.Error()
-			return false
+		if err := MakeDirs(b.di, o.Path); err != nil {
+			return err
 		}
 	}
 
@@ -894,19 +896,17 @@ func (b *Builder) startEge(edge *Edge, err *string) bool {
 	rspfile := edge.GetUnescapedRspfile()
 	if len(rspfile) != 0 {
 		content := edge.GetBinding("rspfile_content")
-		if err2 := b.di.WriteFile(rspfile, content); err2 != nil {
-			*err = err2.Error()
-			return false
+		if err := b.di.WriteFile(rspfile, content); err != nil {
+			return err
 		}
 	}
 
 	// start command computing and run it
 	if !b.commandRunner.StartCommand(edge) {
 		// TODO(maruel): Use %q for real quoting.
-		*err = fmt.Sprintf("command '%s' failed.", edge.EvaluateCommand(len(rspfile) != 0))
-		return false
+		return fmt.Errorf("command '%s' failed.", edge.EvaluateCommand(len(rspfile) != 0))
 	}
-	return true
+	return nil
 }
 
 // Update status ninja logs following a command termination.
