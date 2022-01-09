@@ -147,7 +147,7 @@ loop:
 	return m.processSubninjaQueue()
 }
 
-// Parse various statement types.
+// parsePool parses a "pool" statement.
 func (m *manifestParser) parsePool() error {
 	name := m.lexer.readIdent()
 	if name == "" {
@@ -188,6 +188,7 @@ func (m *manifestParser) parsePool() error {
 	return nil
 }
 
+// parseRule parses a "rule" statement.
 func (m *manifestParser) parseRule() error {
 	name := m.lexer.readIdent()
 	if name == "" {
@@ -233,6 +234,7 @@ func (m *manifestParser) parseRule() error {
 	return nil
 }
 
+// parseDefault parses a "default" statement.
 func (m *manifestParser) parseDefault() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
@@ -264,6 +266,7 @@ func (m *manifestParser) parseDefault() error {
 	return m.expectToken(NEWLINE)
 }
 
+// parseIdent parses a generic statement as a fallback.
 func (m *manifestParser) parseIdent() error {
 	m.lexer.UnreadToken()
 	name, letValue, err := m.parseLet()
@@ -282,6 +285,8 @@ func (m *manifestParser) parseIdent() error {
 	return nil
 }
 
+// parseEdge parses a "build" statement that results into an edge, which
+// defines inputs and outputs.
 func (m *manifestParser) parseEdge() error {
 	var outs []EvalString
 	for {
@@ -513,7 +518,7 @@ func (m *manifestParser) parseEdge() error {
 	return nil
 }
 
-// parseInclude parses a 'include' line.
+// parseInclude parses a "include" line.
 func (m *manifestParser) parseInclude() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
@@ -529,6 +534,7 @@ func (m *manifestParser) parseInclude() error {
 	input, err := m.fr.ReadFile(path)
 	if err != nil {
 		// Wrap it.
+		// TODO(maruel): Use %q for real quoting.
 		return m.error(fmt.Sprintf("loading '%s': %s", path, err), ls)
 	}
 
@@ -557,8 +563,12 @@ type subninja struct {
 	ls       lexerState // lexer state when the subninja statement was parsed.
 }
 
-// parseSubninja parses a 'subninja' line and start a goroutine that will read
-// the file and send the content to the channel, but not process it.
+// parseSubninja parses a "subninja" statement.
+//
+// If options.Concurrency != ParseManifestSerial, it starts a goroutine that
+// reads the file and send the content to the channel, but not process it.
+//
+// Otherwise, it processes it serially.
 func (m *manifestParser) parseSubninja() error {
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
@@ -610,6 +620,7 @@ func (m *manifestParser) processSubninjaQueue() error {
 		}
 		if s.err != nil {
 			// Wrap it.
+			// TODO(maruel): Use %q for real quoting.
 			err = m.error(fmt.Sprintf("loading '%s': %s", s.filename, s.err.Error()), s.ls)
 			continue
 		}
