@@ -539,7 +539,7 @@ func (m *manifestParser) parseSubninja() error {
 	}
 	filename := eval.Evaluate(m.env)
 	ls := m.lexer.lexerState
-	if err := m.expectToken(NEWLINE); err != nil {
+	if err = m.expectToken(NEWLINE); err != nil {
 		return err
 	}
 
