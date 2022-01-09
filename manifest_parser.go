@@ -544,16 +544,10 @@ func (m *manifestParser) parseSubninja() error {
 // to the main build.ninja to reduce overall latency.
 func readSubninjaAsync(fr FileReader, n string, ch chan<- subninja, ls lexerState) {
 	c, err := fr.ReadFile(n)
-	if err != nil {
-		ch <- subninja{
-			filename: n,
-			err:      err,
-			ls:       ls,
-		}
-	}
 	ch <- subninja{
 		filename: n,
 		input:    c,
+		err:      err,
 		ls:       ls,
 	}
 }
