@@ -233,18 +233,17 @@ func (d *DepsLog) Close() error {
 //
 // TODO(maruel): Make it an option so that when used as a library it doesn't
 // become a memory bloat. This is especially important when recompacting.
-func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
+func (d *DepsLog) Load(path string, state *State) (LoadStatus, error) {
 	defer metricRecord(".ninja_deps load")()
 	// Read the file all at once. The drawback is that it will fail hard on 32
 	// bits OS on large builds. This should be rare in 2022. For small builds, it
 	// will be fine (and faster).
-	data, err2 := ioutil.ReadFile(path)
-	if err2 != nil {
-		if os.IsNotExist(err2) {
-			return LoadNotFound
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return LoadNotFound, err
 		}
-		*err = err2.Error()
-		return LoadError
+		return LoadError, err
 	}
 
 	// Validate header.
@@ -255,20 +254,17 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		validHeader = version == depsLogCurrentVersion
 	}
 	if !validHeader {
-		if version == 1 {
-			*err = "deps log version change; rebuilding"
-		} else {
-			l := bytes.IndexByte(data[:], 0)
-			if l <= 0 {
-				*err = "bad deps log signature or version; starting over"
-			} else {
-				*err = fmt.Sprintf("bad deps log signature %q or version %d; starting over", data[:l], version)
-			}
-		}
-		_ = os.Remove(path)
 		// Don't report this as a failure.  An empty deps log will cause
 		// us to rebuild the outputs anyway.
-		return LoadSuccess
+		_ = os.Remove(path)
+		if version == 1 {
+			return LoadSuccess, errors.New("deps log version change; rebuilding")
+		}
+		l := bytes.IndexByte(data[:], 0)
+		if l <= 0 {
+			return LoadSuccess, errors.New("bad deps log signature or version; starting over")
+		}
+		return LoadSuccess, fmt.Errorf("bad deps log signature %q or version %d; starting over", data[:l], version)
 	}
 
 	// Skip the header.
@@ -278,7 +274,6 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	// failure.
 	offset := int64(len(depsLogFileSignature) + 4)
 	data = data[offset:]
-	readFailed := false
 	uniqueDepRecordCount := 0
 	totalDepRecordCount := 0
 	for len(data) != 0 {
@@ -286,32 +281,33 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		// - content (>=4 + checksum(4)); CanonicalizePath() rejects empty paths.
 		// - (id(4)+mtime(8)+nodes(4x) >12) for deps node.
 		if len(data) < 12 {
-			readFailed = true
+			err = fmt.Errorf("premature end of file after %d bytes", int(offset)+len(data))
 			break
 		}
 		size := binary.LittleEndian.Uint32(data[:4])
 		// Skip |size|. Only bump offset after a successful read down below.
-		data = data[4:]
 		isDeps := size&0x80000000 != 0
 		size = size & ^uint32(0x80000000)
-		if size%4 != 0 || size < 8 || size > maxRecordSize || len(data) < int(size) {
+		data = data[4:]
+		if len(data) < int(size) {
+			err = fmt.Errorf("premature end of file after %d bytes", int(offset)+len(data)+4)
+			break
+		}
+		if size%4 != 0 || size < 8 || size > maxRecordSize {
 			// It'd be nice to do a check for "size < 12" instead. The likelihood of
 			// a path with 3 characters or less is very small.
-			// TODO(maruel): Make it a real error.
-			readFailed = true
+			err = fmt.Errorf("record size %d is out of bounds", size)
 			break
 		}
 		if isDeps {
 			if size < 12 {
-				// TODO(maruel): Make it a real error.
-				readFailed = true
+				err = errors.New("record size is too small for deps")
 				break
 			}
 			outID := int32(binary.LittleEndian.Uint32(data[:4]))
 			if outID < 0 || outID >= 0x1000000 {
-				// TODO(maruel): Make it a real error.
 				// That's a lot of nodes.
-				readFailed = true
+				err = errors.New("record deps id is out of bounds")
 				break
 			}
 			mtime := TimeStamp(binary.LittleEndian.Uint64(data[4:12]))
@@ -323,8 +319,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			for i := 0; i < depsCount; i++ {
 				v := binary.LittleEndian.Uint32(data[x : x+4])
 				if int(v) >= len(d.Nodes) || d.Nodes[v] == nil {
-					// TODO(maruel): Make it a real error.
-					readFailed = true
+					err = errors.New("record deps node id is out of bounds")
 					break
 				}
 				deps.Nodes[i] = d.Nodes[v]
@@ -371,13 +366,11 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 			expectedID := ^checksum
 			id := int32(len(d.Nodes))
 			if id != int32(expectedID) {
-				// TODO(maruel): Make it a real error.
-				readFailed = true
+				err = errors.New("node id checksum is invalid")
 				break
 			}
 			if node.ID >= 0 {
-				// TODO(maruel): Make it a real error.
-				readFailed = true
+				err = errors.New("node is duplicate")
 				break
 			}
 			node.ID = id
@@ -388,21 +381,17 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 		offset += int64(size) + 4
 	}
 
-	if readFailed {
+	if err != nil {
 		// An error occurred while loading; try to recover by truncating the
 		// file to the last fully-read record.
-		if *err == "" {
-			*err = fmt.Sprintf("premature end of file after %d bytes", offset)
-		}
-
-		if err := os.Truncate(path, offset); err != nil {
-			return LoadError
+		if err2 := os.Truncate(path, offset); err2 != nil {
+			return LoadError, fmt.Errorf("truncating failed while parsing error %q: %w", err, err2)
 		}
 
 		// The truncate succeeded; we'll just report the load error as a
 		// warning because the build can proceed.
-		*err += "; recovering"
-		return LoadSuccess
+		err = errors.New(err.Error() + "; recovering")
+		return LoadSuccess, err
 	}
 
 	// Rebuild the log if there are too many dead records.
@@ -411,7 +400,7 @@ func (d *DepsLog) Load(path string, state *State, err *string) LoadStatus {
 	if totalDepRecordCount > minCompactionEntryCount && totalDepRecordCount > uniqueDepRecordCount*kCompactionRatio {
 		d.needsRecompaction = true
 	}
-	return LoadSuccess
+	return LoadSuccess, nil
 }
 
 // GetDeps returns the Deps for this node ID.

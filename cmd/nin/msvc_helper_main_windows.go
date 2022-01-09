@@ -118,8 +118,7 @@ func msvcHelperMain(arg []string) int {
 
 		if outputFilename {
 			parser := nin.NewCLParser()
-			err := ""
-			if !parser.Parse(output, depsPrefix, &output, &err) {
+			if err := parser.Parse(output, depsPrefix, &output); err != nil {
 				Fatal("%s\n", err)
 			}
 			writeDepFileOrDie(outputFilename, parser)

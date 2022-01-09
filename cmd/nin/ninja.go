@@ -997,16 +997,14 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 		path = n.buildDir + "/" + path
 	}
 
-	err := ""
-	status := n.depsLog.Load(path, &n.state, &err)
+	status, err := n.depsLog.Load(path, &n.state)
 	if status == nin.LoadError {
 		errorf("loading deps log %s: %s", path, err)
 		return false
 	}
-	if len(err) != 0 {
-		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
+	if err != nil {
+		// Load() can return a warning via err by returning LOAD_SUCCESS.
 		warningf("%s", err)
-		err = ""
 	}
 
 	if recompactOnly {

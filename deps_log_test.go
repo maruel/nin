@@ -69,12 +69,8 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 
 	state2 := NewState()
 	log2 := DepsLog{}
-	err := ""
-	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
-		t.Fatal(err)
-	}
-	if "" != err {
-		t.Fatal(err)
+	if s, err := log2.Load(testFilename, &state2); s != LoadSuccess || err != nil {
+		t.Fatal(s, err)
 	}
 
 	if len(log1.Nodes) != len(log2.Nodes) {
@@ -142,12 +138,8 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
 	state2 := NewState()
 	log2 := DepsLog{}
-	err := ""
-	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log2.Load(testFilename, &state2); s != LoadSuccess || err != nil {
+		t.Fatal(s, err)
 	}
 
 	logDeps := log2.GetDeps(state2.GetNode("out.o", 0))
@@ -196,9 +188,8 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err != nil {
+			t.Fatal(s, err)
 		}
 
 		if err := log.OpenForWrite(testFilename); err != nil {
@@ -266,9 +257,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		state := NewState()
 		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err != nil {
+			t.Fatal(s, err)
 		}
 
 		if err := log.OpenForWrite(testFilename); err != nil {
@@ -298,9 +288,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		state := NewState()
 		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err != nil {
+			t.Fatal(s, err)
 		}
 
 		out := state.GetNode("out.o", 0)
@@ -391,9 +380,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		state := NewState()
 		// Intentionally not parsing manifest here.
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err != nil {
+			t.Fatal(s, err)
 		}
 
 		out := state.GetNode("out.o", 0)
@@ -481,14 +469,11 @@ func TestDepsLogTest_InvalidHeader(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err := ""
 		log := DepsLog{}
 		state := NewState()
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
-		}
-
-		if !strings.HasPrefix(err, "bad deps log signature ") {
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err == nil {
+			t.Fatal(s, err)
+		} else if !strings.HasPrefix(err.Error(), "bad deps log signature ") {
 			t.Fatalf("%q", err)
 		}
 	}
@@ -532,22 +517,27 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 	// smaller sizes.
 	nodeCount := 5
 	depsCount := 2
-	for size := fileSize; size > 0; size-- {
+	size := fileSize
+	for ; size > 0; size-- {
 		if err := os.Truncate(testFilename, int64(size)); err != nil {
-			t.Fatal(err)
+			t.Fatal(size, err)
 		}
 
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) == LoadNotFound {
-			t.Fatal(err)
+		// At some point the log will be so short as to be unparsable.
+		s, err := log.Load(testFilename, &state)
+		if s != LoadSuccess {
+			t.Fatal(s, err)
 		}
-		if len(err) != 0 {
-			// At some point the log will be so short as to be unparsable.
-			break
+		if err != nil {
+			if strings.HasSuffix(err.Error(), "; starting over") {
+				break
+			}
+			if !strings.HasSuffix(err.Error(), "; recovering") {
+				t.Fatal(err)
+			}
 		}
-
 		if nodeCount < len(log.Nodes) {
 			t.Fatal("expected greater or equal")
 		}
@@ -564,6 +554,9 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 			t.Fatal("expected greater or equal")
 		}
 		depsCount = newDepsCount
+	}
+	if size != len(depsLogFileSignature)+4-1 {
+		t.Fatal(size)
 	}
 }
 
@@ -613,14 +606,11 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
-		}
-		if !strings.HasPrefix(err, "premature end of file after") {
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err == nil {
+			t.Fatal(s, err)
+		} else if !strings.HasPrefix(err.Error(), "premature end of file after") {
 			t.Fatal(err)
 		}
-		err = ""
 
 		// The truncated entry should've been discarded.
 		if nil != log.GetDeps(state.GetNode("out2.o", 0)) {
@@ -649,9 +639,8 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if log.Load(testFilename, &state, &err) != LoadSuccess {
-			t.Fatal("expected true")
+		if s, err := log.Load(testFilename, &state); s != LoadSuccess || err != nil {
+			t.Fatal(s, err)
 		}
 
 		// The truncated entry should exist.
