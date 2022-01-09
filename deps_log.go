@@ -205,8 +205,9 @@ func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) error {
 // Close closes the file handle.
 func (d *DepsLog) Close() error {
 	// create the file even if nothing has been recorded
-	// TODO(maruel): Error handling.
-	d.openForWriteIfNeeded()
+	if err := d.openForWriteIfNeeded(); err != nil {
+		return err
+	}
 	var err error
 	if d.file != nil {
 		if err2 := d.buf.Flush(); err2 != nil {
