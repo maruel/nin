@@ -208,13 +208,12 @@ func (n *ninjaMain) RebuildManifest(inputFile string, status nin.Status) (bool, 
 	return true, nil
 }
 
-// Get the Node for a given command-line path, handling features like
-// spell correction.
-func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
+// collectTarget gets the Node for a given command-line path, handling features
+// like spell correction.
+func (n *ninjaMain) collectTarget(cpath string) (*nin.Node, error) {
 	path := cpath
 	if len(path) == 0 {
-		*err = "empty path"
-		return nil
+		return nil, errors.New("empty path")
 	}
 	path, slashBits := nin.CanonicalizePathBits(path)
 
@@ -232,8 +231,7 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 				revDeps := n.depsLog.GetFirstReverseDepsNode(node)
 				if revDeps == nil {
 					// TODO(maruel): Use %q for real quoting.
-					*err = fmt.Sprintf("'%s' has no out edge", path)
-					return nil
+					return nil, fmt.Errorf("'%s' has no out edge", path)
 				}
 				node = revDeps
 			} else {
@@ -245,49 +243,49 @@ func (n *ninjaMain) CollectTarget(cpath string, err *string) *nin.Node {
 				node = edge.Outputs[0]
 			}
 		}
-		return node
+		return node, nil
 	}
 	// TODO(maruel): Use %q for real quoting.
-	*err = fmt.Sprintf("unknown target '%s'", nin.PathDecanonicalized(path, slashBits))
+	err := fmt.Sprintf("unknown target '%s'", nin.PathDecanonicalized(path, slashBits))
 	if path == "clean" {
-		*err += ", did you mean 'nin -t clean'?"
+		err += ", did you mean 'nin -t clean'?"
 	} else if path == "help" {
-		*err += ", did you mean 'nin -h'?"
+		err += ", did you mean 'nin -h'?"
 	} else {
 		suggestion := n.state.SpellcheckNode(path)
 		if suggestion != nil {
 			// TODO(maruel): Use %q for real quoting.
-			*err += fmt.Sprintf(", did you mean '%s'?", suggestion.Path)
+			err += fmt.Sprintf(", did you mean '%s'?", suggestion.Path)
 		}
 	}
-	return nil
+	return nil, errors.New(err)
 }
 
-// CollectTarget for all command-line arguments, filling in \a targets.
-func (n *ninjaMain) CollectTargetsFromArgs(args []string, targets *[]*nin.Node, err *string) bool {
+// collectTargetsFromArgs calls collectTarget for all command-line arguments.
+func (n *ninjaMain) collectTargetsFromArgs(args []string) ([]*nin.Node, error) {
+	var targets []*nin.Node
 	if len(args) == 0 {
-		*targets = n.state.DefaultNodes()
-		if len(*targets) == 0 {
-			*err = "could not determine root nodes of build graph"
+		targets = n.state.DefaultNodes()
+		if len(targets) == 0 {
+			return targets, errors.New("could not determine root nodes of build graph")
 		}
-		return *err == ""
+		return targets, nil
 	}
 
 	for i := 0; i < len(args); i++ {
-		node := n.CollectTarget(args[i], err)
+		node, err := n.collectTarget(args[i])
 		if node == nil {
-			return false
+			return targets, err
 		}
-		*targets = append(*targets, node)
+		targets = append(targets, node)
 	}
-	return true
+	return targets, nil
 }
 
 // The various subcommands, run via "-t XXX".
 func toolGraph(n *ninjaMain, opts *options, args []string) int {
-	var nodes []*nin.Node
-	err := ""
-	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
+	nodes, err := n.collectTargetsFromArgs(args)
+	if err != nil {
 		errorf("%s", err)
 		return 1
 	}
@@ -310,9 +308,8 @@ func toolQuery(n *ninjaMain, opts *options, args []string) int {
 	dyndepLoader := nin.NewDyndepLoader(&n.state, &n.di)
 
 	for i := 0; i < len(args); i++ {
-		err := ""
-		node := n.CollectTarget(args[i], &err)
-		if node == nil {
+		node, err := n.collectTarget(args[i])
+		if err != nil {
 			errorf("%s", err)
 			return 1
 		}
@@ -446,8 +443,9 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 			}
 		}
 	} else {
-		err := ""
-		if !n.CollectTargetsFromArgs(args, &nodes, &err) {
+		var err error
+		nodes, err = n.collectTargetsFromArgs(args)
+		if err != nil {
 			errorf("%s", err)
 			return 1
 		}
@@ -479,9 +477,8 @@ func toolDeps(n *ninjaMain, opts *options, args []string) int {
 }
 
 func toolMissingDeps(n *ninjaMain, opts *options, args []string) int {
-	var nodes []*nin.Node
-	err := ""
-	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
+	nodes, err := n.collectTargetsFromArgs(args)
+	if err != nil {
 		errorf("%s", err)
 		return 1
 	}
@@ -629,9 +626,8 @@ func toolCommands(n *ninjaMain, opts *options, args []string) int {
 		}
 	}
 
-	var nodes []*nin.Node
-	err := ""
-	if !n.CollectTargetsFromArgs(args, &nodes, &err) {
+	nodes, err := n.collectTargetsFromArgs(args)
+	if err != nil {
 		errorf("%s", err)
 		return 1
 	}
@@ -1061,9 +1057,8 @@ func (n *ninjaMain) EnsureBuildDirExists() bool {
 // Build the targets listed on the command line.
 // @return an exit code.
 func (n *ninjaMain) RunBuild(args []string, status nin.Status) int {
-	err := ""
-	var targets []*nin.Node
-	if !n.CollectTargetsFromArgs(args, &targets, &err) {
+	targets, err := n.collectTargetsFromArgs(args)
+	if err != nil {
 		status.Error("%s", err)
 		return 1
 	}
