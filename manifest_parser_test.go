@@ -935,6 +935,52 @@ func TestParserTest_SubNinjaGrandChildren(t *testing.T) {
 	}
 }
 
+// Test not in C++.
+func TestParserTest_Grandchild_SubNinjaError(t *testing.T) {
+	// Ensure thats subninja->include->subninja outputs the error on the right file.
+	for _, c := range concurrencyVals {
+		t.Run(c.String(), func(t *testing.T) {
+			p := NewParserTest(t, c)
+			p.fs.Create("child.ninja", "include grandchild.ninja\n")
+			p.fs.Create("grandchild.ninja", "var_log = bars\nsubninja missing_grandchild.ninja\n")
+			opts := ParseManifestOpts{
+				Concurrency: p.Concurrency,
+			}
+			want := "grandchild.ninja:2: loading 'missing_grandchild.ninja': file does not exist\n" +
+				"subninja missing_grandchild.ninja\n" +
+				"                                 ^ near here"
+			if err := p.parseTest("var1 = foo\nsubninja child.ninja\n", opts); err == nil {
+				t.Fatal("expected error")
+			} else if err.Error() != want {
+				t.Fatal(cmp.Diff(want, err.Error()))
+			}
+		})
+	}
+}
+
+// Test not in C++.
+func TestParserTest_Grandchild_IncludeError(t *testing.T) {
+	// Ensure thats include->subninja->include outputs the error on the right file.
+	for _, c := range concurrencyVals {
+		t.Run(c.String(), func(t *testing.T) {
+			p := NewParserTest(t, c)
+			p.fs.Create("child.ninja", "subninja grandchild.ninja\n")
+			p.fs.Create("grandchild.ninja", "var_log = bars\ninclude missing_grandchild.ninja\n")
+			opts := ParseManifestOpts{
+				Concurrency: p.Concurrency,
+			}
+			want := "grandchild.ninja:2: loading 'missing_grandchild.ninja': file does not exist\n" +
+				"include missing_grandchild.ninja\n" +
+				"                                ^ near here"
+			if err := p.parseTest("var1 = foo\ninclude child.ninja\n", opts); err == nil {
+				t.Fatal("expected error")
+			} else if err.Error() != want {
+				t.Fatal(cmp.Diff(want, err.Error()))
+			}
+		})
+	}
+}
+
 func TestParserTest_Include(t *testing.T) {
 	for _, c := range concurrencyVals {
 		t.Run(c.String(), func(t *testing.T) {
