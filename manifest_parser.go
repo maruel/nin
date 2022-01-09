@@ -75,7 +75,12 @@ func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filen
 	}
 	m := manifestParserConcurrent{
 		manifestParserRoutine: manifestParserRoutine{
-			env: state.Bindings,
+			manifestParserContext: manifestParserContext{
+				env: state.Bindings,
+				doneParsing: barrier{
+					want: make(chan struct{}),
+				},
+			},
 		},
 		manifestParserState: manifestParserState{
 			state:   state,
