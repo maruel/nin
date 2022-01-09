@@ -214,15 +214,14 @@ func (s *State) addValidation(edge *Edge, path string, slashBits uint64) {
 	node.ValidationOutEdges = append(node.ValidationOutEdges, edge)
 }
 
-func (s *State) addDefault(path string, err *string) bool {
+func (s *State) addDefault(path string) error {
 	node := s.Paths[path]
 	if node == nil {
 		// TODO(maruel): Use %q for real quoting.
-		*err = fmt.Sprintf("unknown target '%s'", path)
-		return false
+		return fmt.Errorf("unknown target '%s'", path)
 	}
 	s.Defaults = append(s.Defaults, node)
-	return true
+	return nil
 }
 
 // RootNodes return the root node(s) of the graph.

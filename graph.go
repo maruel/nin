@@ -689,11 +689,11 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	if !edge.DepsLoaded {
 		// This is our first encounter with this edge.  Load discovered deps.
 		edge.DepsLoaded = true
-		if found, err := d.depLoader.LoadDeps(edge); err != nil {
+		if found, err := d.depLoader.loadDeps(edge); err != nil {
 			return err
 		} else if !found {
 			// Failed to load dependency info: rebuild to regenerate it.
-			// LoadDeps() did Explain() already, no need to do it here.
+			// loadDeps() did Explain() already, no need to do it here.
 			dirty = true
 			edge.DepsMissing = true
 		}
@@ -933,28 +933,28 @@ func newImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInterface) impl
 	}
 }
 
-// LoadDeps loads implicit dependencies for edge.
+// loadDeps loads implicit dependencies for edge.
 //
 // Returns false if info is just missing or out of date.
-func (i *implicitDepLoader) LoadDeps(edge *Edge) (bool, error) {
+func (i *implicitDepLoader) loadDeps(edge *Edge) (bool, error) {
 	depsType := edge.GetBinding("deps")
 	if len(depsType) != 0 {
-		return i.LoadDepsFromLog(edge), nil
+		return i.loadDepsFromLog(edge), nil
 	}
 
 	depfile := edge.GetUnescapedDepfile()
 	if len(depfile) != 0 {
-		return i.LoadDepFile(edge, depfile)
+		return i.loadDepFile(edge, depfile)
 	}
 
 	// No deps to load.
 	return true, nil
 }
 
-// LoadDepFile loads implicit dependencies for edge from a depfile attribute.
+// loadDepFile loads implicit dependencies for edge from a depfile attribute.
 //
 // Returns false if info is just missing or on error.
-func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string) (bool, error) {
+func (i *implicitDepLoader) loadDepFile(edge *Edge, path string) (bool, error) {
 	defer metricRecord("depfile load")()
 	// Read depfile content.  Treat a missing depfile as empty.
 	content, err := i.di.ReadFile(path)
@@ -1000,14 +1000,14 @@ func (i *implicitDepLoader) LoadDepFile(edge *Edge, path string) (bool, error) {
 			return false, fmt.Errorf("%s: depfile mentions '%s' as an output, but no such output was declared", path, o)
 		}
 	}
-	return i.ProcessDepfileDeps(edge, depfile.ins), nil
+	return i.processDepfileDeps(edge, depfile.ins), nil
 }
 
-// ProcessDepfileDeps processes loaded implicit dependencies for edge and
+// processDepfileDeps processes loaded implicit dependencies for edge and
 // update the graph.
 //
 // Returns false with info is just missing.
-func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string) bool {
+func (i *implicitDepLoader) processDepfileDeps(edge *Edge, depfileIns []string) bool {
 	// Preallocate space in edge.Inputs to be filled in below.
 	implicitDep := i.preallocateSpace(edge, len(depfileIns))
 
@@ -1016,16 +1016,16 @@ func (i *implicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string) 
 		node := i.state.GetNode(CanonicalizePathBits(j))
 		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
-		i.CreatePhonyInEdge(node)
+		i.createPhonyInEdge(node)
 		implicitDep++
 	}
 	return true
 }
 
-// LoadDepsFromLog loads implicit dependencies for edge from the DepsLog.
+// loadDepsFromLog loads implicit dependencies for edge from the DepsLog.
 //
 // Returns false if info is missing.
-func (i *implicitDepLoader) LoadDepsFromLog(edge *Edge) bool {
+func (i *implicitDepLoader) loadDepsFromLog(edge *Edge) bool {
 	// NOTE: deps are only supported for single-target edges.
 	output := edge.Outputs[0]
 	var deps *Deps
@@ -1047,14 +1047,14 @@ func (i *implicitDepLoader) LoadDepsFromLog(edge *Edge) bool {
 	for _, node := range deps.Nodes {
 		edge.Inputs[implicitDep] = node
 		node.OutEdges = append(node.OutEdges, edge)
-		i.CreatePhonyInEdge(node)
+		i.createPhonyInEdge(node)
 		implicitDep++
 	}
 	return true
 }
 
-// Preallocate \a count spaces in the input array on \a edge, returning
-// an iterator pointing at the first new space.
+// preallocateSpace preallocates count spaces in the input array on edge,
+// returning the index at the first new space.
 func (i *implicitDepLoader) preallocateSpace(edge *Edge, count int) int {
 	offset := len(edge.Inputs) - int(edge.OrderOnlyDeps)
 	old := edge.Inputs
@@ -1065,10 +1065,12 @@ func (i *implicitDepLoader) preallocateSpace(edge *Edge, count int) int {
 	return len(edge.Inputs) - int(edge.OrderOnlyDeps) - count
 }
 
-// If we don't have a edge that generates this input already,
-// create one; this makes us not abort if the input is missing,
-// but instead will rebuild in that circumstance.
-func (i *implicitDepLoader) CreatePhonyInEdge(node *Node) {
+// createPhonyInEdge creates an edge that generates this input if we don't have
+// one already.
+//
+// This makes us not abort if the input is missing, but instead will rebuild in
+// that circumstance.
+func (i *implicitDepLoader) createPhonyInEdge(node *Node) {
 	if node.InEdge != nil {
 		return
 	}

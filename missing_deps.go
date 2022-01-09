@@ -45,6 +45,9 @@ func (m *MissingDependencyScanner) HadMissingDeps() bool {
 // ImplicitDepLoader variant that stores dep nodes into the given output
 // without updating graph deps like the base loader does.
 type nodeStoringImplicitDepLoader struct {
+	// TODO(maruel): This has to be a form of virtual function for
+	// processDepfileDeps. This is why
+	// TestBuildTest_DyndepBuildDiscoverNowWantEdgeAndDependent is failing.
 	implicitDepLoader
 	depNodesOutput []*Node
 }
@@ -56,7 +59,7 @@ func newNodeStoringImplicitDepLoader(state *State, depsLog *DepsLog, di DiskInte
 	}
 }
 
-func (n *nodeStoringImplicitDepLoader) ProcessDepfileDeps(edge *Edge, depfileIns []string, err *string) bool {
+func (n *nodeStoringImplicitDepLoader) processDepfileDeps(edge *Edge, depfileIns []string) bool {
 	for _, i := range depfileIns {
 		node := n.state.GetNode(CanonicalizePathBits(i))
 		n.depNodesOutput = append(n.depNodesOutput, node)
@@ -110,7 +113,7 @@ func (m *MissingDependencyScanner) ProcessNode(node *Node) {
 	} else {
 		var depfileDeps []*Node
 		depLoader := newNodeStoringImplicitDepLoader(m.state, m.depsLog, m.di, depfileDeps)
-		_, _ = depLoader.LoadDeps(edge)
+		_, _ = depLoader.loadDeps(edge)
 		if len(depfileDeps) != 0 {
 			m.processNodeDeps(node, depfileDeps)
 		}

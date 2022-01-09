@@ -373,38 +373,6 @@ func getWin32EscapedString(input string) string {
 	return result
 }
 
-/*
-// Read a file to a string (in text mode: with CRLF conversion
-// on Windows).
-// Returns -errno and fills in \a err on error.
-func ReadFile(path string, contents *string, err *string) int {
-  // This makes a ninja run on a set of 1500 manifest files about 4% faster
-  // than using the generic fopen code below.
-  err = nil
-  f := ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, nil)
-  if f == INVALID_HANDLE_VALUE {
-    err.assign(GetLastErrorString())
-    return -ENOENT
-  }
-
-  for ; ;  {
-    var len2 DWORD
-    char buf[64 << 10]
-    if !::ReadFile(f, buf, sizeof(buf), &len2, nil) {
-      err.assign(GetLastErrorString())
-      contents = nil
-      return -1
-    }
-    if len2 == 0 {
-      break
-    }
-    contents.append(buf, len2)
-  }
-  ::CloseHandle(f)
-  return 0
-}
-*/
-
 // SpellcheckString provides the closest match to a misspelled string, given a
 // list of correct spellings.
 //
