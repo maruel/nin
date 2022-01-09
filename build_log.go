@@ -16,6 +16,7 @@ package nin
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -327,19 +328,21 @@ func (l *LineReader) ReadLine(lineStart *char*, lineEnd *char*) bool {
 // Load the on-disk log.
 //
 // It can return a warning with success and an error.
-func (b *BuildLog) Load(path string, err *string) LoadStatus {
+//
+// LoadNotFound is only returned when os.IsNotExist(err) is true.
+func (b *BuildLog) Load(path string) (LoadStatus, error) {
 	defer metricRecord(".ninja_log load")()
-	file, err2 := ioutil.ReadFile(path)
+	file, err := ioutil.ReadFile(path)
 	if file == nil {
-		if os.IsNotExist(err2) {
-			return LoadNotFound
+		if os.IsNotExist(err) {
+			return LoadNotFound, err
 		}
-		*err = err2.Error()
-		return LoadError
+		return LoadError, err
 	}
 
 	if len(file) == 0 {
-		return LoadSuccess // file was empty
+		// File was empty.
+		return LoadSuccess, nil
 	}
 
 	logVersion := 0
@@ -359,11 +362,10 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			_, _ = fmt.Sscanf(line, buildLogFileSignature, &logVersion)
 
 			if logVersion < buildLogOldestSupportedVersion {
-				*err = "build log version invalid, perhaps due to being too old; starting over"
 				_ = os.Remove(path)
 				// Don't report this as a failure.  An empty build log will cause
 				// us to rebuild the outputs anyway.
-				return LoadSuccess
+				return LoadSuccess, errors.New("build log version invalid, perhaps due to being too old; starting over")
 			}
 		}
 		const fieldSeparator = byte('\t')
@@ -372,30 +374,27 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 			continue
 		}
 
-		startTime, err2 := strconv.ParseInt(line[:end], 10, 32)
-		if err2 != nil {
-			// TODO(maruel): Error handling.
-			panic(err2)
+		startTime, err := strconv.ParseInt(line[:end], 10, 32)
+		if err != nil {
+			return LoadError, fmt.Errorf("invalid build log: %w", err)
 		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
-		endTime, err2 := strconv.ParseInt(line[:end], 10, 32)
-		if err2 != nil {
-			// TODO(maruel): Error handling.
-			panic(err2)
+		endTime, err := strconv.ParseInt(line[:end], 10, 32)
+		if err != nil {
+			return LoadError, fmt.Errorf("invalid build log: %w", err)
 		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, fieldSeparator)
 		if end == -1 {
 			continue
 		}
-		restatMtime, err2 := strconv.ParseInt(line[:end], 10, 64)
-		if err2 != nil {
-			// TODO(maruel): Error handling.
-			panic(err2)
+		restatMtime, err := strconv.ParseInt(line[:end], 10, 64)
+		if err != nil {
+			return LoadError, fmt.Errorf("invalid build log: %w", err)
 		}
 		line = line[end+1:]
 		end = strings.IndexByte(line, fieldSeparator)
@@ -437,7 +436,7 @@ func (b *BuildLog) Load(path string, err *string) LoadStatus {
 		b.needsRecompaction = true
 	}
 
-	return LoadSuccess
+	return LoadSuccess, nil
 }
 
 // Recompact rewrites the known log entries, throwing away old data.

@@ -802,8 +802,7 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 		logPath = filepath.Join(n.buildDir, logPath)
 	}
 
-	err := ""
-	status := n.buildLog.Load(logPath, &err)
+	status, err := n.buildLog.Load(logPath)
 	if status == nin.LoadError {
 		errorf("loading build log %s: %s", logPath, err)
 		return nin.ExitFailure
@@ -812,10 +811,9 @@ func toolRestat(n *ninjaMain, opts *options, args []string) int {
 		// Nothing to restat, ignore this
 		return nin.ExitSuccess
 	}
-	if len(err) != 0 {
+	if err != nil {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
 		warningf("%s", err)
-		err = ""
 	}
 
 	if err := n.buildLog.Restat(logPath, &n.di, args); err != nil {
@@ -961,16 +959,14 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 		logPath = n.buildDir + "/" + logPath
 	}
 
-	err := ""
-	status := n.buildLog.Load(logPath, &err)
+	status, err := n.buildLog.Load(logPath)
 	if status == nin.LoadError {
 		errorf("loading build log %s: %s", logPath, err)
 		return false
 	}
-	if len(err) != 0 {
+	if err != nil {
 		// Hack: Load() can return a warning via err by returning LOAD_SUCCESS.
 		warningf("%s", err)
-		err = ""
 	}
 
 	if recompactOnly {
@@ -978,7 +974,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 			return true
 		}
 
-		if err := n.buildLog.Recompact(logPath, n); err != nil {
+		if err = n.buildLog.Recompact(logPath, n); err != nil {
 			errorf("failed recompaction: %s", err)
 			return false
 		}
@@ -986,7 +982,7 @@ func (n *ninjaMain) OpenBuildLog(recompactOnly bool) bool {
 	}
 
 	if !n.config.DryRun {
-		if err := n.buildLog.OpenForWrite(logPath, n); err != nil {
+		if err = n.buildLog.OpenForWrite(logPath, n); err != nil {
 			errorf("opening build log: %s", err)
 			return false
 		}

@@ -100,11 +100,10 @@ func mainImpl() error {
 		return fmt.Errorf("failed to write test data: %w", err)
 	}
 
-	err := ""
 	{
 		// Read once to warm up disk cache.
 		log := nin.NewBuildLog()
-		if log.Load(testFilename, &err) == nin.LoadError {
+		if s, err := log.Load(testFilename); s == nin.LoadError {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 	}
@@ -115,7 +114,7 @@ func mainImpl() error {
 	for i := 0; i < kNumRepetitions; i++ {
 		start := time.Now()
 		log := nin.NewBuildLog()
-		if log.Load(testFilename, &err) == nin.LoadError {
+		if s, err := log.Load(testFilename); s == nin.LoadError {
 			return fmt.Errorf("failed to read test data: %s", err)
 		}
 		delta := time.Since(start)

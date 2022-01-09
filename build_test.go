@@ -17,6 +17,7 @@ package nin
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -671,12 +672,11 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	b.AddCatRule(pstate)
 	b.AssertParse(pstate, manifest, ParseManifestOpts{})
 
-	err := ""
 	var pbuildLog *BuildLog
 	if logPath != "" {
 		buildLog := NewBuildLog()
 		defer buildLog.Close()
-		if s := buildLog.Load(logPath, &err); s != LoadSuccess && s != LoadNotFound {
+		if s, err := buildLog.Load(logPath); !((s == LoadSuccess && err == nil) || (s == LoadNotFound && err != nil && os.IsNotExist(err))) {
 			b.t.Fatalf("%s = %d: %s", logPath, s, err)
 		}
 		if err := buildLog.OpenForWrite(logPath, b); err != nil {
@@ -689,6 +689,7 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 	if depsPath != "" {
 		pdepsLog = &DepsLog{}
 		defer pdepsLog.Close()
+		err := ""
 		if s := pdepsLog.Load(depsPath, pstate, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", depsPath, s, err)
 		}

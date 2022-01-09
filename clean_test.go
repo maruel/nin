@@ -662,7 +662,6 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	c.fs.Create("out2", "")
 
 	log1 := NewBuildLog()
-	err := ""
 	if err := log1.OpenForWrite(testFilename, c); err != nil {
 		t.Fatal(err)
 	}
@@ -671,11 +670,8 @@ func TestCleanDeadTest_CleanDead(t *testing.T) {
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log2.Load(testFilename); s != LoadSuccess || err != nil {
+		t.Fatal(s, err)
 	}
 	if 2 != len(log2.Entries) {
 		t.Fatal("expected equal")
@@ -768,7 +764,6 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	c.fs.Create("out2", "")
 
 	log1 := NewBuildLog()
-	err := ""
 	if err := log1.OpenForWrite(testFilename, c); err != nil {
 		t.Fatal(err)
 	}
@@ -777,11 +772,8 @@ func TestCleanDeadTest_CleanDeadPreservesInputs(t *testing.T) {
 	log1.Close()
 
 	log2 := NewBuildLog()
-	if log2.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log2.Load(testFilename); s != LoadSuccess || err != nil {
+		t.Fatal(s, err)
 	}
 	if 2 != len(log2.Entries) {
 		t.Fatal("expected equal")

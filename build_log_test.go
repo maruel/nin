@@ -43,7 +43,6 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
 	log1 := NewBuildLog()
 	defer log1.Close()
-	err := ""
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
 	if err := log1.OpenForWrite(testFilename, b); err != nil {
 		t.Fatal(err)
@@ -54,11 +53,8 @@ func TestBuildLogTest_WriteRead(t *testing.T) {
 
 	log2 := NewBuildLog()
 	defer log2.Close()
-	if log2.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log2.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 
 	if 2 != len(log1.Entries) {
@@ -130,14 +126,10 @@ func TestBuildLogTest_DoubleEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal(err)
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 
 	e := log.Entries["out"]
@@ -168,7 +160,6 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 	for size := getFileSize(t, testFilename); size > 0; size-- {
 		log2 := NewBuildLog()
 		defer log2.Close()
-		err := ""
 		if err := log2.OpenForWrite(testFilename, b); err != nil {
 			t.Fatal(err)
 		}
@@ -182,9 +173,8 @@ func TestBuildLogTest_Truncate(t *testing.T) {
 
 		log3 := NewBuildLog()
 		defer log3.Close()
-		err = ""
-		if log3.Load(testFilename, &err) != LoadSuccess || err != "" {
-			t.Fatal(err)
+		if s, err := log3.Load(testFilename); s != LoadSuccess && err != nil {
+			t.Fatal(s, err)
 		}
 		log3.Close()
 	}
@@ -197,14 +187,12 @@ func TestBuildLogTest_ObsoleteOldVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal(err)
-	}
-	if !strings.Contains(err, "version") {
-		t.Fatal("expected different")
+	if s, err := log.Load(testFilename); s != LoadSuccess && err == nil {
+		t.Fatal(s, err)
+	} else if !strings.Contains(err.Error(), "version") {
+		t.Fatal(s, err)
 	}
 }
 
@@ -216,14 +204,10 @@ func TestBuildLogTest_SpacesInOutputV4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal(err)
+	if s, err := log.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 
 	e := log.Entries["out with space"]
@@ -253,14 +237,10 @@ func TestBuildLogTest_DuplicateVersionHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 
 	e := log.Entries["out"]
@@ -324,14 +304,10 @@ func TestBuildLogTest_Restat(t *testing.T) {
 	if err := ioutil.WriteFile(testFilename, content, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 	e := log.Entries["out"]
 	if 3 != e.mtime {
@@ -375,14 +351,10 @@ func TestBuildLogTest_VeryLongInputLine(t *testing.T) {
 	fmt.Fprintf(f, "456\t789\t789\tout2\tcommand2\n")
 	f.Close()
 
-	err := ""
 	log := NewBuildLog()
 	defer log.Close()
-	if log.Load(testFilename, &err) != LoadSuccess {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if s, err := log.Load(testFilename); s != LoadSuccess && err != nil {
+		t.Fatal(s, err)
 	}
 
 	// Difference from C++ version!
@@ -463,7 +435,6 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	b := NewBuildLogRecompactTest(t)
 	b.AssertParse(&b.state, "build out: cat in\nbuild out2: cat in\n", ParseManifestOpts{})
 	testFilename := filepath.Join(t.TempDir(), "BuildLogTest-tempfile")
-	err := ""
 
 	{
 		log1 := NewBuildLog()
@@ -484,11 +455,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log2 := NewBuildLog()
 		defer log2.Close()
-		if log2.Load(testFilename, &err) != LoadSuccess {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if s, err := log2.Load(testFilename); s != LoadSuccess && err != nil {
+			t.Fatal(s, err)
 		}
 		if 2 != len(log2.Entries) {
 			t.Fatal("expected equal")
@@ -510,11 +478,8 @@ func TestBuildLogRecompactTest_Recompact(t *testing.T) {
 	{
 		log3 := NewBuildLog()
 		defer log3.Close()
-		if log3.Load(testFilename, &err) != LoadSuccess {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if s, err := log3.Load(testFilename); s != LoadSuccess && err != nil {
+			t.Fatal(s, err)
 		}
 		if 1 != len(log3.Entries) {
 			t.Fatalf("%#v", log3.Entries)
