@@ -44,14 +44,14 @@ func NewMissingDependencyScannerTest(t *testing.T) *MissingDependencyScannerTest
 		filesystem:    NewVirtualFileSystem(),
 	}
 	m.scanner = NewMissingDependencyScanner(&m.delegate, &m.depsLog, &m.state, &m.filesystem)
-	err := ""
 	kTestDepsLogFilename := filepath.Join(t.TempDir(), "MissingDepTest-tempdepslog")
-	m.depsLog.OpenForWrite(kTestDepsLogFilename, &err)
-	if err != "" {
+	if err := m.depsLog.OpenForWrite(kTestDepsLogFilename); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_ = m.depsLog.Close()
+		if err2 := m.depsLog.Close(); err2 != nil {
+			t.Error(err2)
+		}
 	})
 	return m
 }

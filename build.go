@@ -1033,9 +1033,8 @@ func (b *Builder) finishCommand(result *Result) error {
 			if depsMtime == -1 {
 				return err
 			}
-			if !b.scan.depsLog().recordDeps(o, depsMtime, depsNodes) {
-				// TODO(maruel): + err
-				return fmt.Errorf("error writing to deps log: ")
+			if err := b.scan.depsLog().recordDeps(o, depsMtime, depsNodes); err != nil {
+				return fmt.Errorf("error writing to deps log: %w", err)
 			}
 		}
 	}

@@ -26,27 +26,23 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state1 := NewState()
 	log1 := DepsLog{}
-	err := ""
-	if !log1.OpenForWrite(testFilename, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log1.OpenForWrite(testFilename); err != nil {
+		t.Fatal(err)
 	}
 
 	{
 		var deps []*Node
 		deps = append(deps, state1.GetNode("foo.h", 0))
 		deps = append(deps, state1.GetNode("bar.h", 0))
-		if !log1.recordDeps(state1.GetNode("out.o", 0), 1, deps) {
-			t.Fatal("oops")
+		if err := log1.recordDeps(state1.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
 		}
 
 		deps = nil
 		deps = append(deps, state1.GetNode("foo.h", 0))
 		deps = append(deps, state1.GetNode("bar2.h", 0))
-		if !log1.recordDeps(state1.GetNode("out2.o", 0), 2, deps) {
-			t.Fatal("oops")
+		if err := log1.recordDeps(state1.GetNode("out2.o", 0), 2, deps); err != nil {
+			t.Fatal(err)
 		}
 
 		logDeps := log1.GetDeps(state1.GetNode("out.o", 0))
@@ -67,10 +63,13 @@ func TestDepsLogTest_WriteRead(t *testing.T) {
 		}
 	}
 
-	log1.Close()
+	if err := log1.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	state2 := NewState()
 	log2 := DepsLog{}
+	err := ""
 	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal(err)
 	}
@@ -117,12 +116,8 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 
 	state1 := NewState()
 	log1 := DepsLog{}
-	err := ""
-	if !log1.OpenForWrite(testFilename, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log1.OpenForWrite(testFilename); err != nil {
+		t.Fatal(err)
 	}
 
 	{
@@ -131,7 +126,9 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 			buf := fmt.Sprintf("file%d.h", i)
 			deps = append(deps, state1.GetNode(buf, 0))
 		}
-		log1.recordDeps(state1.GetNode("out.o", 0), 1, deps)
+		if err := log1.recordDeps(state1.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
 
 		logDeps := log1.GetDeps(state1.GetNode("out.o", 0))
 		if numDeps != len(logDeps.Nodes) {
@@ -139,10 +136,13 @@ func TestDepsLogTest_LotsOfDeps(t *testing.T) {
 		}
 	}
 
-	log1.Close()
+	if err := log1.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	state2 := NewState()
 	log2 := DepsLog{}
+	err := ""
 	if log2.Load(testFilename, &state2, &err) != LoadSuccess {
 		t.Fatal("expected true")
 	}
@@ -172,19 +172,19 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
-		log.Close()
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		fileSize = getFileSize(t, testFilename)
 		if fileSize <= 0 {
@@ -201,18 +201,19 @@ func TestDepsLogTest_DoubleEntry(t *testing.T) {
 			t.Fatal("expected true")
 		}
 
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
-		log.Close()
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		if fileSize2 := getFileSize(t, testFilename); fileSize != fileSize2 {
 			t.Fatal(fileSize2)
@@ -231,25 +232,27 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 		state := NewState()
 		assertParseManifest(t, manifest, &state)
 		log := DepsLog{}
-		err := ""
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("baz.h", 0))
-		log.recordDeps(state.GetNode("other_out.o", 0), 1, deps)
+		if err := log.recordDeps(state.GetNode("other_out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
 
-		log.Close()
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		fileSize = getFileSize(t, testFilename)
 		if fileSize <= 0 {
@@ -268,17 +271,18 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 			t.Fatal("expected true")
 		}
 
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
-		log.Close()
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 
 		fileSize2 = getFileSize(t, testFilename)
 		// The file should grow to record the new deps.
@@ -332,8 +336,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		if !log.Recompact(testFilename, &err) {
-			t.Fatal("expected true")
+		if err := log.Recompact(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		// The in-memory deps graph should still be valid after recompaction.
@@ -425,8 +429,8 @@ func TestDepsLogTest_Recompact(t *testing.T) {
 			t.Fatal("expected equal")
 		}
 
-		if !log.Recompact(testFilename, &err) {
-			t.Fatal("expected true")
+		if err := log.Recompact(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		// The previous entries should have been removed.
@@ -497,25 +501,27 @@ func TestDepsLogTest_Truncated(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
+		if err := log.recordDeps(state.GetNode("out2.o", 0), 2, deps); err != nil {
+			t.Fatal(err)
+		}
 
-		log.Close()
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Get the file size.
@@ -568,25 +574,27 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 	{
 		state := NewState()
 		log := DepsLog{}
-		err := ""
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar.h", 0))
-		log.recordDeps(state.GetNode("out.o", 0), 1, deps)
+		if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+			t.Fatal(err)
+		}
 
 		deps = nil
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
+		if err := log.recordDeps(state.GetNode("out2.o", 0), 2, deps); err != nil {
+			t.Fatal(err)
+		}
 
-		log.Close()
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Shorten the file, corrupting the last record.
@@ -619,20 +627,21 @@ func TestDepsLogTest_TruncatedRecovery(t *testing.T) {
 			t.Fatal("expected out2.o to be stripped")
 		}
 
-		if !log.OpenForWrite(testFilename, &err) {
-			t.Fatal("expected true")
-		}
-		if "" != err {
-			t.Fatal("expected equal")
+		if err := log.OpenForWrite(testFilename); err != nil {
+			t.Fatal(err)
 		}
 
 		// Add a new entry.
 		var deps []*Node
 		deps = append(deps, state.GetNode("foo.h", 0))
 		deps = append(deps, state.GetNode("bar2.h", 0))
-		log.recordDeps(state.GetNode("out2.o", 0), 3, deps)
+		if err := log.recordDeps(state.GetNode("out2.o", 0), 3, deps); err != nil {
+			t.Fatal(err)
+		}
 
-		log.Close()
+		if err := log.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// Load the file a third time to verify appending after a mangled
@@ -657,25 +666,27 @@ func TestDepsLogTest_ReverseDepsNodes(t *testing.T) {
 	testFilename := filepath.Join(t.TempDir(), "DepsLogTest-tempfile")
 	state := NewState()
 	log := DepsLog{}
-	err := ""
-	if !log.OpenForWrite(testFilename, &err) {
-		t.Fatal("expected true")
-	}
-	if "" != err {
-		t.Fatal("expected equal")
+	if err := log.OpenForWrite(testFilename); err != nil {
+		t.Fatal(err)
 	}
 
 	var deps []*Node
 	deps = append(deps, state.GetNode("foo.h", 0))
 	deps = append(deps, state.GetNode("bar.h", 0))
-	log.recordDeps(state.GetNode("out.o", 0), 1, deps)
+	if err := log.recordDeps(state.GetNode("out.o", 0), 1, deps); err != nil {
+		t.Fatal(err)
+	}
 
 	deps = nil
 	deps = append(deps, state.GetNode("foo.h", 0))
 	deps = append(deps, state.GetNode("bar2.h", 0))
-	log.recordDeps(state.GetNode("out2.o", 0), 2, deps)
+	if err := log.recordDeps(state.GetNode("out2.o", 0), 2, deps); err != nil {
+		t.Fatal(err)
+	}
 
-	log.Close()
+	if err := log.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	revDeps := log.GetFirstReverseDepsNode(state.GetNode("foo.h", 0))
 	if revDeps != state.GetNode("out.o", 0) || revDeps == state.GetNode("out2.o", 0) {

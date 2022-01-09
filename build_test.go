@@ -693,11 +693,8 @@ func (b *BuildTestBase) RebuildTarget(target, manifest, logPath, depsPath string
 		if s := pdepsLog.Load(depsPath, pstate, &err); s != LoadSuccess && s != LoadNotFound {
 			b.t.Fatalf("%s = %d: %s", depsPath, s, err)
 		}
-		if !pdepsLog.OpenForWrite(depsPath, &err) {
-			b.t.Fatal("expected true")
-		}
-		if "" != err {
-			b.t.Fatal("expected equal")
+		if err := pdepsLog.OpenForWrite(depsPath); err != nil {
+			b.t.Fatal(err)
 		}
 	}
 
@@ -2563,8 +2560,7 @@ func NewBuildWithQueryDepsLogTest(t *testing.T) *BuildWithQueryDepsLogTest {
 		BuildTestBase: NewBuildTestBase(t),
 	}
 	CreateTempDirAndEnter(t)
-	err := ""
-	if !b.log.OpenForWrite("ninja_deps", &err) {
+	if err := b.log.OpenForWrite("ninja_deps"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -2847,8 +2843,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2888,7 +2883,7 @@ func TestBuildWithDepsLogTest_Straightforward(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2932,8 +2927,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2971,7 +2965,7 @@ func TestBuildWithDepsLogTest_ObsoleteDeps(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3062,8 +3056,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3097,7 +3090,7 @@ func TestBuildWithDepsLogTest_RestatDepfileDependencyDepsLog(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3134,8 +3127,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3163,7 +3155,7 @@ func TestBuildWithDepsLogTest_DepFileOKDepsLog(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3213,8 +3205,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3251,7 +3242,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3287,7 +3278,7 @@ func TestBuildWithDepsLogTest_DiscoveredDepDuringBuildChanged(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3321,8 +3312,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		// Run the build once, everything should be ok.
 		depsLog := DepsLog{}
 		defer depsLog.Close()
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3351,7 +3341,7 @@ func TestBuildWithDepsLogTest_DepFileDepsLogCanonicalize(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4254,8 +4244,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		b.AssertParse(&state, manifest, ParseManifestOpts{})
 
 		depsLog := DepsLog{}
-		err := ""
-		if !depsLog.OpenForWrite("ninja_deps", &err) || err != "" {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 		defer depsLog.Close()
@@ -4301,7 +4290,7 @@ func TestBuildWithDepsLogTest_ValidationThroughDepfile(t *testing.T) {
 		if depsLog.Load("ninja_deps", &state, &err) != LoadSuccess {
 			t.Fatal(err)
 		}
-		if !depsLog.OpenForWrite("ninja_deps", &err) || err != "" {
+		if err := depsLog.OpenForWrite("ninja_deps"); err != nil {
 			t.Fatal(err)
 		}
 

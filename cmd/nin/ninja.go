@@ -1013,15 +1013,15 @@ func (n *ninjaMain) OpenDepsLog(recompactOnly bool) bool {
 		if status == nin.LoadNotFound {
 			return true
 		}
-		success := n.depsLog.Recompact(path, &err)
-		if !success {
+		if err := n.depsLog.Recompact(path); err != nil {
 			errorf("failed recompaction: %s", err)
+			return false
 		}
-		return success
+		return true
 	}
 
 	if !n.config.DryRun {
-		if !n.depsLog.OpenForWrite(path, &err) {
+		if err := n.depsLog.OpenForWrite(path); err != nil {
 			errorf("opening deps log: %s", err)
 			return false
 		}

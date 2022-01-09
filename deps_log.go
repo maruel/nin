@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -107,10 +108,10 @@ const maxRecordSize = (1 << 19) - 1
 
 // OpenForWrite prepares writing to the log file without actually opening it -
 // that will happen when/if it's needed.
-func (d *DepsLog) OpenForWrite(path string, err *string) bool {
+func (d *DepsLog) OpenForWrite(path string) error {
 	if d.needsRecompaction {
-		if !d.Recompact(path, err) {
-			return false
+		if err := d.Recompact(path); err != nil {
+			return err
 		}
 	}
 
@@ -120,25 +121,25 @@ func (d *DepsLog) OpenForWrite(path string, err *string) bool {
 	// we don't actually open the file right now, but will do
 	// so on the first write attempt
 	d.filePath = path
-	return true
+	return nil
 }
 
-func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
+func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) error {
 	nodeCount := len(nodes)
 	// Track whether there's any new data to be recorded.
 	madeChange := false
 
 	// Assign ids to all nodes that are missing one.
 	if node.ID < 0 {
-		if !d.recordID(node) {
-			return false
+		if err := d.recordID(node); err != nil {
+			return err
 		}
 		madeChange = true
 	}
 	for i := 0; i < nodeCount; i++ {
 		if nodes[i].ID < 0 {
-			if !d.recordID(nodes[i]) {
-				return false
+			if err := d.recordID(nodes[i]); err != nil {
+				return err
 			}
 			madeChange = true
 		}
@@ -161,36 +162,35 @@ func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 
 	// Don't write anything if there's no new info.
 	if !madeChange {
-		return true
+		return nil
 	}
 
 	// Update on-disk representation.
 	size := uint32(4 * (1 + 2 + nodeCount))
 	if size > maxRecordSize {
-		//errno = ERANGE
-		return false
+		return errors.New("too many dependencies")
 	}
-	if !d.openForWriteIfNeeded() {
-		return false
+	if err := d.openForWriteIfNeeded(); err != nil {
+		return err
 	}
 	size |= 0x80000000 // Deps record: set high bit.
 
 	if err := binary.Write(d.buf, binary.LittleEndian, size); err != nil {
-		return false
+		return err
 	}
 	if err := binary.Write(d.buf, binary.LittleEndian, uint32(node.ID)); err != nil {
-		return false
+		return err
 	}
 	if err := binary.Write(d.buf, binary.LittleEndian, uint64(mtime)); err != nil {
-		return false
+		return err
 	}
 	for i := 0; i < nodeCount; i++ {
 		if err := binary.Write(d.buf, binary.LittleEndian, uint32(nodes[i].ID)); err != nil {
-			return false
+			return err
 		}
 	}
 	if err := d.buf.Flush(); err != nil {
-		return false
+		return err
 	}
 
 	// Update in-memory representation.
@@ -199,8 +199,7 @@ func (d *DepsLog) recordDeps(node *Node, mtime TimeStamp, nodes []*Node) bool {
 		deps.Nodes[i] = nodes[i]
 	}
 	d.updateDeps(node.ID, deps)
-
-	return true
+	return nil
 }
 
 // Close closes the file handle.
@@ -445,23 +444,24 @@ func (d *DepsLog) GetFirstReverseDepsNode(node *Node) *Node {
 }
 
 // Recompact rewrites the known log entries, throwing away old data.
-func (d *DepsLog) Recompact(path string, err *string) bool {
+func (d *DepsLog) Recompact(path string) error {
 	defer metricRecord(".ninja_deps recompact")()
 
-	_ = d.Close()
+	if err := d.Close(); err != nil {
+		return err
+	}
 	tempPath := path + ".recompact"
 
 	// OpenForWrite() opens for append.  Make sure it's not appending to a
 	// left-over file from a previous recompaction attempt that crashed somehow.
-	if err2 := os.Remove(tempPath); err2 != nil && !os.IsNotExist(err2) {
-		*err = err2.Error()
-		return false
+	if err := os.Remove(tempPath); err != nil && !os.IsNotExist(err) {
+		return err
 	}
 
 	// Create a new temporary log to regenerate everything.
 	newLog := DepsLog{}
-	if !newLog.OpenForWrite(tempPath, err) {
-		return false
+	if err := newLog.OpenForWrite(tempPath); err != nil {
+		return err
 	}
 
 	// Clear all known ids so that new ones can be reassigned.  The new indices
@@ -481,28 +481,24 @@ func (d *DepsLog) Recompact(path string, err *string) bool {
 			continue
 		}
 
-		if !newLog.recordDeps(d.Nodes[oldID], deps.MTime, deps.Nodes) {
+		if err := newLog.recordDeps(d.Nodes[oldID], deps.MTime, deps.Nodes); err != nil {
 			_ = newLog.Close()
-			return false
+			return err
 		}
 	}
 
-	_ = newLog.Close()
+	if err := newLog.Close(); err != nil {
+		return err
+	}
 
 	// All nodes now have ids that refer to newLog, so steal its data.
 	d.Deps = newLog.Deps
 	d.Nodes = newLog.Nodes
 
-	if err2 := os.Remove(path); err2 != nil {
-		*err = err2.Error()
-		return false
+	if err := os.Remove(path); err != nil {
+		return err
 	}
-
-	if err2 := os.Rename(tempPath, path); err2 != nil {
-		*err = err2.Error()
-		return false
-	}
-	return true
+	return os.Rename(tempPath, path)
 }
 
 // IsDepsEntryLiveFor returns if the deps entry for a node is still reachable
@@ -536,93 +532,79 @@ func (d *DepsLog) updateDeps(outID int32, deps *Deps) bool {
 var zeroBytes [4]byte
 
 // Write a node name record, assigning it an id.
-func (d *DepsLog) recordID(node *Node) bool {
+func (d *DepsLog) recordID(node *Node) error {
 	if node.Path == "" {
-		panic("M-A")
+		return errors.New("node.Path is empty")
 	}
 	pathSize := len(node.Path)
 	padding := (4 - pathSize%4) % 4 // Pad path to 4 byte boundary.
 
 	size := uint32(pathSize + padding + 4)
 	if size > maxRecordSize {
-		// TODO(maruel): Make it a real error.
-		//errno = ERANGE
-		return false
+		return errors.New("node.Path is too long")
 	}
-	if !d.openForWriteIfNeeded() {
-		// TODO(maruel): Make it a real error.
-		return false
+	if err := d.openForWriteIfNeeded(); err != nil {
+		return nil
 	}
 	if err := binary.Write(d.buf, binary.LittleEndian, size); err != nil {
-		// TODO(maruel): Make it a real error.
-		return false
+		return nil
 	}
 	if _, err := d.buf.WriteString(node.Path); err != nil {
-		// TODO(maruel): Make it a real error.
-		return false
+		return nil
 	}
 	if padding != 0 {
 		if _, err := d.buf.Write(zeroBytes[:padding]); err != nil {
-			// TODO(maruel): Make it a real error.
-			return false
+			return nil
 		}
 	}
 	id := int32(len(d.Nodes))
 	checksum := ^uint32(id)
 	if err := binary.Write(d.buf, binary.LittleEndian, checksum); err != nil {
-		// TODO(maruel): Make it a real error.
-		return false
+		return nil
 	}
 	if err := d.buf.Flush(); err != nil {
-		return false
+		return nil
 	}
 	node.ID = id
 	d.Nodes = append(d.Nodes, node)
-
-	return true
+	return nil
 }
 
-// Should be called before using file. When false is returned, errno will
-// be set.
-func (d *DepsLog) openForWriteIfNeeded() bool {
+// openForWriteIfNeeded should be called before using file.
+func (d *DepsLog) openForWriteIfNeeded() error {
 	if d.filePath == "" {
-		return true
+		return nil
 	}
 	if d.file != nil {
 		panic("surprising state")
 	}
-	d.file, _ = os.OpenFile(d.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
-	if d.file == nil {
-		// TODO(maruel): Make it a real error.
-		return false
+	var err error
+	d.file, err = os.OpenFile(d.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
+	if err != nil {
+		return err
 	}
-	// Set the buffer size to this and flush the file buffer after every record
-	// to make sure records aren't written partially.
+	// Set the buffer size large and flush the file buffer after every record to
+	// make sure records aren't written partially.
 	d.buf = bufio.NewWriterSize(d.file, maxRecordSize+1)
-	//SetCloseOnExec(fileno(d.file))
 
 	// Opening a file in append mode doesn't set the file pointer to the file's
 	// end on Windows. Do that explicitly.
 	offset, err := d.file.Seek(0, os.SEEK_END)
-
 	if err != nil {
-		// TODO(maruel): Make it a real error.
-		return false
+		return err
 	}
 
 	if offset == 0 {
-		if _, err := d.buf.WriteString(depsLogFileSignature); err != nil {
-			// TODO(maruel): Return the real error.
-			return false
+		if _, err = d.buf.WriteString(depsLogFileSignature); err != nil {
+			return err
 		}
-		if err := binary.Write(d.buf, binary.LittleEndian, depsLogCurrentVersion); err != nil {
-			// TODO(maruel): Return the real error.
-			return false
+		if err = binary.Write(d.buf, binary.LittleEndian, depsLogCurrentVersion); err != nil {
+			return err
 		}
 	}
-	if err := d.buf.Flush(); err != nil {
-		return false
+	if err = d.buf.Flush(); err != nil {
+		return err
 	}
 	d.filePath = ""
-	return true
+	return nil
 }
