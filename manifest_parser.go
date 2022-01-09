@@ -19,6 +19,39 @@ import (
 	"strconv"
 )
 
+// ParseManifestConcurrency defines the concurrency parameters when parsing
+// manifest (build.ninja files).
+type ParseManifestConcurrency int32
+
+const (
+	// ParseManifestSerial parses files serially in the same way that the C++
+	// ninja implementation does. It is the most compatible way.
+	//
+	// This reduces CPU usage, at the cost of higher latency.
+	ParseManifestSerial ParseManifestConcurrency = iota
+	// ParseManifestPrewarmSubninja loads files serially except that subninjas
+	// are processed at the very end. This gives a latency improvement when a
+	// significant number of subninjas are processed because subninja files can
+	// be read from disk concurrently. This causes subninja files to be processed
+	// out of order.
+	ParseManifestPrewarmSubninja
+	// ParseManifestConcurrentParsing parses all subninjas concurrently.
+	ParseManifestConcurrentParsing
+)
+
+func (p ParseManifestConcurrency) String() string {
+	switch p {
+	case ParseManifestSerial:
+		return "Serial"
+	case ParseManifestPrewarmSubninja:
+		return "PrewarmSubninja"
+	case ParseManifestConcurrentParsing:
+		return "Concurrent"
+	default:
+		return "Invalid"
+	}
+}
+
 // ParseManifestOpts are the options when parsing a build.ninja file.
 type ParseManifestOpts struct {
 	// ErrOnDupeEdge causes duplicate rules for one target to print an error,
@@ -28,14 +61,21 @@ type ParseManifestOpts struct {
 	ErrOnPhonyCycle bool
 	// Quiet silences warnings.
 	Quiet bool
-	// SerialSubninja causes subninjas to be loaded in the most compatible way,
-	// as they are found, similar to the C++ implementation of ninja.
-	//
-	// When false, subninjas are processed at the very at the end of the main
-	// manifest file instead of directly at the statement. This reduces overall
-	// latency because the file can be read concurrently. This causes subninja
-	// files to be processed out of order.
-	SerialSubninja bool
+	// Concurrency defines the parsing concurrency.
+	Concurrency ParseManifestConcurrency
+}
+
+// ParseManifest parses a manifest file (i.e. build.ninja).
+//
+// The input must contain a trailing terminating zero byte.
+func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filename string, input []byte) error {
+	m := manifestParser{
+		fr:      fr,
+		options: options,
+		state:   state,
+		env:     state.Bindings,
+	}
+	return m.parse(filename, input)
 }
 
 // manifestParser parses .ninja files.
@@ -50,19 +90,6 @@ type manifestParser struct {
 	env               *BindingEnv
 	subninjas         chan subninja
 	subninjasEnqueued int32
-}
-
-// ParseManifest parses a manifest file (i.e. build.ninja).
-//
-// The input must contain a trailing terminating zero byte.
-func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filename string, input []byte) error {
-	m := manifestParser{
-		fr:      fr,
-		options: options,
-		state:   state,
-		env:     state.Bindings,
-	}
-	return m.parse(filename, input)
 }
 
 // parse parses a file, given its contents as a string.
@@ -543,7 +570,7 @@ func (m *manifestParser) parseSubninja() error {
 		return err
 	}
 
-	if !m.options.SerialSubninja {
+	if m.options.Concurrency != ParseManifestSerial {
 		// Start the goroutine to read it asynchronously. It will be processed
 		// after the main manifest.
 		go readSubninjaAsync(m.fr, filename, m.subninjas, ls)

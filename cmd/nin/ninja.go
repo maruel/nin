@@ -1142,6 +1142,11 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 	warning := flag.String("w", "", "adjust warnings (use '-w list' to list warnings)")
 	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", nin.NinjaVersion))
 
+	// Flags that do not exist in the C++ code:
+	noconcurrent := flag.Bool("noconcurrent", false, "do not parse subninja files concurrently")
+	noprewarm := flag.Bool("noprewarm", false, "do not prewarm subninja files; instead process them in order")
+	opts.parserOpts.Concurrency = nin.ParseManifestConcurrentParsing
+
 	flag.Usage = usage
 	flag.Parse()
 
@@ -1188,6 +1193,13 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 	if i > 1 {
 		fmt.Fprintf(os.Stderr, "can only use one of -cpuprofile, -memprofile or -trace at a time.\n")
 		return 2
+	}
+
+	if *noconcurrent {
+		opts.parserOpts.Concurrency = nin.ParseManifestPrewarmSubninja
+	}
+	if *noprewarm {
+		opts.parserOpts.Concurrency = nin.ParseManifestSerial
 	}
 
 	/*
