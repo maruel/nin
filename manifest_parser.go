@@ -213,7 +213,7 @@ func (m *manifestParser) parseDefault() error {
 			return m.lexer.Error("empty path")
 
 		}
-		if err := m.state.addDefault(CanonicalizePath(path)); err != nil {
+		if err = m.state.addDefault(CanonicalizePath(path)); err != nil {
 			return m.lexer.Error(err.Error())
 		}
 
