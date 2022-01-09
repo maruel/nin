@@ -806,8 +806,8 @@ func (b *Builder) Build() error {
 					if err := b.scan.buildLog.Close(); err != nil {
 						panic("M-A")
 						// New.
-						b.cleanup()
-						return err
+						//b.cleanup()
+						//return err
 					}
 				}
 
