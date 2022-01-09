@@ -18,9 +18,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"os/exec"
-	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -53,44 +50,16 @@ func (s *subprocess) GetOutput() string {
 }
 
 func (s *subprocess) run(ctx context.Context, c string, useConsole bool) {
-	ex := ""
-	var args []string
-	if runtime.GOOS == "windows" {
-		// TODO(maruel): Handle quoted space. It's only necessary from the
-		// perspective of finding the primary executable to run.
-		i := strings.IndexByte(c, ' ')
-		if i == -1 {
-			ex = c
-		} else {
-			ex = c[:i]
-		}
-		args = []string{c}
-	} else {
-		// The commands being run use shell redirection. The C++ version uses
-		// system() which will use the default shell. I'd like to try to have a
-		// fast-track mode where if no shell escape characters are used, the
-		// command is ran without a shell.
-		ex = "/bin/sh"
-		args = []string{"-c", c}
-	}
-	// Ignore the parsed arguments on Windows and feedback the original string.
-	var cmd *exec.Cmd
-	if useConsole {
-		cmd = exec.Command(ex, args...)
-	} else {
-		cmd = exec.CommandContext(ctx, ex, args...)
-	}
-	// TODO(maruel): The C++ code is fairly involved in its way to setup the
-	// process, the code here is fairly naive.
-	// TODO(maruel): When useConsole is false, it should be in a new process
-	// group on posix.
+	// The C++ code is fairly involved in its way to setup the process, the code
+	// here is fairly naive.
+	// TODO(maruel):  Enable skipShell. This needs more testing.
+	cmd := createCmd(ctx, c, useConsole, false)
 	buf := bytes.Buffer{}
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	if useConsole {
 		cmd.Stdin = os.Stdin
 	}
-	s.osSpecific(cmd, c, useConsole)
 	_ = cmd.Run()
 	// Skip a memory copy.
 	s.buf = unsafeString(buf.Bytes())

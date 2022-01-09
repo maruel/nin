@@ -18,12 +18,33 @@
 package nin
 
 import (
+	"context"
 	"os/exec"
 	"syscall"
 )
 
-func (s *subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
+func createCmd(ctx context.Context, c string, useConsole, enableSkipShell bool) *exec.Cmd {
+	// The commands being run use shell redirection. The C++ version uses
+	// system() which always uses the default shell.
+	//
+	// Determine if we use the experimental shell skipping fast track mode,
+	// saving an unnecessary exec(). Only use this when we detect no quote, no
+	// shell redirection character.
+
+	// TODO(maruel): skipShell := enableSkipShell && !strings.ContainsAny(c, "$><&|")
+
+	ex := "/bin/sh"
+	args := []string{"-c", c}
+	var cmd *exec.Cmd
+	if useConsole {
+		cmd = exec.Command(ex, args...)
+	} else {
+		cmd = exec.CommandContext(ctx, ex, args...)
+	}
+
+	// When useConsole is false, it is a new process group on posix.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: !useConsole,
 	}
+	return cmd
 }

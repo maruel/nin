@@ -15,22 +15,62 @@
 package nin
 
 import (
+	"context"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
-func (s *subprocess) osSpecific(cmd *exec.Cmd, c string, useConsole bool) {
+func createCmd(ctx context.Context, c string, useConsole, enableSkipShell bool) *exec.Cmd {
+	// The commands being run use shell redirection. The C++ version uses
+	// system() which always uses the default shell.
+	//
+	// Determine if we use the experimental shell skipping fast track mode,
+	// saving an unnecessary exec(). Only use this when we detect no quote, no
+	// shell redirection character.
+	// TODO(maruel): This is incorrect and temporary.
+	skipShell := true || (enableSkipShell && !strings.ContainsAny(c, "%><&|^"))
+
+	ex := ""
+	var args []string
+	if skipShell {
+		// Ignore the parsed arguments on Windows and feedback the original string.
+		//
+		// TODO(maruel): Handle quoted space. It's only necessary from the
+		// perspective of finding the primary executable to run.
+		i := strings.IndexByte(c, ' ')
+		if i == -1 {
+			// A single executable with no argument.
+			ex = c
+		} else {
+			ex = c[:i]
+		}
+		args = []string{c}
+	} else {
+		ex = "cmd.exe"
+		args = []string{"/c", c}
+	}
+	var cmd *exec.Cmd
+	if useConsole {
+		cmd = exec.Command(ex, args...)
+	} else {
+		cmd = exec.CommandContext(ctx, ex, args...)
+	}
+
 	// Ignore the parsed arguments on Windows and feed back the original string.
 	// See https://pkg.go.dev/os/exec#Command for an explanation.
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		CmdLine: c,
+	if skipShell {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			CmdLine: c,
+		}
+		cmd.Args = nil
 	}
 	if useConsole {
 		cmd.SysProcAttr.CreationFlags = syscall.CREATE_NEW_PROCESS_GROUP
 	}
-	cmd.Args = nil
 
 	// TODO(maruel): CTRL_C_EVENT and CTRL_BREAK_EVENT handling with
 	// GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT) when canceling plus
 	// PostQueuedCompletionStatus(CreateIoCompletionPort()) via SetConsoleCtrlHandler(fn, FALSE).
+	return cmd
 }
