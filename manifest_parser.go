@@ -64,7 +64,16 @@ type ParseManifestOpts struct {
 //
 // The input must contain a trailing terminating zero byte.
 func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filename string, input []byte) error {
-	m := manifestParserSerial{
+	if options.Concurrency != ParseManifestConcurrentParsing {
+		m := manifestParserSerial{
+			fr:      fr,
+			options: options,
+			state:   state,
+			env:     state.Bindings,
+		}
+		return m.parse(filename, input)
+	}
+	m := manifestParserConcurrent{
 		fr:      fr,
 		options: options,
 		state:   state,
