@@ -1316,6 +1316,9 @@ func mainImpl() int {
 	// Disable GC (TODO: unless running a stateful server).
 	debug.SetGCPercent(-1)
 
+	// Lock the OS thread.
+	runtime.LockOSThread()
+
 	if opts.cpuprofile != "" {
 		f, err := os.Create(opts.cpuprofile)
 		if err != nil {
