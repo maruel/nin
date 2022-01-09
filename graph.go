@@ -639,7 +639,8 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	}
 
 	// If we encountered this edge earlier in the call stack we have a cycle.
-	if !d.verifyDAG(node, *stack, err) {
+	if err2 := d.verifyDAG(node, *stack); err2 != nil {
+		*err = err2.Error()
 		return false
 	}
 
@@ -764,22 +765,17 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// Mark the edge as finished during this walk now that it will no longer
 	// be in the call stack.
 	edge.Mark = VisitDone
-	if (*stack)[len(*stack)-1] != node {
-		panic("M-A")
-	}
+	// assert((*stack)[len(*stack)-1] == node)
 	*stack = (*stack)[:len(*stack)-1]
 	return true
 }
 
-func (d *DependencyScan) verifyDAG(node *Node, stack []*Node, err *string) bool {
+func (d *DependencyScan) verifyDAG(node *Node, stack []*Node) error {
 	edge := node.InEdge
-	if edge == nil {
-		panic("M-A")
-	}
 
 	// If we have no temporary mark on the edge then we do not yet have a cycle.
 	if edge.Mark != VisitInStack {
-		return true
+		return nil
 	}
 
 	// We have this edge earlier in the call stack.  Find it.
@@ -789,9 +785,6 @@ func (d *DependencyScan) verifyDAG(node *Node, stack []*Node, err *string) bool 
 			start = i
 			break
 		}
-	}
-	if start == -1 {
-		panic("M-A")
 	}
 
 	// Make the cycle clear by reporting its start as the node at its end
@@ -803,19 +796,19 @@ func (d *DependencyScan) verifyDAG(node *Node, stack []*Node, err *string) bool 
 	stack[start] = node
 
 	// Construct the error message rejecting the cycle.
-	*err = "dependency cycle: "
+	err := "dependency cycle: "
 	for i := start; i != len(stack); i++ {
-		*err += stack[i].Path
-		*err += " -> "
+		err += stack[i].Path
+		err += " -> "
 	}
-	*err += stack[start].Path
+	err += stack[start].Path
 
 	if (start+1) == len(stack) && edge.maybePhonycycleDiagnostic() {
 		// The manifest parser would have filtered out the self-referencing
 		// input if it were not configured to allow the error.
-		*err += " [-w phonycycle=err]"
+		err += " [-w phonycycle=err]"
 	}
-	return false
+	return errors.New(err)
 }
 
 // Recompute whether any output of the edge is dirty, if so sets |*dirty|.
