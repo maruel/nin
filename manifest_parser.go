@@ -26,8 +26,16 @@ type ParseManifestOpts struct {
 	ErrOnDupeEdge bool
 	// ErrOnPhonyCycle causes phony cycles to print an error, otherwise warns.
 	ErrOnPhonyCycle bool
-	// Silence warnings.
+	// Quiet silences warnings.
 	Quiet bool
+	// SerialSubninja causes subninjas to be loaded in the most compatible way,
+	// as they are found, similar to the C++ implementation of ninja.
+	//
+	// When false, subninjas are processed at the very at the end of the main
+	// manifest file instead of directly at the statement. This reduces overall
+	// latency because the file can be read concurrently. This causes subninja
+	// files to be processed out of order.
+	SerialSubninja bool
 }
 
 // manifestParser parses .ninja files.
@@ -529,24 +537,36 @@ func (m *manifestParser) parseSubninja() error {
 	if err != nil {
 		return err
 	}
-	path := eval.Evaluate(m.env)
+	filename := eval.Evaluate(m.env)
+	ls := m.lexer.lexerState
 	if err := m.expectToken(NEWLINE); err != nil {
 		return err
 	}
 
-	// Success, start the goroutine to read it asynchronously.
-	go readSubninjaAsync(m.fr, path, m.subninjas, m.lexer.lexerState)
-	m.subninjasEnqueued++
-	return nil
+	if !m.options.SerialSubninja {
+		// Start the goroutine to read it asynchronously. It will be processed
+		// after the main manifest.
+		go readSubninjaAsync(m.fr, filename, m.subninjas, ls)
+		m.subninjasEnqueued++
+		return nil
+	}
+
+	// Process the subninja right away. This is the most compatible way.
+	input, err := m.fr.ReadFile(filename)
+	if err != nil {
+		// Wrap it.
+		return m.error(fmt.Sprintf("loading '%s': %s", filename, err.Error()), ls)
+	}
+	return m.processOneSubninja(filename, input)
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func readSubninjaAsync(fr FileReader, n string, ch chan<- subninja, ls lexerState) {
-	c, err := fr.ReadFile(n)
+func readSubninjaAsync(fr FileReader, filename string, ch chan<- subninja, ls lexerState) {
+	input, err := fr.ReadFile(filename)
 	ch <- subninja{
-		filename: n,
-		input:    c,
+		filename: filename,
+		input:    input,
 		err:      err,
 		ls:       ls,
 	}
@@ -566,18 +586,22 @@ func (m *manifestParser) processSubninjaQueue() error {
 			err = m.error(fmt.Sprintf("loading '%s': %s", s.filename, s.err.Error()), s.ls)
 			continue
 		}
-		subparser := manifestParser{
-			fr:      m.fr,
-			options: m.options,
-			state:   m.state,
-			// Reset the binding fresh with a temporary one that will not affect the
-			// root one.
-			env: NewBindingEnv(m.env),
-		}
-		// Do not wrap error inside the subninja.
-		err = subparser.parse(s.filename, s.input)
+		err = m.processOneSubninja(s.filename, s.input)
 	}
 	return err
+}
+
+func (m *manifestParser) processOneSubninja(filename string, input []byte) error {
+	subparser := manifestParser{
+		fr:      m.fr,
+		options: m.options,
+		state:   m.state,
+		// Reset the binding fresh with a temporary one that will not affect the
+		// root one.
+		env: NewBindingEnv(m.env),
+	}
+	// Do not wrap error inside the subninja.
+	return subparser.parse(filename, input)
 }
 
 func (m *manifestParser) parseLet() (string, EvalString, error) {
