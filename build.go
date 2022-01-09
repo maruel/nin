@@ -474,10 +474,8 @@ func (p *plan) cleanNode(scan *DependencyScan, node *Node) error {
 			// If the edge isn't dirty, clean the outputs and mark the edge as not
 			// wanted.
 			outputsDirty := false
-			err2 := ""
-			if !scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty, &err2) {
-				return errors.New(err2)
-			}
+			// The C++ code conditions on its return value but always returns true.
+			scan.recomputeOutputsDirty(oe, mostRecentInput, &outputsDirty)
 			if !outputsDirty {
 				for _, o := range oe.Outputs {
 					if err := p.cleanNode(scan, o); err != nil {
@@ -572,15 +570,15 @@ func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) error {
 	for n := range dependents {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
 		var validationNodes []*Node
-		err2 := ""
-		if !scan.RecomputeDirty(n, &validationNodes, &err2) {
-			return errors.New(err2)
+		if err := scan.RecomputeDirty(n, &validationNodes); err != nil {
+			return err
 		}
 
 		// Add any validation nodes found during RecomputeDirty as new top level
 		// targets.
 		for _, v := range validationNodes {
 			if inEdge := v.InEdge; inEdge != nil {
+				err2 := ""
 				if !inEdge.OutputsReady && !p.addTarget(v, &err2) {
 					return errors.New(err2)
 				}
@@ -741,14 +739,11 @@ func (b *Builder) addTargetName(name string, err *string) *Node {
 // target is up to date.
 func (b *Builder) AddTarget(target *Node) (bool, error) {
 	var validationNodes []*Node
-	err2 := ""
-	if !b.scan.RecomputeDirty(target, &validationNodes, &err2) {
-		if err2 != "" {
-			return false, errors.New(err2)
-		}
-		return false, nil
+	if err := b.scan.RecomputeDirty(target, &validationNodes); err != nil {
+		return false, err
 	}
 
+	err2 := ""
 	inEdge := target.InEdge
 	if inEdge == nil || !inEdge.OutputsReady {
 		if !b.plan.addTarget(target, &err2) {

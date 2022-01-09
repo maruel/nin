@@ -358,7 +358,9 @@ func TestStatTest_Simple(t *testing.T) {
 	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan.RecomputeDirty(out, nil, nil)
+	if err := s.scan.RecomputeDirty(out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if 2 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
@@ -381,7 +383,9 @@ func TestStatTest_TwoStep(t *testing.T) {
 	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan.RecomputeDirty(out, nil, nil)
+	if err := s.scan.RecomputeDirty(out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if 3 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
@@ -413,7 +417,9 @@ func TestStatTest_Tree(t *testing.T) {
 	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan.RecomputeDirty(out, nil, nil)
+	if err := s.scan.RecomputeDirty(out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if 1+6 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
@@ -443,7 +449,9 @@ func TestStatTest_Middle(t *testing.T) {
 	if 1 != len(s.stats) {
 		t.Fatal("expected equal")
 	}
-	s.scan.RecomputeDirty(out, nil, nil)
+	if err := s.scan.RecomputeDirty(out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if s.GetNode("in").Dirty {
 		t.Fatal("expected false")
 	}
