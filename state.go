@@ -155,17 +155,37 @@ func NewState() State {
 	return s
 }
 
+var (
+	edgesArray [60000]Edge
+	edgeIndex  int
+)
+
 // addEdge creates a new edge with this rule on the default pool.
 func (s *State) addEdge(rule *Rule) *Edge {
-	edge := &Edge{
-		Rule: rule,
-		Pool: DefaultPool,
-		Env:  s.Bindings,
-		ID:   int32(len(s.Edges)),
+	var edge *Edge
+	if edgeIndex < len(edgesArray) {
+		edge = &edgesArray[edgeIndex]
+		edgeIndex++
+		edge.Rule = rule
+		edge.Pool = DefaultPool
+		edge.Env = s.Bindings
+		edge.ID = int32(len(s.Edges))
+	} else {
+		edge = &Edge{
+			Rule: rule,
+			Pool: DefaultPool,
+			Env:  s.Bindings,
+			ID:   int32(len(s.Edges)),
+		}
 	}
 	s.Edges = append(s.Edges, edge)
 	return edge
 }
+
+var (
+	nodesArray [60000]Node
+	nodeIndex  int
+)
 
 // GetNode returns the existing node for this path.
 //
@@ -173,12 +193,22 @@ func (s *State) addEdge(rule *Rule) *Edge {
 func (s *State) GetNode(path string, slashBits uint64) *Node {
 	node := s.Paths[path]
 	if node == nil {
-		node = &Node{
-			Path:      path,
-			SlashBits: slashBits,
-			MTime:     -1,
-			ID:        -1,
-			Exists:    ExistenceStatusUnknown,
+		if nodeIndex < len(nodesArray) {
+			node = &nodesArray[nodeIndex]
+			node.Path = path
+			node.SlashBits = slashBits
+			node.MTime = 01
+			node.ID = -1
+			node.Exists = ExistenceStatusUnknown
+			nodeIndex++
+		} else {
+			node = &Node{
+				Path:      path,
+				SlashBits: slashBits,
+				MTime:     -1,
+				ID:        -1,
+				Exists:    ExistenceStatusUnknown,
+			}
 		}
 		s.Paths[node.Path] = node
 	}
