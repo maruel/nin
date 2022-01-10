@@ -5,8 +5,7 @@
 
 Little nin' is [ninja](https://ninja-build.org/)'s little sibling.
 
-Nin is an experimental fork of ninja translated in Go, that is music to your
-ears.
+Nin is an experimental fork of ninja translated in Go.
 
 ## Installation
 
@@ -33,7 +32,7 @@ reasonable amount of unit tests.
   - This opens the door to a lot of opportunity and a real ecosystem
 - Refactoring Go >> refactoring C++
   - As I made progress, I saw opportunities for simplification
-- Making the code concurrent (e.g. making the parser parallel) will be trivial
+- Making the code concurrent (e.g. making the parser parallel) is easier
 - Plans to have it be stateful and/or do RPCs and change fundamental parts
   - E.g. call directly the RBE backend instead of shelling out reclient?
 - It's easier to keep the performance promise in check, and keep it maintainable
@@ -50,9 +49,9 @@ Some people did advent of code 2021, I did a brain teaser instead.
 
 ### Concerns
 
-- Go's slice and string bound checking may slow things down, I'll have to micro
+- Go's slice and string bound checking slow things down, I'll have to micro
   optimize a bit.
-- Go's function calls are more expensive and the C++ compiler inlines less often
+- Go's function calls are more expensive and the Go compiler inlines less often
   than the C++ compiler. I'll reduce the number of function calls.
 - Go's Windows layer is likely slower than raw C++, so I'll probably call raw
   syscall functions on Windows.
@@ -67,7 +66,6 @@ Some people did advent of code 2021, I did a brain teaser instead.
 - 16 test cases out of 394 (5%) have to be fixed. `git grep Skip..TODO | wc -l`
   versus `git grep "^func Test" | wc -l`.
 - Closely tracking upstream as-is.
-- Code is not yet Go idiomatic.
 - Flag parsing is not 100% compatible yet.
 
 See [PERF.md](PERF.md) to learn how to measure performance yourself, since I
