@@ -881,38 +881,39 @@ var (
 	metricsEnabled               bool
 )
 
-// Enable a debugging mode.  Returns false if Ninja should exit instead
-// of continuing.
-func debugEnable(name string) bool {
-	if name == "list" {
-		fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n  nostatcache  don't batch stat() calls per directory and cache them\nmultiple modes can be enabled via -d FOO -d BAR\n")
-		//#ifdef _WIN32//#endif
-		return false
-	} else if name == "stats" {
-		metricsEnabled = true
-		nin.Metrics.Enable()
-		return true
-	} else if name == "explain" {
-		nin.Debug.Explaining = true
-		return true
-	} else if name == "keepdepfile" {
-		nin.Debug.KeepDepfile = true
-		return true
-	} else if name == "keeprsp" {
-		nin.Debug.KeepRsp = true
-		return true
-	} else if name == "nostatcache" {
-		disableExperimentalStatcache = true
-		return true
-	} else {
-		suggestion := nin.SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
-		if suggestion != "" {
-			errorf("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
-		} else {
-			errorf("unknown debug setting '%s'", name)
+// debugEnable enables debugging modes.
+//
+// Returns false if Ninja should exit instead of continuing.
+func debugEnable(values []string) bool {
+	for _, name := range values {
+		switch name {
+		case "list":
+			// TODO(maruel): Generate?
+			fmt.Printf("debugging modes:\n  stats        print operation counts/timing info\n  explain      explain what caused a command to execute\n  keepdepfile  don't delete depfiles after they're read by ninja\n  keeprsp      don't delete @response files on success\n  nostatcache  don't batch stat() calls per directory and cache them\nmultiple modes can be enabled via -d FOO -d BAR\n")
+			//#ifdef _WIN32//#endif
+			return false
+		case "stats":
+			metricsEnabled = true
+			nin.Metrics.Enable()
+		case "explain":
+			nin.Debug.Explaining = true
+		case "keepdepfile":
+			nin.Debug.KeepDepfile = true
+		case "keeprsp":
+			nin.Debug.KeepRsp = true
+		case "nostatcache":
+			disableExperimentalStatcache = true
+		default:
+			suggestion := nin.SpellcheckString(name, "stats", "explain", "keepdepfile", "keeprsp", "nostatcache")
+			if suggestion != "" {
+				errorf("unknown debug setting '%s', did you mean '%s'?", name, suggestion)
+			} else {
+				errorf("unknown debug setting '%s'", name)
+			}
+			return false
 		}
-		return false
 	}
+	return true
 }
 
 // Set a warning flag.  Returns false if Ninja should exit instead of
@@ -1114,6 +1115,20 @@ func exceptionFilter(code unsigned int, ep *struct _EXCEPTION_POINTERS) int {
 }
 */
 
+type multi []string
+
+func (m *multi) String() string {
+	return strings.Join(*m, ", ")
+}
+
+func (m *multi) Set(s string) error {
+	if len(s) == 0 {
+		return errors.New("empty value")
+	}
+	*m = append(*m, s)
+	return nil
+}
+
 // Parse args for command-line options.
 // Returns an exit code, or -1 if Ninja should continue.
 func readFlags(opts *options, config *nin.BuildConfig) int {
@@ -1135,7 +1150,8 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 	// TODO(maruel): terminates toplevel options; further flags are passed to the tool
 	t := flag.String("t", "", "run a subtool (use '-t list' to list subtools)")
 	// TODO(maruel): It's supposed to be accumulative.
-	dbgEnable := flag.String("d", "", "enable debugging (use '-d list' to list modes)")
+	var dbgEnable multi
+	flag.Var(&dbgEnable, "d", "enable debugging (use '-d list' to list modes)")
 	verbose := flag.Bool("v", false, "show all command lines while building")
 	flag.BoolVar(verbose, "verbose", false, "show all command lines while building")
 	quiet := flag.Bool("quiet", false, "don't show progress status, just command output")
@@ -1165,10 +1181,8 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 			return 1
 		}
 	}
-	if *dbgEnable != "" {
-		if !debugEnable(*dbgEnable) {
-			return 1
-		}
+	if !debugEnable(dbgEnable) {
+		return 1
 	}
 	if *version {
 		fmt.Printf("%s\n", nin.NinjaVersion)
