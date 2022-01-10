@@ -1143,9 +1143,9 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 	version := flag.Bool("version", false, fmt.Sprintf("print nin version (%q)", nin.NinjaVersion))
 
 	// Flags that do not exist in the C++ code:
-	noconcurrent := flag.Bool("noconcurrent", false, "do not parse subninja files concurrently")
+	concurrent := flag.Bool("concurrent", false, "parse subninja files concurrently; experimental mode")
 	noprewarm := flag.Bool("noprewarm", false, "do not prewarm subninja files; instead process them in order")
-	opts.parserOpts.Concurrency = nin.ParseManifestConcurrentParsing
+	opts.parserOpts.Concurrency = nin.ParseManifestPrewarmSubninja
 
 	flag.Usage = usage
 	flag.Parse()
@@ -1195,8 +1195,8 @@ func readFlags(opts *options, config *nin.BuildConfig) int {
 		return 2
 	}
 
-	if *noconcurrent {
-		opts.parserOpts.Concurrency = nin.ParseManifestPrewarmSubninja
+	if *concurrent {
+		opts.parserOpts.Concurrency = nin.ParseManifestConcurrentParsing
 	}
 	if *noprewarm {
 		opts.parserOpts.Concurrency = nin.ParseManifestSerial
