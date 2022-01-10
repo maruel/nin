@@ -29,13 +29,13 @@ type manifestParserConcurrent struct {
 type manifestParserRoutine struct {
 	// Mutable.
 	lexer lexer
+	env   *BindingEnv
 }
 
 // manifestParserState is the state of the processing goroutine.
 type manifestParserState struct {
 	// Mutable.
 	state             *State
-	env               *BindingEnv
 	subninjas         chan subninja
 	subninjasEnqueued int32
 
@@ -152,8 +152,8 @@ func (m *manifestParserState) process(actions []interface{}) error {
 		}
 	}
 
-	// At this point, m.env is completely immutable and can
-	// be accessed concurrently.
+	// At this point, the bindings of the parser (aka m.env) is completely
+	// immutable and can be accessed concurrently.
 
 	// Did the loop complete because of an error?
 	if err != nil {
@@ -170,7 +170,7 @@ func (m *manifestParserState) process(actions []interface{}) error {
 
 // parsePool parses a "pool" statement.
 func (m *manifestParserRoutine) parsePool() (dataPool, error) {
-	d := dataPool{}
+	d := dataPool{env: m.env}
 	d.name = m.lexer.readIdent()
 	if d.name == "" {
 		return d, m.lexer.Error("expected pool name")
@@ -205,7 +205,7 @@ func (m *manifestParserState) processPool(d dataPool) error {
 		return m.error(fmt.Sprintf("duplicate pool '%s'", d.name), d.ls)
 	}
 	// TODO(maruel): Do we want to use ParseInt() here? Aka support hex.
-	depth, err := strconv.Atoi(d.eval.Evaluate(m.env))
+	depth, err := strconv.Atoi(d.eval.Evaluate(d.env))
 	if depth < 0 || err != nil {
 		return m.error("invalid pool depth", d.dls)
 	}
@@ -215,7 +215,7 @@ func (m *manifestParserState) processPool(d dataPool) error {
 
 // parseRule parses a "rule" statement.
 func (m *manifestParserRoutine) parseRule() (dataRule, error) {
-	d := dataRule{}
+	d := dataRule{env: m.env}
 	name := m.lexer.readIdent()
 	if name == "" {
 		return d, m.lexer.Error("expected rule name")
@@ -255,17 +255,17 @@ func (m *manifestParserRoutine) parseRule() (dataRule, error) {
 
 // processRule updates m.state with a parsed rule statement.
 func (m *manifestParserState) processRule(d dataRule) error {
-	if m.env.Rules[d.rule.Name] != nil {
+	if d.env.Rules[d.rule.Name] != nil {
 		// TODO(maruel): Use %q for real quoting.
 		return m.error(fmt.Sprintf("duplicate rule '%s'", d.rule.Name), d.ls)
 	}
-	m.env.Rules[d.rule.Name] = d.rule
+	d.env.Rules[d.rule.Name] = d.rule
 	return nil
 }
 
 // parseDefault parses a "default" statement.
 func (m *manifestParserRoutine) parseDefault() (dataDefault, error) {
-	d := dataDefault{}
+	d := dataDefault{env: m.env}
 	eval, err := m.lexer.readEvalString(true)
 	if err != nil {
 		return d, err
@@ -290,7 +290,7 @@ func (m *manifestParserRoutine) parseDefault() (dataDefault, error) {
 // processDefault updates m.state with a parsed default statement.
 func (m *manifestParserState) processDefault(d dataDefault) error {
 	for i := 0; i < len(d.evals); i++ {
-		path := d.evals[i].eval.Evaluate(m.env)
+		path := d.evals[i].eval.Evaluate(d.env)
 		if len(path) == 0 {
 			return m.error("empty path", d.evals[i].ls)
 		}
@@ -303,7 +303,7 @@ func (m *manifestParserState) processDefault(d dataDefault) error {
 
 // parseIdent parses a generic statement as a fallback.
 func (m *manifestParserRoutine) parseIdent() (dataIdent, error) {
-	d := dataIdent{}
+	d := dataIdent{env: m.env}
 	m.lexer.UnreadToken()
 	var err error
 	d.name, d.eval, err = m.parseLet()
@@ -312,7 +312,7 @@ func (m *manifestParserRoutine) parseIdent() (dataIdent, error) {
 
 // processIdent updates m.state with a parsed ident statement.
 func (m *manifestParserState) processIdent(d dataIdent) error {
-	value := d.eval.Evaluate(m.env)
+	value := d.eval.Evaluate(d.env)
 	// Check ninjaRequiredVersion immediately so we can exit
 	// before encountering any syntactic surprises.
 	if d.name == "ninja_required_version" {
@@ -320,14 +320,14 @@ func (m *manifestParserState) processIdent(d dataIdent) error {
 			return err
 		}
 	}
-	m.env.Bindings[d.name] = value
+	d.env.Bindings[d.name] = value
 	return nil
 }
 
 // parseEdge parses a "build" statement that results into an edge, which
 // defines inputs and outputs.
 func (m *manifestParserRoutine) parseEdge() (dataEdge, error) {
-	d := dataEdge{}
+	d := dataEdge{env: m.env}
 	for {
 		ev, err := m.lexer.readEvalString(true)
 		if err != nil {
@@ -446,17 +446,17 @@ func (m *manifestParserRoutine) parseEdge() (dataEdge, error) {
 
 // processEdge updates m.state with a parsed edge statement.
 func (m *manifestParserState) processEdge(d dataEdge) error {
-	rule := m.env.LookupRule(d.ruleName)
+	rule := d.env.LookupRule(d.ruleName)
 	if rule == nil {
 		// TODO(maruel): Use %q for real quoting.
 		return m.error(fmt.Sprintf("unknown build rule '%s'", d.ruleName), d.lsRule)
 	}
-	env := m.env
+	env := d.env
 	if d.hadIndentToken {
-		env = NewBindingEnv(m.env)
+		env = NewBindingEnv(d.env)
 	}
 	for _, i := range d.bindings {
-		env.Bindings[i.key] = i.eval.Evaluate(m.env)
+		env.Bindings[i.key] = i.eval.Evaluate(d.env)
 	}
 
 	edge := m.state.addEdge(rule)
@@ -563,7 +563,7 @@ func (m *manifestParserState) processEdge(d dataEdge) error {
 
 // parseInclude parses a "include" line.
 func (m *manifestParserRoutine) parseInclude() (dataInclude, error) {
-	d := dataInclude{}
+	d := dataInclude{env: m.env}
 	var err error
 	if d.eval, err = m.lexer.readEvalString(true); err != nil {
 		return d, err
@@ -576,7 +576,7 @@ func (m *manifestParserRoutine) parseInclude() (dataInclude, error) {
 //
 // This is a stop-the-world event.
 func (m *manifestParserState) processInclude(d dataInclude) error {
-	path := d.eval.Evaluate(m.env)
+	path := d.eval.Evaluate(d.env)
 	input, err := m.fr.ReadFile(path)
 	if err != nil {
 		// Wrap it.
@@ -585,14 +585,16 @@ func (m *manifestParserState) processInclude(d dataInclude) error {
 	}
 
 	// Manually construct the object instead of using ParseManifest(), because
-	// m.env may not equal to m.state.Bindings. This happens when the include
+	// d.env may not equal to m.state.Bindings. This happens when the include
 	// statement is inside a subninja.
 	subparser := manifestParserConcurrent{
+		manifestParserRoutine: manifestParserRoutine{
+			env: d.env,
+		},
 		manifestParserState: manifestParserState{
 			fr:      m.fr,
 			options: m.options,
 			state:   m.state,
-			env:     m.env,
 		},
 	}
 	// Recursively parse the input into the current state.
@@ -610,7 +612,7 @@ func (m *manifestParserState) processInclude(d dataInclude) error {
 //
 // Otherwise, it processes it serially.
 func (m *manifestParserRoutine) parseSubninja() (dataSubninja, error) {
-	d := dataSubninja{}
+	d := dataSubninja{env: m.env}
 	var err error
 	if d.eval, err = m.lexer.readEvalString(true); err != nil {
 		return d, err
@@ -620,21 +622,11 @@ func (m *manifestParserRoutine) parseSubninja() (dataSubninja, error) {
 }
 
 func (m *manifestParserState) processSubninja(d dataSubninja) error {
-	filename := d.eval.Evaluate(m.env)
-	if m.options.Concurrency != ParseManifestSerial {
-		// Start the goroutine to read it asynchronously.
-		go readSubninjaAsync(m.fr, filename, m.subninjas, d.ls)
-		m.subninjasEnqueued++
-		return nil
-	}
-
-	// Process the subninja right away. This is the most compatible way.
-	input, err := m.fr.ReadFile(filename)
-	if err != nil {
-		// Wrap it.
-		return m.error(fmt.Sprintf("loading '%s': %s", filename, err.Error()), d.ls)
-	}
-	return m.processOneSubninja(filename, input)
+	filename := d.eval.Evaluate(d.env)
+	// Start the goroutine to read it asynchronously.
+	go readSubninjaAsync(m.fr, filename, m.subninjas, d.ls, d.env)
+	m.subninjasEnqueued++
+	return nil
 }
 
 // processSubninjaQueue empties the queue of subninja files to process.
@@ -652,20 +644,22 @@ func (m *manifestParserState) processSubninjaQueue() error {
 			err = m.error(fmt.Sprintf("loading '%s': %s", s.filename, s.err.Error()), s.ls)
 			continue
 		}
-		err = m.processOneSubninja(s.filename, s.input)
+		err = m.processOneSubninja(s.filename, s.input, s.env)
 	}
 	return err
 }
 
-func (m *manifestParserState) processOneSubninja(filename string, input []byte) error {
+func (m *manifestParserState) processOneSubninja(filename string, input []byte, env *BindingEnv) error {
 	subparser := manifestParserConcurrent{
+		manifestParserRoutine: manifestParserRoutine{
+			// Reset the binding fresh with a temporary one that will not affect the
+			// root one.
+			env: NewBindingEnv(env),
+		},
 		manifestParserState: manifestParserState{
 			fr:      m.fr,
 			options: m.options,
 			state:   m.state,
-			// Reset the binding fresh with a temporary one that will not affect the
-			// root one.
-			env: NewBindingEnv(m.env),
 		},
 	}
 	// Do not wrap error inside the subninja.
@@ -701,12 +695,14 @@ func (m *manifestParserState) error(msg string, ls lexerState) error {
 }
 
 type dataPool struct {
+	env     *BindingEnv
 	name    string
 	eval    EvalString
 	ls, dls lexerState
 }
 
 type dataEdge struct {
+	env                    *BindingEnv
 	ruleName               string
 	bindings               []*keyEval
 	lsRule, lsEnd          lexerState
@@ -717,25 +713,30 @@ type dataEdge struct {
 }
 
 type dataRule struct {
+	env  *BindingEnv
 	rule *Rule
 	ls   lexerState
 }
 
 type dataDefault struct {
+	env   *BindingEnv
 	evals []*parsedEval
 }
 
 type dataIdent struct {
+	env  *BindingEnv
 	name string
 	eval EvalString
 }
 
 type dataInclude struct {
+	env  *BindingEnv
 	eval EvalString
 	ls   lexerState
 }
 
 type dataSubninja struct {
+	env  *BindingEnv
 	eval EvalString
 	ls   lexerState
 }

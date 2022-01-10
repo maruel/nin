@@ -518,7 +518,7 @@ func (m *manifestParserSerial) parseSubninja() error {
 	if m.options.Concurrency != ParseManifestSerial {
 		// Start the goroutine to read it asynchronously. It will be processed
 		// after the main manifest.
-		go readSubninjaAsync(m.fr, filename, m.subninjas, ls)
+		go readSubninjaAsync(m.fr, filename, m.subninjas, ls, m.env)
 		m.subninjasEnqueued++
 		return nil
 	}
@@ -529,7 +529,7 @@ func (m *manifestParserSerial) parseSubninja() error {
 		// Wrap it.
 		return m.error(fmt.Sprintf("loading '%s': %s", filename, err.Error()), ls)
 	}
-	return m.processOneSubninja(filename, input)
+	return m.processOneSubninja(filename, input, m.env)
 }
 
 // processSubninjaQueue empties the queue of subninja files to process.
@@ -547,19 +547,19 @@ func (m *manifestParserSerial) processSubninjaQueue() error {
 			err = m.error(fmt.Sprintf("loading '%s': %s", s.filename, s.err.Error()), s.ls)
 			continue
 		}
-		err = m.processOneSubninja(s.filename, s.input)
+		err = m.processOneSubninja(s.filename, s.input, s.env)
 	}
 	return err
 }
 
-func (m *manifestParserSerial) processOneSubninja(filename string, input []byte) error {
+func (m *manifestParserSerial) processOneSubninja(filename string, input []byte, env *BindingEnv) error {
 	subparser := manifestParserSerial{
 		fr:      m.fr,
 		options: m.options,
 		state:   m.state,
 		// Reset the binding fresh with a temporary one that will not affect the
 		// root one.
-		env: NewBindingEnv(m.env),
+		env: NewBindingEnv(env),
 	}
 	// Do not wrap error inside the subninja.
 	return subparser.parse(filename, input)

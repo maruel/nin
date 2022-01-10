@@ -74,9 +74,11 @@ func ParseManifest(state *State, fr FileReader, options ParseManifestOpts, filen
 		return m.parse(filename, input)
 	}
 	m := manifestParserConcurrent{
+		manifestParserRoutine: manifestParserRoutine{
+			env: state.Bindings,
+		},
 		manifestParserState: manifestParserState{
 			state:   state,
-			env:     state.Bindings,
 			options: options,
 			fr:      fr,
 		},
@@ -90,16 +92,18 @@ type subninja struct {
 	input    []byte
 	err      error
 	ls       lexerState // lexer state when the subninja statement was parsed.
+	env      *BindingEnv
 }
 
 // readSubninjaAsync is the goroutine that reads the subninja file in parallel
 // to the main build.ninja to reduce overall latency.
-func readSubninjaAsync(fr FileReader, filename string, ch chan<- subninja, ls lexerState) {
+func readSubninjaAsync(fr FileReader, filename string, ch chan<- subninja, ls lexerState, env *BindingEnv) {
 	input, err := fr.ReadFile(filename)
 	ch <- subninja{
 		filename: filename,
 		input:    input,
 		err:      err,
 		ls:       ls,
+		env:      env,
 	}
 }

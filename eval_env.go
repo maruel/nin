@@ -76,6 +76,8 @@ func (e *EvalString) Evaluate(env Env) string {
 			s[i] = x
 			total += len(x)
 		} else {
+			// TODO(maruel): What about when the variable is undefined? It'd be good
+			// to surface this to the user, at least optionally.
 			x := env.LookupVariable(p.Value)
 			s[i] = x
 			total += len(x)
