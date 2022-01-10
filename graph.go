@@ -82,17 +82,6 @@ type Node struct {
 	DyndepPending bool
 }
 
-// NewNode returns an initialized Node.
-func NewNode(path string, slashBits uint64) *Node {
-	return &Node{
-		Path:      path,
-		SlashBits: slashBits,
-		MTime:     -1,
-		ID:        -1,
-		Exists:    ExistenceStatusUnknown,
-	}
-}
-
 func (n *Node) statIfNecessary(di DiskInterface) error {
 	if n.Exists != ExistenceStatusUnknown {
 		return nil

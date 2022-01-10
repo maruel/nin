@@ -166,14 +166,21 @@ func (s *State) addEdge(rule *Rule) *Edge {
 	return edge
 }
 
-// GetNode creates a Node or returns the existing one.
+// GetNode returns the existing node for this path.
+//
+// If the node doesn't exist, create it and return it.
 func (s *State) GetNode(path string, slashBits uint64) *Node {
 	node := s.Paths[path]
-	if node != nil {
-		return node
+	if node == nil {
+		node = &Node{
+			Path:      path,
+			SlashBits: slashBits,
+			MTime:     -1,
+			ID:        -1,
+			Exists:    ExistenceStatusUnknown,
+		}
+		s.Paths[node.Path] = node
 	}
-	node = NewNode(path, slashBits)
-	s.Paths[node.Path] = node
 	return node
 }
 
