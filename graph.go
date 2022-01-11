@@ -199,17 +199,6 @@ type Edge struct {
 	GeneratedByDepLoader bool
 }
 
-// NewEdge returns an initialized Edge.
-func NewEdge() *Edge {
-	return &Edge{
-		Rule:   nil,
-		Pool:   nil,
-		Dyndep: nil,
-		Env:    nil,
-		Mark:   VisitNone,
-	}
-}
-
 // If this ever gets changed, update DelayedEdgesSet to take this into account.
 func (e *Edge) weight() int {
 	return 1

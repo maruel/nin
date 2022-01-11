@@ -157,11 +157,12 @@ func NewState() State {
 
 // addEdge creates a new edge with this rule on the default pool.
 func (s *State) addEdge(rule *Rule) *Edge {
-	edge := NewEdge()
-	edge.Rule = rule
-	edge.Pool = DefaultPool
-	edge.Env = s.Bindings
-	edge.ID = int32(len(s.Edges))
+	edge := &Edge{
+		Rule: rule,
+		Pool: DefaultPool,
+		Env:  s.Bindings,
+		ID:   int32(len(s.Edges)),
+	}
 	s.Edges = append(s.Edges, edge)
 	return edge
 }
