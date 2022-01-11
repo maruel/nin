@@ -40,7 +40,7 @@ func TestGraphTest_MissingImplicit(t *testing.T) {
 	g.fs.Create("in", "")
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,7 +60,7 @@ func TestGraphTest_ModifiedImplicit(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("implicit", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -79,7 +79,7 @@ func TestGraphTest_FunkyMakefilePath(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("implicit.h", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -100,7 +100,7 @@ func TestGraphTest_ExplicitImplicit(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("data", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -140,7 +140,7 @@ func TestGraphTest_ImplicitOutputMissing(t *testing.T) {
 	g.fs.Create("in", "")
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -160,7 +160,7 @@ func TestGraphTest_ImplicitOutputOutOfDate(t *testing.T) {
 	g.fs.Create("in", "")
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -196,7 +196,7 @@ func TestGraphTest_ImplicitOutputOnlyMissing(t *testing.T) {
 	g.AssertParse(&g.state, "build | out.imp: cat in\n", ParseManifestOpts{})
 	g.fs.Create("in", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.imp"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.imp")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -212,7 +212,7 @@ func TestGraphTest_ImplicitOutputOnlyOutOfDate(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("in", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.imp"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.imp")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -228,7 +228,7 @@ func TestGraphTest_PathWithCurrentDirectory(t *testing.T) {
 	g.fs.Create("out.o.d", "out.o: foo.cc\n")
 	g.fs.Create("out.o", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -275,7 +275,7 @@ func TestGraphTest_DepfileWithCanonicalizablePath(t *testing.T) {
 	g.fs.Create("out.o.d", "out.o: bar/../foo.cc\n")
 	g.fs.Create("out.o", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -294,7 +294,7 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 	g.fs.Create("out.o.d", "out.o: foo.h\n")
 	g.fs.Create("out.o", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 	if g.GetNode("out.o").Dirty {
@@ -303,7 +303,7 @@ func TestGraphTest_DepfileRemoved(t *testing.T) {
 
 	g.state.Reset()
 	g.fs.RemoveFile("out.o.d")
-	if err := g.scan.RecomputeDirty(g.GetNode("out.o"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out.o")); err != nil {
 		t.Fatal(err)
 	}
 	if !g.GetNode("out.o").Dirty {
@@ -345,7 +345,7 @@ func TestGraphTest_DepfileOverrideParent(t *testing.T) {
 func TestGraphTest_NestedPhonyPrintsDone(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build n1: phony \nbuild n2: phony n1\n", ParseManifestOpts{})
-	if err := g.scan.RecomputeDirty(g.GetNode("n2"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("n2")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -368,7 +368,7 @@ func TestGraphTest_PhonySelfReferenceError(t *testing.T) {
 	parserOpts.ErrOnPhonyCycle = true
 	g.AssertParse(&g.state, "build a: phony a\n", parserOpts)
 
-	if err := g.scan.RecomputeDirty(g.GetNode("a"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("a")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: a -> a [-w phonycycle=err]" {
 		t.Fatal(err)
@@ -379,7 +379,7 @@ func TestGraphTest_DependencyCycle(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build out: cat mid\nbuild mid: cat in\nbuild in: cat pre\nbuild pre: cat out\n", ParseManifestOpts{})
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: out -> mid -> in -> pre -> out" {
 		t.Fatal(err)
@@ -389,7 +389,7 @@ func TestGraphTest_DependencyCycle(t *testing.T) {
 func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build a b: cat a\n", ParseManifestOpts{})
-	if err := g.scan.RecomputeDirty(g.GetNode("b"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("b")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: a -> a" {
 		t.Fatal(err)
@@ -399,7 +399,7 @@ func TestGraphTest_CycleInEdgesButNotInNodes1(t *testing.T) {
 func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build b a: cat a\n", ParseManifestOpts{})
-	if err := g.scan.RecomputeDirty(g.GetNode("b"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("b")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: a -> a" {
 		t.Fatal(err)
@@ -409,7 +409,7 @@ func TestGraphTest_CycleInEdgesButNotInNodes2(t *testing.T) {
 func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build a b: cat c\nbuild c: cat a\n", ParseManifestOpts{})
-	if err := g.scan.RecomputeDirty(g.GetNode("b"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("b")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: a -> c -> a" {
 		t.Fatal(err)
@@ -419,7 +419,7 @@ func TestGraphTest_CycleInEdgesButNotInNodes3(t *testing.T) {
 func TestGraphTest_CycleInEdgesButNotInNodes4(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "build d: cat c\nbuild c: cat b\nbuild b: cat a\nbuild a e: cat d\nbuild f: cat e\n", ParseManifestOpts{})
-	if err := g.scan.RecomputeDirty(g.GetNode("f"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("f")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: a -> d -> c -> b -> a" {
 		t.Fatal(err)
@@ -433,7 +433,7 @@ func TestGraphTest_CycleWithLengthZeroFromDepfile(t *testing.T) {
 	g.AssertParse(&g.state, "rule deprule\n   depfile = dep.d\n   command = unused\nbuild a b: deprule\n", ParseManifestOpts{})
 	g.fs.Create("dep.d", "a: b\n")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("a"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("a")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: b -> b" {
 		t.Fatal(err)
@@ -457,7 +457,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfile(t *testing.T) {
 	g.AssertParse(&g.state, "rule deprule\n   depfile = dep.d\n   command = unused\nrule r\n   command = unused\nbuild a b: deprule\nbuild c: r b\n", ParseManifestOpts{})
 	g.fs.Create("dep.d", "a: c\n")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("a"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("a")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: b -> c -> b" {
 		t.Fatal(err)
@@ -482,7 +482,7 @@ func TestGraphTest_CycleWithLengthOneFromDepfileOneHopAway(t *testing.T) {
 	g.AssertParse(&g.state, "rule deprule\n   depfile = dep.d\n   command = unused\nrule r\n   command = unused\nbuild a b: deprule\nbuild c: r b\nbuild d: r a\n", ParseManifestOpts{})
 	g.fs.Create("dep.d", "a: c\n")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("d"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("d")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: b -> c -> b" {
 		t.Fatal(err)
@@ -808,7 +808,7 @@ func TestGraphTest_DyndepFileMissing(t *testing.T) {
 	g := NewGraphTest(t)
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ParseManifestOpts{})
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "loading 'dd': file does not exist" {
 		t.Fatal(err)
@@ -820,7 +820,7 @@ func TestGraphTest_DyndepFileError(t *testing.T) {
 	g.AssertParse(&g.state, "rule r\n  command = unused\nbuild out: r || dd\n  dyndep = dd\n", ParseManifestOpts{})
 	g.fs.Create("dd", "ninja_dyndep_version = 1\n")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "'out' not mentioned in its dyndep file 'dd'" {
 		t.Fatal(err)
@@ -835,7 +835,7 @@ func TestGraphTest_DyndepImplicitInputNewer(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("in", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -861,7 +861,7 @@ func TestGraphTest_DyndepFileReady(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("in", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -889,7 +889,7 @@ func TestGraphTest_DyndepFileNotClean(t *testing.T) {
 	g.fs.Create("dd-in", "")
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -917,7 +917,7 @@ func TestGraphTest_DyndepFileNotReady(t *testing.T) {
 	g.fs.Tick()
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -945,7 +945,7 @@ func TestGraphTest_DyndepFileSecondNotReady(t *testing.T) {
 	g.fs.Create("dd1-in", "")
 	g.fs.Create("out", "")
 
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -977,7 +977,7 @@ func TestGraphTest_DyndepFileCircular(t *testing.T) {
 	g.fs.Create("out", "")
 
 	edge := g.GetNode("out").InEdge
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), nil); err == nil {
+	if _, err := g.scan.RecomputeDirty(g.GetNode("out")); err == nil {
 		t.Fatal("expected false")
 	} else if err.Error() != "dependency cycle: circ -> in -> circ" {
 		t.Fatal(err)
@@ -1010,8 +1010,8 @@ func TestGraphTest_Validation(t *testing.T) {
 	g.AssertParse(&g.state, "build out: cat in |@ validate\nbuild validate: cat in\n", ParseManifestOpts{})
 
 	g.fs.Create("in", "")
-	var validationNodes []*Node
-	if err := g.scan.RecomputeDirty(g.GetNode("out"), &validationNodes); err != nil {
+	validationNodes, err := g.scan.RecomputeDirty(g.GetNode("out"))
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -1036,7 +1036,7 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 	out1 := g.GetNode("out1")
 	in1 := g.GetNode("in1")
 
-	if err := g.scan.RecomputeDirty(out1, nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(out1); err != nil {
 		t.Fatal(err)
 	}
 	if out1.Dirty {
@@ -1065,7 +1065,7 @@ func TestGraphTest_PhonyDepsMtimes(t *testing.T) {
 		t.Fatal("expected greater")
 	}
 
-	if err := g.scan.RecomputeDirty(out1, nil); err != nil {
+	if _, err := g.scan.RecomputeDirty(out1); err != nil {
 		t.Fatal(err)
 	}
 	if in1.MTime <= in1Mtime1 {

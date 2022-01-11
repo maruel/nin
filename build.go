@@ -570,8 +570,8 @@ func (p *plan) refreshDyndepDependents(scan *DependencyScan, node *Node) (bool, 
 	// have become wanted.
 	for n := range dependents {
 		// Check if this dependent node is now dirty.  Also checks for new cycles.
-		var validationNodes []*Node
-		if err := scan.RecomputeDirty(n, &validationNodes); err != nil {
+		validationNodes, err := scan.RecomputeDirty(n)
+		if err != nil {
 			return false, err
 		}
 
@@ -738,8 +738,8 @@ func (b *Builder) addTargetName(name string) (*Node, error) {
 // Returns true if the target is dirty. Returns false and no error if the
 // target is up to date.
 func (b *Builder) AddTarget(target *Node) (bool, error) {
-	var validationNodes []*Node
-	if err := b.scan.RecomputeDirty(target, &validationNodes); err != nil {
+	validationNodes, err := b.scan.RecomputeDirty(target)
+	if err != nil {
 		return false, err
 	}
 

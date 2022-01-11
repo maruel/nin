@@ -571,8 +571,8 @@ func (d *DependencyScan) depsLog() *DepsLog {
 // state accordingly.
 //
 // Appends any validation nodes found to the nodes parameter.
-func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*Node) error {
-	var stack, newValidationNodes []*Node
+func (d *DependencyScan) RecomputeDirty(initialNode *Node) ([]*Node, error) {
+	var stack, validationNodes, newValidationNodes []*Node
 	// The C++ code uses a dequeue.
 	nodes := []*Node{initialNode}
 
@@ -581,62 +581,54 @@ func (d *DependencyScan) RecomputeDirty(initialNode *Node, validationNodes *[]*N
 	for len(nodes) != 0 {
 		node := nodes[0]
 		nodes = nodes[1:]
-
+		// Reuse slices to reduce overall memory allocations.
 		stack = stack[:0]
 		newValidationNodes = newValidationNodes[:0]
-
-		if err := d.recomputeNodeDirty(node, &stack, &newValidationNodes); err != nil {
-			return err
+		var err error
+		stack, newValidationNodes, err = d.recomputeNodeDirty(node, stack, newValidationNodes)
+		if err != nil {
+			return nil, err
 		}
 		nodes = append(nodes, newValidationNodes...)
-		if len(newValidationNodes) != 0 {
-			if validationNodes == nil {
-				return errors.New("validations require RecomputeDirty to be called with validation_nodes")
-			}
-			*validationNodes = append(*validationNodes, newValidationNodes...)
-		}
+		validationNodes = append(validationNodes, newValidationNodes...)
 	}
-	return nil
+	return validationNodes, nil
 }
 
 // recomputeNodeDirty updates Node.Dirty.
 //
 // It is recursive.
-func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validationNodes *[]*Node) error {
+func (d *DependencyScan) recomputeNodeDirty(node *Node, stack, validationNodes []*Node) ([]*Node, []*Node, error) {
 	edge := node.InEdge
 	if edge == nil {
 		// If we already visited this leaf node then we are done.
 		if node.Exists != ExistenceStatusUnknown {
-			return nil
+			return stack, validationNodes, nil
 		}
 		// This node has no in-edge; it is dirty if it is missing.
 		if err := node.statIfNecessary(d.di); err != nil {
-			return err
+			return stack, validationNodes, err
 		}
 		if node.Exists != ExistenceStatusExists {
 			explain("%s has no in-edge and is missing", node.Path)
 		}
 		node.Dirty = node.Exists != ExistenceStatusExists
-		return nil
+		return stack, validationNodes, nil
 	}
 
 	// If we already finished this edge then we are done.
 	if edge.Mark == VisitDone {
-		return nil
-	}
-
-	if stack == nil {
-		stack = &[]*Node{}
+		return stack, validationNodes, nil
 	}
 
 	// If we encountered this edge earlier in the call stack we have a cycle.
-	if err := d.verifyDAG(node, *stack); err != nil {
-		return err
+	if err := d.verifyDAG(node, stack); err != nil {
+		return stack, validationNodes, err
 	}
 
 	// Mark the edge temporarily while in the call stack.
 	edge.Mark = VisitInStack
-	*stack = append(*stack, node)
+	stack = append(stack, node)
 
 	dirty := false
 	edge.OutputsReady = true
@@ -655,14 +647,16 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 		//   Later during the build the dyndep file will become ready and be
 		//   loaded to update this edge before it can possibly be scheduled.
 		if edge.Dyndep != nil && edge.Dyndep.DyndepPending {
-			if err := d.recomputeNodeDirty(edge.Dyndep, stack, validationNodes); err != nil {
-				return err
+			var err error
+			stack, validationNodes, err = d.recomputeNodeDirty(edge.Dyndep, stack, validationNodes)
+			if err != nil {
+				return stack, validationNodes, err
 			}
 
 			if edge.Dyndep.InEdge == nil || edge.Dyndep.InEdge.OutputsReady {
 				// The dyndep file is ready, so load it now.
 				if err := d.LoadDyndeps(edge.Dyndep, DyndepFile{}); err != nil {
-					return err
+					return stack, validationNodes, err
 				}
 			}
 		}
@@ -671,7 +665,7 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// Load output mtimes so we can compare them to the most recent input below.
 	for _, o := range edge.Outputs {
 		if err := o.statIfNecessary(d.di); err != nil {
-			return err
+			return stack, validationNodes, err
 		}
 	}
 
@@ -679,7 +673,7 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 		// This is our first encounter with this edge.  Load discovered deps.
 		edge.DepsLoaded = true
 		if found, err := d.depLoader.loadDeps(edge); err != nil {
-			return err
+			return stack, validationNodes, err
 		} else if !found {
 			// Failed to load dependency info: rebuild to regenerate it.
 			// loadDeps() did Explain() already, no need to do it here.
@@ -693,14 +687,16 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// cycle detector if the validation node depends on this node.
 	// RecomputeDirty will add the validation nodes to the initial nodes
 	// and recurse into them.
-	*validationNodes = append(*validationNodes, edge.Validations...)
+	validationNodes = append(validationNodes, edge.Validations...)
 
 	// Visit all inputs; we're dirty if any of the inputs are dirty.
 	var mostRecentInput *Node
 	for j, i := range edge.Inputs {
 		// Visit this input.
-		if err := d.recomputeNodeDirty(i, stack, validationNodes); err != nil {
-			return err
+		var err error
+		stack, validationNodes, err = d.recomputeNodeDirty(i, stack, validationNodes)
+		if err != nil {
+			return stack, validationNodes, err
 		}
 
 		// If an input is not ready, neither are our outputs.
@@ -750,11 +746,13 @@ func (d *DependencyScan) recomputeNodeDirty(node *Node, stack *[]*Node, validati
 	// Mark the edge as finished during this walk now that it will no longer
 	// be in the call stack.
 	edge.Mark = VisitDone
-	// assert((*stack)[len(*stack)-1] == node)
-	*stack = (*stack)[:len(*stack)-1]
-	return nil
+	// assert(stack[len(stack)-1] == node)
+	return stack[:len(stack)-1], validationNodes, nil
 }
 
+// verifyDAG checks that the node is a directed acyclic graph.
+//
+// Mutates stack in-place in case of error.
 func (d *DependencyScan) verifyDAG(node *Node, stack []*Node) error {
 	edge := node.InEdge
 
