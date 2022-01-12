@@ -151,7 +151,8 @@ type manifestParserState struct {
 func (m *manifestParserConcurrent) parseMain(filename string, input []byte) error {
 	defer metricRecord(".ninja parse")()
 
-	// TODO(maruel): Perf test with and without buffering.
+	// We want some amount of buffering to help with the parsing getting ahead of
+	// the processing.
 	actions := make(chan interface{}, 1024)
 	processResult := make(chan error)
 
