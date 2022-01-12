@@ -55,6 +55,8 @@ func (b *barrier) wait() {
 	b.want <- struct{}{}
 }
 
+type actionBatch [10]interface{}
+
 // manifestParserState is the state of the processing goroutine.
 type manifestParserState struct {
 	// Mutable.
@@ -153,7 +155,7 @@ func (m *manifestParserConcurrent) parseMain(filename string, input []byte) erro
 
 	// We want some amount of buffering to help with the parsing getting ahead of
 	// the processing.
-	actions := make(chan interface{}, 1024)
+	actions := make(chan actionBatch, 128)
 	processResult := make(chan error)
 
 	// For error().
@@ -183,7 +185,7 @@ func (m *manifestParserConcurrent) parseMain(filename string, input []byte) erro
 //
 // It parses but does not process. It enqueues actions into actions that the
 // main goroutine shall execute.
-func (m *manifestParserRoutine) parse(filename string, input []byte, actions chan<- interface{}) error {
+func (m *manifestParserRoutine) parse(filename string, input []byte, actions chan<- actionBatch) error {
 	// The parsing done by the lexer can be done in a separate thread. What is
 	// important is that m.state is never touched concurrently.
 	m.subninjas = make(chan error)
@@ -196,48 +198,40 @@ func (m *manifestParserRoutine) parse(filename string, input []byte, actions cha
 	// only processed once the current file is done. This enables lower latency
 	// overall.
 	var err error
-	var d interface{}
+	var array actionBatch
+	index := 0
 loop:
 	for err == nil {
+		if index == len(array) {
+			actions <- array
+			index = 0
+		}
 		switch token := m.lexer.ReadToken(); token {
 		case POOL:
-			if d, err = m.parsePool(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parsePool()
+			index++
 		case BUILD:
-			if d, err = m.parseEdge(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseEdge()
+			index++
 		case RULE:
-			if d, err = m.parseRule(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseRule()
+			index++
 		case DEFAULT:
-			if d, err = m.parseDefault(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseDefault()
+			index++
 		case IDENT:
-			if d, err = m.parseIdent(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseIdent()
+			index++
 		case INCLUDE:
-			if d, err = m.parseInclude(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseInclude()
+			index++
 		case SUBNINJA:
-			if d, err = m.parseSubninja(); err != nil {
-				break loop
-			}
-			actions <- d
+			array[index], err = m.parseSubninja()
+			index++
 		case ERROR:
 			err = m.lexer.Error(m.lexer.DescribeLastError())
 		case TEOF:
+			// Don't forget the last item too.
 			break loop
 		case NEWLINE:
 		default:
@@ -245,9 +239,20 @@ loop:
 		}
 	}
 
+	// Send any remaining stragglers.
+	if err == nil && index != 0 {
+		for i := index; i < len(array); i++ {
+			array[i] = nil
+		}
+		actions <- array
+	}
 	// Send an event of ourselves to notify actions that it is ready to process
 	// subninjas.
-	actions <- m
+	array[0] = m
+	for i := 1; i < len(array); i++ {
+		array[i] = nil
+	}
+	actions <- array
 
 	m.doneParsing.wait()
 
@@ -265,48 +270,50 @@ loop:
 	return err
 }
 
-func (m *manifestParserState) process(actions chan interface{}) error {
+func (m *manifestParserState) process(actions chan actionBatch) error {
 	var err error
-	for a := range actions {
-		if err != nil {
-			// Ignore following actions if we got an error but we still need to
-			// continue emptying the channel.
+	for s := range actions {
+		for _, a := range s {
+			if err != nil {
+				// Ignore following actions if we got an error but we still need to
+				// continue emptying the channel.
+				switch d := a.(type) {
+				case *manifestParserRoutine:
+					// Unblock all the subninjas for this specific routine. It is important
+					// because recursive subninjas have to wait for their parent subninja to
+					// be processed.
+					d.doneParsing.unblock()
+				default:
+				}
+				continue
+			}
 			switch d := a.(type) {
+			case dataPool:
+				err = m.processPool(d)
+			case dataEdge:
+				err = m.processEdge(d)
+			case dataRule:
+				err = m.processRule(d)
+			case dataDefault:
+				err = m.processDefault(d)
+			case dataIdent:
+				err = m.processIdent(d)
+			case dataInclude:
+				// Loads the included file immediately.
+				// An include can be in a subninja, so the right BindingsEnv must be
+				// loaded.
+				err = m.processInclude(d)
+			case dataSubninja:
+				// Enqueues the file to read into m.subninjas.
+				// A subninja can be from another subninja, so the right BindingsEnv must
+				// be loaded.
+				err = m.processSubninja(d, actions)
 			case *manifestParserRoutine:
 				// Unblock all the subninjas for this specific routine. It is important
 				// because recursive subninjas have to wait for their parent subninja to
 				// be processed.
 				d.doneParsing.unblock()
-			default:
 			}
-			continue
-		}
-		switch d := a.(type) {
-		case dataPool:
-			err = m.processPool(d)
-		case dataEdge:
-			err = m.processEdge(d)
-		case dataRule:
-			err = m.processRule(d)
-		case dataDefault:
-			err = m.processDefault(d)
-		case dataIdent:
-			err = m.processIdent(d)
-		case dataInclude:
-			// Loads the included file immediately.
-			// An include can be in a subninja, so the right BindingsEnv must be
-			// loaded.
-			err = m.processInclude(d)
-		case dataSubninja:
-			// Enqueues the file to read into m.subninjas.
-			// A subninja can be from another subninja, so the right BindingsEnv must
-			// be loaded.
-			err = m.processSubninja(d, actions)
-		case *manifestParserRoutine:
-			// Unblock all the subninjas for this specific routine. It is important
-			// because recursive subninjas have to wait for their parent subninja to
-			// be processed.
-			d.doneParsing.unblock()
 		}
 	}
 	return err
@@ -768,7 +775,7 @@ func (m *manifestParserRoutine) parseSubninja() (dataSubninja, error) {
 
 // processSubninja is an action in the main thread to evaluate the subninja to
 // parse and start up a separate goroutine to read it.
-func (m *manifestParserState) processSubninja(d dataSubninja, actions chan<- interface{}) error {
+func (m *manifestParserState) processSubninja(d dataSubninja, actions chan<- actionBatch) error {
 	// We can finally resolve what file path it is. Start the read to process
 	// later.
 	filename := d.eval.Evaluate(d.context.env)
@@ -785,7 +792,7 @@ func (m *manifestParserState) processSubninja(d dataSubninja, actions chan<- int
 //
 // Contrary to the include, here we run a separate concurrent parsing loop. The
 // state modification is still in the main loop.
-func (m *manifestParserState) processSubninjaReal(filename string, d dataSubninja, actions chan<- interface{}) {
+func (m *manifestParserState) processSubninjaReal(filename string, d dataSubninja, actions chan<- actionBatch) {
 	input, err := m.fr.ReadFile(filename)
 	if err != nil {
 		// Wrap it.
